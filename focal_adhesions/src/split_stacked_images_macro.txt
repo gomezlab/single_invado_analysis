@@ -1,18 +1,8 @@
-setBatchMode(false);
-
-home_directory = getDirectory("image");
-image_title = getTitle();
-string_length = lengthOf(image_title);
-folder_name_start = substring(image_title, 0, string_length - 4);
-final_directory = home_directory+folder_name_start+"_"+"split/";
-File.makeDirectory(final_directory);
-
-doCommand("Convert Stack to Images");
-wait(10000);
-
+setBatchMode(true);
 image_number = nImages;
 for (i = 1; i <= image_number; i++) {
+	home_directory = getDirectory("image");
 	image_name = getTitle();
-	saveAs("png",final_directory+image_name);
+	saveAs("tif",home_directory+image_name);
 	close();
 }
