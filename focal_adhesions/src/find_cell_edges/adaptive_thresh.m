@@ -18,3 +18,4 @@ while (abs(threshold - new_thresh) > threshold_change_thresh)
     new_thresh = 0.2*upper_mean + 0.8*lower_mean;
 end
 
+end
