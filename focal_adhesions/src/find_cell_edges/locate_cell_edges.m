@@ -2,11 +2,11 @@ base_folder = '../../data/time_points/';
 
 number_of_cells = 19;
 number_of_timepoints = 5;
-debug = 0;
+debug = 1;
 
 for i = 1:number_of_timepoints
     if (debug)
-        i
+        sprintf('Time Point Number: %02d',i)
     end
     for j = 1:number_of_cells
         image_num = j;
@@ -27,6 +27,12 @@ for i = 1:number_of_timepoints
         output_directory = strcat(base_folder,'each_cell/',padded_cell_num,'/');
         if (not(exist(output_directory)))
             mkdir(output_directory);
+        end
+        
+        if (debug)
+            if (mod(j,5) == 0)
+                sprintf('Cell Number: %02d',j)
+            end
         end
         
         padded_time_point_num = sprintf(strcat('%0', num2str(length(num2str(number_of_timepoints))), 'd'),i);
