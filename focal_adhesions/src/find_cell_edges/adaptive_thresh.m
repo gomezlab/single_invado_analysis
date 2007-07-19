@@ -1,6 +1,6 @@
-function [threshold] = adpative_thresh(I)
+function threshold = adpative_thresh(I)
 
-threshold = 0.5;
+threshold = mean(I(:));
 
 threshold_change_thresh = 0.0001;
 
