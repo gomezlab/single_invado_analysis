@@ -1,7 +1,7 @@
 base_folder = '../../data/time_points/';
 
-number_of_cells = 19;
-number_of_timepoints = 5;
+number_of_cells = 1;
+number_of_timepoints = 1;
 debug = 1;
 profile on;
 for i = 1:number_of_timepoints
@@ -16,7 +16,7 @@ for i = 1:number_of_timepoints
         edge_image = normalize_grayscale_image(edge_image);
         focal_image = normalize_grayscale_image(focal_image);
 
-        edge_binary_image = bwperim(im2bw(edge_image,adaptive_thresh(edge_image)));
+        edge_binary_image = bwperim(im2bw(edge_image,adaptive_thresh(edge_image,0.2)));
         
         original_binary_image = edge_binary_image;
         
@@ -44,6 +44,7 @@ for i = 1:number_of_timepoints
         imwrite(highlighted_edge_image,strcat(output_directory,'edge',padded_time_point_num,'.png'));
         imwrite(side_by_side_edge_image,strcat(output_directory,'side_by_side',padded_time_point_num,'.png'));
         imwrite(highlighted_focal_image,strcat(output_directory,'focal',padded_time_point_num,'.png'));
+        imwrite(imfill(edge_binary_image,'holes'),strcat(output_directory,'cell_mask',padded_time_point_num,'.png'));
     end
 end
 profile off;

@@ -7,11 +7,8 @@ region_sizes = regionprops(connected_areas, 'Area');
 max_region_size = max([region_sizes.Area]);
 edge_binary_image = ismember(connected_areas, find([region_sizes.Area] == max_region_size));
 
-%now we apply a series of morphological operations to clean up the image
+edge_binary_image = imfill(edge_binary_image,'holes');
 
-%first we remove isolated pixels with 'clean'
-edge_binary_image = bwmorph(edge_binary_image,'clean');
-
-edge_binary_image = bwmorph(edge_binary_image, 'skel');
+edge_binary_image = bwperim(edge_binary_image);
 
 end
