@@ -10,6 +10,8 @@ edge_binary_image = ismember(connected_areas, find([region_sizes.Area] == max_re
 %now we apply a series of morphological operations to clean up the image
 
 %first we remove isolated pixels with 'clean'
-%edge_binary_image = bwmorph(edge_binary_image,'clean');
+edge_binary_image = bwmorph(edge_binary_image,'clean');
+
+edge_binary_image = bwmorph(edge_binary_image, 'skel');
 
 end
