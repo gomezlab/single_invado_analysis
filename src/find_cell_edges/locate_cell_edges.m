@@ -1,7 +1,7 @@
 base_folder = '../../data/time_points/';
 
-number_of_cells = 1;
-number_of_timepoints = 1;
+number_of_cells = 19;
+number_of_timepoints = 5;
 debug = 1;
 profile on;
 for i = 1:number_of_timepoints

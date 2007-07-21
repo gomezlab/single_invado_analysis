@@ -12,12 +12,9 @@ highlighted_image(:,:,1) = I;
 highlighted_image(:,:,2) = I;
 highlighted_image(:,:,3) = I;
 
-highlight_pixels = find(highlights);
-
 highlight_image = I;
-for i = 1:size(highlight_pixels,1)
-    highlight_image(highlight_pixels(i)) = 1;
-end
+
+highlight_image(find(highlights)) = 1;
 
 highlighted_image(:,:,highlight_color_number) = highlight_image;
 
