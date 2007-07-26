@@ -11,7 +11,6 @@ for i = 1:number_of_timepoints
     image_set_cell_number = size(imfinfo(strcat(base_folder,num2str(i),'/N-myr mRFP.tif')),2);
     
     for j = 1:image_set_cell_number
-        image_num = j;
         edge_image = imread(strcat(base_folder,num2str(i),'/N-myr mRFP.tif'),j);
         focal_image = imread(strcat(base_folder,num2str(i),'/EGFP-Paxillin.tif'),j);
 
@@ -36,14 +35,14 @@ for i = 1:number_of_timepoints
             mkdir(output_directory);
         end
 
-        imwrite(highlighted_edge_image,strcat(output_directory,'edge',padded_time_point_num,'.png'));
-        imwrite(side_by_side_edge_image,strcat(output_directory,'side_by_side',padded_time_point_num,'.png'));
-        imwrite(highlighted_focal_image,strcat(output_directory,'focal',padded_time_point_num,'.png'));
-        imwrite(imfill(edge_binary_image,'holes'),strcat(output_directory,'cell_mask',padded_time_point_num,'.png'));
+        imwrite(highlighted_edge_image,strcat(output_directory,'edge.png'));
+        imwrite(side_by_side_edge_image,strcat(output_directory,'side_by_side.png'));
+        imwrite(highlighted_focal_image,strcat(output_directory,'focal.png'));
+        imwrite(imfill(edge_binary_image,'holes'),strcat(output_directory,'cell_mask.png'));
         
         if (debug)
             if (mod(j,5) == 0)
-                sprintf('Cell Number: %02d',j)
+                sprintf('Cell Number: %02d / %02d',j,image_set_cell_number)
             end
         end
     end
