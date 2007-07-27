@@ -1,6 +1,6 @@
 base_folder = '../../data/time_points/';
 
-number_of_timepoints = 1;
+number_of_timepoints = 5;
 debug = 1;
 profile on;
 for i = 1:number_of_timepoints
@@ -8,11 +8,11 @@ for i = 1:number_of_timepoints
         sprintf('Time Point Number: %02d',i)
     end
 
-    %image_set_cell_number = size(imfinfo(strcat(base_folder,num2str(i),'/N-myr mRFP.tif')),2);
-    image_set_cell_number = 04;
+    image_set_cell_number = size(imfinfo(strcat(base_folder,num2str(i),'/N-myr mRFP.tif')),2);
+    %image_set_cell_number = 04;
 
-    %for j = 1:image_set_cell_number
-    for j = 4:image_set_cell_number
+    for j = 1:image_set_cell_number
+    %for j = 4:image_set_cell_number
         padded_cell_num = sprintf(strcat('%0', num2str(length(num2str(image_set_cell_number))), 'd'),j);
         padded_time_point_num = sprintf(strcat('%0', num2str(length(num2str(number_of_timepoints))), 'd'),i);
         output_directory = strcat(base_folder,'each_cell/',padded_time_point_num,'/',padded_cell_num,'/');
@@ -31,7 +31,7 @@ for i = 1:number_of_timepoints
 
         focal_image = focal_image.*cell_mask;
 
-        focal_markers = find_focal_adhesion_markers(focal_image);
+        focal_markers = find_focal_adhesion_markers(focal_image,cell_mask);
 
         inverted_focal_image = -focal_image + 1;
         inverted_focal_image = imfilter(inverted_focal_image,fspecial('gaussian'));

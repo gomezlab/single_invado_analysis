@@ -1,13 +1,10 @@
-function focal_markers = find_focal_adhesion_markers(focal_image);
+function focal_markers = find_focal_adhesion_markers(focal_image,cell_mask);
 
-se = strel('disk',8);
-Ie = imerode(focal_image, se);
-Iobr = imreconstruct(Ie, focal_image);
+thresh = adaptive_thresh(focal_image(find(cell_mask)));
 
-Iobrd = imdilate(Iobr, se);
-Iobrcbr = imreconstruct(imcomplement(Iobrd), imcomplement(Iobr));
-Iobrcbr = imcomplement(Iobrcbr);
+focal_markers = im2bw(focal_image,thresh);
 
-focal_markers = imregionalmax(Iobrcbr);
+focal_markers = imfill(focal_markers,'holes');
+focal_markers = bwmorph(focal_markers,'clean');
 
 end
