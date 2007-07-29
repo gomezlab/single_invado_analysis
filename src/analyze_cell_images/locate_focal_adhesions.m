@@ -3,7 +3,7 @@ base_folder = '../../data/time_points/';
 number_of_timepoints = 5;
 debug = 1;
 profile on;
-for i = 1:number_of_timepoints
+for i = 5:number_of_timepoints
     if (debug)
         sprintf('Time Point Number: %02d',i)
     end
@@ -15,7 +15,7 @@ for i = 1:number_of_timepoints
     %for j = 4:image_set_cell_number
         padded_cell_num = sprintf(strcat('%0', num2str(length(num2str(image_set_cell_number))), 'd'),j);
         padded_time_point_num = sprintf(strcat('%0', num2str(length(num2str(number_of_timepoints))), 'd'),i);
-        output_directory = strcat(base_folder,'each_cell/',padded_time_point_num,'/',padded_cell_num,'/');
+        output_directory = strcat(base_folder,'individual_pictures/',padded_time_point_num,'/',padded_cell_num,'/');
 
         focal_image = imread(strcat(base_folder,num2str(i),'/EGFP-Paxillin.tif'),j);
         focal_image = normalize_grayscale_image(focal_image);
@@ -49,13 +49,16 @@ for i = 1:number_of_timepoints
         focal_edge_highlights = create_highlighted_image(focal_image,watershed_edges);
 
         focal_edge_highlights = draw_centroid_dots(focal_edge_highlights,cell_mask,watershed_labels);
-        focal_edge_highlights = find_each_watershed_adhesion(focal_image, focal_edge_highlights, watershed_labels);
+        focal_edge_highlights = find_each_watershed_adhesion(focal_image, focal_edge_highlights, watershed_labels,cell_mask);
 
         if (not(exist(output_directory,'dir')))
             mkdir(output_directory);
         end
-
+        
+        composite_image = make_comp_image(focal_edge_highlights,focal_image,cell_mask);
+        
         imwrite(focal_edge_highlights,strcat(output_directory,'focal_edges.png'));
+        imwrite(composite_image,strcat(output_directory,'comp.png'));
 
         if (debug)
             if (mod(j,5) == 0)

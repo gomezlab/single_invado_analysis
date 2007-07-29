@@ -12,6 +12,10 @@ dists = bwdist(~cell_mask);
 max_dist = max(dists(:));
 
 for k = 1:2:size(centroid_stats,2)
+    if (isnan(centroid_stats(k)))
+        continue;
+    end
+    
     middle_point_col = round(centroid_stats(k));
     middle_point_row = round(centroid_stats(k+1));
     col_range = middle_point_col-1:middle_point_col+1;

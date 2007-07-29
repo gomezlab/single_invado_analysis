@@ -1,10 +1,14 @@
-function focal_edge_highlights = find_each_watershed_adhesion(focal_image, focal_edge_highlights, watershed_labels)
+function focal_edge_highlights = find_each_watershed_adhesion(focal_image, focal_edge_highlights, watershed_labels, cell_mask)
 
 focal_adhesion_sections = zeros(size(focal_image,1),size(focal_image,2));
+min_thresh = adaptive_thresh(focal_image(find(cell_mask)));
 
 for i = 1:max(watershed_labels(:))
     thresh = adaptive_thresh(focal_image(find(watershed_labels == i)));
-
+    
+    if (thresh < min_thresh)
+        thresh = min_thresh;
+    end
     temp = focal_image;
     temp(find(watershed_labels ~= i)) = 0;
 
