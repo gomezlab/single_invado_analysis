@@ -25,11 +25,7 @@ if ((max_col + 10) > size(cell_mask,2))
 end
 
 if (length(size(focal_image)) < 3)
-    temp = focal_image;
-    focal_image = ones(size(focal_image,1),size(focal_image,2),3);
-    focal_image(:,:,1) = temp;
-    focal_image(:,:,2) = temp;
-    focal_image(:,:,3) = temp;
+    focal_image = cat(3,focal_image,focal_image,focal_image);
 end
 
 clipped_highlights = focal_edge_highlights(min_row:max_row,min_col:max_col,1:3);
