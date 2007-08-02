@@ -1,6 +1,6 @@
 base_folder = '../../data/time_points/';
 
-number_of_timepoints = 5;
+number_of_timepoints = 1;
 debug = 1;
 profile on;
 for i = 1:number_of_timepoints
@@ -9,53 +9,54 @@ for i = 1:number_of_timepoints
     end
 
     image_set_cell_number = size(imfinfo(strcat(base_folder,num2str(i),'/N-myr mRFP.tif')),2);
-    %image_set_cell_number = 4;
+    image_set_cell_number = 4;
 
-    for j = 1:image_set_cell_number
-    %for j = 4:image_set_cell_number
+    %for j = 1:image_set_cell_number
+    for j = 4:image_set_cell_number
         
-        padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
-        padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
-        output_directory = [base_folder,'individual_pictures/',padded_time_point_num,'/',padded_cell_num,'/'];
+        
+        image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
+        image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
+        image_data.output_directory = [base_folder,'individual_pictures/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
 
-        focal_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/EGFP-Paxillin.tif'],j));
+        image_data.original_focal_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/EGFP-Paxillin.tif'],j));
 
-        if (exist(strcat(output_directory,'cell_mask.png')))
-            cell_mask = imread(strcat(output_directory,'cell_mask.png'));
+        if (exist(strcat(image_data.output_directory,'cell_mask.png')))
+            image_data.cell_mask = imread(strcat(output_directory,'cell_mask.png'));
         else
             edge_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/N-myr mRFP.tif'],j));
             edge_binary_image = bwperim(im2bw(edge_image,adaptive_thresh(edge_image,0.2)));
             edge_binary_image = clean_up_edge_image(edge_binary_image);
-            cell_mask = imfill(edge_binary_image,'holes');
+            image_data.cell_mask = imfill(edge_binary_image,'holes');
         end
 
-        focal_image = focal_image.*cell_mask;
+        image_data.focal_image = image_data.original_focal_image.*image_data.cell_mask;
 
-        focal_markers = find_focal_adhesion_markers(focal_image,cell_mask);
+        image_data.focal_markers = find_focal_adhesion_markers(image_data);
 
-        inverted_focal_image = -focal_image + 1;
-        inverted_focal_image = imfilter(inverted_focal_image,fspecial('gaussian'));
-        inverted_focal_image(~cell_mask) = 1.1;
-        inverted_focal_image = imimposemin(inverted_focal_image,focal_markers);
+        image_data.inverted_focal_image = -image_data.focal_image + 1;
+        image_data.inverted_focal_image = imfilter(image_data.inverted_focal_image,fspecial('gaussian'));
+        image_data.inverted_focal_image(~image_data.cell_mask) = 1.1;
+        image_data.inverted_focal_image = imimposemin(image_data.inverted_focal_image,image_data.focal_markers);
 
-        watershed_labels = watershed(inverted_focal_image);
-        watershed_labels(~cell_mask) = 0;
-        watershed_labels(bwperim(cell_mask)) = 0;
+        image_data.watershed_labels = watershed(image_data.inverted_focal_image);
+        image_data.watershed_labels(~image_data.cell_mask) = 0;
+        image_data.watershed_labels(bwperim(image_data.cell_mask)) = 0;
 
-        watershed_edges = zeros(size(focal_image,1),size(focal_image,2));
-        watershed_edges(find(watershed_labels >= 1)) = 0;
-        watershed_edges(find(watershed_labels == 0)) = 1;
-        watershed_edges(~cell_mask) = 0;
-        focal_edge_highlights = create_highlighted_image(focal_image,watershed_edges);
+        image_data.watershed_edges = zeros(size(image_data.focal_image,1),size(image_data.focal_image,2));
+        image_data.watershed_edges(find(image_data.watershed_labels >= 1)) = 0;
+        image_data.watershed_edges(find(image_data.watershed_labels == 0)) = 1;
+        image_data.watershed_edges(~image_data.cell_mask) = 0;
+        %image_data.focal_edge_highlights = create_highlighted_image(image_data.focal_image,image_data.watershed_edges);
 
-        focal_edge_highlights = draw_centroid_dots(focal_edge_highlights, cell_mask, watershed_labels);
-        [focal_edge_highlights,identified_adhesions] = find_each_watershed_adhesion(focal_image, focal_edge_highlights, watershed_labels, cell_mask);
+        image_data.focal_edge_highlights = draw_centroid_dots(image_data);
+        [image_data.focal_edge_highlights,image_data.identified_adhesions] = find_each_watershed_adhesion(image_data.focal_image, image_data.focal_edge_highlights, image_data.watershed_labels, image_data.cell_mask);
 
-        labeled_adhesions = bwlabel(identified_adhesions);
+        image_data.labeled_adhesions = bwlabel(image_data.identified_adhesions);
         
-        adhesion_props = regionprops(labeled_adhesions,'all');
+        image_data.adhesion_props = regionprops(image_data.labeled_adhesions,'all');
         
-        if (not(exist(output_directory,'dir')))
+        if (not(exist(image_data.output_directory,'dir')))
             mkdir(output_directory);
         end
         
@@ -63,17 +64,19 @@ for i = 1:number_of_timepoints
             mkdir([base_folder,'all']);
         end
         
-        composite_image = make_comp_image(focal_edge_highlights,focal_image,cell_mask);
+        image_data.composite_image = make_comp_image(image_data.focal_edge_highlights,image_data.focal_image,image_data.cell_mask);
         
-        %imwrite(focal_edge_highlights,[output_directory,'focal_edges.png']);
-        imwrite(focal_edge_highlights,[base_folder,'all/','focal_edges_',padded_time_point_num,'_',padded_cell_num,'.png']);
-        %imwrite(composite_image,[output_directory,'comp.png']);
+        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);
+        imwrite(image_data.focal_edge_highlights,[base_folder,'all/','focal_edges_',image_data.padded_time_point_num,'_',image_data.padded_cell_num,'.png']);
+        imwrite(image_data.composite_image,[image_data.output_directory,'comp.png']);
 
         if (debug)
             if (mod(j,5) == 0)
                 sprintf('Cell Number: %02d / %02d',j,image_set_cell_number)
             end
         end
+        
+        clear;
     end
 end
 profile off;
