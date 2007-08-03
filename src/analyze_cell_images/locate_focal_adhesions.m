@@ -50,8 +50,10 @@ for i = 1:number_of_timepoints
         %image_data.focal_edge_highlights = create_highlighted_image(image_data.focal_image,image_data.watershed_edges);
 
         image_data.focal_edge_highlights = draw_centroid_dots(image_data);
-        [image_data.focal_edge_highlights,image_data.identified_adhesions] = find_each_watershed_adhesion(image_data.focal_image, image_data.focal_edge_highlights, image_data.watershed_labels, image_data.cell_mask);
-
+        [image_data.focal_edge_highlights,image_data.identified_adhesions] = find_watershed_adhesions(image_data.focal_image, image_data.focal_edge_highlights, image_data.watershed_labels, image_data.cell_mask);
+        
+        
+        
         image_data.labeled_adhesions = bwlabel(image_data.identified_adhesions);
         
         image_data.adhesion_props = regionprops(image_data.labeled_adhesions,'all');
@@ -63,11 +65,11 @@ for i = 1:number_of_timepoints
         if (not(exist([base_folder,'all'],'dir')))
             mkdir([base_folder,'all']);
         end
+        imwrite(image_data.focal_edge_highlights,[base_folder,'all/','focal_edges_',image_data.padded_time_point_num,'_',image_data.padded_cell_num,'.png']);
         
         image_data.composite_image = make_comp_image(image_data.focal_edge_highlights,image_data.focal_image,image_data.cell_mask);
         
-        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);
-        imwrite(image_data.focal_edge_highlights,[base_folder,'all/','focal_edges_',image_data.padded_time_point_num,'_',image_data.padded_cell_num,'.png']);
+        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);        
         imwrite(image_data.composite_image,[image_data.output_directory,'comp.png']);
 
         if (debug)
@@ -76,7 +78,7 @@ for i = 1:number_of_timepoints
             end
         end
         
-        clear;
+        clear image_data;
     end
 end
 profile off;
