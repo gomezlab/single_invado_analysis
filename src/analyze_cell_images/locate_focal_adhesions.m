@@ -28,6 +28,7 @@ for i = 1:number_of_timepoints
             edge_binary_image = bwperim(im2bw(edge_image,adaptive_thresh(edge_image,0.2)));
             edge_binary_image = clean_up_edge_image(edge_binary_image);
             image_data.cell_mask = imfill(edge_binary_image,'holes');
+            image_data.cell_edge = bwperim(image_data.cell_mask);
         end
 
         image_data.focal_image = image_data.original_focal_image.*image_data.cell_mask;
@@ -41,18 +42,17 @@ for i = 1:number_of_timepoints
 
         image_data.watershed_labels = watershed(image_data.inverted_focal_image);
         image_data.watershed_labels(~image_data.cell_mask) = 0;
-        image_data.watershed_labels(bwperim(image_data.cell_mask)) = 0;
+        image_data.watershed_labels(image_data.cell_edge) = 0;
 
         image_data.watershed_edges = zeros(size(image_data.focal_image,1),size(image_data.focal_image,2));
         image_data.watershed_edges(find(image_data.watershed_labels >= 1)) = 0;
         image_data.watershed_edges(find(image_data.watershed_labels == 0)) = 1;
         image_data.watershed_edges(~image_data.cell_mask) = 0;
-        %image_data.focal_edge_highlights = create_highlighted_image(image_data.focal_image,image_data.watershed_edges);
+        image_data.focal_edge_highlights = create_highlighted_image(image_data,'watershed_edges');
 
         image_data.focal_edge_highlights = draw_centroid_dots(image_data);
-        [image_data.focal_edge_highlights,image_data.identified_adhesions] = find_watershed_adhesions(image_data.focal_image, image_data.focal_edge_highlights, image_data.watershed_labels, image_data.cell_mask);
-        
-        
+        image_data.identified_adhesions = find_watershed_adhesions(image_data);
+        image_data.focal_edge_highlights = create_highlighted_image(image_data,'identified_adhesions',1);
         
         image_data.labeled_adhesions = bwlabel(image_data.identified_adhesions);
         
@@ -67,7 +67,7 @@ for i = 1:number_of_timepoints
         end
         imwrite(image_data.focal_edge_highlights,[base_folder,'all/','focal_edges_',image_data.padded_time_point_num,'_',image_data.padded_cell_num,'.png']);
         
-        image_data.composite_image = make_comp_image(image_data.focal_edge_highlights,image_data.focal_image,image_data.cell_mask);
+        image_data.composite_image = make_comp_image(image_data.focal_edge_highlights,image_data.original_focal_image,image_data.cell_mask);
         
         imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);        
         imwrite(image_data.composite_image,[image_data.output_directory,'comp.png']);
