@@ -1,5 +1,49 @@
-function composite_image = make_comp_image(focal_edge_highlights,focal_image,cell_mask);
+function composite_image = make_comp_image(varargin);
 
+%%focal_edge_highlights,focal_image,cell_mask
+%%Error Checking and Setup
+if (isstruct(varargin{1}))
+    image_data = varargin{1};
+    if (isfield(image_data,'focal_edge_highlights'))
+        focal_edge_highlights = image_data.focal_edge_highlights;
+    else
+        error('ERROR: make_comp_image - focal_edge_highlights struct entry not found');
+    end
+
+    if (isfield(image_data,'focal_image'))
+        focal_image = image_data.focal_image;
+    else
+        error('ERROR: make_comp_image - focal_image struct entry not found');
+    end
+
+    if (isfield(image_data,'cell_mask'))
+        cell_mask = image_data.cell_mask;
+    else
+        error('ERROR: make_comp_image - cell_mask struct entry not found');
+    end
+elseif (isnumeric(varargin{1}))
+    focal_edge_highlights = varargin{1};
+    if (size(varargin,2) >= 3)
+        if (isnumeric(varargin{2}))
+            focal_image = varargin{2};
+        else
+            error('ERROR: make_comp_image - must provide focal_image as second parameter when first is matrix');
+        end
+        
+        if (isnumeric(varargin{3}) || islogical(varargin{3}))
+            cell_mask = varargin{3};
+        else
+            error('ERROR: make_comp_image - must provide cell_mask as third parameter when first is matrix');
+        end
+            
+    else
+        error('ERROR: make_comp_image - must provide three parameters when first is a matrix');
+    end
+else
+    error('ERROR: make_comp_image - provide appropriate struct or numeric matrices');
+end
+
+%%Main Program
 col_sums = sum(cell_mask);
 row_sums = sum(cell_mask');
 
