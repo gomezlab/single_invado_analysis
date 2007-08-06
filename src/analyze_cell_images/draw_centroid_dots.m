@@ -9,6 +9,7 @@ end
 if (not(isfield(image_data,'cell_mask')))
     error('Missing cell mask data, sorry');
 end
+
 if (not(isfield(image_data,'watershed_labels')))
     error('Missing watershed labels data, sorry');
 end

@@ -13,8 +13,6 @@ for i = 1:number_of_timepoints
 
     %for j = 1:image_set_cell_number
     for j = 4:image_set_cell_number
-        
-        
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
         image_data.output_directory = [base_folder,'individual_pictures/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
@@ -22,7 +20,8 @@ for i = 1:number_of_timepoints
         image_data.original_focal_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/EGFP-Paxillin.tif'],j));
 
         if (exist(strcat(image_data.output_directory,'cell_mask.png')))
-            image_data.cell_mask = imread(strcat(output_directory,'cell_mask.png'));
+            image_data.cell_mask = imread(strcat(image_data.output_directory,'cell_mask.png'));
+            image_data.cell_edge = bwperim(image_data.cell_mask);
         else
             edge_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/N-myr mRFP.tif'],j));
             edge_binary_image = bwperim(im2bw(edge_image,adaptive_thresh(edge_image,0.2)));
@@ -53,23 +52,18 @@ for i = 1:number_of_timepoints
         image_data.focal_edge_highlights = draw_centroid_dots(image_data);
         image_data.identified_adhesions = find_watershed_adhesions(image_data);
         image_data.focal_edge_highlights = create_highlighted_image(image_data,'identified_adhesions',1);
-        
+
         image_data.labeled_adhesions = bwlabel(image_data.identified_adhesions);
+%        image_data.adhesion_props = regionprops(image_data.labeled_adhesions,'all');
+        image_data.adhesion_props = collect_adhesion_properties(image_data);
         
-        image_data.adhesion_props = regionprops(image_data.labeled_adhesions,'all');
-        
+        image_data.composite_image = make_comp_image(image_data);
+
         if (not(exist(image_data.output_directory,'dir')))
             mkdir(output_directory);
         end
-        
-        if (not(exist([base_folder,'all'],'dir')))
-            mkdir([base_folder,'all']);
-        end
-        imwrite(image_data.focal_edge_highlights,[base_folder,'all/','focal_edges_',image_data.padded_time_point_num,'_',image_data.padded_cell_num,'.png']);
-        
-        image_data.composite_image = make_comp_image(image_data.focal_edge_highlights,image_data.original_focal_image,image_data.cell_mask);
-        
-        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);        
+
+        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);
         imwrite(image_data.composite_image,[image_data.output_directory,'comp.png']);
 
         if (debug)
@@ -77,8 +71,8 @@ for i = 1:number_of_timepoints
                 sprintf('Cell Number: %02d / %02d',j,image_set_cell_number)
             end
         end
-        
-        clear image_data;
+
+        %clear image_data;
     end
 end
 profile off;
