@@ -13,6 +13,7 @@ for i = 1:number_of_timepoints
 
     %for j = 1:image_set_cell_number
     for j = 4:image_set_cell_number
+        image_data.pixel_size = importdata([base_folder,'pixel_size.txt']);;
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
         image_data.output_directory = [base_folder,'individual_pictures/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
@@ -54,7 +55,6 @@ for i = 1:number_of_timepoints
         image_data.focal_edge_highlights = create_highlighted_image(image_data,'identified_adhesions',1);
 
         image_data.labeled_adhesions = bwlabel(image_data.identified_adhesions);
-%        image_data.adhesion_props = regionprops(image_data.labeled_adhesions,'all');
         image_data.adhesion_props = collect_adhesion_properties(image_data);
         
         image_data.composite_image = make_comp_image(image_data);

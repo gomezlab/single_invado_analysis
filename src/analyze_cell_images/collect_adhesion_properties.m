@@ -35,9 +35,6 @@ end
 
 %%Main Program
 dists = bwdist(~cell_mask);
-round(adhesion_props(1).Centroid)
-dists(round(adhesion_props(1).Centroid))
-
 
 for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Average_adhesion_signal = mean(original_focal_image(find(labeled_adhesions == i)));
