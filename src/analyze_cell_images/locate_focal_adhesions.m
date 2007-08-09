@@ -13,10 +13,12 @@ for i = 1:number_of_timepoints
 
     %for j = 1:image_set_cell_number
     for j = 4:image_set_cell_number
-        image_data.pixel_size = importdata([base_folder,'pixel_size.txt']);;
+        
+        image_data.pixel_size = importdata([base_folder,'pixel_size.txt']);
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
         image_data.output_directory = [base_folder,'individual_pictures/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
+        image_data.interesting_directory = [base_folder,'many_adhesions/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
 
         image_data.original_focal_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/EGFP-Paxillin.tif'],j));
 
@@ -48,23 +50,34 @@ for i = 1:number_of_timepoints
         image_data.watershed_edges(find(image_data.watershed_labels >= 1)) = 0;
         image_data.watershed_edges(find(image_data.watershed_labels == 0)) = 1;
         image_data.watershed_edges(~image_data.cell_mask) = 0;
-        image_data.focal_edge_highlights = create_highlighted_image(image_data,'watershed_edges');
-
-        image_data.focal_edge_highlights = draw_centroid_dots(image_data);
+        
         image_data.identified_adhesions = find_watershed_adhesions(image_data);
+        
+        %image_data.focal_edge_highlights = create_highlighted_image(image_data,'watershed_edges');
+        %image_data.focal_edge_highlights = draw_centroid_dots(image_data);
         image_data.focal_edge_highlights = create_highlighted_image(image_data,'identified_adhesions',1);
+        image_data.focal_edge_highlights = draw_scale_bar(image_data,'focal_edge_highlights');
 
         image_data.labeled_adhesions = bwlabel(image_data.identified_adhesions);
         image_data.adhesion_props = collect_adhesion_properties(image_data);
-        
+
         image_data.composite_image = make_comp_image(image_data);
+        image_data.composite_image = draw_scale_bar(image_data,'composite_image');
 
         if (not(exist(image_data.output_directory,'dir')))
-            mkdir(output_directory);
+            mkdir(image_data.output_directory);
         end
-
-        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_edges.png']);
+        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_highlights.png']);
         imwrite(image_data.composite_image,[image_data.output_directory,'comp.png']);
+        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'all_adhesions.png']);
+
+        if (max(image_data.labeled_adhesions(:)) > 300)
+            if (not(exist(image_data.interesting_directory,'dir')))
+                mkdir(image_data.interesting_directory);
+            end
+            imwrite(image_data.focal_edge_highlights,[image_data.interesting_directory,'focal_highlights.png']);
+            imwrite(image_data.composite_image,[image_data.interesting_directory,'comp.png']);
+        end
 
         if (debug)
             if (mod(j,5) == 0)
