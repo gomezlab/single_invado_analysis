@@ -7,19 +7,19 @@ else
 end
 
 if (not(isfield(image_data,'cell_mask')))
-    error('Missing cell mask data, sorry');
+    error('ERROR: draw_centroid_dots - Missing cell mask data, sorry');
 end
 
 if (not(isfield(image_data,'watershed_labels')))
-    error('Missing watershed labels data, sorry');
+    error('ERROR: draw_centroid_dots - Missing watershed labels data, sorry');
 end
 
-full_cell_centroid = regionprops(bwlabel(image_data.cell_mask),'centroid');
+full_cell_centroid = regionprops(bwlabel(image_data.cell_mask),'Centroid');
 full_cell_centroid = [full_cell_centroid.Centroid];
 full_cell_centroid = round(full_cell_centroid);
 focal_edge_highlights(full_cell_centroid(2)-5:full_cell_centroid(2)+5,full_cell_centroid(1)-5:full_cell_centroid(1)+5,1) = 1;
 
-centroid_stats = regionprops(image_data.watershed_labels,'centroid');
+centroid_stats = regionprops(image_data.watershed_labels,'Centroid');
 centroid_stats = [centroid_stats.Centroid];
 
 dists = bwdist(~image_data.cell_mask);
@@ -27,6 +27,7 @@ max_dist = max(dists(:));
 
 for k = 1:2:size(centroid_stats,2)
     if (isnan(centroid_stats(k)))
+        warning('WARNING: draw_centroid_dots - NaN encountered in centroid value');
         continue;
     end
     
