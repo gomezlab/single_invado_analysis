@@ -1,4 +1,25 @@
 function image_with_bar = draw_scale_bar(varargin)
+%DRAW_SCALE_BAR    Adds a scale bar to an image
+%
+%   NOTE: draw_scale_bar only works with structs
+%
+%   Position Codes:
+%       -1: Upper right hand corner
+%       -2: Lower right hand corner
+%       -3: Lower left hand corner
+%       -4: Upper left hand corner
+%   
+%   I_BAR = draw_scale_bar(I_STRCT,I_NAME) adds a 10 micron scale bar to
+%   the lower right hand corner of the image 'I_NAME' stored in struct 
+%   'I_STRCT' and returns the image
+%
+%   I_BAR = draw_scale_bar(I_STRCT,I_NAME,BAR_SIZE) adds a scale bar 
+%   'BAR_SIZE' in meters to the lower right hand corner of the image 
+%   'I_NAME' stored in struct 'I_STRCT' and returns the image
+%
+%   I_BAR = draw_scale_bar(I_STRCT,I_NAME,BAR_SIZE,POS_CODE) adds a scale 
+%   bar 'BAR_SIZE' in meters to the position specified by 'POS_CODE' to the 
+%   image 'I_NAME' stored in struct 'I_STRCT' and returns the image
 
 %%Parameter Checking and Setup
 if (size(varargin,2) < 1)
@@ -12,15 +33,9 @@ elseif (isstruct(varargin{1}))
     end
 
     if (isfield(image_data,varargin{2}))
-        image_no_bar = getfield(image_data,varargin{2});
+        image_no_bar = image_data.(varargin{2});
     else
         error('ERROR: draw_scale_bar - Can''t find image to put bar in');
-    end
-
-    if(isfield(image_data,'cell_mask'))
-        cell_mask = image_data.cell_mask;
-    else
-        error('ERROR: draw_scale_bar - Cell mask needed');
     end
 
     bar_size = 10E-6;
