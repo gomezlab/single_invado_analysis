@@ -1,4 +1,29 @@
 function highlighted_image = create_highlighted_image(varargin)
+%CREATE_HIGHLIGHTED_IMAGE    add highlights to an image
+%
+%   Color Number Codes:
+%       -1: red
+%       -2: green
+%       -3: blue
+%
+%   H_I = create_highlighted_image(I,HIGHLIGHTS) adds green highlights to
+%   image 'I', using the binary image 'HIGHLIGHTS' as the guide
+%
+%   H_I = create_highlighted_image(I,HIGHLIGHTS,C_NUM) adds highlights of 
+%   color specified by 'C_NUM' to image 'I', using the binary image 
+%   'HIGHLIGHTS' as the guide
+%
+%   H_I = create_highlighted_image(I_STRCT,HIGHLIGHTS) adds green
+%   highlights to the image data stored in 'I_STRCT' defaulting to the 
+%   variable 'focal_edge_highlights', if 'focal_edge_highlights' is missing
+%   'focal_image' is used. The binary image 'HIGHLIGHTS' is used to find
+%   the highlight locations
+%
+%   H_I = create_highlighted_image(I_STRCT,HIGHLIGHTS,C_NUM) adds adds 
+%   highlights of color specified by 'C_NUM' to the image data stored in 
+%   'I_STRCT' defaulting to the variable 'focal_edge_highlights', if 
+%   'focal_edge_highlights' is missing 'focal_image' is used. The binary 
+%   image 'HIGHLIGHTS' is used to find the highlight locations.
 
 %%Default Variable Values
 highlight_color_number = 2;

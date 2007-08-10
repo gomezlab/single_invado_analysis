@@ -22,8 +22,8 @@ function image_with_bar = draw_scale_bar(varargin)
 %   image 'I_NAME' stored in struct 'I_STRCT' and returns the image
 
 %%Parameter Checking and Setup
-if (size(varargin,2) < 1)
-    error('ERROR: draw_scale_bar - not enough parameters specified, at least one needed');
+if (size(varargin,2) < 2)
+    error('ERROR: draw_scale_bar - not enough parameters specified, at least two needed');
 elseif (isstruct(varargin{1}))
     image_data = varargin{1};
     if (isfield(image_data,'pixel_size'))
