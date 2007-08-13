@@ -13,12 +13,12 @@ for i = 1:number_of_timepoints
         sprintf('Time Point Number: %02d',i)
     end
 
-    adhesion_protein_stack_location = fullfile(adhesion_protein_image_folder,adhesion_protein_file_prefix,[padded_time_point_num,'.tif']);
-
     padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
+    
     cell_mask_stack_location = fullfile(cell_mask_image_folder,cell_mask_file_prefix,[padded_time_point_num,'.tif']);
+    adhesion_protein_stack_location = fullfile(adhesion_protein_image_folder,adhesion_protein_file_prefix,[padded_time_point_num,'.tif']);
+    
     image_set_cell_number = size(imfinfo(cell_mask_stack_location),2);
-
     
     for j = 1:image_set_cell_number
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
