@@ -1,4 +1,9 @@
-base_folder = '../../data/time_points/';
+base_folder = fullfile('..','..','data','sample_images');
+cell_mask_image_folder = fullfile(base_folder,'image_stacks','cell_mask_images');
+cell_mask_file_prefix = '';
+
+adhesion_protein_image_folder = fullfile(base_folder,'image_stacks','adhesion_protein');
+adhesion_protein_file_prefix = '';
 
 number_of_timepoints = 1;
 debug = 1;
@@ -7,29 +12,30 @@ for i = 1:number_of_timepoints
     if (debug)
         sprintf('Time Point Number: %02d',i)
     end
-
-    image_set_cell_number = size(imfinfo(strcat(base_folder,num2str(i),'/N-myr mRFP.tif')),2);
+    
+    padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
+    image_set_cell_number = size(imfinfo(fullfile(cell_mask_image_folder,[padded_time_point_num,'.tif'])),2);
     image_set_cell_number = 4;
 
+    cell_mask_stack_location = fullfile(cell_mask_image_folder,cell_mask_file_prefix,[padded_time_point_num,'.tif']);
+    adhesion_protein_stack_location = fullfile(adhesion_protein_image_folder,adhesion_protein_file_prefix,[padded_time_point_num,'.tif']);
+    
     %for j = 1:image_set_cell_number
     for j = 4:image_set_cell_number
         
-        image_data.pixel_size = importdata([base_folder,'pixel_size.txt']);
+        image_data.pixel_size = importdata(fullfile(base_folder,'pixel_size.txt'));
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
-        image_data.output_directory = [base_folder,'individual_pictures/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
-        image_data.interesting_directory = [base_folder,'many_adhesions/',image_data.padded_time_point_num,'/',image_data.padded_cell_num,'/'];
+        image_data.output_directory = fullfile(base_folder,'individual_pictures',image_data.padded_time_point_num,image_data.padded_cell_num);
+        image_data.interesting_directory = fullfile(base_folder,'many_adhesions',image_data.padded_time_point_num,image_data.padded_cell_num);
 
-        image_data.original_focal_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/EGFP-Paxillin.tif'],j));
+        image_data.original_focal_image = normalize_grayscale_image(imread(adhesion_protein_stack_location,j));
 
-        if (exist(strcat(image_data.output_directory,'cell_mask.png')))
-            image_data.cell_mask = imread(strcat(image_data.output_directory,'cell_mask.png'));
+        if (exist([image_data.output_directory,'cell_mask.png'],'file'))
+            image_data.cell_mask = imread(fullfile(image_data.output_directory,'cell_mask.png'));
             image_data.cell_edge = bwperim(image_data.cell_mask);
         else
-            edge_image = normalize_grayscale_image(imread([base_folder,num2str(i),'/N-myr mRFP.tif'],j));
-            edge_binary_image = bwperim(im2bw(edge_image,adaptive_thresh(edge_image,0.2)));
-            edge_binary_image = clean_up_edge_image(edge_binary_image);
-            image_data.cell_mask = imfill(edge_binary_image,'holes');
+            image_data.cell_mask = create_cell_edge_image(cell_mask_stack_location,j,image_data.output_directory);
             image_data.cell_edge = bwperim(image_data.cell_mask);
         end
 
@@ -67,9 +73,9 @@ for i = 1:number_of_timepoints
         if (not(exist(image_data.output_directory,'dir')))
             mkdir(image_data.output_directory);
         end
-        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'focal_highlights.png']);
-        imwrite(image_data.composite_image,[image_data.output_directory,'comp.png']);
-        imwrite(image_data.focal_edge_highlights,[image_data.output_directory,'all_adhesions.png']);
+        imwrite(image_data.focal_edge_highlights,fullfile(image_data.output_directory,'focal_highlights.png'));
+        imwrite(image_data.composite_image,fullfile(image_data.output_directory,'comp.png'));
+        imwrite(image_data.focal_edge_highlights,fullfile(image_data.output_directory,'all_adhesions.png'));
 
         if (max(image_data.labeled_adhesions(:)) > 300)
             if (not(exist(image_data.interesting_directory,'dir')))
