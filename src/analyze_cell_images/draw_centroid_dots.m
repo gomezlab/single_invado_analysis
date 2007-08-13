@@ -27,7 +27,7 @@ max_dist = max(dists(:));
 
 for k = 1:2:size(centroid_stats,2)
     if (isnan(centroid_stats(k)))
-        warning('WARNING: draw_centroid_dots - NaN encountered in centroid value');
+        warning('draw_centroid_dots - NaN encountered in centroid value');
         continue;
     end
     

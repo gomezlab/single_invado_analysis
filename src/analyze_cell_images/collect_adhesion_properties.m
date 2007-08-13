@@ -41,7 +41,7 @@ for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Variance_adhesion_signal = var(original_focal_image(find(labeled_adhesions == i)));
     centroid_pos = round(adhesion_props(i).Centroid);
     if(size(centroid_pos,1) == 0)
-        warning('WARNING: collect_adhesion_properties - centroid not found');
+        warning('collect_adhesion_properties - centroid not found');
         adhesion_props(i).Centroid_dist_from_edge = NaN;
     else
         adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
