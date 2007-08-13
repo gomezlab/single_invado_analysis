@@ -31,7 +31,7 @@ for i = 1:number_of_timepoints
         image_data.edge_image = normalize_grayscale_image(image_data.edge_image);
         image_data.focal_image = normalize_grayscale_image(image_data.focal_image);
 
-        image_data.cell_mask = create_cell_edge_image(image_data.edge_image,image_data.output_directory);
+        image_data.cell_mask = create_cell_mask_image(image_data.edge_image,image_data.output_directory);
         image_data.edge_binary_image = bwperim(image_data.cell_mask);
         
         image_data.highlighted_edge_image = create_highlighted_image(image_data.edge_image,image_data.edge_binary_image);
