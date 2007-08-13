@@ -22,7 +22,9 @@ for i = 1:stack_num
     
     %for j = 1:image_set_cell_number
     for j = 4:image_set_cell_number
-        
+        if (exist('image_data','var'))
+            clear image_data;
+        end
         image_data.pixel_size = importdata(fullfile(base_folder,'pixel_size.txt'));
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(stack_num))), 'd'],i);
@@ -31,11 +33,11 @@ for i = 1:stack_num
 
         image_data.original_focal_image = normalize_grayscale_image(imread(adhesion_protein_stack_location,j));
 
-        if (exist([image_data.output_directory,'cell_mask.png'],'file'))
+        if (exist(fullfile(image_data.output_directory,'cell_mask.png'),'file'))
             image_data.cell_mask = imread(fullfile(image_data.output_directory,'cell_mask.png'));
             image_data.cell_edge = bwperim(image_data.cell_mask);
         else
-            image_data.cell_mask = create_cell_edge_image(cell_mask_stack_location,j,image_data.output_directory);
+            image_data.cell_mask = create_cell_mask_image(cell_mask_stack_location,j,image_data.output_directory);
             image_data.cell_edge = bwperim(image_data.cell_mask);
         end
 
@@ -53,13 +55,12 @@ for i = 1:stack_num
         image_data.watershed_labels(image_data.cell_edge) = 0;
 
         image_data.watershed_edges = zeros(size(image_data.focal_image,1),size(image_data.focal_image,2));
-        image_data.watershed_edges(find(image_data.watershed_labels >= 1)) = 0;
         image_data.watershed_edges(find(image_data.watershed_labels == 0)) = 1;
         image_data.watershed_edges(~image_data.cell_mask) = 0;
         
         image_data.identified_adhesions = find_watershed_adhesions(image_data);
         
-        %image_data.focal_edge_highlights = create_highlighted_image(image_data,'watershed_edges');
+        image_data.focal_edge_highlights = create_highlighted_image(image_data,'watershed_edges');
         %image_data.focal_edge_highlights = draw_centroid_dots(image_data);
         image_data.focal_edge_highlights = create_highlighted_image(image_data,'identified_adhesions',1);
         image_data.focal_edge_highlights = draw_scale_bar(image_data,'focal_edge_highlights');

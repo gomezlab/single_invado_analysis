@@ -1,12 +1,12 @@
 function [varargout] = create_cell_mask_image(varargin)
-%CREATE_CELL_mask_IMAGE   Gather the cell mask from a fluorescene image
+%CREATE_CELL_MASK_IMAGE   Gather the cell mask from a fluorescene image
 %
-%   create_cell_mask_image(I) extracts the cell mask from image 'I', 
+%   create_cell_mask_image(I) extracts the cell mask from image 'I',
 %   NOTE: the cell mask image will NOT be saved on the hard drive, only
 %         returned to the calling function
 %
 %   create_cell_mask_image(I_FILE) extracts the cell mask from image
-%   'I_FILE' 
+%   'I_FILE'
 %   NOTE: that this file must only contain a single image
 %   NOTE: the cell mask image will NOT be saved on the hard drive, only
 %         returned to the calling function
@@ -14,7 +14,6 @@ function [varargout] = create_cell_mask_image(varargin)
 %   create_cell_mask_image(I_FILE,I_NUM) extracts the cell mask from image
 %   'I_FILE' with image number 'I_NUM'
 %
-%   
 %   create_cell_mask_image(I,OUT_DIR) extracts the cell mask from image 'I'
 %   and writes the binary cell mask to the output directory 'OUT_DIR', with
 %   the file name 'cell_mask.png'
@@ -71,7 +70,7 @@ switch nargin
             mask_image = imread(varargin{1});
         else
             error('ERROR: create_cell_mask_image - first parameter is not of the expected type');
-        end        
+        end
     case 2
         if (first_input_type == 1)
             if (isnumeric(varargin{1}))
@@ -155,6 +154,7 @@ end
 mask_binary_image = bwperim(im2bw(mask_image,adaptive_thresh(mask_image,0.2)));
 mask_binary_image = clean_up_mask_image(mask_binary_image);
 mask_binary_image = imfill(mask_binary_image,'holes');
+mask_binary_image = imdilate(mask_binary_image,strel('diamond',1));
 
 if (write_output_files)
     if (not(exist(output_directory,'dir')))
@@ -163,6 +163,7 @@ if (write_output_files)
 
     imwrite(mask_binary_image,[output_directory,output_file]);
 end
+
 if (nargout >= 1)
     varargout{1} = mask_binary_image;
 end
