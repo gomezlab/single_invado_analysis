@@ -5,15 +5,15 @@ cell_mask_file_prefix = '';
 adhesion_protein_image_folder = fullfile(base_folder,'image_stacks','adhesion_protein');
 adhesion_protein_file_prefix = '';
 
-number_of_timepoints = 1;
+stack_num = 1;
 debug = 1;
 profile on;
-for i = 1:number_of_timepoints
+for i = 1:stack_num
     if (debug)
         sprintf('Time Point Number: %02d',i)
     end
     
-    padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
+    padded_time_point_num = sprintf(['%0', num2str(length(num2str(stack_num))), 'd'],i);
     image_set_cell_number = size(imfinfo(fullfile(cell_mask_image_folder,[padded_time_point_num,'.tif'])),2);
     image_set_cell_number = 4;
 
@@ -25,7 +25,7 @@ for i = 1:number_of_timepoints
         
         image_data.pixel_size = importdata(fullfile(base_folder,'pixel_size.txt'));
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
-        image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
+        image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(stack_num))), 'd'],i);
         image_data.output_directory = fullfile(base_folder,'individual_pictures',image_data.padded_time_point_num,image_data.padded_cell_num);
         image_data.interesting_directory = fullfile(base_folder,'many_adhesions',image_data.padded_time_point_num,image_data.padded_cell_num);
 
@@ -75,7 +75,6 @@ for i = 1:number_of_timepoints
         end
         imwrite(image_data.focal_edge_highlights,fullfile(image_data.output_directory,'focal_highlights.png'));
         imwrite(image_data.composite_image,fullfile(image_data.output_directory,'comp.png'));
-        imwrite(image_data.focal_edge_highlights,fullfile(image_data.output_directory,'all_adhesions.png'));
 
         if (max(image_data.labeled_adhesions(:)) > 300)
             if (not(exist(image_data.interesting_directory,'dir')))
