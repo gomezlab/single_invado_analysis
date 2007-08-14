@@ -1,11 +1,13 @@
 base_folder = fullfile('..','..','data','sample_images');
+base_output_folder = fullfile('..','..','results','sample_images_low_thresh');
+
 cell_mask_image_folder = fullfile(base_folder,'image_stacks','cell_mask_images');
 cell_mask_file_prefix = '';
 
 adhesion_protein_image_folder = fullfile(base_folder,'image_stacks','adhesion_protein');
 adhesion_protein_file_prefix = '';
 
-stack_num = 1;
+stack_num = 5;
 debug = 1;
 profile on;
 for i = 1:stack_num
@@ -15,21 +17,21 @@ for i = 1:stack_num
     
     padded_time_point_num = sprintf(['%0', num2str(length(num2str(stack_num))), 'd'],i);
     image_set_cell_number = size(imfinfo(fullfile(cell_mask_image_folder,[padded_time_point_num,'.tif'])),2);
-    image_set_cell_number = 4;
 
     cell_mask_stack_location = fullfile(cell_mask_image_folder,cell_mask_file_prefix,[padded_time_point_num,'.tif']);
     adhesion_protein_stack_location = fullfile(adhesion_protein_image_folder,adhesion_protein_file_prefix,[padded_time_point_num,'.tif']);
     
-    %for j = 1:image_set_cell_number
-    for j = 4:image_set_cell_number
+    %image_set_cell_number = 4;
+    for j = 1:image_set_cell_number
+    %for j = 4:image_set_cell_number
         if (exist('image_data','var'))
             clear image_data;
         end
         image_data.pixel_size = importdata(fullfile(base_folder,'pixel_size.txt'));
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(stack_num))), 'd'],i);
-        image_data.output_directory = fullfile(base_folder,'individual_pictures',image_data.padded_time_point_num,image_data.padded_cell_num);
-        image_data.interesting_directory = fullfile(base_folder,'many_adhesions',image_data.padded_time_point_num,image_data.padded_cell_num);
+        image_data.output_directory = fullfile(base_output_folder,'individual_pictures',image_data.padded_time_point_num,image_data.padded_cell_num);
+        image_data.interesting_directory = fullfile(base_output_folder,'many_adhesions',image_data.padded_time_point_num,image_data.padded_cell_num);
 
         image_data.original_focal_image = normalize_grayscale_image(imread(adhesion_protein_stack_location,j));
 
@@ -96,3 +98,4 @@ for i = 1:stack_num
 end
 profile off;
 run_information = profile('info');
+quit;

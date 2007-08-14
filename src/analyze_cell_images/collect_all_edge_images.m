@@ -1,4 +1,5 @@
 base_folder = fullfile('..','..','data','sample_images');
+base_output_folder = fullfile('..','..','results','sample_images_low_thresh');
 cell_mask_image_folder = fullfile(base_folder,'image_stacks','cell_mask_images');
 cell_mask_file_prefix = '';
 
@@ -6,7 +7,7 @@ adhesion_protein_image_folder = fullfile(base_folder,'image_stacks','adhesion_pr
 adhesion_protein_file_prefix = '';
 
 number_of_timepoints = 5;
-debug = 1;
+debug = 0;
 profile on;
 for i = 1:number_of_timepoints
     if (debug)
@@ -23,7 +24,7 @@ for i = 1:number_of_timepoints
     for j = 1:image_set_cell_number
         image_data.padded_cell_num = sprintf(['%0', num2str(length(num2str(image_set_cell_number))), 'd'],j);
         image_data.padded_time_point_num = sprintf(['%0', num2str(length(num2str(number_of_timepoints))), 'd'],i);
-        image_data.output_directory = fullfile(base_folder,'individual_pictures',image_data.padded_time_point_num,image_data.padded_cell_num);
+        image_data.output_directory = fullfile(base_output_folder,'individual_pictures',image_data.padded_time_point_num,image_data.padded_cell_num);
         
         image_data.edge_image = imread(cell_mask_stack_location,j);
         image_data.focal_image = imread(adhesion_protein_stack_location,j);
@@ -53,3 +54,4 @@ for i = 1:number_of_timepoints
 end
 profile off;
 run_information = profile('info');
+quit
