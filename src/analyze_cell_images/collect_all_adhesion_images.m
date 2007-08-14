@@ -83,8 +83,8 @@ for i = 1:stack_num
             if (not(exist(image_data.interesting_directory,'dir')))
                 mkdir(image_data.interesting_directory);
             end
-            imwrite(image_data.focal_edge_highlights,[image_data.interesting_directory,'focal_highlights.png']);
-            imwrite(image_data.composite_image,[image_data.interesting_directory,'comp.png']);
+            imwrite(image_data.focal_edge_highlights,fullfile(image_data.interesting_directory,'focal_highlights.png'));
+            imwrite(image_data.composite_image,fullfile(image_data.interesting_directory,'comp.png'));
         end
 
         if (debug)
