@@ -90,6 +90,10 @@ else
     highlighted_image = I;
 end
 
+if(size(highlights) > 1)
+    highlights = highlights(:,:,1);
+end
+
 if (size(image_size) < 3)
     temp_highlighted = I;
 else

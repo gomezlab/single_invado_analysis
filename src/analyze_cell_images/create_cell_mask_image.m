@@ -151,7 +151,7 @@ if (write_output_files)
 end
 
 %%Main Program
-mask_binary_image = bwperim(im2bw(mask_image,adaptive_thresh(mask_image,0.15)));
+mask_binary_image = bwperim(im2bw(mask_image,adaptive_thresh(mask_image,0.2)));
 mask_binary_image = clean_up_mask_image(mask_binary_image);
 mask_binary_image = imfill(mask_binary_image,'holes');
 mask_binary_image = imdilate(mask_binary_image,strel('diamond',1));

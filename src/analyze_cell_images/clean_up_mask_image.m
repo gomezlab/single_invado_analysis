@@ -1,7 +1,8 @@
 function edge_binary_image = clean_up_edge_image(input_edge_binary)
-
-%find the largest enclosed area and include only that part in the output
-% ideas borrowed from MATLAB documentation for bwareaopen
+%CLEAN_UP_EDGE_IMAGE   isolates the largest enclosed area fills in any
+%                      resulting holes 
+%
+%
 connected_areas = bwlabeln(input_edge_binary,8);
 region_sizes = regionprops(connected_areas, 'Area');
 max_region_size = max([region_sizes.Area]);

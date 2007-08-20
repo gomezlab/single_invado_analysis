@@ -72,6 +72,10 @@ if (length(size(focal_image)) < 3)
     focal_image = cat(3,focal_image,focal_image,focal_image);
 end
 
+if (length(size(focal_edge_highlights)) < 3)
+    focal_edge_highlights = cat(3,focal_edge_highlights,focal_edge_highlights,focal_edge_highlights);
+end
+
 clipped_highlights = focal_edge_highlights(min_row:max_row,min_col:max_col,1:3);
 clipped_focal = focal_image(min_row:max_row,min_col:max_col,1:3);
 spacer = ones(size(clipped_focal,1),floor(0.03*size(clipped_focal,2)),3);
