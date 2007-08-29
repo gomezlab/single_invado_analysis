@@ -30,8 +30,8 @@ function [varargout]=find_focal_adhesions(varargin)
 %   with the file name 'cell_mask.png', otherwise, it must be specified in
 %   the extra options section.
 %
-%   NOTE: If a return variable is requested, the binary segmented focal
-%   adhesions will be returned
+%   NOTE: If a return variable is requested, the struct holding the results
+%   of many of the steps in the algorithm is returned
 %
 %   Extra Options:
 %       -'debug' - if present, debug mode on, yielding dianostic messages,
@@ -55,8 +55,9 @@ function [varargout]=find_focal_adhesions(varargin)
 %            -equivalent to the last example, only using the short form of
 %            the 'cell_mask' extra option
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_data = struct;
 image_data.debug = 0;
 
@@ -116,12 +117,14 @@ end
 
 %now do some final logical checks to make sure all the variables needed are
 %available
-
 if (not(isfield(image_data,'output_dir')) && not(isfield(image_data,'cell_mask')))
     error('ERROR: find_focal_adhesions - without an output dir the cell mask must be specified in the extra options');
 end
 
 if (not(isfield(image_data,'cell_mask')))
+    if (not(isfield(image_data,'output_dir')))
+        error('ERROR: find_focal_adhesions - without a cell mask specified an output directory must be specified where the cell mask can be found in the file ''cell_mask.png''');
+    end
     poss_cell_mask_file = fullfile(image_data.output_dir, 'cell_mask.png');
     if (not(exist(poss_cell_mask_file,'file')))
         error('ERROR: find_focal_adhesions - cannot find the cell mask in either the extra options or in the output directory under the file ''cell_mask.png''')
@@ -133,10 +136,17 @@ end
 %now normalize the input focal adhesion image
 image_data.original_image = normalize_grayscale_image(image_data.original_image);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image_data.focal_markers = find_focal_adhesion_markers(image_data.original_image,image_data.cell_mask);
+image_data.watershed_edges = locate_watershed_edges(image_data);
+image_data.adhesions = find_watershed_adhesions(image_data);
 
-image_data.focal_markers = find_focal_adhesion_markers(image_data);
-
+if (isfield(image_data,'output_dir'))
+    imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
+    imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'adhesions.png'));
+end
 
 if (nargout > 0)
     varargout{1} = image_data;
