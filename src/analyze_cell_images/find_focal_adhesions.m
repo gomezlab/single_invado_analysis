@@ -136,16 +136,22 @@ end
 %now normalize the input focal adhesion image
 image_data.original_image = normalize_grayscale_image(image_data.original_image);
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_data.focal_markers = find_focal_adhesion_markers(image_data.original_image,image_data.cell_mask);
 image_data.watershed_edges = locate_watershed_edges(image_data);
 image_data.adhesions = find_watershed_adhesions(image_data);
+image_data.adhesion_properties = collect_adhesion_properties(image_data);
 
 if (isfield(image_data,'output_dir'))
     imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
-    imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'adhesions.png'));
+    imwrite(image_data.adhesions,fullfile(image_data.output_dir, 'adhesions.png'));
+    
+    adhesion_props_filename = fullfile(image_data.output_dir, 'adhesion_props.mat');
+    temp = image_data.adhesion_properties;
+    save(adhesion_props_filename, 'temp');
 end
 
 if (nargout > 0)
