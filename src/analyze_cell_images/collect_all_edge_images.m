@@ -1,3 +1,6 @@
+% COLLECT_ALL_EGDE_IMAGES    script which controls collection of cell edge
+%                            images
+
 base_folder = fullfile('..','..','data','sample_images');
 base_output_folder = fullfile('..','..','results','sample_images_low_thresh');
 cell_mask_image_folder = fullfile(base_folder,'image_stacks','cell_mask_images');
