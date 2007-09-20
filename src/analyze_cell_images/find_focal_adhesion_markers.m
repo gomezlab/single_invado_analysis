@@ -43,10 +43,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Command to sharpen the input image, note that unsharp actually sharpens
+%the edges of the image
+
+%focal_image = imfilter(focal_image,fspecial('unsharp'),'replicate');
+
 thresh = adaptive_thresh(focal_image(find(cell_mask)));
 
 focal_markers = im2bw(focal_image,thresh);
-
 focal_markers = imfill(focal_markers,'holes');
 focal_markers = bwmorph(focal_markers,'clean');
 

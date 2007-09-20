@@ -146,12 +146,13 @@ image_data.adhesions = find_watershed_adhesions(image_data);
 image_data.adhesion_properties = collect_adhesion_properties(image_data);
 
 if (isfield(image_data,'output_dir'))
+    imwrite(image_data.original_image,fullfile(image_data.output_dir, 'focal_image.png'));
     imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
     imwrite(image_data.adhesions,fullfile(image_data.output_dir, 'adhesions.png'));
     
     adhesion_props_filename = fullfile(image_data.output_dir, 'adhesion_props.mat');
-    temp = image_data.adhesion_properties;
-    save(adhesion_props_filename, 'temp');
+    adhesion_properties = image_data.adhesion_properties;
+    save(adhesion_props_filename, 'adhesion_properties');
 end
 
 if (nargout > 0)

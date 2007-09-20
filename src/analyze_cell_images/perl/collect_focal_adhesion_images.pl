@@ -35,10 +35,13 @@ print @adhesion_image_files;
 foreach my $file_name (@adhesion_image_files) {
 	my $total_images = &get_image_stack_number($file_name);
 	foreach my $image_num (1..$total_images) {
+		if ($image_num > 1) {
+			next;
+		}
 		my $padded_num = sprintf("%0" . length($total_images) . "d", $image_num);
 		my $output_path = $results_folder . $experiment_name . "/individual_pictures/$padded_num";
 		mkpath($output_path);
-		my $matlab_code = $matlab_code . "find_focal_adhesions('$file_name',$image_num,'$output_path')\n";
+		my $matlab_code ="find_focal_adhesions('$file_name',$image_num,'$output_path')\n";
 		$matlab_wrapper->execute($matlab_code);
 	}
 }

@@ -71,15 +71,23 @@ end
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 dists = bwdist(~cell_mask);
+cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
+cell_centroid = cell_centroid.Centroid;
 
 for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Average_adhesion_signal = mean(original_image(find(labeled_adhesions == i)));
     adhesion_props(i).Variance_adhesion_signal = var(original_image(find(labeled_adhesions == i)));
+
     centroid_pos = round(adhesion_props(i).Centroid);
     if(size(centroid_pos,1) == 0)
         warning('collect_adhesion_properties - centroid not found');
         adhesion_props(i).Centroid_dist_from_edge = NaN;
     else
         adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
+        hypo = sqrt((cell_centroid(1) - centroid_pos(1))^2 + (cell_centroid(2) - centroid_pos(2))^2);
+        adhesion_props(i).Angle_to_center = acos((centroid_pos(2) - cell_centroid(2))/hypo);
+        if (centroid_pos(2) - cell_centroid(2) < 0)
+            adhesion_props(i).Angle_to_center = adhesion_props(i).Angle_to_center + pi;
+        end
     end
 end
