@@ -1,4 +1,4 @@
-function write_struct_data(varargin)
+function write_adhesion_data(varargin)
 % WRITE_STRUCT_DATA     write most the data stored in a given struct to a
 %                       set of ascii formated files, using the field
 %                       names as the file names
