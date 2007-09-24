@@ -149,6 +149,7 @@ if (isfield(image_data,'output_dir'))
     imwrite(image_data.original_image,fullfile(image_data.output_dir, 'focal_image.png'));
     imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
     imwrite(image_data.adhesions,fullfile(image_data.output_dir, 'adhesions.png'));
+    write_adhesion_data(image_data.adhesion_properties,'dir',image_data.output_dir);
     
     adhesion_props_filename = fullfile(image_data.output_dir, 'adhesion_props.mat');
     adhesion_properties = image_data.adhesion_properties;

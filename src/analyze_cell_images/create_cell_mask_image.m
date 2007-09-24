@@ -128,13 +128,6 @@ end
 if (write_output_files)
     if (output_directory(end) ~= '/')
         output_directory = [output_directory, '/'];
-    elseif (length(varargin) == 3)
-        if (not(exist(varargin{2},'dir')))
-            output_directory = varargin{2};
-        end
-        output_file = varargin{3};
-    else
-        error('ERROR: create_cell_mask_image - If the first parameter is a numeric, expected 1, 2 or 3 parameters');
     end
 end
 
@@ -152,7 +145,7 @@ if (write_output_files)
         mkdir(output_directory);
     end
 
-    imwrite(mask_binary_image,[output_directory,output_file]);
+    imwrite(mask_binary_image,fullfile(output_directory,output_file));
 end
 
 if (nargout >= 1)
