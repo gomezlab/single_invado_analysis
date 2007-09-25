@@ -8,43 +8,54 @@ use strict;
 use File::Path;
 use Image::ExifTool;
 use Math::Matlab::Local;
+use Config::General;
+use Getopt::Long;
 
-my $experimental_data_folder = "../../data/";
-#$experimental_data_folder = "/Volumes/Data/projects/focal_adhesions/data/";
-my $experiment_name = "time_series_1";
+my %opt;
+$opt{debug} = 0;
+GetOptions(\%opt, "cfg|c=s","debug|d");
+die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my $results_folder = "../../results/";
-
-my $adhesion_image_prefix = "EGFP-Paxillin_";
-
-my $matlab_code_path = "..";
+my %cfg = Config::General::ParseConfig($opt{cfg});
 
 my $matlab_wrapper = Math::Matlab::Local->new({
 	cmd => '/usr/bin/matlab -nodisplay -nojvm -nosplash',
 });
+
+
 ###############################################################################
 # Main Program
 ###############################################################################
 
-mkpath($results_folder . $experiment_name . "/individual_pictures");
+mkpath($cfg{results_folder} . $cfg{exp_name} . "/individual_pictures");
 
-my $adhesion_image_location = $experimental_data_folder . $experiment_name . "/" . $adhesion_image_prefix;
+my $adhesion_image_location = $cfg{exp_data_folder} . $cfg{exp_name} . "/" . $cfg{adhesion_image_prefix};
 my @adhesion_image_files = <$adhesion_image_location*>;
 
-print @adhesion_image_files;
+if ($opt{debug}) {
+	print "Adhesion image files found: ", join(" ", @adhesion_image_files), "\n";
+}
+
 foreach my $file_name (@adhesion_image_files) {
 	my $total_images = &get_image_stack_number($file_name);
 	foreach my $image_num (1..$total_images) {
-		if ($image_num > 1) {
+		if ($opt{debug} && $image_num > 1) {
 			next;
 		}
+		if ($opt{debug} && $image_num % 10 == 0) {
+			print "Working on image number $image_num of $total_images\n";
+		}
+
 		my $padded_num = sprintf("%0" . length($total_images) . "d", $image_num);
-		my $output_path = $results_folder . $experiment_name . "/individual_pictures/$padded_num";
+		my $output_path = $cfg{results_folder} . $cfg{exp_name} . "/individual_pictures/$padded_num";
 		mkpath($output_path);
 		my $matlab_code ="find_focal_adhesions('$file_name',$image_num,'$output_path')\n";
-		$matlab_wrapper->execute($matlab_code);
+		if (not($matlab_wrapper->execute($matlab_code))) {
+			print $matlab_wrapper->err_msg;
+		}
 	}
 }
+
 
 ###############################################################################
 # Functions

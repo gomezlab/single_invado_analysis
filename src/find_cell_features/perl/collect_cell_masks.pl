@@ -8,7 +8,6 @@ use strict;
 use File::Path;
 use Image::ExifTool;
 use Math::Matlab::Local;
-use FindBin;
 use Config::General;
 use Getopt::Long;
 
@@ -52,7 +51,9 @@ foreach my $file_name (@cell_mask_files) {
 	}
 }
 
-$matlab_wrapper->execute($matlab_code);
+if (not($matlab_wrapper->execute($matlab_code))) {
+	print $matlab_wrapper->err_msg;
+}
 
 
 ###############################################################################
