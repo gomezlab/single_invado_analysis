@@ -9,41 +9,52 @@ use File::Path;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use FindBin;
+use Config::General;
+use Getopt::Long;
 
-my $experimental_data_folder = "../../data/";
-#$experimental_data_folder = "/Volumes/Data/projects/focal_adhesions/data/";
-my $experiment_name = "time_series_1";
+my %opt;
+$opt{debug} = 0;
+GetOptions(\%opt, "cfg=s","debug");
 
-my $results_folder = "../../results/";
+die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my $cell_mask_image_prefix = "N-myr\\ mRFP_";
-
-my $matlab_code_path = "..";
+my %cfg = Config::General::ParseConfig($opt{cfg});
 
 my $matlab_wrapper = Math::Matlab::Local->new({
 	cmd => '/usr/bin/matlab -nodisplay -nojvm -nosplash',
 });
+
+
 ###############################################################################
 # Main Program
 ###############################################################################
 
-mkpath($results_folder . $experiment_name . "/individual_pictures");
+mkpath($cfg{results_folder} . $cfg{exp_name} . "/individual_pictures");
 
-my $cell_mask_location = $experimental_data_folder . $experiment_name . "/" . $cell_mask_image_prefix;
+my $cell_mask_location = $cfg{exp_data_folder} . $cfg{exp_name} . "/" . $cfg{cell_mask_image_prefix};
 my @cell_mask_files = <$cell_mask_location*>;
+
+if ($opt{debug}) {
+	print "Cell mask files found: ", join(" ", @cell_mask_files), "\n";
+}
 
 my $matlab_code = "";
 foreach my $file_name (@cell_mask_files) {
 	my $total_images = &get_image_stack_number($file_name);
 	foreach my $image_num (1..$total_images) {
+		if ($opt{debug} && $image_num > 1) {
+			next;
+		}
 		my $padded_num = sprintf("%0" . length($total_images) . "d", $image_num);
-		my $output_path = $results_folder . $experiment_name . "/individual_pictures/$padded_num";
+		my $output_path = $cfg{results_folder} . $cfg{exp_name} . "/individual_pictures/$padded_num";
 		mkpath($output_path);
 		$matlab_code = $matlab_code . "create_cell_mask_image('$file_name',$image_num,'$output_path')\n";
 	}
 }
 
 $matlab_wrapper->execute($matlab_code);
+
+
 ###############################################################################
 # Functions
 ###############################################################################
