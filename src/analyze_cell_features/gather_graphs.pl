@@ -6,8 +6,9 @@
 use strict;
 use File::Temp qw/ tempfile tempdir /;
 use File::Path;
-use Config::General;
+use Config::General qw/ ParseConfig /;
 use Getopt::Long;
+use Data::Dumper;
 
 my %opt;
 $opt{debug} = 0;
@@ -15,7 +16,11 @@ GetOptions(\%opt, "cfg=s","debug|d");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my %cfg = Config::General::ParseConfig($opt{cfg});
+my %default_config = (file_ext => "svg png");
+my %cfg = ParseConfig(-ConfigFile => $opt{cfg},
+				      -DefaultConfig => \%default_config,
+					  -MergeDuplicateOptions => 1,
+					  );
 
 
 ###############################################################################
@@ -25,7 +30,7 @@ my %cfg = Config::General::ParseConfig($opt{cfg});
 my @folders = <$cfg{data_folder}/*/raw_data>;
 
 if ($opt{debug}) {
-	print "Example file: ",join("\n",@folders[0..0]),"\n";
+	print "Example Data Folder: ",join("\n",@folders[0..0]),"\n";
 	#@folders = $folders[0];
 }
 
@@ -38,12 +43,16 @@ for (@folders) {
 	mkpath($plots_folder);
 
 	my $file_name = &write_data_file("$_/Centroid_dist_from_edge","$_/Area");
-
- 	&build_and_execute_gnuplot_file("cent_area",$file_name,"$plots_folder/Cent_dist_vs_area.png");
+	
+	foreach (split(/\s/,$cfg{file_ext})) {
+		&build_and_execute_gnuplot_file("cent_area",$file_name,"$plots_folder/Cent_dist_vs_area.$_");
+	}
 
 	$file_name = &write_data_file("$_/Centroid_dist_from_edge", "$_/Average_adhesion_signal", "$_/Variance_adhesion_signal");
 	
- 	&build_and_execute_gnuplot_file("cent_sig",$file_name,"$plots_folder/Cent_dist_vs_sig.png");
+	foreach (split(/\s/,$cfg{file_ext})) {
+		&build_and_execute_gnuplot_file("cent_sig",$file_name,"$plots_folder/Cent_dist_vs_sig.$_");
+	}
 }
 
 
@@ -61,81 +70,50 @@ sub gather_data_from_matlab_file {
 }
 
 sub build_data_file_from_matlab {
-	my ($file_1, $file_2) = @_;
+	my @data;
 
-	my @in_1 = &gather_data_from_matlab_file($file_1);
-	my @in_2 = &gather_data_from_matlab_file($file_2);
+	foreach (@_) {
+		my @temp = &gather_data_from_matlab_file($_);
+		push @data, \@temp;
+	}
 	
 	if ($opt{debug}) {
-		if (scalar(@in_1) != scalar(@in_2)) {
-		print "Problem with files: $file_1, $file_2, the number of entries do ",
-			  "not match, they are: ", scalar(@in_1), " and ", scalar(@in_2);
-		}
-		if ($in_1[0] =~ /\s+/ || $in_2[0] =~ /\s+/) {
-			print "First entry in one of the files $file_1 or $file_2 is not empty\n";
-		}
+		my $data_size = scalar(@{$data[0]});
+		
+		foreach (0..$#data) {
+			if (scalar(@{$data[$_]} != $data_size)) {
+				print "Problem with files: $_[0], $_[$_], the number of entries do ",
+					  "not match, they are: ", scalar(@{$data[0]}), " and ", scalar(@{$data[$_]}), "\n";
+			}
+			if (${$data[$_]}[0] =~ /\s+/) {
+				print "First entry in file ''$_[$_] is not empty, but is expected to be.\n";
+			}
+		}	
 	}
 
 	my @output;
-	for (1..$#in_1) {
-		push @output, sprintf("%f",$in_1[$_]). "	".sprintf("%f",$in_2[$_]);
-	}
-	return @output;
-}
-
-sub build_data_file_from_matlab_with_var {
-	my ($file_1, $file_2, $file_3) = @_;
-
-	my @first_out = &build_data_file_from_matlab($file_1,$file_2);
-
-	my @var_in = &gather_data_from_matlab_file($file_3);
-	
-	if ($opt{debug}) {
-		if (scalar(@first_out) != scalar(@var_in) - 1) {
-			print "Problem with data the number of entries do not match, they are: ",
-				  scalar(@first_out), " and ", scalar(@var_in);
+	foreach my $i (1..scalar(@{$data[0]}) - 1) {
+		my $temp = "";
+		foreach my $set_num (0..$#data) {
+			if ($set_num != $#data) {
+				$temp = $temp . sprintf("%f",${$data[$set_num]}[$i]). "	";
+			} else {
+				$temp = $temp . sprintf("%f",${$data[$set_num]}[$i]);
+			}
 		}
-		if ($var_in[0] =~ /\s+/) {
-			print "First entry in one of the files $file_3 is not empty\n";
-		}
-	}
-
-	my @output;
-	for (0..$#first_out) {
-		my $temp = "$first_out[$_]	". sprintf("%f",sqrt($var_in[$_ + 1]));
 		push @output, $temp;
 	}
 	return @output;
 }
 
 sub write_data_file {
-	my ($file_1, $file_2, $file_3);
-	if (scalar(@_) == 2) {
-		($file_1, $file_2) = @_;
-	} elsif (scalar(@_) == 3) {
-		($file_1, $file_2, $file_3) = @_;
-	} else {
-		die "Wrong number of parameters(",scalar(@_),") to 'write_data_file', expected 2 or 3.";
-	}
-
-	my ($temp_h,$file_name) = tempfile();
-	my (@header_line,@data_lines);
-	
-	$file_1 =~ /.*\/(.*)/;
-	push @header_line, $1;
-	$file_2 =~ /.*\/(.*)/;
-	push @header_line, $1;
-	if (scalar(@_) == 3) {
-		$file_3 =~ /.*\/(.*)/;
+	my @header_line;
+	foreach (@_) {
+		$_ =~ /.*\/(.*)/;
 		push @header_line, $1;
 	}
 	
-	if (scalar(@_) == 2) {
-		@data_lines = &build_data_file_from_matlab($file_1,$file_2);
-	}
-	elsif (scalar(@_) == 3) {
-		@data_lines = &build_data_file_from_matlab_with_var($file_1,$file_2,$file_3);
-	}
+	my @data_lines = &build_data_file_from_matlab(@_);
 
 	if ($opt{debug}) {
 		open OUTPUT, ">$_/".join("_",@header_line)."_data_file" or die "Unable to open the output file";
@@ -143,6 +121,7 @@ sub write_data_file {
 		close OUTPUT;
 	}
 
+	my ($temp_h,$file_name) = tempfile();
 	print $temp_h "#", join("	",@header_line), "\n", join("\n",@data_lines);
 	close $temp_h;
 	return $file_name;
@@ -151,22 +130,11 @@ sub write_data_file {
 sub build_and_execute_gnuplot_file {
 	my ($plot_type,$data_file_name,$out_file) = @_;
 	
-	my ($title,$xlabel,$ylabel);
-
-	if ($plot_type =~ /cent_area/i) {
-		$title  = "Centroid Distance from Cell Edge vs. Area of Identified Adhesions";
-		$xlabel = "Centroid Distance from Cell Edge";
-		$ylabel = "Area of Identified Adhesions";
-	} elsif ($plot_type =~ /cent_sig/) {
-		$title  = "Centroid Distance from Cell Edge vs. Average Adhesion Signal";
-		$xlabel = "Centroid Distance from Cell Edge";
-		$ylabel = "Average Normalized Fluorescence Signal";
-	}
-	else {
-		die "$plot_type not defined for building a plot file";
-	}
+	my ($title,$xlabel,$ylabel) = &get_title_and_labels($plot_type);
 	
-	my @out = ("set terminal png","set key off","set size square",
+	my $term_type = &get_output_type($out_file);
+
+	my @out = ("set terminal $term_type","set key off","set size square",
 			   "set title \"$title\"","set xlabel \"$xlabel\"",
 			   "set ylabel \"$ylabel\"","set output '$out_file'",
 			   "plot '$data_file_name'");
@@ -176,4 +144,39 @@ sub build_and_execute_gnuplot_file {
 	close $temp_h;
 
 	system "gnuplot $gnuplot_file_name";
-}	
+}
+
+sub get_title_and_labels {
+	my $plot_type = $_[0];
+	my %t_hash = (cent_area => ["Centroid Distance from Cell Edge vs. Area of Identified Adhesions",
+							    "Centroid Distance from Cell Edge",
+							    "Area of Identified Adhesions",],
+				  cent_sig  => ["Centroid Distance from Cell Edge vs. Average Adhesion Signal",
+							    "Centroid Distance from Cell Edge",
+							    "Average Normalized Fluorescence Signal",],
+			   	 );
+	
+	if (not(defined($t_hash{$plot_type}))) {
+		die "Plot type, $plot_type, unrecognized, possible values: ", join(", ", keys %t_hash), "\n";
+	}
+
+   	return @{$t_hash{$plot_type}};
+}
+
+sub get_output_type {
+	my $out_file = $_[0];
+	if (not($out_file =~ /.*\.(.*)/)) {
+		die "Can't figure out the file extension for determining the gnuplot terminal type, file - $out_file\n";
+	}
+	my $file_type = $1;
+	my %f_types_to_terms = ("png" => "png", "svg" => "svg", "jpg" => "jpeg", "jpeg" => "jpeg");
+
+	if (not(defined($f_types_to_terms{$file_type}))) {
+		die "In file: $out_file\n", "Can't match determined file extension - $file_type - to a gnuplot ",
+			"term name, possible file extensions: ", 
+			join(", ", keys %f_types_to_terms), "\n";
+	}
+
+	return $f_types_to_terms{$file_type};
+	
+}
