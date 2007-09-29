@@ -16,11 +16,7 @@ GetOptions(\%opt, "cfg=s","debug|d");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my %default_config = (file_ext => "svg png");
-my %cfg = ParseConfig(-ConfigFile => $opt{cfg},
-				      -DefaultConfig => \%default_config,
-					  -MergeDuplicateOptions => 1,
-					  );
+my %cfg = &get_config;
 
 
 ###############################################################################
@@ -31,7 +27,7 @@ my @folders = <$cfg{data_folder}/*/raw_data>;
 
 if ($opt{debug}) {
 	print "Example Data Folder: ",join("\n",@folders[0..0]),"\n";
-	#@folders = $folders[0];
+	@folders = $folders[0];
 }
 
 
@@ -43,16 +39,20 @@ for (@folders) {
 	mkpath($plots_folder);
 
 	my $file_name = &write_data_file("$_/Centroid_dist_from_edge","$_/Area");
-	
 	foreach (split(/\s/,$cfg{file_ext})) {
 		&build_and_execute_gnuplot_file("cent_area",$file_name,"$plots_folder/Cent_dist_vs_area.$_");
 	}
 
 	$file_name = &write_data_file("$_/Centroid_dist_from_edge", "$_/Average_adhesion_signal", "$_/Variance_adhesion_signal");
-	
 	foreach (split(/\s/,$cfg{file_ext})) {
 		&build_and_execute_gnuplot_file("cent_sig",$file_name,"$plots_folder/Cent_dist_vs_sig.$_");
 	}
+
+	$file_name = &write_data_file("$_/Area");
+	foreach (split(/\s/,$cfg{file_ext})) {
+		&build_and_execute_gnuplot_file("area_hist",$file_name,"$plots_folder/Area_hist.$_");
+	}
+
 }
 
 
@@ -60,12 +60,55 @@ for (@folders) {
 # Functions
 ###############################################################################
 
+sub get_config {
+	if ($opt{debug}) {
+		print "Collecting Configuration\n";
+	}
+
+	my %default_config = (file_ext => "svg png");
+	my %cfg = ParseConfig(-ConfigFile => $opt{cfg},
+						  -DefaultConfig => \%default_config,
+						  -MergeDuplicateOptions => 1,
+	);
+	if (defined($cfg{pixel_size_file}) && defined($cfg{target_unit_size})) {
+		$cfg{scale_values} = 1;
+		if (-e $cfg{pixel_size_file}) {
+			open INPUT, "$cfg{pixel_size_file}" or die "Can't open specified pixel_size_file: $cfg{pixel_size_file}.";
+			$cfg{pixel_size} = <INPUT>;
+			chomp($cfg{pixel_size});
+			close INPUT;
+		} else {
+			die "Can't find specified pixel_size_file: $cfg{pixel_size_file}.";
+		}
+		if($opt{debug}) {
+			print "Pixel Size -> $cfg{pixel_size}, Target Size -> $cfg{target_unit_size}.\n";
+		}
+	}
+
+	return %cfg;
+}
+
 sub gather_data_from_matlab_file {
 	my ($file) = @_;
 	
 	open INPUT, "$file" or die "Problem opening $file"; 
 	my @in = split("   ",<INPUT>);
 	close INPUT;
+
+	if(defined($cfg{scale_values})) {
+		my $scale_factor = $cfg{pixel_size}/$cfg{target_unit_size};
+		if ($file =~ /area/i) {
+			$scale_factor = ($cfg{pixel_size}/$cfg{target_unit_size})**2;
+		}
+
+		for (1..$#in) {
+			if ($file =~ /adhesion_signal/) {
+				next;
+			}
+			$in[$_] = $in[$_] *$scale_factor;
+		}
+	}
+
 	return @in;
 }
 
@@ -79,7 +122,6 @@ sub build_data_file_from_matlab {
 	
 	if ($opt{debug}) {
 		my $data_size = scalar(@{$data[0]});
-		
 		foreach (0..$#data) {
 			if (scalar(@{$data[$_]} != $data_size)) {
 				print "Problem with files: $_[0], $_[$_], the number of entries do ",
@@ -128,22 +170,35 @@ sub write_data_file {
 }
 
 sub build_and_execute_gnuplot_file {
+	my @gnu_commands = &build_gnuplot_file(@_);
+	
+	my ($temp_h,$gnuplot_file_name) = tempfile();
+	print $temp_h join("\n",@gnu_commands);
+	close $temp_h;
+
+	system "gnuplot $gnuplot_file_name";
+}
+
+sub build_gnuplot_file {
 	my ($plot_type,$data_file_name,$out_file) = @_;
 	
 	my ($title,$xlabel,$ylabel) = &get_title_and_labels($plot_type);
 	
 	my $term_type = &get_output_type($out_file);
-
-	my @out = ("set terminal $term_type","set key off","set size square",
-			   "set title \"$title\"","set xlabel \"$xlabel\"",
-			   "set ylabel \"$ylabel\"","set output '$out_file'",
-			   "plot '$data_file_name'");
-
-	my ($temp_h,$gnuplot_file_name) = tempfile();
-	print $temp_h join("\n",@out);
-	close $temp_h;
-
-	system "gnuplot $gnuplot_file_name";
+	
+	my @commands;
+	if ($plot_type =~ /hist/) {
+		push @commands, ("set terminal $term_type","set key off","set style data histogram",
+						 "set title \"$title\"","set xlabel \"$xlabel\"",
+						 "set ylabel \"$ylabel\"","set output '$out_file'",
+						 "plot '$data_file_name'");
+	} else {
+		push @commands, ("set terminal $term_type","set key off",
+						 "set title \"$title\"","set xlabel \"$xlabel\"",
+						 "set ylabel \"$ylabel\"","set output '$out_file'",
+						 "plot '$data_file_name'");
+	}
+	return @commands;
 }
 
 sub get_title_and_labels {
@@ -154,7 +209,10 @@ sub get_title_and_labels {
 				  cent_sig  => ["Centroid Distance from Cell Edge vs. Average Adhesion Signal",
 							    "Centroid Distance from Cell Edge",
 							    "Average Normalized Fluorescence Signal",],
-			   	 );
+			   	  area_hist => ["Area of Identified Adhesions",
+				  				"",
+								"",],
+				 );
 	
 	if (not(defined($t_hash{$plot_type}))) {
 		die "Plot type, $plot_type, unrecognized, possible values: ", join(", ", keys %t_hash), "\n";
@@ -169,7 +227,7 @@ sub get_output_type {
 		die "Can't figure out the file extension for determining the gnuplot terminal type, file - $out_file\n";
 	}
 	my $file_type = $1;
-	my %f_types_to_terms = ("png" => "png", "svg" => "svg", "jpg" => "jpeg", "jpeg" => "jpeg");
+	my %f_types_to_terms = ("png" => "png", "svg" => "svg enhanced", "jpg" => "jpeg", "jpeg" => "jpeg", "pdf" => "pdf enhanced", "eps" => "postscript eps enhanced");
 
 	if (not(defined($f_types_to_terms{$file_type}))) {
 		die "In file: $out_file\n", "Can't match determined file extension - $file_type - to a gnuplot ",
@@ -178,5 +236,4 @@ sub get_output_type {
 	}
 
 	return $f_types_to_terms{$file_type};
-	
 }
