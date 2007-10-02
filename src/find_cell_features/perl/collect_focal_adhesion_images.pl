@@ -27,9 +27,11 @@ my $matlab_wrapper = Math::Matlab::Local->new({
 # Main Program
 ###############################################################################
 
+my $path = $cfg{results_folder} . "/" . $cfg{exp_name} . "/individual_pictures";
+
 mkpath($cfg{results_folder} . $cfg{exp_name} . "/individual_pictures");
 
-my $adhesion_image_location = $cfg{exp_data_folder} . $cfg{exp_name} . "/" . $cfg{adhesion_image_prefix};
+my $adhesion_image_location = $cfg{exp_data_folder} . "/" . $cfg{exp_name} . "/" . $cfg{adhesion_image_prefix};
 my @adhesion_image_files = <$adhesion_image_location*>;
 
 if ($opt{debug}) {
@@ -47,11 +49,15 @@ foreach my $file_name (@adhesion_image_files) {
 		}
 
 		my $padded_num = sprintf("%0" . length($total_images) . "d", $image_num);
-		my $output_path = $cfg{results_folder} . $cfg{exp_name} . "/individual_pictures/$padded_num";
+		my $output_path = $cfg{results_folder} . "/" . $cfg{exp_name} . "/individual_pictures/$padded_num";
 		mkpath($output_path);
 		my $matlab_code ="find_focal_adhesions('$file_name',$image_num,'$output_path')\n";
 		if (not($matlab_wrapper->execute($matlab_code))) {
-			print $matlab_wrapper->err_msg;
+			my $error_folder = $cfg{results_folder} . "/" . $cfg{exp_name} . "/errors/";
+			mkpath($error_folder);
+			open ERR_OUT, ">$error_folder" . "fa_error_$image_num.txt";
+			print ERR_OUT $matlab_wrapper->err_msg;
+			close ERR_OUT;
 		}
 	}
 }

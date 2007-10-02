@@ -28,9 +28,9 @@ my $matlab_wrapper = Math::Matlab::Local->new({
 # Main Program
 ###############################################################################
 
-mkpath($cfg{results_folder} . $cfg{exp_name} . "/individual_pictures");
+mkpath($cfg{results_folder} . "/" . $cfg{exp_name} . "/individual_pictures");
 
-my $cell_mask_location = $cfg{exp_data_folder} . $cfg{exp_name} . "/" . $cfg{cell_mask_image_prefix};
+my $cell_mask_location = $cfg{exp_data_folder} . "/" . $cfg{exp_name} . "/" . $cfg{cell_mask_image_prefix};
 my @cell_mask_files = <$cell_mask_location*>;
 
 if ($opt{debug}) {
@@ -45,14 +45,18 @@ foreach my $file_name (@cell_mask_files) {
 			next;
 		}
 		my $padded_num = sprintf("%0" . length($total_images) . "d", $image_num);
-		my $output_path = $cfg{results_folder} . $cfg{exp_name} . "/individual_pictures/$padded_num";
+		my $output_path = $cfg{results_folder} . "/" . $cfg{exp_name} . "/individual_pictures/$padded_num";
 		mkpath($output_path);
 		$matlab_code = $matlab_code . "create_cell_mask_image('$file_name',$image_num,'$output_path')\n";
 	}
 }
 
+my $error_folder = $cfg{results_folder} . "/" . $cfg{exp_name} . "/errors/";
 if (not($matlab_wrapper->execute($matlab_code))) {
-	print $matlab_wrapper->err_msg;
+	mkpath($error_folder);
+	open ERR_OUT, ">$error_folder" . "cell_mask_error.txt";
+	print ERR_OUT $matlab_wrapper->err_msg;
+	close ERR_OUT;
 }
 
 
