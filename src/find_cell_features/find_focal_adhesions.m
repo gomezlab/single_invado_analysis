@@ -4,15 +4,14 @@ function [varargout]=find_focal_adhesions(varargin)
 %                         the segmented image to a file
 %
 %   find_focal_adhesions(I,OUT_DIR,EXTRA_OPTIONS) finds the focal adhesions
-%   in image 'I', which can be either a single image file or a matlab
-%   variable, the resulting binary segmented image is output in 'OUT_DIR'
-%   using the name 'focal_adhesions.png', the parameters in 'EXTRA_OPTIONS'
-%   will also be used
+%   in image 'I', which is a single image file, the resulting binary
+%   segmented image is output in 'OUT_DIR' using the name
+%   'focal_adhesions.png', the parameters in 'EXTRA_OPTIONS' will also be
+%   used
 %
 %   find_focal_adhesions(I,EXTRA_OPTIONS) finds the focal adhesions
-%   in image 'I', which can be either a single image file or a matlab
-%   variable, the location of the cell mask must be specified in
-%   'EXTRA_OPTIONS'
+%   in image 'I', which is a single image file, the location of the cell
+%   mask must be specified in 'EXTRA_OPTIONS' 
 %
 %   find_focal_adhesions(I,I_NUM,OUT_DIR,EXTRA_OPTIONS) finds the focal
 %   adhesions in file 'I' image number 'I_NUM', the resulting binary
@@ -68,6 +67,9 @@ end
 
 %now parse the non-'extra options' part of the command line
 if (exist(varargin{1},'file'))
+    [path,filename,ext] = fileparts(varargin{1});
+    image_data.data_folder = path;
+    image_data.original_file = varargin{1};
     if (isnumeric(varargin{2}))
         image_data.original_image = imread(varargin{1},varargin{2});
         if (exist(varargin{3},'dir'))
@@ -77,11 +79,8 @@ if (exist(varargin{1},'file'))
         image_data.original_image = imread(varargin{1});
         image_data.output_dir = varargin{2};
     end
-elseif (exist(varargin{1},'var'))
-    image_data.original_image = varargin{1};
-    if (exist(varargin{2},'dir'))
-        image_data.output_dir = varargin{2};
-    end
+else
+    error('ERROR: find_focal_adhesions - expected first parameter to be a file, see ''help find_focal_adhesion''');
 end
 
 %now parse the 'extra options'
@@ -133,8 +132,19 @@ if (not(isfield(image_data,'cell_mask')))
     end
 end
 
+%check to see if a min/max value file has been written, if not collect the
+%min/max values and write them to file
+if (not(exist(fullfile(image_data.data_folder,'min_max_vals.txt'),'file')))
+    [min,max] = find_extr_values(image_data.original_file);
+    extr_vals = [min,max];
+    save(fullfile(image_data.data_folder,'min_max_vals.txt'),'extr_vals','-ASCII');
+else
+    extr_vals = load(fullfile(image_data.data_folder,'min_max_vals.txt'));
+end
+image_data.extr_vals = extr_vals;
+
 %now normalize the input focal adhesion image
-image_data.original_image = normalize_grayscale_image(image_data.original_image);
+image_data.original_image = normalize_grayscale_image(image_data.original_image,image_data.extr_vals(1),image_data.extr_vals(2));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

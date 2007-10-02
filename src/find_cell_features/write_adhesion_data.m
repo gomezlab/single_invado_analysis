@@ -61,6 +61,5 @@ for i = 1:size(field_names,1)
         continue;
     end
     temp = [data.(cell2mat(field_names(i)))];
-    fullfile(dir,cell2mat(field_names(i)));
     save(fullfile(dir,cell2mat(field_names(i))),'temp','-ASCII');
 end
