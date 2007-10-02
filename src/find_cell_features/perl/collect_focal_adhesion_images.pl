@@ -29,7 +29,7 @@ my $matlab_wrapper = Math::Matlab::Local->new({
 
 my $path = $cfg{results_folder} . "/" . $cfg{exp_name} . "/individual_pictures";
 
-mkpath($cfg{results_folder} . $cfg{exp_name} . "/individual_pictures");
+mkpath($path);
 
 my $adhesion_image_location = $cfg{exp_data_folder} . "/" . $cfg{exp_name} . "/" . $cfg{adhesion_image_prefix};
 my @adhesion_image_files = <$adhesion_image_location*>;
