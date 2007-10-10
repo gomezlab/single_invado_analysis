@@ -12,8 +12,9 @@ function [min_val max_val] = find_extr_values(file)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 i_p = inputParser;
-i_p.FunctionName = 'find_extr_values_in_stack';
-i_p.addRequired('file',@ischar);
+i_p.FunctionName = 'FIND_EXTR_VALS';
+
+i_p.addRequired('file',@(x)exist(x,'file')==2);
 
 i_p.parse(file);
 
