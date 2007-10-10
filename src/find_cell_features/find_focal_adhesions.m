@@ -1,4 +1,4 @@
-function [varargout]=find_focal_adhesions(varargin)
+function [varargout] = find_focal_adhesions_val(I_file,varargin)
 % FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
@@ -60,75 +60,46 @@ function [varargout]=find_focal_adhesions(varargin)
 image_data = struct;
 image_data.debug = 0;
 
-%check to see if the command has enough to parameters to be valid
-if (length(varargin) < 3)
-    error('ERROR: find_focal_adhesions - not enough command line options, see ''help find_focal_adhesions''');
-end
+i_p = inputParser;
+i_p.FunctionName = 'FIND_FOCAL_ADHESIONS';
 
-%now parse the non-'extra options' part of the command line
-if (exist(varargin{1},'file'))
-    [path,filename,ext] = fileparts(varargin{1});
-    image_data.data_folder = path;
-    image_data.original_file = varargin{1};
-    if (isnumeric(varargin{2}))
-        image_data.original_image = imread(varargin{1},varargin{2});
-        if (exist(varargin{3},'dir'))
-            image_data.output_dir = varargin{3};
-        end
-    elseif (exist(varargin{2},'dir'))
-        image_data.original_image = imread(varargin{1});
-        image_data.output_dir = varargin{2};
+i_p.addRequired('I_file',@(x)exist(x,'file')==2);
+
+i_p.addParamValue('out_dir',pwd,@ischar);
+i_p.addParamValue('I_num',1,@(x)isnumeric(x) && x>0);
+i_p.addParamValue('debug',0,@(x)(isnumeric(x) && (x == 0 || x == 1) || islogical(x)));
+i_p.addParamValue('d',0,@(x)(isnumeric(x) && (x == 0 || x == 1) || islogical(x)));
+i_p.addParamValue('cell_mask',0,@(x)exist(x,'file')==2);
+i_p.addParamValue('c',0,@(x)exist(x,'file')==2);
+
+i_p.parse(I_file,varargin{:});
+
+%Start filling out the image_data struct with the parameters extracted
+%above
+
+%Pull out the original image file and the data directory
+image_data.original_image_file = i_p.Results.I_file;
+[pathstr, name, ext, versn] = fileparts(image_data.original_image_file); 
+image_data.data_folder = pathstr;
+
+%Determine if the image file specified has more than one image embedded, if
+%so, make sure there is a 'I_num' parameter
+if (size(imfinfo(image_data.original_image_file),2) > 1)
+    if (any(strcmp('I_num',i_p.UsingDefaults)))
+        error('ERROR: FIND_FOCAL_ADHESIONS - Image file specified has more than one image embedded, must specify an ''I_num'' parameter');
     end
-else
-    error('ERROR: find_focal_adhesions - expected first parameter to be a file, see ''help find_focal_adhesion''');
+    image_data.I_num = i_p.Results.I_num;
 end
 
-%now parse the 'extra options'
-extra_options_parse = struct;
-extra_options_parse.cell_mask_position = 0;
+%Set the debug flag on if either 'd' or 'debug' flag has been set to true
+image_data.debug = i_p.Results.d || i_p.Results.debug;
 
-for i = 1:length(varargin)
-    if (ischar(varargin{i}))
-        if (strcmpi(varargin{i},'cell_mask') || strcmpi(varargin{i},'c'))
-            if (length(varargin) <= i)
-                error('ERROR: find_focal_adhesions - must specify the cell mask location directly after the command line option')
-            end
-            extra_options_parse.cell_mask = varargin{i + 1};
-            extra_options_parse.cell_mask_position = i + 1;
-        end
-        if (strcmpi(varargin{i},'debug') || strcmpi(varargin{i},'d'))
-            image_data.debug = 1;
-        end
-    end
-end
-
-if (extra_options_parse.cell_mask_position)
-    if (not(islogical(extra_options_parse.cell_mask) || isnumeric(extra_options_parse.cell_mask) || exist(extra_options_parse.cell_mask,'file')))
-        error('ERROR: find_focal_adhesions - the cell mask must be either a matlab variable, of logical or numeric type, or a file')
-    else
-        if (islogical(extra_options_parse.cell_mask) || isnumeric(extra_options_parse.cell_mask))
-            image_data.cell_mask = extra_options_parse.cell_mask;
-        elseif (exist(extra_options_parse.cell_mask,'file'))
-            image_data.cell_mask = imread(extra_options_parse.cell_mask);
-        end
-    end
-end
-
-%now do some final logical checks to make sure all the variables needed are
-%available
-if (not(isfield(image_data,'output_dir')) && not(isfield(image_data,'cell_mask')))
-    error('ERROR: find_focal_adhesions - without an output dir the cell mask must be specified in the extra options');
-end
-
-if (not(isfield(image_data,'cell_mask')))
-    if (not(isfield(image_data,'output_dir')))
-        error('ERROR: find_focal_adhesions - without a cell mask specified an output directory must be specified where the cell mask can be found in the file ''cell_mask.png''');
-    end
-    poss_cell_mask_file = fullfile(image_data.output_dir, 'cell_mask.png');
-    if (not(exist(poss_cell_mask_file,'file')))
-        error('ERROR: find_focal_adhesions - cannot find the cell mask in either the extra options or in the output directory under the file ''cell_mask.png''')
-    else
-        image_data.cell_mask = imread(poss_cell_mask_file);
+%determine if the out_dir was set in the parameters, if set, fill in the
+%output_dir field
+if (not(any(strcmp('out_dir',i_p.UsingDefaults))))
+    image_data.output_dir = i_p.Results.out_dir;
+    if (not(exist(image_data.output_dir,'dir')))
+        mkdir(image_data.output_dir);
     end
 end
 
@@ -143,8 +114,44 @@ else
 end
 image_data.extr_vals = extr_vals;
 
-%now normalize the input focal adhesion image
+%normalize the input focal adhesion image
+if (isfield(image_data,'I_num'))
+    image_data.original_image = imread(image_data.original_image_file,image_data.I_num);
+else
+    image_data.original_image = imread(image_data.original_image_file);
+end
 image_data.original_image = normalize_grayscale_image(image_data.original_image,image_data.extr_vals(1),image_data.extr_vals(2));
+
+%check to see if a cell_mask parameter has been set, if it has, use that
+%file, otherwise, search for the file in the output dir
+if (not(any(strcmp('c',i_p.UsingDefaults))) || not(any(strcmp('cell_mask',i_p.UsingDefaults))))
+    if (not(strcmp('cell_mask',i_p.UsingDefaults)))
+        image_data.cell_mask_file = i_p.Results.cell_mask;
+    else
+        image_data.cell_mask_file = i_p.Results.c;
+    end
+elseif (isfield(image_data,'output_dir'))
+    if (exist(fullfile(image_data.output_dir,'cell_mask.png'),'file'))
+        image_data.cell_mask_file = fullfile(image_data.output_dir,'cell_mask.png');
+    else
+        error('ERROR: find_focal_adhesions - could not locate cell mask file, specify location with ''cell_mask'' flag');
+    end
+else
+    error('ERROR: find_focal_adhesions - could not locate cell mask file, specify location with ''cell_mask'' flag');
+end
+image_data.cell_mask = imread(image_data.cell_mask_file);
+
+if (image_data.debug)
+    disp(' ')
+    disp 'List of all arguments:'
+    disp(i_p.Results)
+
+    disp 'Parameters Using Defaults:'
+    disp(i_p.UsingDefaults)
+
+    disp 'Contents of image_data:'
+    disp(image_data)
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,6 +164,7 @@ image_data.adhesion_properties = collect_adhesion_properties(image_data);
 
 if (isfield(image_data,'output_dir'))
     imwrite(image_data.original_image,fullfile(image_data.output_dir, 'focal_image.png'));
+    imwrite(image_data.focal_markers,fullfile(image_data.output_dir,'focal_markers.png'));
     imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
     imwrite(image_data.adhesions,fullfile(image_data.output_dir, 'adhesions.png'));
     write_adhesion_data(image_data.adhesion_properties,'dir',image_data.output_dir);
