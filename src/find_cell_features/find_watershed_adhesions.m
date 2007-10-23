@@ -73,4 +73,7 @@ for i = 1:max(watershed_labels(:))
 
 end
 
+stats = regionprops(bwlabel(focal_adhesion_sections),'Area');
+focal_adhesion_sections = ismember(bwlabel(focal_adhesion_sections),find([stats.Area] > 16));
+
 end

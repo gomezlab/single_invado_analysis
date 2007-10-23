@@ -52,7 +52,6 @@ for (@folders) {
 	foreach (split(/\s/,$cfg{file_ext})) {
 		&build_and_execute_gnuplot_file("area_hist",$file_name,"$plots_folder/Area_hist.$_");
 	}
-
 }
 
 
