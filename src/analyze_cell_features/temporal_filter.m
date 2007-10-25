@@ -90,16 +90,15 @@ end
 
 labeled_base = bwlabel(base_image);
 out_image = zeros(size(base_image));
-c = 0;
+features_removed = 0;
 
 for i=1:max(labeled_base(:))
     if (sum(intersected_image(find(labeled_base==i))))
         out_image(find(labeled_base==i)) = 1;
     else
-        c = c + 1;
+        features_removed = features_removed + 1;
     end
 end
-disp(c)
 
 imwrite(out_image,fullfile(out_dir,out_file));
 
