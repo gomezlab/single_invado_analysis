@@ -7,11 +7,13 @@ function adhesion_props = collect_adhesion_properties(varargin)
 %   collect_adhesion_properties(I_struct) collects the properties of the
 %   adhesions identified in the binary image 'I_struct.adhesions', using
 %   the cell mask in 'I_struct.cell_mask' and the original focal image data
-%   in 'I_struct.original_image'
+%   in 'I_struct.original_image', returning a structure containing
+%   properties
 %
 %   collect_adhesion_properties(ad_I,c_m,orig_I) collects the properties of
 %   the adhesions identified in the binary image 'ad_I', using the cell
-%   mask in 'c_m' and the original focal image data in 'orig_I'
+%   mask in 'c_m' and the original focal image data in 'orig_I', returning
+%   a structure containing properties
 %
 %   Properties Collected:
 %       -all of the properties collected by regioprops(...,'all')
@@ -46,9 +48,8 @@ elseif (isstruct(varargin{1}))
     else
         adhesion_props = image_data.adhesion_props;
     end
-
 else
-    if (lenght(varargin) ~= 3)
+    if (length(varargin) ~= 3)
         error('ERROR: collect_adhesion_properties - three parameters are required when not using a struct');
     else
         if (not(isnumeric(varargin{1}) || islogical(varargin{1})))
@@ -58,9 +59,9 @@ else
         elseif (not(isnumeric(varargin{3})))
             error('ERROR: collect_adhesion_properties - Third parameter should be the binary original focal adhesion image, it appears to not be numeric');
         end
-
-        cell_mask = varargin{1};
-        labeled_adhesions = bwlabel(varargin{2});
+        
+        labeled_adhesions = bwlabel(varargin{1});        
+        cell_mask = varargin{2};
         original_image = varargin{3};
         adhesion_props = regionprops(labeled_adhesions,'all');
     end

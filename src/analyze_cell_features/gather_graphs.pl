@@ -23,13 +23,12 @@ my %cfg = &get_config;
 # Main Program
 ###############################################################################
 
-my @folders = <$cfg{data_folder}/*/raw_data>;
+my @folders = <$cfg{results_folder}/*/$cfg{raw_data_folder}>;
 
 if ($opt{debug}) {
 	print "Example Data Folder: ",join("\n",@folders[0..0]),"\n";
 	@folders = $folders[0];
 }
-
 
 for (@folders) {
 	$_ =~ /($cfg{data_folder}\/(\d+)\/)/;

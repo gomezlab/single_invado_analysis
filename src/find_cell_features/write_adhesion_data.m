@@ -31,11 +31,7 @@ end
 for i=1:size(varargin,2)
     if (ischar(varargin{i}))
         if (strcmpi(varargin{i},'dir'))
-            if (exist(varargin{i + 1},'dir'))
-                dir = fullfile(varargin{i + 1},'raw_data');
-            else
-                warning(['ERROR: write_struct_data - dir ''',dir,''' does not seem to exist, using ''raw_data'' in the current folder']);
-            end
+            dir = varargin{i + 1};
         end
     end
 end
