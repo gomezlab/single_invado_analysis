@@ -39,7 +39,9 @@ seq_map = jet(281);
 for i = 0:280
     all_seqs(i + 1,:) = load(fullfile('track_seqs',['seq_',num2str(i),'.csv'])) + 1;
 end
+
 i_seen = 0;
+
 for i = 1:i_count
     if (find(i==excluded_frames))
         continue;
@@ -51,6 +53,7 @@ for i = 1:i_count
     i_size = size(orig_i);
 
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
+    padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
 
     I_1 = imread(fullfile(I_folder_1,padded_i_num,filename_1));
     
@@ -83,18 +86,21 @@ for i = 1:i_count
         edge_image_ad(find(bwperim(I_2))+(j-1)*pix_count) = c_map(i,j);
     end
 
+    
     %frame = [highlighted_1,0.5*ones(size(orig_i,1),round(0.05*size(orig_i,2)),3),highlighted_2];
-    frame = [cat(3,orig_i,orig_i,orig_i),0.5*ones(size(orig_i,1),round(0.05*size(orig_i,2)),3),highlighted_all];
+    frame = [cat(3,orig_i,orig_i,orig_i),0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all];
+    frame = {frame [edge_image_ad,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all]};
 
     if (exist('out_path','var'))
-        output_filename = fullfile(out_path,[out_prefix,padded_i_num,'.png']);
-        fullpath = fileparts(output_filename);
-        if (not(exist(fullpath,'dir')))
-            mkdir(fullpath);
+        for j = 1:length(out_prefix)
+            output_filename = fullfile(out_path,[out_prefix{1,j},padded_i_seen,'.png']);
+            fullpath = fileparts(output_filename);
+            if (not(exist(fullpath,'dir')))
+                mkdir(fullpath);
+            end
+            imwrite(frame{1,j},output_filename);
         end
-        imwrite(frame,output_filename);
     end
-
 end
 
 %system('/Users/mbergins/bin/ffmpeg -sameq -r 5 -b 8000 -y -i ../../results/norm/time_series_1/movie_files/time%03d.png -f huffyuv ../../results/norm/time_series_1/test.mp4');
