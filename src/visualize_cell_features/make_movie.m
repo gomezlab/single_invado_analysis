@@ -34,11 +34,11 @@ pix_count = i_size(1)*i_size(2);
 edge_image = ones(i_size(1),i_size(2),3);
 edge_image_ad = ones(i_size(1),i_size(2),3);
 
-all_seqs = zeros(281,198);
-seq_map = jet(281);
-for i = 0:280
-    all_seqs(i + 1,:) = load(fullfile('track_seqs',['seq_',num2str(i),'.csv'])) + 1;
-end
+all_seqs = load('seq.csv') + 1;
+seq_map = jet(size(all_seqs,1));
+%for i = 0:280
+%    all_seqs(i + 1,:) = load(fullfile('track_seqs',['seq_',num2str(i),'.csv'])) + 1;
+%end
 
 i_seen = 0;
 
@@ -66,8 +66,13 @@ for i = 1:i_count
     highlighted_test = create_highlighted_image(orig_i,bwperim(I_test));
     highlighted_test = create_highlighted_image(highlighted_test,bwperim(I_2 & not(I_test)),'color',1);    
 
-    highlighted_all = create_highlighted_image(orig_i,bwperim(I_2));
-    for j=1:281
+    %highlighted_all = create_highlighted_image(orig_i,bwperim(I_2));
+    highlighted_all = orig_i;
+    for j=1:size(all_seqs,1)
+        if (not(all_seqs(j,i_seen))) 
+            continue;
+        end
+        
         this_high = zeros(i_size(1),i_size(2));
         this_high(find(I_lab == all_seqs(j,i_seen))) = 1;
         highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',seq_map(j,:));
