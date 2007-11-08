@@ -46,33 +46,9 @@ print "\n\nDetermining Tracking Matrix\n" if $opt{debug};
 my @tracking_mat;
 &make_tracking_mat;
 
-my $num_ad = $#{$data_sets{"001"}{Area}};
+print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
+&output_tracking_mat;
 
-mkpath("track_seqs");
-for my $start (0..$num_ad) {
-
-	my @seq = $start;
-	my @dist_seq;
-
-	my @data_sets = sort { $a <=> $b } keys %data_sets;
-	for (0..$#data_sets) {
-		next if ($_ == $#data_sets);
-		my $i_num = $data_sets[$_];
-		push @seq, &min_index(@{${$data_sets{$i_num}{Cent_dist}}[$seq[$_]]});
-		push @dist_seq, ${${$data_sets{$i_num}{Cent_dist}}[$seq[$_]]}[$seq[$_ + 1]];
-	}
-
-#for (0..$#seq) {
-#	print $seq[$_],"->",$dist_seq[$_],"\n";
-#}
-
-	open OUTPUT, ">track_seqs/seq_". $start . ".csv";
-	print OUTPUT join(",",@seq);
-	close OUTPUT;
-	open OUTPUT, ">track_seqs/dist_seq" . $start . ".csv";
-	print OUTPUT join(",",@dist_seq);
-	close OUTPUT;
-}
 ###############################################################################
 # Functions
 ###############################################################################
@@ -280,7 +256,19 @@ sub make_abs_diff_mat {
 
 sub make_tracking_mat {
     &initialize_tracking_mat;
-
+	my @data_keys = sort { $a <=> $b } keys %data_sets;
+	for (0..$#data_keys) {
+		next if ($_ == $#data_keys);
+		
+		my $i_num = $data_keys[$_];
+		my $next_i_num = $data_keys[$_ + 1];
+		&track_live_adhesions($i_num);
+		
+		&detect_merged_adhesions($i_num);
+		
+		&detect_new_adhesions($next_i_num);
+		&fill_in_tracking_mat_holes;
+	}
 }
 
 sub initialize_tracking_mat {
@@ -294,6 +282,123 @@ sub initialize_tracking_mat {
     }
 }
 
+sub track_live_adhesions {
+	my $i_num = $_[0];
+	my $num_ad_lineages = $#tracking_mat;
+	my $cur_step = $#{$tracking_mat[0]};
+	
+	my @time_step_dists = @{$data_sets{$i_num}{Cent_dist}};
+
+	for my $i (0..$num_ad_lineages) {
+		if ($tracking_mat[$i][$cur_step] == -1) {
+			push @{$tracking_mat[$i]}, -1;
+			next;
+		}
+
+		my $adhesion_num = ${$tracking_mat[$i]}[$cur_step];
+		my @dist_to_other_adhesions = @{$time_step_dists[$adhesion_num]};
+
+		my @sorted_indexes = sort {$dist_to_other_adhesions[$a] <=> $dist_to_other_adhesions[$b]} (0..$#dist_to_other_adhesions);
+
+		push @{$tracking_mat[$i]}, $sorted_indexes[0];
+	}
+}
+
+sub detect_merged_adhesions {
+	my $i_num = $_[0];
+	my $num_ad_lineages = $#tracking_mat;
+	my $cur_step = $#{$tracking_mat[0]};
+	my @areas = @{$data_sets{$i_num}{Area}};
+
+	print $cur_step, "-";
+	my %dest_adhesions;
+	for my $i (0..$num_ad_lineages) {
+		push @{$dest_adhesions{$tracking_mat[$i][$cur_step]}{seq}}, $tracking_mat[$i][$cur_step - 1];
+		push @{$dest_adhesions{$tracking_mat[$i][$cur_step]}{lineage}}, $i;
+	}
+
+	my $count = 0;
+	for my $i (keys %dest_adhesions) {
+		if (scalar(@{$dest_adhesions{$i}{seq}}) > 1) {
+			$count++;
+			my @merged_areas = @areas[@{$dest_adhesions{$i}{seq}}];
+			my @lineage = @{$dest_adhesions{$i}{lineage}};
+			my $biggest_ad_index = &max_index(@merged_areas);	
+			
+			foreach (0..$#lineage) {
+				if ($_ != $biggest_ad_index) {
+					${$tracking_mat[$lineage[$_]]}[$cur_step] = -1;
+				}
+			}
+		}
+	}
+	print "Merged: $count\n";
+}
+
+sub detect_new_adhesions {
+	my $next_i_num = $_[0];
+
+	my $long_lineage = $#{$tracking_mat[0]};
+	my $short_lineage = $#{$tracking_mat[0]};
+
+	for (0 .. $#tracking_mat) {
+		if ($long_lineage < $#{$tracking_mat[$_]}) {
+			$long_lineage = $#{$tracking_mat[$_]};
+		}
+		if ($short_lineage > $#{$tracking_mat[$_]}) {
+			$short_lineage = $#{$tracking_mat[$_]};
+		}
+	}
+
+	if ($long_lineage != $short_lineage) {
+		warn "Tracking matrix built unevenly\n";
+	}
+
+	my $expected_ad_count = $#{$data_sets{$next_i_num}{Area}};
+	my %expected_nums = map { $_ => 1 } (0..$expected_ad_count);
+	
+	for my $i (0 .. $#tracking_mat) {
+		$expected_nums{$tracking_mat[$i][$long_lineage]} = 0;
+	}
+
+	my $sum = 0;
+	for (keys %expected_nums) {
+		$sum++ if (not($expected_nums{$_}));
+	}
+	print $next_i_num," ", $expected_ad_count, " ", $sum, " ", $long_lineage;#, "\n"; 
+	
+	for my $i (sort {$a <=> $b} keys %expected_nums) {
+		if ($expected_nums{$i}) {
+			my @temp;
+			for (0 .. $long_lineage - 1) {
+				push @temp, -1;
+			}
+			push @temp, $i;
+			push @tracking_mat, \@temp;
+			#print "h";
+		}
+	}
+
+	print " ", scalar(@tracking_mat), "\n";
+}
+
+sub fill_in_tracking_mat_holes {
+	my $num_ad_lineages = $#tracking_mat;
+	my $max_size = $#{$tracking_mat[0]};
+
+	for my $i (0..$num_ad_lineages) {
+		if ($#{$tracking_mat[$i]} > $max_size) {
+			$max_size = $#{$tracking_mat[$i]};
+		}
+	}
+	
+	for my $i (0..$num_ad_lineages) {
+		while ($#{$tracking_mat[$i]} != $max_size) {
+			push @{$tracking_mat[$i]}, -1;
+		}
+	}
+}
+
 sub min_index {
     my $min_i = 0;
     for (0 .. $#_) {
@@ -302,4 +407,24 @@ sub min_index {
         }
     }
     return $min_i;
+}
+
+sub max_index {
+    my $max_i = 0;
+    for (0 .. $#_) {
+        if ($_[$_] > $_[$max_i]) {
+            $max_i = $_;
+        }
+    }
+    return $max_i;
+}
+
+sub output_tracking_mat {
+	open OUTPUT, ">seq.csv";
+	
+	for my $i (0..$#tracking_mat) {
+		print OUTPUT join(",",@{$tracking_mat[$i]}),"\n";
+	}
+
+	close OUTPUT;
 }

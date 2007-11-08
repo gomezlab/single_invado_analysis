@@ -40,6 +40,7 @@ for (@folders) {
     my $file_name = &write_data_file("$_/Centroid_dist_from_edge", "$_/Area");
     foreach (split(/\s/, $cfg{file_ext})) {
         &build_and_execute_gnuplot_file("cent_area", $file_name, "$plots_folder/Cent_dist_vs_area.$_");
+        &build_and_execute_r_file("cent_area", $file_name, "$plots_folder/Cent_dist_vs_area.$_");
     }
 
     $file_name =
@@ -206,6 +207,33 @@ sub build_gnuplot_file {
 
 sub build_and_execute_gnuplot_file {
     my @gnu_commands = &build_gnuplot_file(@_);
+
+    my ($temp_h, $gnuplot_file_name) = tempfile();
+    print $temp_h join("\n", @gnu_commands);
+    close $temp_h;
+
+    system "gnuplot $gnuplot_file_name";
+}
+
+sub build_r_file {
+    my ($plot_type, $data_file_name, $out_file) = @_;
+
+    my ($title, $xlabel, $ylabel) = &get_title_and_labels($plot_type);
+
+    #my $term_type = &get_output_type($out_file);
+	
+
+    my @commands;
+	push @commands,
+		 (
+		  "pdf('$out_file')",
+		  "plot '$data_file_name'"
+		 );
+	return @commands;
+}
+
+sub build_and_execute_r_file {
+    my @gnu_commands = &build_r_file(@_);
 
     my ($temp_h, $gnuplot_file_name) = tempfile();
     print $temp_h join("\n", @gnu_commands);
