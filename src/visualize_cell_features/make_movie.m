@@ -27,7 +27,7 @@ end
 
 i_count = size(imfinfo(original_i_file),2);
 
-c_map = jet(i_count);
+edge_c_map = jet(i_count);
 
 i_size = size(imread(original_i_file,1));
 pix_count = i_size(1)*i_size(2);
@@ -35,7 +35,12 @@ edge_image = ones(i_size(1),i_size(2),3);
 edge_image_ad = ones(i_size(1),i_size(2),3);
 
 all_seqs = load(tracking_seq_file) + 1;
-seq_map = jet(size(all_seqs,1));
+
+max_live_adhesions = find_max_live_adhesions(all_seqs);
+
+adhesion_tracking_map = jet(max_live_adhesions);
+
+live_adhesion_to_color_map = zeros(size(all_seqs,1));
 
 i_seen = 0;
 
@@ -64,15 +69,50 @@ for i = 1:i_count
     highlighted_test = create_highlighted_image(highlighted_test,bwperim(I_2 & not(I_test)),'color',1);    
 
     %highlighted_all = create_highlighted_image(orig_i,bwperim(I_2));
-    highlighted_all = orig_i;
+    highlighted_all = cat(3,orig_i,orig_i,orig_i);
+    sort_ascending = 1;
     for j=1:size(all_seqs,1)
         if (not(all_seqs(j,i_seen))) 
+            live_adhesion_to_color_map(j) = 0;
             continue;
         end
         
-        this_high = zeros(i_size(1),i_size(2));
-        this_high(find(I_lab == all_seqs(j,i_seen))) = 1;
-        highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',seq_map(j,:));
+        if (live_adhesion_to_color_map(j))
+            this_high = zeros(i_size(1),i_size(2));
+            this_high(find(I_lab == all_seqs(j,i_seen))) = 1;
+            this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
+            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',this_color_map);
+        else
+            if (sort_ascending)
+                sorted_used_colors = sort(unique(live_adhesion_to_color_map));
+                sort_ascending = 0;
+            else
+                sorted_used_colors = sort(unique(live_adhesion_to_color_map),'descend');
+                sort_ascending = 1;
+            end
+            
+            poss_color = 0;
+            for k = 1:max_live_adhesions
+                find_l = length(find(sorted_used_colors == k));
+                if (not(find_l))
+                   poss_color = k;
+                   break;
+                end
+            end
+            
+            if (not(poss_color))
+                warning(['Could not find a unique color for adhesion lineage #: ', num2str(j)])
+                live_adhesion_to_color_map(j) = 1;
+            else        
+                live_adhesion_to_color_map(j) = poss_color;
+            end
+            
+            this_high = zeros(i_size(1),i_size(2));
+            this_high(find(I_lab == all_seqs(j,i_seen))) = 1;
+            this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
+            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',this_color_map);
+        end
+        
     end
     
     highlighted_2 = create_highlighted_image(orig_i,bwperim(I_2));
@@ -83,9 +123,9 @@ for i = 1:i_count
     cell_edge_1 = bwperim(imread(fullfile(I_folder_1,padded_i_num,edge_filename)));
 
     for j = 1:3
-        edge_image(find(cell_edge_1)+(j-1)*pix_count) = c_map(i,j);
-        edge_image_ad(find(cell_edge_1)+(j-1)*pix_count) = c_map(i,j);
-        edge_image_ad(find(bwperim(I_2))+(j-1)*pix_count) = c_map(i,j);
+        edge_image(find(cell_edge_1)+(j-1)*pix_count) = edge_c_map(i,j);
+        edge_image_ad(find(cell_edge_1)+(j-1)*pix_count) = edge_c_map(i,j);
+        edge_image_ad(find(bwperim(I_2))+(j-1)*pix_count) = edge_c_map(i,j);
     end
 
     
