@@ -78,12 +78,13 @@ for i = 1:i_count
         end
         
         if (live_adhesion_to_color_map(j))
-            this_high = zeros(i_size(1),i_size(2));
-            this_high(find(I_lab == all_seqs(j,i_seen))) = 1;
+            this_adhesion = zeros(i_size(1),i_size(2));
+            this_adhesion(I_lab == all_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
-            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',this_color_map);
+            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
         else
-            unique_used_colors = unique(live_adhesion_to_color_map);
+            short_list = live_adhesion_to_color_map(live_adhesion_to_color_map > 0);
+            unique_used_colors = unique(short_list);
             
             if (search_ascending)
                 search_seq = 1:max_live_adhesions;
@@ -95,8 +96,7 @@ for i = 1:i_count
             
             poss_color = 0;
             for k = search_seq
-                find_l = length(find(unique_used_colors == k));
-                if (not(find_l))
+                if (not(sum(unique_used_colors == k)))
                    poss_color = k;
                    break;
                 end
@@ -109,10 +109,10 @@ for i = 1:i_count
                 live_adhesion_to_color_map(j) = poss_color;
             end
             
-            this_high = zeros(i_size(1),i_size(2));
-            this_high(find(I_lab == all_seqs(j,i_seen))) = 1;
+            this_adhesion = zeros(i_size(1),i_size(2));
+            this_adhesion(I_lab == all_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
-            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',this_color_map);
+            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
         end
     end
     
