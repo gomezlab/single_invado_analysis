@@ -70,7 +70,7 @@ for i = 1:i_count
 
     %highlighted_all = create_highlighted_image(orig_i,bwperim(I_2));
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
-    sort_ascending = 1;
+    search_ascending = 1;
     for j=1:size(all_seqs,1)
         if (not(all_seqs(j,i_seen))) 
             live_adhesion_to_color_map(j) = 0;
@@ -83,17 +83,19 @@ for i = 1:i_count
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
             highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',this_color_map);
         else
-            if (sort_ascending)
-                sorted_used_colors = sort(unique(live_adhesion_to_color_map));
-                sort_ascending = 0;
+            unique_used_colors = unique(live_adhesion_to_color_map);
+            
+            if (search_ascending)
+                search_seq = 1:max_live_adhesions;
+                search_ascending = 0;
             else
-                sorted_used_colors = sort(unique(live_adhesion_to_color_map),'descend');
-                sort_ascending = 1;
+                search_seq = max_live_adhesions:-1:1;
+                search_ascending = 1;
             end
             
             poss_color = 0;
-            for k = 1:max_live_adhesions
-                find_l = length(find(sorted_used_colors == k));
+            for k = search_seq
+                find_l = length(find(unique_used_colors == k));
                 if (not(find_l))
                    poss_color = k;
                    break;
@@ -112,14 +114,13 @@ for i = 1:i_count
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
             highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_high),'color',this_color_map);
         end
-        
     end
     
     highlighted_2 = create_highlighted_image(orig_i,bwperim(I_2));
     highlighted_1 = create_highlighted_image(orig_i,bwperim(I_2));
     highlighted_1 = create_highlighted_image(highlighted_1,bwperim(I_1 & not(I_2)),'color',1);
     %highlighted_1 = create_highlighted_image(highlighted_1,bwperim(markers),3);
-
+    
     cell_edge_1 = bwperim(imread(fullfile(I_folder_1,padded_i_num,edge_filename)));
 
     for j = 1:3
@@ -128,7 +129,8 @@ for i = 1:i_count
         edge_image_ad(find(bwperim(I_2))+(j-1)*pix_count) = edge_c_map(i,j);
     end
 
-    
+    %highlighted_all(round(0.95*i_size(1)):round(0.95*i_size(1))+19,round(0.95*i_size(2)):round(0.95*i_size(2))+19,1:3) = ones(20,20,3);
+        
     %frame = [highlighted_1,0.5*ones(size(orig_i,1),round(0.05*size(orig_i,2)),3),highlighted_2];
     frame = [cat(3,orig_i,orig_i,orig_i),0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all];
     frame = {frame [edge_image_ad,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all]};
