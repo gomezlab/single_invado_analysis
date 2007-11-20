@@ -44,10 +44,15 @@ if (defined $opt{output}) {
 
 print "\n\nDetermining Tracking Matrix\n" if $opt{debug};
 my @tracking_mat;
+my %tracking_probs;
 &make_tracking_mat;
 
 print "\n\nFiltering Tracking Matrix\n" if $opt{debug};
-&filter_tracking_mat;
+
+#&filter_tracking_mat;
+
+print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
+&output_tracking_probs;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 &output_tracking_mat;
@@ -84,8 +89,14 @@ sub get_config {
     #check to see if files have been specified for the information used for the
     #tracking, if it has not, die with a message to user to specify these files
     if (not(defined $cfg{tracking_files})) {
-        die
-          "ERROR: The files that will be used for tracking must be specified in the config file using the name tracking_files\n";
+        die "ERROR: The files that will be used for tracking must be specified in ",
+          "the config file using the name tracking_files\n";
+    }
+
+    if (not(defined $cfg{tracking_output_file})) {
+        die "ERROR: The file name for writing the tracking data has not been ",
+          "specified, the file name must be specified using the variable name ",
+          "\"tracking_output_file\" in the config file.\n";
     }
 
     if (defined $opt{input} && not(-e $opt{input})) {
@@ -264,14 +275,18 @@ sub make_tracking_mat {
 
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
-        &track_live_adhesions($i_num, $next_i_num);
 
-        &detect_merged_adhesions($i_num);
+        print "\nAnalyzing image number: $i_num\n";
+
+        my $num_live_adhesions = &track_live_adhesions($i_num, $next_i_num);
+
+        #print "# of Adhesions Being Tracked: $num_live_adhesions\n" if $opt{debug};
+
+        &detect_merged_adhesions($i_num, $next_i_num);
 
         &detect_new_adhesions($next_i_num);
         &fill_in_tracking_mat_holes;
     }
-
 }
 
 sub initialize_tracking_mat {
@@ -319,35 +334,63 @@ sub track_live_adhesions {
 
         push @{ $tracking_mat[$i] }, $sorted_dist_indexes[0];
     }
+    return $live_adhesions;
 }
 
 sub detect_merged_adhesions {
-    my $i_num           = $_[0];
+    my ($i_num, $next_i_num) = @_;
     my $num_ad_lineages = $#tracking_mat;
     my $cur_step        = $#{ $tracking_mat[0] };
     my @areas           = @{ $data_sets{$i_num}{Area} };
+    my @dists           = @{ $data_sets{$i_num}{Cent_dist} };
 
     my %dest_adhesions;
     for my $i (0 .. $num_ad_lineages) {
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{seq} },     $tracking_mat[$i][ $cur_step - 1 ];
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{lineage} }, $i;
+        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{seq} },          $tracking_mat[$i][ $cur_step - 1 ];
+        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{lineage_nums} }, $i;
+
+        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{starting_ad} }, $tracking_mat[$i][ $cur_step - 1 ];
+        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{ending_ad} },   $tracking_mat[$i][$cur_step];
     }
 
     my $merged_count = 0;
     for my $i (keys %dest_adhesions) {
         if (scalar(@{ $dest_adhesions{$i}{seq} }) > 1) {
             $merged_count++;
-            my @merged_areas     = @areas[ @{ $dest_adhesions{$i}{seq} } ];
-            my @lineage          = @{ $dest_adhesions{$i}{lineage} };
-            my $biggest_ad_index = &max_index(@merged_areas);
 
-            foreach (0 .. $#lineage) {
-                if ($_ != $biggest_ad_index) {
-                    ${ $tracking_mat[ $lineage[$_] ] }[$cur_step] = -1;
+            my @merged_ad_nums = @{ $dest_adhesions{$i}{seq} };
+            my @lineage_nums   = @{ $dest_adhesions{$i}{lineage_nums} };
+
+            my @merged_areas        = @areas[@merged_ad_nums];
+            my @sorted_area_indexes = sort { $merged_areas[$a] <=> $merged_areas[$b] } (0 .. $#merged_areas);
+            my $biggest_area_index  = $sorted_area_indexes[$#sorted_area_indexes];
+
+            my @starting_ad = @{ $dest_adhesions{$i}{starting_ad} };
+            my @ending_ad   = @{ $dest_adhesions{$i}{ending_ad} };
+
+            my @dist_shifts;
+            for (0 .. $#lineage_nums) {
+                push @dist_shifts, $dists[ $starting_ad[$_] ][ $ending_ad[$_] ];
+            }
+            my @sorted_dist_indexes = sort { $dist_shifts[$b] <=> $dist_shifts[$a] } (0 .. $#dist_shifts);
+            my $shortest_dist_index = $sorted_dist_indexes[$#sorted_dist_indexes];
+
+            if ($biggest_area_index != $shortest_dist_index) {
+                @{ $tracking_probs{merge}{$i_num}{image_nums} }  = ($i_num, $next_i_num);
+                @{ $tracking_probs{merge}{$i_num}{starting_ad} } = @starting_ad;
+                @{ $tracking_probs{merge}{$i_num}{ending_ad} }   = @ending_ad;
+            }
+
+            foreach (0 .. $#lineage_nums) {
+                if ($_ != $biggest_area_index) {
+
+                    #${ $tracking_mat[ $lineage_nums[$_] ] }[$cur_step] = -1;
+                    $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1;
                 }
             }
         }
     }
+    print "# Merged Adhesions: $merged_count\n" if $opt{debug};
 }
 
 sub detect_new_adhesions {
@@ -440,6 +483,8 @@ sub filter_tracking_mat {
         push @lineages_to_include, $i if $hit;
     }
 
+    print join(",", @lineages_to_include), "\n";
+
     @area_shifts = @area_shifts[@lineages_to_include];
     open OUTPUT, ">area_shifts.csv";
     for my $i (0 .. $#area_shifts) {
@@ -449,7 +494,7 @@ sub filter_tracking_mat {
 
     print "# of lineages with >400 pix area shift: ", scalar(@lineages_to_include), "\n";
 
-    @tracking_mat = $tracking_mat[0];
+    @tracking_mat = @tracking_mat[@lineages_to_include];
 }
 
 sub find_ad_area_changes {
@@ -476,8 +521,11 @@ sub find_ad_area_changes {
     return @area_shifts;
 }
 
+sub output_tracking_probs {
+}
+
 sub output_tracking_mat {
-    open OUTPUT, ">seq.csv";
+    open OUTPUT, ">$cfg{tracking_output_file}";
 
     for my $i (0 .. $#tracking_mat) {
         print OUTPUT join(",", @{ $tracking_mat[$i] }), "\n";

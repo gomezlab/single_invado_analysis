@@ -52,8 +52,6 @@ for i = 1:i_count
     
     orig_i = normalize_grayscale_image(imread(original_i_file,i),min_max(1),min_max(2));
 
-    i_size = size(orig_i);
-
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
 
@@ -62,11 +60,7 @@ for i = 1:i_count
     I_2 = imread(fullfile(I_folder_2,padded_i_num,filename_2));
     markers = imread(fullfile(I_folder_1,padded_i_num,'focal_markers.png'));
 
-    I_lab = bwlabel(I_2);
-    I_test = zeros(i_size(1),i_size(2));
-    I_test(find(I_lab == all_seqs(1,i_seen))) = 1;
-    highlighted_test = create_highlighted_image(orig_i,bwperim(I_test));
-    highlighted_test = create_highlighted_image(highlighted_test,bwperim(I_2 & not(I_test)),'color',1);    
+    I_lab = bwlabel(I_2);   
 
     %highlighted_all = create_highlighted_image(orig_i,bwperim(I_2));
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
@@ -148,5 +142,3 @@ for i = 1:i_count
         end
     end
 end
-
-%system('/Users/mbergins/bin/ffmpeg -sameq -r 5 -b 8000 -y -i ../../results/norm/time_series_1/movie_files/time%03d.png -f huffyuv ../../results/norm/time_series_1/test.mp4');
