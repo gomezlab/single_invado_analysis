@@ -61,6 +61,9 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 # Functions
 ###############################################################################
 
+#######################################
+# Config Collection
+#######################################
 sub get_config {
     my %cfg = ParseConfig(
         -ConfigFile            => $opt{cfg},
@@ -107,6 +110,9 @@ sub get_config {
     return %cfg;
 }
 
+#######################################
+# Data Set Collection
+#######################################
 sub gather_data_sets {
     my @folders = <$cfg{results_folder}/*/$cfg{raw_data_folder}>;
 
@@ -204,6 +210,9 @@ sub trim_data_sets {
     }
 }
 
+#######################################
+# Process Data Sets
+#######################################
 sub make_comp_matices {
     my @data_keys = sort { $a <=> $b } keys %data_sets;
 
@@ -227,11 +236,6 @@ sub make_comp_matices {
         my @area1 = @{ $data_sets{$key_1}{Area} };
         my @area2 = @{ $data_sets{$key_2}{Area} };
         @{ $data_sets{$key_1}{Area_diff} } = &make_abs_diff_mat(\@area1, \@area2);
-
-        #Gather the Average Signal Intensity difference matrix
-        #my @sig1 = @{ $data_sets{$key_1}{Average_adhesion_signal} };
-        #my @sig2 = @{ $data_sets{$key_2}{Average_adhesion_signal} };
-        #@{ $data_sets{$key_1}{Sig_diff} } = &make_abs_diff_mat(\@sig1, \@sig2);
     }
 }
 
@@ -267,6 +271,9 @@ sub make_abs_diff_mat {
     return @diff_mat;
 }
 
+#######################################
+# Tracking Matrix Collection
+#######################################
 sub make_tracking_mat {
     &initialize_tracking_mat;
     my @data_keys = sort { $a <=> $b } keys %data_sets;
@@ -275,8 +282,6 @@ sub make_tracking_mat {
 
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
-
-        print "\nAnalyzing image number: $i_num\n";
 
         my $num_live_adhesions = &track_live_adhesions($i_num, $next_i_num);
 
@@ -323,14 +328,7 @@ sub track_live_adhesions {
         my @sorted_dist_indexes =
           sort { $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] } (0 .. $#dist_to_next_adhesions);
 
-        my @close_adhesion_dists;
-        foreach (@sorted_dist_indexes) {
-            if ($dist_to_next_adhesions[$_] < 3) {
-                push @close_adhesion_dists, $next_time_step_areas[$_];
-            } else {
-                last;
-            }
-        }
+        my @dist_sorted_adhesions_areas = @next_time_step_areas[@sorted_dist_indexes];
 
         push @{ $tracking_mat[$i] }, $sorted_dist_indexes[0];
     }
@@ -383,14 +381,11 @@ sub detect_merged_adhesions {
 
             foreach (0 .. $#lineage_nums) {
                 if ($_ != $biggest_area_index) {
-
-                    #${ $tracking_mat[ $lineage_nums[$_] ] }[$cur_step] = -1;
-                    $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1;
+                    $tracking_mat[ $lineage_nums[$_] ][$cur_step] *= -1;
                 }
             }
         }
     }
-    print "# Merged Adhesions: $merged_count\n" if $opt{debug};
 }
 
 sub detect_new_adhesions {
