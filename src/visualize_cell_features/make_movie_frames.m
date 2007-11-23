@@ -34,13 +34,13 @@ pix_count = i_size(1)*i_size(2);
 edge_image = ones(i_size(1),i_size(2),3);
 edge_image_ad = ones(i_size(1),i_size(2),3);
 
-all_seqs = load(tracking_seq_file) + 1;
+tracking_seqs = load(tracking_seq_file) + 1;
 
-max_live_adhesions = find_max_live_adhesions(all_seqs);
+max_live_adhesions = find_max_live_adhesions(tracking_seqs);
 
 adhesion_tracking_map = jet(max_live_adhesions);
 
-live_adhesion_to_color_map = zeros(size(all_seqs,1));
+live_adhesion_to_color_map = zeros(size(tracking_seqs,1));
 
 i_seen = 0;
 
@@ -57,23 +57,22 @@ for i = 1:i_count
 
     I_1 = imread(fullfile(I_folder_1,padded_i_num,filename_1));
     
-    I_2 = imread(fullfile(I_folder_2,padded_i_num,filename_2));
-    markers = imread(fullfile(I_folder_1,padded_i_num,'focal_markers.png'));
+    I_2 = imread(fullfile(I_folder_2,padded_i_num,t_filtered_file));
 
-    I_lab = bwlabel(I_2);   
+    I_lab = bwlabel(I_2);
 
     %highlighted_all = create_highlighted_image(orig_i,bwperim(I_2));
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
     search_ascending = 1;
-    for j=1:size(all_seqs,1)
-        if (not(all_seqs(j,i_seen))) 
+    for j=1:size(tracking_seqs,1)
+        if (tracking_seqs(j,i_seen) <= 0) 
             live_adhesion_to_color_map(j) = 0;
             continue;
         end
         
         if (live_adhesion_to_color_map(j))
             this_adhesion = zeros(i_size(1),i_size(2));
-            this_adhesion(I_lab == all_seqs(j,i_seen)) = 1;
+            this_adhesion(I_lab == tracking_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
             highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
         else
@@ -104,7 +103,7 @@ for i = 1:i_count
             end
             
             this_adhesion = zeros(i_size(1),i_size(2));
-            this_adhesion(I_lab == all_seqs(j,i_seen)) = 1;
+            this_adhesion(I_lab == tracking_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
             highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
         end

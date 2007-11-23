@@ -10,6 +10,7 @@ use Config::General qw/ ParseConfig /;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
+$| = 1;
 
 my %opt;
 $opt{debug} = 0;
@@ -47,10 +48,6 @@ my @tracking_mat;
 my %tracking_probs;
 &make_tracking_mat;
 
-print "\n\nFiltering Tracking Matrix\n" if $opt{debug};
-
-#&filter_tracking_mat;
-
 print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
 &output_tracking_probs;
 
@@ -79,9 +76,7 @@ sub get_config {
         close EX_INPUT;
 
         chomp($temp_line);
-        @{ $cfg{exclude_image_nums} } = split(/\s/, $temp_line);
-
-        shift @{ $cfg{exclude_image_nums} } if (${ $cfg{exclude_image_nums} }[0] =~ //);
+        @{ $cfg{exclude_image_nums} } = split(",", $temp_line);
     } else {
         $cfg{exclude_image_nums} = 0;
     }
@@ -283,14 +278,18 @@ sub make_tracking_mat {
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
 
+        print "Working on Image #: $i_num - " if $opt{debug};
+
         my $num_live_adhesions = &track_live_adhesions($i_num, $next_i_num);
 
-        #print "# of Adhesions Being Tracked: $num_live_adhesions\n" if $opt{debug};
+        print "# of Adhesions Being Tracked: $num_live_adhesions - " if $opt{debug};
 
-        &detect_merged_adhesions($i_num, $next_i_num);
+        my ($num_merged, $num_prob_merged) = &detect_merged_adhesions($i_num, $next_i_num);
+        print "# of Merged Ad: $num_merged/$num_prob_merged" if $opt{debug};
 
         &detect_new_adhesions($next_i_num);
         &fill_in_tracking_mat_holes;
+        print "\r" if $opt{debug};
     }
 }
 
@@ -316,8 +315,8 @@ sub track_live_adhesions {
 
     my $live_adhesions = 0;
     for my $i (0 .. $num_ad_lineages) {
-        if ($tracking_mat[$i][$cur_step] == -1) {
-            push @{ $tracking_mat[$i] }, -1;
+        if ($tracking_mat[$i][$cur_step] <= -1) {
+            push @{ $tracking_mat[$i] }, $tracking_mat[$i][$cur_step];
             next;
         }
 
@@ -344,19 +343,19 @@ sub detect_merged_adhesions {
 
     my %dest_adhesions;
     for my $i (0 .. $num_ad_lineages) {
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{seq} },          $tracking_mat[$i][ $cur_step - 1 ];
+        next if $tracking_mat[$i][$cur_step] <= -1;
         push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{lineage_nums} }, $i;
-
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{starting_ad} }, $tracking_mat[$i][ $cur_step - 1 ];
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{ending_ad} },   $tracking_mat[$i][$cur_step];
+        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{starting_ad} },  $tracking_mat[$i][ $cur_step - 1 ];
+        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{ending_ad} },    $tracking_mat[$i][$cur_step];
     }
 
-    my $merged_count = 0;
+    my $merged_count      = 0;
+    my $merged_prob_count = 0;
     for my $i (keys %dest_adhesions) {
-        if (scalar(@{ $dest_adhesions{$i}{seq} }) > 1) {
+        if (scalar(@{ $dest_adhesions{$i}{lineage_nums} }) > 1) {
             $merged_count++;
 
-            my @merged_ad_nums = @{ $dest_adhesions{$i}{seq} };
+            my @merged_ad_nums = @{ $dest_adhesions{$i}{starting_ad} };
             my @lineage_nums   = @{ $dest_adhesions{$i}{lineage_nums} };
 
             my @merged_areas        = @areas[@merged_ad_nums];
@@ -374,6 +373,7 @@ sub detect_merged_adhesions {
             my $shortest_dist_index = $sorted_dist_indexes[$#sorted_dist_indexes];
 
             if ($biggest_area_index != $shortest_dist_index) {
+                $merged_prob_count++;
                 @{ $tracking_probs{merge}{$i_num}{image_nums} }  = ($i_num, $next_i_num);
                 @{ $tracking_probs{merge}{$i_num}{starting_ad} } = @starting_ad;
                 @{ $tracking_probs{merge}{$i_num}{ending_ad} }   = @ending_ad;
@@ -386,6 +386,7 @@ sub detect_merged_adhesions {
             }
         }
     }
+    return ($merged_count, $merged_prob_count);
 }
 
 sub detect_new_adhesions {
@@ -454,71 +455,31 @@ sub max_index {
     return $max_i;
 }
 
-sub filter_tracking_mat {
-    my @area_shifts;
-    my @data_keys = sort { $a <=> $b } keys %data_sets;
-    for (0 .. $#data_keys) {
-        next if ($_ == $#data_keys);
-
-        my $i_num      = $data_keys[$_];
-        my $next_i_num = $data_keys[ $_ + 1 ];
-        @area_shifts = &find_ad_area_changes($i_num, $next_i_num, \@area_shifts);
-    }
-
-    my @lineages_to_include;
-    for my $i (0 .. $#area_shifts) {
-        my $hit = 0;
-        for my $j (0 .. $#{ $area_shifts[0] }) {
-            if (not($area_shifts[$i][$j] =~ /nan/)) {
-                if (abs($area_shifts[$i][$j]) > 400) {
-                    $hit = 1;
-                }
-            }
-        }
-        push @lineages_to_include, $i if $hit;
-    }
-
-    print join(",", @lineages_to_include), "\n";
-
-    @area_shifts = @area_shifts[@lineages_to_include];
-    open OUTPUT, ">area_shifts.csv";
-    for my $i (0 .. $#area_shifts) {
-        print OUTPUT join(",", @{ $area_shifts[$i] }), "\n";
-    }
-    close OUTPUT;
-
-    print "# of lineages with >400 pix area shift: ", scalar(@lineages_to_include), "\n";
-
-    @tracking_mat = @tracking_mat[@lineages_to_include];
-}
-
-sub find_ad_area_changes {
-    my ($i_num, $next_i_num, $areas_ref) = @_;
-    my @area_shifts = @$areas_ref;
-
-    my @cur_areas  = @{ $data_sets{$i_num}{Area} };
-    my @next_areas = @{ $data_sets{$next_i_num}{Area} };
-    my $lin_num    = $#tracking_mat;
-
-    my $area_shift_pos = $#{ $area_shifts[0] } + 1;
-
-    for my $i (0 .. $lin_num) {
-        if (   ($tracking_mat[$i][$area_shift_pos] > -1)
-            && ($tracking_mat[$i][ $area_shift_pos + 1 ] > -1)) {
-            my $starting_ad = $tracking_mat[$i][$area_shift_pos];
-            my $ending_ad   = $tracking_mat[$i][ $area_shift_pos + 1 ];
-
-            $area_shifts[$i][$area_shift_pos] = $cur_areas[$starting_ad] - $next_areas[$ending_ad];
-        } else {
-            $area_shifts[$i][$area_shift_pos] = "nan";
-        }
-    }
-    return @area_shifts;
-}
-
+#######################################
+# Output Tracking Issues
+#######################################
 sub output_tracking_probs {
+    &output_merge_problems;
 }
 
+sub output_merge_problems {
+    if (not(-e "$cfg{tracking_probs_folder}/merge")) {
+        mkpath("$cfg{tracking_probs_folder}/merge");
+    }
+
+    for my $i (keys %{ $tracking_probs{merge} }) {
+        mkpath("$cfg{tracking_probs_folder}/merge/$i");
+        for my $j (keys %{ $tracking_probs{merge}{$i} }) {
+            open OUTPUT, ">$cfg{tracking_probs_folder}/merge/$i/$j.csv";
+            print OUTPUT join(",", @{ $tracking_probs{merge}{$i}{$j} });
+            close OUTPUT;
+        }
+    }
+}
+
+#######################################
+# Output the Tracking Matrix
+#######################################
 sub output_tracking_mat {
     open OUTPUT, ">$cfg{tracking_output_file}";
 
@@ -528,4 +489,3 @@ sub output_tracking_mat {
 
     close OUTPUT;
 }
-
