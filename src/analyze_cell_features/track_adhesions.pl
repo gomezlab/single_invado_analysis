@@ -339,6 +339,7 @@ sub detect_merged_adhesions {
     my $num_ad_lineages = $#tracking_mat;
     my $cur_step        = $#{ $tracking_mat[0] };
     my @areas           = @{ $data_sets{$i_num}{Area} };
+    my @next_step_areas = @{ $data_sets{$next_i_num}{Area} };
     my @dists           = @{ $data_sets{$i_num}{Cent_dist} };
 
     my %dest_adhesions;
@@ -357,36 +358,76 @@ sub detect_merged_adhesions {
 
             my @merged_ad_nums = @{ $dest_adhesions{$i}{starting_ad} };
             my @lineage_nums   = @{ $dest_adhesions{$i}{lineage_nums} };
+            my @starting_ads   = @{ $dest_adhesions{$i}{starting_ad} };
+            my @ending_ads     = @{ $dest_adhesions{$i}{ending_ad} };
 
             my @merged_areas        = @areas[@merged_ad_nums];
-            my @sorted_area_indexes = sort { $merged_areas[$a] <=> $merged_areas[$b] } (0 .. $#merged_areas);
-            my $biggest_area_index  = $sorted_area_indexes[$#sorted_area_indexes];
 
-            my @starting_ad = @{ $dest_adhesions{$i}{starting_ad} };
-            my @ending_ad   = @{ $dest_adhesions{$i}{ending_ad} };
 
             my @dist_shifts;
             for (0 .. $#lineage_nums) {
-                push @dist_shifts, $dists[ $starting_ad[$_] ][ $ending_ad[$_] ];
+                push @dist_shifts, $dists[ $starting_ads[$_] ][ $ending_ads[$_] ];
             }
-            my @sorted_dist_indexes = sort { $dist_shifts[$b] <=> $dist_shifts[$a] } (0 .. $#dist_shifts);
-            my $shortest_dist_index = $sorted_dist_indexes[$#sorted_dist_indexes];
+			
+			my ($merge_guess_index,$guess_quality) = &select_best_merge_decision(\@merged_areas, \@dist_shifts);
 
-            if ($biggest_area_index != $shortest_dist_index) {
+			if (!$guess_quality) {
                 $merged_prob_count++;
-                @{ $tracking_probs{merge}{$i_num}{image_nums} }  = ($i_num, $next_i_num);
-                @{ $tracking_probs{merge}{$i_num}{starting_ad} } = @starting_ad;
-                @{ $tracking_probs{merge}{$i_num}{ending_ad} }   = @ending_ad;
+                push @{ $tracking_probs{merge}{$i_num} }, { 
+                    image_nums  => [$i_num, $next_i_num],
+                    starting_ad => \@starting_ads,
+                    ending_ad   => \@ending_ads,
+                    winning_ad  => [$merged_ad_nums[$merge_guess_index]],
+                };
             }
 
             foreach (0 .. $#lineage_nums) {
-                if ($_ != $biggest_area_index) {
+                if ($_ != $merge_guess_index) {
                     $tracking_mat[ $lineage_nums[$_] ][$cur_step] *= -1;
                 }
             }
         }
     }
     return ($merged_count, $merged_prob_count);
+}
+
+sub select_best_merge_decision {
+	my @merged_areas = @{$_[0]};
+	my @dist_shifts  = @{$_[1]};
+
+	my @sorted_area_indexes = sort { $merged_areas[$a] <=> $merged_areas[$b] } (0 .. $#merged_areas);
+	my $biggest_area_index  = $sorted_area_indexes[$#sorted_area_indexes];
+	
+	my @sorted_dist_indexes = sort { $dist_shifts[$a] <=> $dist_shifts[$b] } (0 .. $#dist_shifts);
+	my $shortest_dist_index = $sorted_dist_indexes[0];
+
+	#There are several cases to deal with here:
+	# 1. The adhesion with the biggest starting area has to shift the least amount.
+	#    This is expected when a large adhesion swallows a small one.
+	# 2. The differences in area are negligible or equal, but there is a 
+	#	 difference in the centroid shifts. In this case, choose the adhesion 
+	#    which is closest to the final adhesion. 
+	
+	#Case 1:
+	if ($biggest_area_index == $shortest_dist_index) {
+		return ($biggest_area_index,1);
+	}
+
+	#Case 2:
+	my $area_shifts_small = 0;
+	my $shift_percent = 0.25;
+	$shift_percent = $cfg{merge_shift_percent} if defined($cfg{merge_shift_percent});
+	
+	my $first_area_diff = $merged_areas[$biggest_area_index] - $merged_areas[$biggest_area_index - 1];
+	if ($first_area_diff/$merged_areas[$biggest_area_index]	<= $shift_percent) {
+		$area_shifts_small = 1;
+	}
+	if ($area_shifts_small) {
+		return ($shortest_dist_index, 1);
+	}
+
+	return ($biggest_area_index, 0);
+
 }
 
 sub detect_new_adhesions {
@@ -469,10 +510,14 @@ sub output_merge_problems {
 
     for my $i (keys %{ $tracking_probs{merge} }) {
         mkpath("$cfg{tracking_probs_folder}/merge/$i");
-        for my $j (keys %{ $tracking_probs{merge}{$i} }) {
-            open OUTPUT, ">$cfg{tracking_probs_folder}/merge/$i/$j.csv";
-            print OUTPUT join(",", @{ $tracking_probs{merge}{$i}{$j} });
-            close OUTPUT;
+        for my $j (0 .. $#{ $tracking_probs{merge}{$i} }) {
+        	mkpath("$cfg{tracking_probs_folder}/merge/$i/$j");
+			my %merge_prob = %{$tracking_probs{merge}{$i}->[$j]};
+			for my $k (keys %merge_prob) {
+            	open OUTPUT, ">$cfg{tracking_probs_folder}/merge/$i/$j/$k.csv";
+            	print OUTPUT join(",", @{ $merge_prob{$k} });
+            	close OUTPUT;
+			}
         }
     }
 }
