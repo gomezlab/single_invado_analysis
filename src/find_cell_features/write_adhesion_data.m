@@ -1,61 +1,65 @@
-function write_adhesion_data(varargin)
+function write_adhesion_data(S,varargin)
 % WRITE_STRUCT_DATA     write most the data stored in a given struct to a
 %                       set of ascii formated files, using the field
 %                       names as the file names
 %
-%   write_struct_data(S) writes most the field names in struct 's' to ascii
+%   write_struct_data(S) writes most the field names in struct 'S' to ascii
 %   formated files, suitable for use in other programs, the fieldnames are
 %   used as the file names, all of the files are placed in subfolder
 %   'raw_data' of the current working directory
 %
-%   write_struct_data(S,'dir',d) writes most the field names in struct 's'
-%   to ascii formated files, suitable for use in other programs, the
+%   write_struct_data(S,'out_dir',d) writes most the field names in struct
+%   'S' to ascii formated files, suitable for use in other programs, the
 %   fieldnames are used as the file names, all of the files are placed in
-%   a subfolder 'raw_data' of the provided directory 'd'
+%   the provided directory 'd'
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dir = 'raw_data';
+i_p = inputParser;
+i_p.FunctionName = 'WRITE_ADHESION_DATA';
 
-if (isempty(varargin))
-    error('ERROR: write_struct_data - not enough command line options, see ''help write_struct_data''');
-elseif (isstruct(varargin{1}))
-    data = varargin{1};
-else
-    error('ERROR: write_struct_data - first parameter was not a struct');
-end
-    
-for i=1:size(varargin,2)
-    if (ischar(varargin{i}))
-        if (strcmpi(varargin{i},'dir'))
-            dir = varargin{i + 1};
-        end
-    end
-end
+i_p.addRequired('S',@isstruct);
+i_p.addParamValue('out_dir','raw_data',@ischar);
 
-if (not(exist('data','var')))
-    error('ERROR: write_struct_data - can''t seem to find the struct needed');
-end
+i_p.parse(S,varargin{:});
+out_dir = i_p.Results.out_dir;
 
-if (not(exist(dir,'dir')))
-    mkdir(dir);
+if (not(exist(out_dir,'dir')))
+    mkdir(out_dir);
 end
 
 to_exclude = strvcat('ConvexHull','ConvexImage','Image','FilledImage','PixelIdxList','PixelList','SubarrayIdx');
+special_cases = strvcat('PixelIdxList');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-field_names = fieldnames(data);
+field_names = fieldnames(S);
 
 for i = 1:size(field_names,1)
     if(strmatch(field_names(i),to_exclude))
         continue;
     end
-    temp = [data.(cell2mat(field_names(i)))];
-    save(fullfile(dir,cell2mat(field_names(i))),'temp','-ASCII');
+    temp = [S.(cell2mat(field_names(i)))];
+    save(fullfile(out_dir,cell2mat(field_names(i))),'temp','-ASCII');
+end
+
+for i = 1:size(field_names,1)
+    if (strmatch(field_names(i),special_cases))
+        if (strmatch(field_names(i),'PixelIdxList'))
+            num_ad = size(S,1);
+            if (not(exist(fullfile(out_dir,'PixelIdxList'),'dir')))
+                mkdir(fullfile(out_dir,'PixelIdxList'));
+            end
+            
+            for j = 1:num_ad
+                temp = [S(j).PixelIdxList];
+                save(fullfile(out_dir,'PixelIdxList',num2str(j)),'temp','-ASCII');
+            end
+        end
+    end
 end

@@ -1,19 +1,13 @@
-function adhesion_props = collect_adhesion_properties(varargin)
+function adhesion_props = collect_adhesion_properties(ad_I,cell_mask,orig_I)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
 %                                adhesions
 %
-%   collect_adhesion_properties(I_struct) collects the properties of the
-%   adhesions identified in the binary image 'I_struct.adhesions', using
-%   the cell mask in 'I_struct.cell_mask' and the original focal image data
-%   in 'I_struct.original_image', returning a structure containing
-%   properties
-%
-%   collect_adhesion_properties(ad_I,c_m,orig_I) collects the properties of
-%   the adhesions identified in the binary image 'ad_I', using the cell
-%   mask in 'c_m' and the original focal image data in 'orig_I', returning
-%   a structure containing properties
+%   ad_p = collect_adhesion_properties(ad_I,c_m,orig_I) collects the
+%   properties of the adhesions identified in the binary image 'ad_I',
+%   using the cell mask in 'c_m' and the original focal image data in
+%   'orig_I', returning a structure 'ad_p' containing properties
 %
 %   Properties Collected:
 %       -all of the properties collected by regioprops(...,'all')
@@ -26,47 +20,18 @@ function adhesion_props = collect_adhesion_properties(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (isempty(varargin))
-    error('ERROR: collect_adhesion_properties - no parameters specified see ''help collect_adhesion_properies''');
-elseif (isstruct(varargin{1}))
-    image_data = varargin{1};
 
-    if (not(isfield(image_data,'adhesions')))
-        error('ERROR: collect_adhesion_properties - missing binary adhesion image, looked in ''adhesions''');
-    elseif (not(isfield(image_data,'cell_mask')))
-        error('ERROR: collect_adhesion_properties - missing cell mask in struct, looked in ''cell_mask''');
-     elseif (not(isfield(image_data,'original_image')))
-        error('ERROR: collect_adhesion_properties - missing original focal image, looked in ''original_image''');
-    end
+i_p = inputParser;
+i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
-    cell_mask = image_data.cell_mask;
-    labeled_adhesions = bwlabel(image_data.adhesions);
-    original_image = image_data.original_image;
+i_p.addRequired('ad_I',@(x)isnumeric(x) || islogical(x));
+i_p.addRequired('cell_mask',@(x)isnumeric(x) || islogical(x));
+i_p.addRequired('orig_I',@isnumeric);
 
-    if (not(isfield(image_data,'adhesion_props')))
-        adhesion_props = regionprops(labeled_adhesions,'all');
-    else
-        adhesion_props = image_data.adhesion_props;
-    end
-else
-    if (length(varargin) ~= 3)
-        error('ERROR: collect_adhesion_properties - three parameters are required when not using a struct');
-    else
-        if (not(isnumeric(varargin{1}) || islogical(varargin{1})))
-            error('ERROR: collect_adhesion_properties - First parameter should be the binary adhesion image, it appears to not be numeric or logical');
-        elseif (not(isnumeric(varargin{2}) || islogical(varargin{2})))
-            error('ERROR: collect_adhesion_properties - Second parameter should be the binary cell mask image, it appears to not be numeric or logical');
-        elseif (not(isnumeric(varargin{3})))
-            error('ERROR: collect_adhesion_properties - Third parameter should be the binary original focal adhesion image, it appears to not be numeric');
-        end
-        
-        labeled_adhesions = bwlabel(varargin{1});        
-        cell_mask = varargin{2};
-        original_image = varargin{3};
-        adhesion_props = regionprops(labeled_adhesions,'all');
-    end
-end
+i_p.parse(ad_I,cell_mask,orig_I);
 
+labeled_adhesions = bwlabel(ad_I);
+adhesion_props = regionprops(labeled_adhesions,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -76,8 +41,8 @@ cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
 cell_centroid = cell_centroid.Centroid;
 
 for i=1:max(labeled_adhesions(:))
-    adhesion_props(i).Average_adhesion_signal = mean(original_image(find(labeled_adhesions == i)));
-    adhesion_props(i).Variance_adhesion_signal = var(original_image(find(labeled_adhesions == i)));
+    adhesion_props(i).Average_adhesion_signal = mean(orig_I(find(labeled_adhesions == i)));
+    adhesion_props(i).Variance_adhesion_signal = var(orig_I(find(labeled_adhesions == i)));
 
     centroid_pos = round(adhesion_props(i).Centroid);
     if(size(centroid_pos,1) == 0)

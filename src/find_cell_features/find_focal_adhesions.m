@@ -3,24 +3,24 @@ function [varargout] = find_focal_adhesions_val(I_file,varargin)
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
 %
-%   find_focal_adhesions(I,OUT_DIR,EXTRA_OPTIONS) finds the focal adhesions
-%   in image 'I', which is a single image file, the resulting binary
-%   segmented image is output in 'OUT_DIR' using the name
+%   find_focal_adhesions(I,'out_dir',OUT_D,EXTRA_OPTIONS) finds the focal
+%   adhesions in image 'I', which is a single image file, the resulting
+%   binary segmented image is output in 'OUT_D' using the name
+%   'focal_adhesions.png', the parameters in 'EXTRA_OPTIONS' will also be 
+%   used
+%
+%   find_focal_adhesions(I,EXTRA_OPTIONS) finds the focal adhesions in
+%   image 'I', which is a single image file, the location of the cell mask
+%   must be specified in 'EXTRA_OPTIONS'
+%
+%   find_focal_adhesions(I,'I_num',NUM,'out_dir',OUT_DIR,EXTRA_OPTIONS)
+%   finds the focal adhesions in file 'I' image number 'NUM', the resulting
+%   binary segmented image is output in 'OUT_D' using the name
 %   'focal_adhesions.png', the parameters in 'EXTRA_OPTIONS' will also be
 %   used
 %
-%   find_focal_adhesions(I,EXTRA_OPTIONS) finds the focal adhesions
-%   in image 'I', which is a single image file, the location of the cell
-%   mask must be specified in 'EXTRA_OPTIONS' 
-%
-%   find_focal_adhesions(I,I_NUM,OUT_DIR,EXTRA_OPTIONS) finds the focal
-%   adhesions in file 'I' image number 'I_NUM', the resulting binary
-%   segmented image is output in 'OUT_DIR' using the name
-%   'focal_adhesions.png', the parameters in 'EXTRA_OPTIONS' will also be
-%   used
-%
-%   find_focal_adhesions(I,I_NUM,EXTRA_OPTIONS) finds the focal
-%   adhesions in file 'I' image number 'I_NUM', the parameters in
+%   find_focal_adhesions(I,'I_num',NUM,EXTRA_OPTIONS) finds the focal
+%   adhesions in file 'I' image number 'NUM', the parameters in
 %   'EXTRA_OPTIONS' will also be used, the location of the cell mask must
 %   be specified in 'EXTRA_OPTIONS'
 %
@@ -33,26 +33,12 @@ function [varargout] = find_focal_adhesions_val(I_file,varargin)
 %   of many of the steps in the algorithm is returned
 %
 %   Extra Options:
-%       -'debug' - if present, debug mode on, yielding dianostic messages,
-%        short form 'd'
+%       -'debug' - expects 0 for debug mode off (default) or 1 for debug
+%                  mode on, short option 'd'
+%
 %       -'cell_mask' - the next command line parameter must either be a
-%        matlab variable with the cell mask or a file where the mask can be
-%        found, short form 'c'
-%
-%
-%   Example Commands:
-%
-%       find_focal_adhesions('/path/to/image.png','/output/dir/')
-%           -assumes that the cell mask is available in the output dir
-%           '/output/dir'
-%
-%       find_focal_adhesions(I,'cell_mask','/path/to/mask.png')
-%           -finds the focal adhesions in the matlab variable 'I', using
-%           the cell_mask found in '/path/to/mask.png'
-%
-%       find_focal_adhesions(I,'c','/path/to/mask.png')
-%            -equivalent to the last example, only using the short form of
-%            the 'cell_mask' extra option
+%                      matlab variable with the cell mask or a file where
+%                      the mask can be found, short form 'c' 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -160,14 +146,15 @@ end
 image_data.focal_markers = find_focal_adhesion_markers(image_data.original_image,image_data.cell_mask);
 image_data.watershed_edges = locate_watershed_edges(image_data);
 image_data.adhesions = find_watershed_adhesions(image_data);
-image_data.adhesion_properties = collect_adhesion_properties(image_data);
+image_data.adhesion_properties = collect_adhesion_properties(image_data.adhesions,image_data.cell_mask,image_data.original_image);
 
 if (isfield(image_data,'output_dir'))
     imwrite(image_data.original_image,fullfile(image_data.output_dir, 'focal_image.png'));
     imwrite(image_data.focal_markers,fullfile(image_data.output_dir,'focal_markers.png'));
     imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
     imwrite(image_data.adhesions,fullfile(image_data.output_dir, 'adhesions.png'));
-    write_adhesion_data(image_data.adhesion_properties,'dir',image_data.output_dir);
+    %write_adhesion_data(image_data.adhesion_properties,'out_dir',image_data.output_dir);
+    write_adhesion_data(image_data.adhesion_properties,'out_dir','testing');
     
     adhesion_props_filename = fullfile(image_data.output_dir, 'adhesion_props.mat');
     adhesion_properties = image_data.adhesion_properties;
