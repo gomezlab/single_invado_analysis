@@ -29,9 +29,6 @@ if (not(defined $opt{input}) || not(-e $opt{input})) {
     print "\n\nGathering Data Files\n" if $opt{debug};
     &gather_data_sets;
 
-    print "\n\nRemoving Excluded Images\n" if $opt{debug};
-    &trim_data_sets;
-
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
 } else {
@@ -83,15 +80,31 @@ sub get_config {
     if ($opt{debug}) {
         print "Image numbers to be excluded:", join(", ", @{ $cfg{exclude_image_nums} }), "\n";
     }
+	
+	if (not defined $cfg{results_folder}) {
+		die "ERROR: The location of the folder that contains the results of the focal ",
+		  "adhesion identification must be specified in the config file with the ",
+		  "variable \"results_folder\".";
+	}
 
-    #check to see if files have been specified for the information used for the
-    #tracking, if it has not, die with a message to user to specify these files
-    if (not(defined $cfg{tracking_files})) {
+	if (not defined $cfg{single_image_folder}) {
+		die "ERROR: The location in the results folder where each of the individual ", 
+		  "images and the associated data about those images must be specified in ",
+		  "the config file with the variable \"single_image_folder\".";
+	}
+
+	if (not defined $cfg{raw_data_folder}) {
+		die "ERROR: The folder in each of the individual image folders which contains ",
+		  "all the collected properties must be specified in the config file with the ",
+		  "variable \"raw_data_folder\".";
+	}
+
+    if (not defined $cfg{tracking_files}) {
         die "ERROR: The files that will be used for tracking must be specified in ",
           "the config file using the name tracking_files\n";
     }
 
-    if (not(defined $cfg{tracking_output_file})) {
+    if (not defined $cfg{tracking_output_file}) {
         die "ERROR: The file name for writing the tracking data has not been ",
           "specified, the file name must be specified using the variable name ",
           "\"tracking_output_file\" in the config file.\n";
@@ -109,13 +122,17 @@ sub get_config {
 # Data Set Collection
 #######################################
 sub gather_data_sets {
-    my @folders = <$cfg{results_folder}/*/$cfg{raw_data_folder}>;
 
-    my %data_gathered_from;
+    my @folders = <$cfg{results_folder}/$cfg{single_image_folder}/*/$cfg{raw_data_folder}>;
+
+    my @data_files;
+    push @data_files, split(/\s/, $cfg{general_data_files});
+    push @data_files, split(/\s/, $cfg{tracking_files});
+	my $image_count = 0;
+
     foreach my $this_folder (@folders) {
         my $i_num;
-
-        if ($this_folder =~ /$cfg{results_folder}\/(.*)\/$cfg{raw_data_folder}/) {
+        if ($this_folder =~ /$cfg{results_folder}\/$cfg{single_image_folder}\/(.*)\/$cfg{raw_data_folder}/) {
             $i_num = $1;
             if (not($i_num =~ /^\d*$/)) {
                 print "ERROR: Problem finding image number in folder: $this_folder, ",
@@ -129,24 +146,34 @@ sub gather_data_sets {
               if $opt{debug};
             next;
         }
+		
+		#Skip further processin on images in the excluded list
+		next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
-        foreach my $file (split(/\s/, $cfg{tracking_files})) {
-            if (-e "$this_folder/$file") {
+		$image_count++;
+
+        foreach my $file (@data_files) {
+            if (-e "$this_folder/$file" && -f "$this_folder/$file") {
                 @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$this_folder/$file");
-                push @{ $data_gathered_from{$i_num} }, $file;
                 if ($file eq "Centroid") {
                     @{ $data_sets{$i_num}{ $file . "_x" } } = &process_x_centroid_data(@{ $data_sets{$i_num}{$file} });
                     @{ $data_sets{$i_num}{ $file . "_y" } } = &process_y_centroid_data(@{ $data_sets{$i_num}{$file} });
+                }
+                if ($file eq "Area" || $file eq "Centroid_dist_from_edge") {
+                    @{ $data_sets{$i_num}{$file} } = map sprintf("%d", $_), @{ $data_sets{$i_num}{$file} };
+                }
+            } elsif (-e "$this_folder/$file" && -d "$this_folder/$file") {
+                if ($file eq "PixelIdxList") {
+                    @{ $data_sets{$i_num}{$file} } = &gather_PixelIdxList_data("$this_folder/$file");
                 }
             } else {
                 print "ERROR: Problem finding data file ($file) in folder: $this_folder.\n" if $opt{debug};
             }
         }
     }
-
     if ($opt{debug}) {
-        print "Data collected from ", scalar(keys %data_gathered_from), " images. ",
-          "Data files gathered for each image include: ", join(", ", split(/\s/, $cfg{tracking_files})), "\n";
+        print "Data collected from ", $image_count, " images. ",
+          "Data files gathered for each image include: ", join(", ", @data_files), "\n";
     }
 }
 
@@ -185,24 +212,28 @@ sub gather_data_from_matlab_file {
     return @in;
 }
 
-sub trim_data_sets {
-    my @excluded_nums;
-    for my $ex_num (@{ $cfg{exclude_image_nums} }) {
-        my $match_found = 0;
-        for my $this_num (sort { $a <=> $b } keys %data_sets) {
-            if ($ex_num == $this_num) {
-                delete $data_sets{$ex_num};
-                push @excluded_nums, $ex_num;
-                $match_found = 1;
-            }
-        }
-        if (not($match_found)) {
-            print "ERROR: No match found for the excluded image num ($ex_num)\n";
-        }
-    }
-    if ($opt{debug}) {
-        print "Image number removed from further consideration: ", join(", ", @excluded_nums), "\n";
-    }
+sub gather_PixelIdxList_data {
+	my $folder = $_[0];
+	
+	my @all_pixid;
+
+	my @ad_folders = <$folder/*>;
+	my $total_ad   = scalar(@ad_folders);
+	
+	for my $ad_num (1..$total_ad) {
+		my @temp;
+		open INPUT, "$folder/$ad_num" or die "Unable to open PixelIdxList file: $folder/$ad_num";
+		for (<INPUT>) {
+			chomp($_);
+			my $converted_line = sprintf("%d",$_);
+			if ($converted_line =~ /(\d+)/) {
+				push @temp, $1;
+			}
+		}
+		close INPUT;
+		push @all_pixid, \@temp;
+	}
+	return @all_pixid;
 }
 
 #######################################
@@ -219,6 +250,8 @@ sub make_comp_matices {
 
         #These are the keys we will use for all the subsequent matrix creation
         my ($key_1, $key_2) = @data_keys[ $_, $_ + 1 ];
+		
+		print "Working on image Number: $key_1 - ";
 
         #Gather the Centroid distance matrix
         my @x1 = @{ $data_sets{$key_1}{Centroid_x} };
@@ -226,12 +259,21 @@ sub make_comp_matices {
         my @x2 = @{ $data_sets{$key_2}{Centroid_x} };
         my @y2 = @{ $data_sets{$key_2}{Centroid_y} };
         @{ $data_sets{$key_1}{Cent_dist} } = &make_dist_mat(\@x1, \@y1, \@x2, \@y2);
+		print "Cent_dist Collected - ";
 
         #Gather the Area difference matrix
         my @area1 = @{ $data_sets{$key_1}{Area} };
         my @area2 = @{ $data_sets{$key_2}{Area} };
         @{ $data_sets{$key_1}{Area_diff} } = &make_abs_diff_mat(\@area1, \@area2);
-    }
+    	print "Area_diff Collected - ";
+
+		my @pix_id1 = @{$data_sets{$key_1}{PixelIdxList}};
+		my @pix_id2 = @{$data_sets{$key_2}{PixelIdxList}};
+		@{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1,\@pix_id2);
+		print "Pix_sim Collected - ";
+		print "\r";
+		
+	}
 }
 
 sub make_dist_mat {
@@ -252,20 +294,38 @@ sub make_dist_mat {
 }
 
 sub make_abs_diff_mat {
-    my ($ref_1, $ref_2) = @_;
-    my @area1 = @$ref_1;
-    my @area2 = @$ref_2;
+    my @mat1 = @{$_[0]};
+    my @mat2 = @{$_[1]};
 
     my @diff_mat;
 
-    for my $i (0 .. $#area1) {
-        for my $j (0 .. $#area2) {
-            $diff_mat[$i][$j] = abs($area1[$i] - $area2[$j]);
+    for my $i (0 .. $#mat1) {
+        for my $j (0 .. $#mat2) {
+            $diff_mat[$i][$j] = abs($mat1[$i] - $mat2[$j]);
         }
     }
     return @diff_mat;
 }
 
+sub calc_pix_sim {
+	my @pix_id1 = @{$_[0]};
+	my @pix_id2 = @{$_[1]};
+
+	my @sim_percents;
+	for my $i (0 .. $#pix_id1) {
+		my @temp_sim;
+		my @pix_list = @{$pix_id1[$i]};
+		for my $j (0 .. $#pix_id2) {
+			my @matching_list = @{$pix_id2[$j]};
+			my $match_count = grep { my $poss_match = $_;
+							  		 my $a = grep $poss_match == $_, @pix_list;
+							  		 $a; } @matching_list;
+			push @temp_sim, $match_count/scalar(@pix_list);
+		}
+		push @sim_percents, \@temp_sim;
+	}
+	return @sim_percents;
+}
 #######################################
 # Tracking Matrix Collection
 #######################################
@@ -278,17 +338,19 @@ sub make_tracking_mat {
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
 
-        print "Working on Image #: $i_num - " if $opt{debug};
+        print "Image #: $i_num - " if $opt{debug};
 
         my $num_live_adhesions = &track_live_adhesions($i_num, $next_i_num);
 
-        print "# of Adhesions Being Tracked: $num_live_adhesions - " if $opt{debug};
+        print "# Tracked: $num_live_adhesions - " if $opt{debug};
 
         my ($num_merged, $num_prob_merged) = &detect_merged_adhesions($i_num, $next_i_num);
-        print "# of Merged Ad: $num_merged/$num_prob_merged" if $opt{debug};
+        print "# Merged: $num_merged/$num_prob_merged - " if $opt{debug};
 
-        &detect_new_adhesions($next_i_num);
-        &fill_in_tracking_mat_holes;
+        my $num_new = &detect_new_adhesions($next_i_num);
+		print "# New: $num_new" if $opt{debug};
+
+        &check_tracking_mat_integrity;
         print "\r" if $opt{debug};
     }
 }
@@ -312,6 +374,8 @@ sub track_live_adhesions {
     my @time_step_dists      = @{ $data_sets{$i_num}{Cent_dist} };
     my @this_time_step_areas = @{ $data_sets{$i_num}{Area} };
     my @next_time_step_areas = @{ $data_sets{$next_i_num}{Area} };
+	my @area_diffs 			 = @{ $data_sets{$i_num}{Area_diff} };
+	my @pix_sims 			 = @{ $data_sets{$i_num}{Pix_sim} };
 
     my $live_adhesions = 0;
     for my $i (0 .. $num_ad_lineages) {
@@ -321,15 +385,44 @@ sub track_live_adhesions {
         }
 
         $live_adhesions++;
-        my $adhesion_num           = ${ $tracking_mat[$i] }[$cur_step];
-        my @dist_to_next_adhesions = @{ $time_step_dists[$adhesion_num] };
+        my $adhesion_num              = ${ $tracking_mat[$i] }[$cur_step];
+        my @dist_to_next_adhesions    = @{ $time_step_dists[$adhesion_num] };
+		my @pix_sim_to_next_adhesions = @{ $pix_sims[$adhesion_num]};
 
         my @sorted_dist_indexes =
           sort { $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] } (0 .. $#dist_to_next_adhesions);
+		
+		my @sorted_pix_index = sort { $pix_sim_to_next_adhesions[$b] <=> $pix_sim_to_next_adhesions[$a] } (0 .. $#dist_to_next_adhesions);
+		
+		if ($sorted_pix_index[0] != $sorted_dist_indexes[0]) {
+			my @props = ($adhesion_num,
+						 $this_time_step_areas[$adhesion_num], 
+						 $dist_to_next_adhesions[$sorted_dist_indexes[0]], 
+						 $dist_to_next_adhesions[$sorted_pix_index[0]],
+						 $pix_sim_to_next_adhesions[$sorted_dist_indexes[0]],
+						 $pix_sim_to_next_adhesions[$sorted_pix_index[0]],
+						 $pix_sim_to_next_adhesions[$sorted_pix_index[0]] - $pix_sim_to_next_adhesions[$sorted_pix_index[$#sorted_pix_index]],
+						 $area_diffs[$adhesion_num][$sorted_dist_indexes[0]],
+						 $area_diffs[$adhesion_num][$sorted_pix_index[0]],
+						 );
+			
+			open OUTPUT, ">>tracking_probs.csv";
+			print OUTPUT join(",",@props),"\n";
+			close OUTPUT;
+		}
+		
+		my $tracking_guess;
 
-        my @dist_sorted_adhesions_areas = @next_time_step_areas[@sorted_dist_indexes];
+		my $best_worst_diff = $pix_sim_to_next_adhesions[$sorted_pix_index[0]] - 
+							  $pix_sim_to_next_adhesions[$sorted_pix_index[$#sorted_pix_index]];
+		
+		if ($best_worst_diff > 0.01) {
+			$tracking_guess = $sorted_pix_index[0];
+		} else {
+			$tracking_guess = $sorted_dist_indexes[0];
+		}
 
-        push @{ $tracking_mat[$i] }, $sorted_dist_indexes[0];
+        push @{ $tracking_mat[$i] }, $tracking_guess;
     }
     return $live_adhesions;
 }
@@ -363,15 +456,16 @@ sub detect_merged_adhesions {
 
             my @merged_areas        = @areas[@merged_ad_nums];
 
-
             my @dist_shifts;
             for (0 .. $#lineage_nums) {
                 push @dist_shifts, $dists[ $starting_ads[$_] ][ $ending_ads[$_] ];
             }
-			
-			my ($merge_guess_index,$guess_quality) = &select_best_merge_decision(\@merged_areas, \@dist_shifts);
 
-			if (!$guess_quality) {
+			my $final_merged_area = $next_step_areas[$ending_ads[0]];
+			
+			my ($merge_guess_index,$guess_type) = &select_best_merge_decision(\@merged_areas, \@dist_shifts, $final_merged_area);
+
+			if (!$guess_type) {
                 $merged_prob_count++;
                 push @{ $tracking_probs{merge}{$i_num} }, { 
                     image_nums  => [$i_num, $next_i_num],
@@ -383,7 +477,7 @@ sub detect_merged_adhesions {
 
             foreach (0 .. $#lineage_nums) {
                 if ($_ != $merge_guess_index) {
-                    $tracking_mat[ $lineage_nums[$_] ][$cur_step] *= -1;
+                    $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1;
                 }
             }
         }
@@ -394,6 +488,7 @@ sub detect_merged_adhesions {
 sub select_best_merge_decision {
 	my @merged_areas = @{$_[0]};
 	my @dist_shifts  = @{$_[1]};
+	my $final_area   = $_[2];
 
 	my @sorted_area_indexes = sort { $merged_areas[$a] <=> $merged_areas[$b] } (0 .. $#merged_areas);
 	my $biggest_area_index  = $sorted_area_indexes[$#sorted_area_indexes];
@@ -408,26 +503,26 @@ sub select_best_merge_decision {
 	#	 difference in the centroid shifts. In this case, choose the adhesion 
 	#    which is closest to the final adhesion. 
 	
-	#Case 1:
+	#Case 1
 	if ($biggest_area_index == $shortest_dist_index) {
 		return ($biggest_area_index,1);
 	}
 
-	#Case 2:
+	#Case 2
 	my $area_shifts_small = 0;
 	my $shift_percent = 0.25;
 	$shift_percent = $cfg{merge_shift_percent} if defined($cfg{merge_shift_percent});
-	
-	my $first_area_diff = $merged_areas[$biggest_area_index] - $merged_areas[$biggest_area_index - 1];
+	my $second_biggest_area_index = $sorted_area_indexes[$#sorted_area_indexes - 1];
+
+	my $first_area_diff = $merged_areas[$biggest_area_index] - $merged_areas[$second_biggest_area_index];
 	if ($first_area_diff/$merged_areas[$biggest_area_index]	<= $shift_percent) {
 		$area_shifts_small = 1;
 	}
 	if ($area_shifts_small) {
-		return ($shortest_dist_index, 1);
+		return ($shortest_dist_index, 2);
 	}
 
 	return ($biggest_area_index, 0);
-
 }
 
 sub detect_new_adhesions {
@@ -457,9 +552,10 @@ sub detect_new_adhesions {
             push @tracking_mat, \@temp;
         }
     }
+	return $new_adhesions_count;
 }
 
-sub fill_in_tracking_mat_holes {
+sub check_tracking_mat_integrity {
     my $num_ad_lineages = $#tracking_mat;
     my $max_size        = $#{ $tracking_mat[0] };
 
@@ -468,53 +564,40 @@ sub fill_in_tracking_mat_holes {
             $max_size = $#{ $tracking_mat[$i] };
         }
     }
-
+	
+	my $prob = 0;
     for my $i (0 .. $num_ad_lineages) {
-        while ($#{ $tracking_mat[$i] } != $max_size) {
-            push @{ $tracking_mat[$i] }, -1;
-        }
+		$prob = 1 if $#{ $tracking_mat[$i] } != $max_size;
     }
-}
 
-sub min_index {
-    my $min_i = 0;
-    for (0 .. $#_) {
-        if ($_[$_] < $_[$min_i]) {
-            $min_i = $_;
-        }
-    }
-    return $min_i;
-}
-
-sub max_index {
-    my $max_i = 0;
-    for (0 .. $#_) {
-        if ($_[$_] > $_[$max_i]) {
-            $max_i = $_;
-        }
-    }
-    return $max_i;
+	warn "Problem with tracking matrix." if $prob;
 }
 
 #######################################
 # Output Tracking Issues
 #######################################
 sub output_tracking_probs {
-    &output_merge_problems;
+    if (not defined $cfg{tracking_probs_folder}) {
+		print "Could not find variable tracking_probs_folder in config, skipping ",
+		  "output of tracking problems\n" if $cfg{debug};
+		return 0;
+	}
+	&output_merge_problems;
 }
 
 sub output_merge_problems {
-    if (not(-e "$cfg{tracking_probs_folder}/merge")) {
-        mkpath("$cfg{tracking_probs_folder}/merge");
+	my $full_probs_folder = $cfg{results_folder} . "/" . $cfg{tracking_probs_folder};
+	if (not(-e "$full_probs_folder/merge")) {
+        mkpath("$full_probs_folder/merge");
     }
 
     for my $i (keys %{ $tracking_probs{merge} }) {
-        mkpath("$cfg{tracking_probs_folder}/merge/$i");
+        mkpath("$full_probs_folder/merge/$i");
         for my $j (0 .. $#{ $tracking_probs{merge}{$i} }) {
-        	mkpath("$cfg{tracking_probs_folder}/merge/$i/$j");
+        	mkpath("$full_probs_folder/merge/$i/$j");
 			my %merge_prob = %{$tracking_probs{merge}{$i}->[$j]};
 			for my $k (keys %merge_prob) {
-            	open OUTPUT, ">$cfg{tracking_probs_folder}/merge/$i/$j/$k.csv";
+            	open OUTPUT, ">$full_probs_folder/merge/$i/$j/$k.csv";
             	print OUTPUT join(",", @{ $merge_prob{$k} });
             	close OUTPUT;
 			}
@@ -526,7 +609,7 @@ sub output_merge_problems {
 # Output the Tracking Matrix
 #######################################
 sub output_tracking_mat {
-    open OUTPUT, ">$cfg{tracking_output_file}";
+    open OUTPUT, ">$cfg{results_folder}/$cfg{tracking_output_file}";
 
     for my $i (0 .. $#tracking_mat) {
         print OUTPUT join(",", @{ $tracking_mat[$i] }), "\n";

@@ -48,6 +48,9 @@ for i = 1:i_count
     if (find(i==excluded_frames))
         continue;
     end
+    if (i_seen + 1 > size(tracking_seqs,2))
+        continue;
+    end
     i_seen = i_seen + 1;
     
     orig_i = normalize_grayscale_image(imread(original_i_file,i),min_max(1),min_max(2));
@@ -55,7 +58,7 @@ for i = 1:i_count
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
 
-    I_1 = imread(fullfile(I_folder_1,padded_i_num,filename_1));
+    I_1 = imread(fullfile(I_folder_1,padded_i_num,adhesions_file));
     
     I_2 = imread(fullfile(I_folder_2,padded_i_num,t_filtered_file));
 

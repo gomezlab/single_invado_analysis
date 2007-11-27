@@ -23,7 +23,7 @@ function high_image = create_highlighted_image(I,high,varargin)
 i_p = inputParser;
 i_p.FunctionName = 'CREATE_HIGHLIGHTED_IMAGE';
 
-i_p.addRequired('I',@isnumeric);
+i_p.addRequired('I',@(x)isnumeric(x) || islogical(x));
 i_p.addRequired('high',@(x)(isnumeric(x) || islogical(x)));
 
 i_p.addParamValue('color',2,@(x)(isnumeric(x) && (length(x) == 1 || length(x) == 3)));

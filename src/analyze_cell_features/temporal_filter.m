@@ -22,8 +22,7 @@ function [varargout] = temporal_filter(folder,num,degree,varargin)
 %        output image, defaults to 'time_filtered.png'
 %       
 %       -'exclude_file': specifies a filename that holds the image numbers
-%        that should be excluded from examination, defaults to Include all
-%        files
+%        that should be excluded from examination
 %
 %       -'in_filename': specifies a filename to search for in each
 %        directory to perform the temporal filtering, defaults to
@@ -47,11 +46,11 @@ i_p.addRequired('degree',@(x)isnumeric(x) && x>=1);
 i_p.parse(folder,num,degree);
 
 folder_guess = fullfile(folder,num2str(num));
-leading_zeros = 0;
+leading_zeros = 1;
 while exist(folder_guess,'dir') ~= 7
     leading_zeros = leading_zeros + 1;
     if (leading_zeros > 50)
-        break;
+        error('TEMPORAL_FILTER: can''t find image number folder');
     end
     folder_guess = fullfile(folder,sprintf(['%0',num2str(leading_zeros),'d'],num));
 end
@@ -66,7 +65,7 @@ i_p.parse(folder,num,degree,varargin{:});
 %collect all the parsed input values into shorter variable names and read
 %in the feature images
 
-top_folder = i_p.Results.folder;
+experiment_folder = i_p.Results.folder;
 num = i_p.Results.num;
 degree = i_p.Results.degree;
 out_dir = i_p.Results.out_dir;
@@ -84,14 +83,14 @@ if (not(exist(full_out_path,'dir')))
     mkdir(full_out_path)
 end
 
-base_image_file = fullfile(top_folder,num2str(num),in_file);
-leading_zeros = 0;
+base_image_file = fullfile(experiment_folder,num2str(num),in_file);
+leading_zeros = 1;
 while exist(base_image_file,'file') ~= 2
     leading_zeros = leading_zeros + 1;
     if (leading_zeros > 50)
         error('TEMPORAL_FILTER: can''t find base image file');
     end
-    base_image_file = fullfile(top_folder,sprintf(['%0',num2str(leading_zeros),'d'],num),in_file);
+    base_image_file = fullfile(experiment_folder,sprintf(['%0',num2str(leading_zeros),'d'],num),in_file);
 end
 
 padded_base_num = sprintf(['%0',num2str(leading_zeros),'d'],num);
@@ -104,25 +103,23 @@ base_image = imread(base_image_file);
 
 temporal_image_set = ones(size(base_image,1),size(base_image,2),degree);
 
-
-
 if (debug), disp(['I_num: ',num2str(num)]), end;
+
 offset = 1;
 i_gathered = 0;
 while i_gathered < degree
     image_num = offset + num;
     if (find(image_num==excluded_frames))
-        if debug, disp(['e_frame: ',num2str(image_num),'  ']), end;
-        
+        if debug, disp(['e_frame: ',num2str(image_num),'  ']), end;        
         offset = offset + 1;
         continue;
     end
-    if (exist(fullfile(top_folder,sprintf('%03d',image_num),in_file),'file'))
-        if (debug), disp([num2str(image_num),' ']), end;
+    if (exist(fullfile(experiment_folder,sprintf(['%0',num2str(leading_zeros),'d'],image_num),in_file),'file'))
+        if (debug), disp(image_num), end;
 
         i_gathered = i_gathered + 1;
         offset = offset + 1;
-        temporal_image_set(:,:,i_gathered) = imread(fullfile(top_folder,sprintf('%03d',image_num),in_file));
+        temporal_image_set(:,:,i_gathered) = imread(fullfile(experiment_folder,sprintf('%03d',image_num),in_file));
     else  
         i_gathered = i_gathered + 1;
     end
