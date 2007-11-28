@@ -1,10 +1,10 @@
-function [min_val max_val] = find_extr_values(file)
-% FIND_MAX_VALUE_IN_STACK     find the maximum and minumum values in a
-%                             provided image or set of stacked tiff images
+function min_max = find_extr_values(file)
+% FIND_EXTR_VALUES     find the maximum and minumum values in a provided
+%                      image or set of stacked tiff images 
 %
-%   [min,max] = find_max_value_in_stack(I_stack_file) finds the maximum and
+%   [min,max] = find_extr_values(I_stack_file) finds the maximum and
 %   minumum value in all of the images in the file 'I_file', which is
-%   either a single image or a stack of tiff images
+%   either a single image or a stack of tiff images  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,23 +24,20 @@ stack_file = i_p.Results.file;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-max_val = 0;
-min_val = inf;
+min_max = [Inf, 0];
 for i=1:size(imfinfo(stack_file),2)
     if (size(imfinfo(stack_file),2) == 1)
         temp = imread(stack_file);
     else
         temp = imread(stack_file,i);
     end
-    
-    if (max(temp(:)) > max_val)
-        max_val = max(temp(:));
+
+    if (min(temp(:)) < min_max(1))
+        min_max(1) = min(temp(:));
     end
-    if (min(temp(:)) < min_val)
-        min_val = min(temp(:));
+    if (max(temp(:)) > min_max(2))
+        min_max(2) = max(temp(:));
     end
 end
 
-min_val = double(min_val);
-max_val = double(max_val);
+min_max = double(min_max);

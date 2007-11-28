@@ -21,7 +21,6 @@ end
 i_count = size(imfinfo(original_i_file),2);
 pad_length = num2str(length(num2str(i_count)));
 i_size = size(imread(original_i_file,1));
-pix_count = i_size(1)*i_size(2);
 
 for i = 1:i_count
     padded_i_num = sprintf(['%0',pad_length,'d'],i);
