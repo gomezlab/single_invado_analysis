@@ -70,7 +70,7 @@ for i = 1:i_count
     if (i_seen + 1 > size(tracking_seqs,2))
         continue;
     end
-    if (i_seen >= 1), break; end
+
     i_seen = i_seen + 1;
     
     orig_i = normalize_grayscale_image(imread(original_i_file,i),min_max(1),min_max(2));
@@ -150,11 +150,10 @@ for i = 1:i_count
     highlighted_all = highlighted_all(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
     edge_image = edge_image(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
     edge_image_ad = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-    1;
+
     %frame = [highlighted_1,0.5*ones(size(orig_i,1),round(0.05*size(orig_i,2)),3),highlighted_2];
     frame = [cat(3,orig_i,orig_i,orig_i),0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all];
     frame = {frame [edge_image_ad,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all]};
-    1;
     %frame = {[highlighted_1,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_2]};
     
     if (exist('out_path','var'))
