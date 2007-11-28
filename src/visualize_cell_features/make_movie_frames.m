@@ -14,12 +14,6 @@ else
     excluded_frames = 0;
 end
 
-% if (exist('out_path','var'))
-%     if (not(exist(out_path,'dir')))
-%         mkdir(out_path);
-%     end
-% end
-
 extr_val_full_path = fullfile(fileparts(original_i_file),extr_val_filename);
 if (exist(extr_val_full_path,'file'))
     min_max = load(extr_val_full_path);
@@ -148,12 +142,12 @@ for i = 1:i_count
     %highlighted_all(round(0.95*i_size(1)):round(0.95*i_size(1))+19,round(0.95*i_size(2)):round(0.95*i_size(2))+19,1:3) = ones(20,20,3);
     orig_i = orig_i(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3));
     highlighted_all = highlighted_all(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-    edge_image = edge_image(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-    edge_image_ad = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
+    edge_image_bounded = edge_image(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
+    edge_image_ad_bounded = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
 
     %frame = [highlighted_1,0.5*ones(size(orig_i,1),round(0.05*size(orig_i,2)),3),highlighted_2];
     frame = [cat(3,orig_i,orig_i,orig_i),0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all];
-    frame = {frame [edge_image_ad,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all]};
+    frame = {frame [edge_image_ad_bounded,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all]};
     %frame = {[highlighted_1,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_2]};
     
     if (exist('out_path','var'))
