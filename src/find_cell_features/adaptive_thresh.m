@@ -7,27 +7,22 @@ function threshold = adaptive_thresh(I,varargin)
 %   adaptive_thresh(I) using the pixel values in image 'I', find and return
 %   a threshold which should separate the image into background and signal 
 %
-%   adaptive_thresh(I,W) using the pixel values in image 'I', find and return
-%   a threshold which should separate the image into background and signal
-%   using a fractional weight 'W' on the upper mean
+%   adaptive_thresh(I,'up_mean_weight',W) using the pixel values in image
+%   'I', find and return a threshold which should separate the image into
+%   background and signal using a fractional weight 'W' on the upper mean
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-upper_mean_weight = 0.5;
+i_p = inputParser;
+i_p.FunctionName = 'ADAPTIVE_THRESH';
 
-if (size(varargin,1) > 0)
-    if (isnumeric(varargin{1}))
-        if (varargin{1} >= 0 && varargin{1} <= 1)    
-            upper_mean_weight = varargin{1};
-        else
-            error('ERROR: adaptive_thresh - Expected weight value to be between zero and one');
-        end
-    else
-        error('ERROR: adaptive_thresh - Expected second parameter to be a number, the weight on the upper threshold');
-    end
-end
+i_p.addRequired('I', @isnumeric);
+
+i_p.addParamValue('up_mean_weight',0.5,&(x) isnumeric(x) && x <= 1 && x >= 0);
+
+upper_mean_weight = i_p.Results.up_mean_weight;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
