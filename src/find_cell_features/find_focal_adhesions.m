@@ -100,7 +100,7 @@ else
 end
 image_data.extr_vals = extr_vals;
 
-%normalize the input focal adhesion image
+%read in and normalize the input focal adhesion image
 if (isfield(image_data,'I_num'))
     image_data.original_image = imread(image_data.original_image_file,image_data.I_num);
 else
