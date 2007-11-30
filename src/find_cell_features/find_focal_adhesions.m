@@ -1,4 +1,4 @@
-function [varargout] = find_focal_adhesions_val(I_file,varargin)
+function [varargout] = find_focal_adhesions(I_file,varargin)
 % FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
@@ -65,14 +65,13 @@ i_p.parse(I_file,varargin{:});
 
 %Pull out the original image file and the data directory
 image_data.original_image_file = i_p.Results.I_file;
-[pathstr, name, ext, versn] = fileparts(image_data.original_image_file); 
-image_data.data_folder = pathstr;
+image_data.data_folder = fileparts(image_data.original_image_file);
 
 %Determine if the image file specified has more than one image embedded, if
 %so, make sure there is a 'I_num' parameter
 if (size(imfinfo(image_data.original_image_file),2) > 1)
     if (any(strcmp('I_num',i_p.UsingDefaults)))
-        error('ERROR: FIND_FOCAL_ADHESIONS - Image file specified has more than one image embedded, must specify an ''I_num'' parameter');
+        error(['ERROR: ',i_p.FunctionName,' - Image file specified has more than one image embedded, must specify an ''I_num'' parameter']);
     end
     image_data.I_num = i_p.Results.I_num;
 end
@@ -93,12 +92,11 @@ end
 %min/max values and write them to file
 if (not(exist(fullfile(image_data.data_folder,'min_max_vals.txt'),'file')))
     [min,max] = find_extr_values(image_data.original_file);
-    extr_vals = [min,max];
+    image_data.extr_vals = [min,max];
     save(fullfile(image_data.data_folder,'min_max_vals.txt'),'extr_vals','-ASCII');
 else
-    extr_vals = load(fullfile(image_data.data_folder,'min_max_vals.txt'));
+    image_data.extr_vals = load(fullfile(image_data.data_folder,'min_max_vals.txt'));
 end
-image_data.extr_vals = extr_vals;
 
 %read in and normalize the input focal adhesion image
 if (isfield(image_data,'I_num'))
@@ -106,7 +104,7 @@ if (isfield(image_data,'I_num'))
 else
     image_data.original_image = imread(image_data.original_image_file);
 end
-image_data.original_image = normalize_grayscale_image(image_data.original_image,image_data.extr_vals(1),image_data.extr_vals(2));
+image_data.original_image = normalize_grayscale_image(image_data.original_image,'min_max',image_data.extr_vals);
 
 %check to see if a cell_mask parameter has been set, if it has, use that
 %file, otherwise, search for the file in the output dir
@@ -120,10 +118,10 @@ elseif (isfield(image_data,'output_dir'))
     if (exist(fullfile(image_data.output_dir,'cell_mask.png'),'file'))
         image_data.cell_mask_file = fullfile(image_data.output_dir,'cell_mask.png');
     else
-        error('ERROR: find_focal_adhesions - could not locate cell mask file, specify location with ''cell_mask'' flag');
+        error(['ERROR: ',i_p.FunctionName,' - could not locate cell mask file, specify location with ''cell_mask'' flag']);
     end
 else
-    error('ERROR: find_focal_adhesions - could not locate cell mask file, specify location with ''cell_mask'' flag');
+    error(['ERROR: ',i_p.FunctionName,' - could not locate cell mask file, specify location with ''cell_mask'' flag']);
 end
 image_data.cell_mask = imread(image_data.cell_mask_file);
 

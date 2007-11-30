@@ -55,10 +55,6 @@ end
 %the cell edge will be needed following the watershed segmentation
 cell_edge = bwperim(cell_mask);
 
-%make sure the original image is normalized
-original_image = normalize_grayscale_image(original_image);
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
