@@ -47,7 +47,7 @@ foreach my $file_name (@cell_mask_files) {
         my $padded_num = sprintf("%0" . length($total_images) . "d", $i_num);
         my $output_path = "$cfg{exp_result_single_folder}/$padded_num";
         mkpath($output_path);
-        $matlab_code = $matlab_code . "create_cell_mask_image('$file_name','I_num',$i_num,'out_dir','$output_path')\n";
+        $matlab_code = $matlab_code . "find_cell_mask('$file_name','I_num',$i_num,'out_dir','$output_path')\n";
     }
 }
 
