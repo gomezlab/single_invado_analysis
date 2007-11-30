@@ -1,4 +1,4 @@
-function [watershed_edges,varargout] = locate_watershed_edges(varargin)
+function [watershed_edges,varargout] = locate_watershed_edges(original_image,focal_markers,cell_mask)
 % LOCATE_WATERSHED_EDGES    locates the watershed edges in a provided focal
 %                           adhesion image
 %
@@ -19,38 +19,15 @@ function [watershed_edges,varargout] = locate_watershed_edges(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (isempty(varargin))
-    error('ERROR: locate_watershed_edges - Expected parameters, see ''help locate_watershed_edges''');
-elseif (isstruct(varargin{1}))
-    image_data = varargin{1};
-    if (not(isfield(image_data,'original_image')))
-        error('ERROR: locate_watershed_edges - with struct based parameters, expected to find original focal image in ''original_image''');
-    elseif (not(isfield(image_data,'cell_mask')))
-        error('ERROR: locate_watershed_edges - with struct based parameters, expected to find cell mask image in ''cell_mask''');
-    elseif (not(isfield(image_data,'focal_markers')))
-        error('ERROR: locate_watershed_edges - with struct based parameters, expected to find focal markers image in ''focal_markers''');
-    end
 
-    original_image = image_data.original_image;
-    focal_markers = image_data.focal_markers;
-    cell_mask = image_data.cell_mask;
-else
-    if (length(varargin) == 3)
-        if (not(isnumeric(varargin{1})))
-            error('ERROR: locate_watershed_edges - The first parameter should be the original image, a numeric');
-        elseif (not(isnumeric(varargin{2}) || islogical(varargin{2})))
-            error('ERROR: locate_watershed_edges - The second parameter should be the watershed_edges, a numeric or logical');
-        elseif (not(isnumeric(varargin{3}) || islogical(varargin{3})))
-            error('ERROR: locate_watershed_edges - The third parameter should be the cell_edge, a numeric or logical');
-        end
-    else
-        error('ERROR: locate_watershed_edges - When not using struct parameters, expected three parameters');
-    end
+i_p = inputParser;
+i_p.FunctionName = 'LOCATE_WATERSHED_EDGES';
 
-    original_image = varargin{1};
-    focal_markers = varargin{2};
-    cell_mask = varargin{3};
-end
+i_p.addRequired('original_image',@isnumeric);
+i_p.addRequired('focal_markers',@(x) isnumeric(x) || islogical(x));
+i_p.addRequired('cell_mask',@(x) isnumeric(x) || islogical(x));
+
+i_p.parse(original_image,focal_markers,cell_mask);
 
 %the cell edge will be needed following the watershed segmentation
 cell_edge = bwperim(cell_mask);

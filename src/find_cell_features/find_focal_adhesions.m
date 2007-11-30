@@ -142,8 +142,8 @@ end
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_data.focal_markers = find_focal_adhesion_markers(image_data.original_image,image_data.cell_mask);
-image_data.watershed_edges = locate_watershed_edges(image_data);
-image_data.adhesions = find_watershed_adhesions(image_data);
+image_data.watershed_edges = locate_watershed_edges(image_data.original_image,image_data.focal_markers,image_data.cell_mask);
+image_data.adhesions = find_watershed_adhesions(image_data.original_image,image_data.watershed_edges,image_data.cell_mask);
 image_data.adhesion_properties = collect_adhesion_properties(image_data.adhesions,image_data.cell_mask,image_data.original_image);
 
 if (isfield(image_data,'output_dir'))

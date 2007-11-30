@@ -21,6 +21,8 @@ i_p.FunctionName = 'NORMALIZE_GRAYSCALE_IMAGE';
 
 i_p.addRequired('I',@isnumeric);
 
+i_p.parse(I);
+
 i_p.addParamValue('min_max',[min(I(:)),max(I(:))],@(x) size(x,2)==2 && isnumeric(x(1)) && isnumeric(x(2)));
 
 i_p.parse(I,varargin{:});
