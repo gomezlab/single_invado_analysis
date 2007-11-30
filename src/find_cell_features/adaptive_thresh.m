@@ -20,9 +20,11 @@ i_p.FunctionName = 'ADAPTIVE_THRESH';
 
 i_p.addRequired('I', @isnumeric);
 
-i_p.addParamValue('up_mean_weight',0.5,&(x) isnumeric(x) && x <= 1 && x >= 0);
+i_p.addParamValue('upper_mean_weight',0.5,@(x) isnumeric(x) && x <= 1 && x >= 0);
 
-upper_mean_weight = i_p.Results.up_mean_weight;
+i_p.parse(I,varargin{:});
+
+upper_mean_weight = i_p.Results.upper_mean_weight;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
