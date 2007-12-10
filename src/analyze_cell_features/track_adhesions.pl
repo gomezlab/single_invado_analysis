@@ -4,13 +4,12 @@
 # Global Variables and Modules
 ###############################################################################
 use strict;
-use File::Temp qw/ tempfile tempdir /;
 use File::Path;
+use File::Spec::Functions;
 use Config::General qw/ ParseConfig /;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
-use threads;
 $| = 1;
 
 my %opt;
@@ -83,7 +82,7 @@ sub get_config {
         chomp($temp_line);
         @{ $cfg{exclude_image_nums} } = split(",", $temp_line);
     } else {
-        $cfg{exclude_image_nums} = 0;
+        @{ $cfg{exclude_image_nums} } = (0);
     }
     if ($opt{debug}) {
         print "Image numbers to be excluded:", join(", ", @{ $cfg{exclude_image_nums} }), "\n";
@@ -129,8 +128,9 @@ sub get_config {
     }
 
     #Compute a few config variables from the provided values:
-    $cfg{results_data_folder} = "$cfg{results_folder}/$cfg{exp_name}/$cfg{single_image_folder}/";
-    $cfg{exp_result_folder}   = "$cfg{results_folder}/$cfg{exp_name}";
+    #$cfg{results_data_folder} = "$cfg{results_folder}/$cfg{exp_name}/$cfg{single_image_folder}/";
+    $cfg{results_data_folder} = catdir($cfg{results_folder},$cfg{exp_name},$cfg{single_image_folder});
+	$cfg{exp_result_folder}   = catdir($cfg{results_folder},$cfg{exp_name});
 
     return %cfg;
 }

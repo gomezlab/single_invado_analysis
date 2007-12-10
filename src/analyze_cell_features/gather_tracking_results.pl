@@ -69,7 +69,7 @@ sub get_config {
 
         shift @{ $cfg{exclude_image_nums} } if (${ $cfg{exclude_image_nums} }[0] =~ //);
     } else {
-        $cfg{exclude_image_nums} = 0;
+        @{ $cfg{exclude_image_nums} } = (0);
     }
     if ($opt{debug}) {
         print "Image numbers to be excluded:", join(", ", @{ $cfg{exclude_image_nums} }), "\n";
