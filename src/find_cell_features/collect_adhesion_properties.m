@@ -30,7 +30,7 @@ i_p.addRequired('orig_I',@isnumeric);
 
 i_p.parse(ad_I,cell_mask,orig_I);
 
-labeled_adhesions = bwlabel(ad_I);
+labeled_adhesions = bwlabel(ad_I,4);
 adhesion_props = regionprops(labeled_adhesions,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
