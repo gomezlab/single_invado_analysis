@@ -45,7 +45,7 @@ for i = 1:size(field_names,1)
         continue;
     end
     temp = [S.(cell2mat(field_names(i)))];
-    csvwrite(fullfile(out_dir,cell2mat(field_names(i))),'temp','-ASCII');
+    csvwrite(fullfile(out_dir,cell2mat(field_names(i))),temp);
 end
 
 for i = 1:size(field_names,1)
@@ -58,7 +58,7 @@ for i = 1:size(field_names,1)
             
             for j = 1:num_ad
                 temp = [S(j).PixelIdxList];
-                csvwrite(fullfile(out_dir,'PixelIdxList',num2str(j)),'temp','-ASCII');
+                csvwrite(fullfile(out_dir,'PixelIdxList',num2str(j)),temp);
             end
         end
     end

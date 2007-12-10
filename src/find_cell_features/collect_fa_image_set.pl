@@ -10,6 +10,7 @@ use Image::ExifTool;
 use Math::Matlab::Local;
 use Config::General qw/ParseConfig/;
 use Getopt::Long;
+use File::Spec::Functions;
 
 my %opt;
 $opt{debug} = 0;
@@ -39,7 +40,7 @@ if ($opt{debug}) {
 
 foreach my $file_name (@adhesion_image_files) {
     my $total_images = &get_image_stack_number($file_name);
-    my $error_folder = "$cfg{exp_result_folder}/$cfg{matlab_errors_folder}";
+    my $error_folder = catdir($cfg{exp_results_folder},$cfg{matlab_errors_folder});
     foreach my $i_num (1 .. $total_images) {
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
@@ -48,8 +49,8 @@ foreach my $file_name (@adhesion_image_files) {
         }
 
         my $padded_num = sprintf("%0" . length($total_images) . "d", $i_num);
-        my $output_path = "$cfg{exp_result_single_folder}/$padded_num";
-        mkpath($output_path);
+        my $output_path = catdir($cfg{exp_results_single_folder},$padded_num);
+        mkpath($output_path) if not -d $output_path;
         my $matlab_code = "find_focal_adhesions('$file_name','I_num',$i_num,'out_dir','$output_path')\n";
         if (not($matlab_wrapper->execute($matlab_code))) {
             mkpath($error_folder);
@@ -127,10 +128,14 @@ sub get_config {
           "in the config file with the variable \"adhesion_errors_filename\".",;
     }
 
+	if (not defined $cfg{feature_output_folder}) {
+		$cfg{feature_output_folder} = $cfg{exp_name};
+	}
+
     #Compute a few config variables from the provided values:
-    $cfg{exp_data_folder}          = "$cfg{data_folder}/$cfg{exp_name}";
-    $cfg{exp_result_folder}        = "$cfg{results_folder}/$cfg{exp_name}";
-    $cfg{exp_result_single_folder} = "$cfg{exp_result_folder}/$cfg{single_image_folder}";
+    $cfg{exp_data_folder}           = catdir($cfg{data_folder},$cfg{exp_name});
+    $cfg{exp_results_folder}        = catdir($cfg{results_folder},$cfg{feature_output_folder});
+    $cfg{exp_results_single_folder} = catdir($cfg{exp_results_folder},$cfg{single_image_folder});
 
     return %cfg;
 }
