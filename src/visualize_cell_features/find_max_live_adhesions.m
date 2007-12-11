@@ -1,7 +1,7 @@
 function max_live_adhesions = find_max_live_adhesions(all_seqs)
-% FIND_FOCAL_ADHESIONS    determines the maximum number of adhesions
-%                         tracked in each of the time steps in a given
-%                         tracking matrix
+% FIND_MAX_LIVE_ADHESIONS    determines the maximum number of adhesions
+%                            tracked in each of the time steps in a given
+%                            tracking matrix
 %
 %   M = find_max_live_adhesions(T_S) determines maximum number of
 %   adhesions, 'M', tracked in a single time step from the tracking matrix,

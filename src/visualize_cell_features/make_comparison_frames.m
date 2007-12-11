@@ -43,15 +43,15 @@ for i = 1:i_count
         padded_i_num_1 = sprintf(['%0',pad_length,'d'],comp_image_nums(1));
         padded_i_num_2 = sprintf(['%0',pad_length,'d'],comp_image_nums(2));
 
-        i1.orig = normalize_grayscale_image(imread(original_i_file,comp_image_nums(1)),min_max(1),min_max(2));
-        i2.orig = normalize_grayscale_image(imread(original_i_file,comp_image_nums(2)),min_max(1),min_max(2));
+        i1.orig = normalize_grayscale_image(imread(original_i_file,comp_image_nums(1)),'min_max',min_max);
+        i2.orig = normalize_grayscale_image(imread(original_i_file,comp_image_nums(2)),'min_max',min_max);
 
-        i1.cell_edge = bwperim(imread(fullfile(I_folder_2,padded_i_num_1,edge_filename)));
-        i2.cell_edge = bwperim(imread(fullfile(I_folder_2,padded_i_num_2,edge_filename)));
+        i1.cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num_1,edge_filename)));
+        i2.cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num_2,edge_filename)));
 
-        i1.adhesions = logical(imread(fullfile(I_folder_2,padded_i_num_1,t_filtered_file)));
+        i1.adhesions = logical(imread(fullfile(I_folder,padded_i_num_1,adhesions_filename)));
         i1.label_ad  = bwlabel(i1.adhesions);
-        i2.adhesions = logical(imread(fullfile(I_folder_2,padded_i_num_2,t_filtered_file)));
+        i2.adhesions = logical(imread(fullfile(I_folder,padded_i_num_2,adhesions_filename)));
         i2.label_ad  = bwlabel(i2.adhesions);
 
         i1.adh_of_interest = zeros(i_size);
@@ -79,24 +79,24 @@ for i = 1:i_count
             i2.highlighted = create_highlighted_image(i2.highlighted,temp,'color',winning_color);
         end
         
-        [min_x,min_y,max_x,max_y] = find_binary_bounding_box(i1.adh_of_interest + i2.adh_of_interest);
+        bbox = find_binary_bounding_box(i1.adh_of_interest + i2.adh_of_interest);
         
-        min_x = min_x - image_padding_min;
-        min_y = min_y - image_padding_min;
-        max_x = max_x + image_padding_min;
-        max_y = max_y + image_padding_min;
+        bbox(1) = bbox(1) - image_padding_min;
+        bbox(2) = bbox(2) - image_padding_min;
+        bbox(3) = bbox(3) + image_padding_min;
+        bbox(4) = bbox(4) + image_padding_min;
         
-        if (min_x <= 0), min_x = 1; end
-        if (min_y <= 0), min_x = 1; end
-        if (max_x > i_size(2)), max_x = i_size(2); end
-        if (max_y > i_size(1)), max_y = i_size(1); end
+        if (bbox(1) <= 0), bbox(1) = 1; end
+        if (bbox(2) <= 0), bbox(1) = 1; end
+        if (bbox(3) > i_size(2)), bbox(3) = i_size(2); end
+        if (bbox(4) > i_size(1)), bbox(4) = i_size(1); end
         
         if (not(exist(fullfile(comp_base_out_folder,padded_i_num),'dir'))) 
             mkdir(fullfile(comp_base_out_folder,padded_i_num));
         end
         
-        i1.highlight_trim = i1.highlighted(min_y:max_y,min_x:max_x,1:3);
-        i2.highlight_trim = i2.highlighted(min_y:max_y,min_x:max_x,1:3);
+        i1.highlight_trim = i1.highlighted(bbox(2):bbox(4),bbox(1):bbox(3),1:3);
+        i2.highlight_trim = i2.highlighted(bbox(2):bbox(4),bbox(1):bbox(3),1:3);
         trim_size = size(i1.highlight_trim);
         trim_size(2) = round(trim_size(2)*0.05);
         
