@@ -90,7 +90,7 @@ sub get_config {
         chomp($temp_line);
         @{ $cfg{exclude_image_nums} } = split(",", $temp_line);
     } else {
-        $cfg{exclude_image_nums} = 0;
+        @{ $cfg{exclude_image_nums} } = (0);
     }
     if ($opt{debug}) {
         print "Image numbers to be excluded:", join(", ", @{ $cfg{exclude_image_nums} }), "\n";

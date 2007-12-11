@@ -2,9 +2,10 @@ function min_max = find_extr_values(file)
 % FIND_EXTR_VALUES     find the maximum and minumum values in a provided
 %                      image or set of stacked tiff images 
 %
-%   [min,max] = find_extr_values(I_stack_file) finds the maximum and
+%   [min_max] = find_extr_values(I_stack_file) finds the maximum and
 %   minumum value in all of the images in the file 'I_file', which is
-%   either a single image or a stack of tiff images  
+%   either a single image or a stack of tiff images, a two element arrary is 
+%   returned, the first element in the minimum and the second is the maximum  
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
