@@ -12,6 +12,7 @@ use base qw(Config::General);
 my %derived_vars = (
     individual_results_folder => [qw(results_folder exp_name single_image_folder)],
     exp_results_folder        => [qw(results_folder exp_name)],
+	exp_data_folder			  => [qw(data_folder exp_name)],
 );
 
 ###############################################################################
@@ -53,14 +54,18 @@ sub collect_cfg_info_from_files {
     #exclude_image_nums to 0
 
     if (defined $cfg->{exclude_file}) {
-        open EX_INPUT, File::Spec->catdir($cfg->{data_folder}, $cfg->{exp_name}, $cfg->{exclude_file})
-          or die "Can't open the specified exclude file: ", File::Spec->catdir($cfg->{data_folder}, $cfg->{exp_name}, $cfg->{exclude_file});
+		my $exclude_file = File::Spec->catfile($cfg->{data_folder}, $cfg->{exp_name}, $cfg->{exclude_file});
+        open EX_INPUT, $exclude_file or die "Can't open the specified exclude file: $exclude_file";
         my $temp_line = <EX_INPUT>;
         close EX_INPUT;
 
-        chomp($temp_line);
-        @{ $cfg->{exclude_image_nums} } = split(",", $temp_line);
-    } else {
+		if (not($temp_line)) {
+        	@{ $cfg->{exclude_image_nums} } = (0);
+		} else {
+        	chomp($temp_line);
+        	@{ $cfg->{exclude_image_nums} } = split(",", $temp_line);
+    	}
+	} else {
         @{ $cfg->{exclude_image_nums} } = (0);
     }
     if ($cfg->{opt}->{debug}) {

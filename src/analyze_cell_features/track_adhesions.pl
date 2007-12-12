@@ -9,8 +9,12 @@ use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
+
 use lib "../lib";
 use Config::Adhesions;
+
+#Perl built-in variable that controls buffering print output, 1 turns off 
+#buffering
 $| = 1;
 
 my %opt;
