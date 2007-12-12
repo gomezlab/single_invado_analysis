@@ -6,20 +6,25 @@
 use strict;
 use File::Path;
 use File::Spec::Functions;
-use Config::General qw/ ParseConfig /;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
+use lib "../lib";
+use Config::Adhesions;
 $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "input|i=s", "output|o=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
-my %cfg = &get_config;
+
+my @needed_vars =
+  qw(data_folder results_folder exp_name single_image_folder raw_data_folder tracking_files tracking_output_file);
+my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
 # Main Program
@@ -61,79 +66,6 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 ###############################################################################
 # Functions
 ###############################################################################
-
-#######################################
-# Config Collection
-#######################################
-sub get_config {
-    my %cfg = ParseConfig(
-        -ConfigFile            => $opt{cfg},
-        -MergeDuplicateOptions => 1,
-    );
-
-    #check to see if a file for the frames that should be excluded from the
-    #analysis is included, if it is, collect the data from it, otherwise, set
-    #exclude_image_nums to 0
-    if (defined $cfg{exclude_file}) {
-        open EX_INPUT, $cfg{exclude_file} or die "Can't open the specified exclude file: $cfg{exclude_file}";
-        my $temp_line = <EX_INPUT>;
-        close EX_INPUT;
-
-        chomp($temp_line);
-        @{ $cfg{exclude_image_nums} } = split(",", $temp_line);
-    } else {
-        @{ $cfg{exclude_image_nums} } = (0);
-    }
-    if ($opt{debug}) {
-        print "Image numbers to be excluded:", join(", ", @{ $cfg{exclude_image_nums} }), "\n";
-    }
-
-    #Check for the set of variables in the config file that must be specified
-    if (not defined $cfg{results_folder}) {
-        die "ERROR: The location of the folder that contains the results of the focal ",
-          "adhesion identification must be specified in the config file with the ", "variable \"results_folder\".";
-    }
-
-    if (not defined $cfg{exp_name}) {
-        die "ERROR: The name of the experiment must be specified in the config ",
-          "file with the variable \"exp_name\".";
-    }
-
-    if (not defined $cfg{single_image_folder}) {
-        die "ERROR: The location in the results folder where each of the individual ",
-          "images and the associated data about those images must be specified in ",
-          "the config file with the variable \"single_image_folder\".";
-    }
-
-    if (not defined $cfg{raw_data_folder}) {
-        die "ERROR: The folder in each of the individual image folders which contains ",
-          "all the collected properties must be specified in the config file with the ",
-          "variable \"raw_data_folder\".";
-    }
-
-    if (not defined $cfg{tracking_files}) {
-        die "ERROR: The files that will be used for tracking must be specified in ",
-          "the config file using the name tracking_files\n";
-    }
-
-    if (not defined $cfg{tracking_output_file}) {
-        die "ERROR: The file name for writing the tracking data has not been ",
-          "specified, the file name must be specified using the variable name ",
-          "\"tracking_output_file\" in the config file.\n";
-    }
-
-    if (defined $opt{input} && not(-e $opt{input})) {
-        warn "Warning: The data file specified after \'-i\' ($opt{input}) ",
-          "does not exist, input data will be gathered from standard data files.\n";
-    }
-
-    #Compute a few config variables from the provided values:
-    #$cfg{results_data_folder} = "$cfg{results_folder}/$cfg{exp_name}/$cfg{single_image_folder}/";
-    $cfg{results_data_folder} = catdir($cfg{results_folder},$cfg{exp_name},$cfg{single_image_folder});
-	$cfg{exp_result_folder}   = catdir($cfg{results_folder},$cfg{exp_name});
-
-    return %cfg;
-}
 
 #######################################
 # Data Set Collection
@@ -455,9 +387,6 @@ sub track_live_adhesions {
     }
 }
 
-sub select_best_live_tracking_decision {
-}
-
 sub detect_merged_adhesions {
     my ($i_num, $next_i_num) = @_;
     my $num_ad_lineages = $#tracking_mat;
@@ -657,24 +586,24 @@ sub output_tracking_probs {
     if (not defined $cfg{tracking_probs_folder}) {
         print "Could not find variable tracking_probs_folder in config, skipping output of tracking problems\n"
           if $cfg{debug};
-        return 0;
+    } else {
+        &output_merge_problems;
     }
-    &output_merge_problems;
 }
 
 sub output_merge_problems {
-    my $full_probs_folder = "$cfg{exp_result_folder}/$cfg{tracking_probs_folder}";
-    if (not(-e "$full_probs_folder/merge")) {
-        mkpath("$full_probs_folder/merge");
+    my $full_probs_folder = catdir($cfg{exp_results_folder}, $cfg{tracking_probs_folder});
+    if (not(-e catdir($full_probs_folder, "merge"))) {
+        mkpath(catdir($full_probs_folder, "merge"));
     }
 
     for my $i (keys %{ $tracking_probs{merge} }) {
-        mkpath("$full_probs_folder/merge/$i");
+        mkpath(catdir($full_probs_folder, "merge", $i));
         for my $j (0 .. $#{ $tracking_probs{merge}{$i} }) {
-            mkpath("$full_probs_folder/merge/$i/$j");
+            mkpath(catdir($full_probs_folder, "merge", $i, $j));
             my %merge_prob = %{ $tracking_probs{merge}{$i}->[$j] };
             for my $k (keys %merge_prob) {
-                open OUTPUT, ">$full_probs_folder/merge/$i/$j/$k.csv";
+                open OUTPUT, ">" . catfile($full_probs_folder, "merge", $i, $j, "$k.csv");
                 print OUTPUT join(",", @{ $merge_prob{$k} });
                 close OUTPUT;
             }
@@ -686,7 +615,7 @@ sub output_merge_problems {
 # Output the Tracking Matrix
 #######################################
 sub output_tracking_mat {
-    open OUTPUT, ">$cfg{exp_result_folder}/$cfg{tracking_output_file}";
+    open OUTPUT, ">" . catdir($cfg{exp_results_folder}, $cfg{tracking_output_file});
 
     for my $i (0 .. $#tracking_mat) {
         print OUTPUT join(",", @{ $tracking_mat[$i] }), "\n";
