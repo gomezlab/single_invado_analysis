@@ -67,7 +67,7 @@ max_live_adhesions = find_max_live_adhesions(tracking_seqs);
 
 adhesion_tracking_map = jet(max_live_adhesions);
 
-live_adhesion_to_color_map = zeros(size(tracking_seqs,1));
+live_adhesion_to_color_map = zeros(size(tracking_seqs,1),1);
 
 i_seen = 0;
 
