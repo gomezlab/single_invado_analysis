@@ -12,6 +12,7 @@ use Storable;
 
 use lib "../lib";
 use Config::Adhesions;
+use Image::Data::Collection;
 
 #Perl built-in variable that controls buffering print output, 1 turns off 
 #buffering
@@ -26,7 +27,7 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 print "Collecting Configuration\n" if $opt{debug};
 
 my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder raw_data_folder tracking_files tracking_output_file);
+  qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files tracking_files tracking_output_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -36,7 +37,12 @@ my %cfg = $ad_conf->get_cfg_hash;
 my %data_sets;
 if (not(defined $opt{input}) || not(-e $opt{input})) {
     print "\n\nGathering Data Files\n" if $opt{debug};
-    &gather_data_sets;
+	
+	my @data_files;
+	push @data_files, split(/\s+/, $cfg{general_data_files}); 
+	push @data_files, split(/\s+/, $cfg{tracking_files}); 
+
+	%data_sets = Image::Data::Collection::gather_data_sets(\%cfg,\%opt,\@data_files);
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
@@ -70,138 +76,6 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 ###############################################################################
 # Functions
 ###############################################################################
-
-#######################################
-# Data Set Collection
-#######################################
-sub gather_data_sets {
-    my @folders = <$cfg{results_data_folder}/*/$cfg{raw_data_folder}>;
-
-    my @data_files;
-    push @data_files, split(/\s/, $cfg{general_data_files});
-    push @data_files, split(/\s/, $cfg{tracking_files});
-    my $image_count = 0;
-
-    foreach my $this_folder (@folders) {
-        my $i_num;
-        if ($this_folder =~ /$cfg{results_data_folder}\/(.*)\/$cfg{raw_data_folder}/) {
-            $i_num = $1;
-            if (not($i_num =~ /^\d*$/)) {
-                print "ERROR: Problem finding image number in folder: $this_folder, ",
-                  "skipping folder in further computation.\n"
-                  if $opt{debug};
-                next;
-            }
-        } else {
-            print "ERROR: Problem finding image number in folder name: $this_folder, ",
-              "skipping folder in further computation.\n"
-              if $opt{debug};
-            next;
-        }
-
-        #Skip further processin on images in the excluded list
-        next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
-
-        $image_count++;
-
-        foreach my $file (@data_files) {
-            if (-e "$this_folder/$file" && -f "$this_folder/$file") {
-                @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$this_folder/$file");
-                if ($file eq "Centroid") {
-                    @{ $data_sets{$i_num}{ $file . "_x" } } = &process_x_centroid_data(@{ $data_sets{$i_num}{$file} });
-                    @{ $data_sets{$i_num}{ $file . "_y" } } = &process_y_centroid_data(@{ $data_sets{$i_num}{$file} });
-                }
-                if ($file eq "Area" || $file eq "Centroid_dist_from_edge") {
-                    @{ $data_sets{$i_num}{$file} } = map sprintf("%d", $_), @{ $data_sets{$i_num}{$file} };
-                }
-            } elsif (-e "$this_folder/$file" && -d "$this_folder/$file") {
-                if ($file eq "PixelIdxList") {
-                    @{ $data_sets{$i_num}{$file} } = &gather_PixelIdxList_data("$this_folder/$file");
-                }
-            } else {
-                print "ERROR: Problem finding data file ($file) in folder: $this_folder.\n" if $opt{debug};
-            }
-        }
-    }
-    if ($opt{debug}) {
-        print "Data collected from ", $image_count, " images. ", "Data files gathered for each image include: ",
-          join(", ", @data_files), "\n";
-    }
-}
-
-sub process_x_centroid_data {
-    my @centroid = @_;
-    my @x;
-
-    for (0 .. $#centroid / 2) {
-        push @x, $centroid[ $_ * 2 ];
-    }
-
-    return @x;
-}
-
-sub process_y_centroid_data {
-    my @centroid = @_;
-    my @y;
-
-    for (0 .. $#centroid / 2) {
-        push @y, $centroid[ $_ * 2 + 1 ];
-    }
-
-    return @y;
-}
-
-sub gather_data_from_matlab_file {
-    my ($file) = @_;
-
-    open INPUT, "$file" or die "Problem opening $file";
-    my $this_line = <INPUT>;
-    chomp($this_line);
-    my @in = split("   ", $this_line);
-    close INPUT;
-
-    shift @in if ($in[0] eq "");
-    return @in;
-}
-
-sub gather_PixelIdxList_data {
-    my $folder = $_[0];
-
-    my @all_pixid;
-
-    my @ad_folders = <$folder/*>;
-    my $total_ad   = scalar(@ad_folders);
-
-    for my $ad_num (1 .. $total_ad) {
-        my @temp;
-        open INPUT, "$folder/$ad_num" or die "Unable to open PixelIdxList file: $folder/$ad_num";
-        for (<INPUT>) {
-            chomp($_);
-            my $converted_line = sprintf("%d", $_);
-            if ($converted_line =~ /(\d+)/) {
-                push @temp, $1;
-            }
-        }
-        close INPUT;
-        push @all_pixid, \@temp;
-    }
-    return @all_pixid;
-}
-
-sub trim_data_sets {
-    my @excluded_nums;
-    for my $ex_num (@{ $cfg{exclude_image_nums} }) {
-        for my $this_num (sort { $a <=> $b } keys %data_sets) {
-            if ($ex_num == $this_num) {
-                delete $data_sets{$this_num};
-                push @excluded_nums, $ex_num;
-            }
-        }
-    }
-    if ($opt{debug} && scalar(@excluded_nums) != 0) {
-        print "Image number removed from further consideration: ", join(", ", @excluded_nums), "\n";
-    }
-}
 
 #######################################
 # Process Data Sets
