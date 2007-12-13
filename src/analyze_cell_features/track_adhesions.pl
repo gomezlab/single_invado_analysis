@@ -49,7 +49,7 @@ if (not(defined $opt{input}) || not(-e $opt{input})) {
 } else {
     print "\n\nGathering Data Files/Comparison Matrices from Data File\n" if $opt{debug};
     %data_sets = %{ retrieve($opt{input}) };
-    &trim_data_sets;
+    %data_sets = Image::Data::Collection::trim_data_sets(\%cfg,\%opt,\%data_sets);
 }
 
 if (defined $opt{output}) {
