@@ -5,6 +5,7 @@
 ###############################################################################
 use strict;
 use warnings;
+use Text::CSV::Simple;
 
 package Image::Data::Collection;
 ###############################################################################
@@ -12,7 +13,7 @@ package Image::Data::Collection;
 ###############################################################################
 
 #######################################
-# Data Set Collection
+# Collection/Verification
 #######################################
 sub gather_data_sets {
     my %cfg        = %{ $_[0] };
@@ -76,6 +77,17 @@ sub gather_data_sets {
     return %data_sets;
 }
 
+sub gather_data_from_matlab_file {
+    my ($file) = @_;
+
+	my $parser = Text::CSV::Simple->new;	
+	my @data = $parser->read_file($file);
+	
+	die "Found two lines of data in $file" if scalar(@data) > 1;
+
+    return @{$data[0]};
+}
+
 sub process_x_centroid_data {
     my @centroid = @_;
     my @x;
@@ -98,18 +110,6 @@ sub process_y_centroid_data {
     return @y;
 }
 
-sub gather_data_from_matlab_file {
-    my ($file) = @_;
-
-    open INPUT, "$file" or die "Problem opening $file";
-    my $this_line = <INPUT>;
-    chomp($this_line);
-    my @in = split(",", $this_line);
-    close INPUT;
-
-    shift @in if ($in[0] eq "");
-    return @in;
-}
 
 sub gather_PixelIdxList_data {
     my $folder = $_[0];
@@ -160,6 +160,10 @@ sub check_data_set_lengths {
         }
     }
 }
+
+########################################
+# Other
+#######################################
 
 sub trim_data_sets {
     my %cfg       = %{ $_[0] };
