@@ -9,12 +9,14 @@ use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
+use Text::CSV;
+use IO::File;
 
 use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
 
-#Perl built-in variable that controls buffering print output, 1 turns off 
+#Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
 $| = 1;
 
@@ -37,19 +39,21 @@ my %cfg = $ad_conf->get_cfg_hash;
 my %data_sets;
 if (not(defined $opt{input}) || not(-e $opt{input})) {
     print "\n\nGathering Data Files\n" if $opt{debug};
-	
-	my @data_files;
-	push @data_files, split(/\s+/, $cfg{general_data_files}); 
-	push @data_files, split(/\s+/, $cfg{tracking_files}); 
 
-	%data_sets = Image::Data::Collection::gather_data_sets(\%cfg,\%opt,\@data_files);
+    my @data_files;
+    push @data_files, split(/\s+/, $cfg{general_data_files});
+    push @data_files, split(/\s+/, $cfg{tracking_files});
+
+    %data_sets = Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
+
+    die;
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
 } else {
     print "\n\nGathering Data Files/Comparison Matrices from Data File\n" if $opt{debug};
     %data_sets = %{ retrieve($opt{input}) };
-    %data_sets = Image::Data::Collection::trim_data_sets(\%cfg,\%opt,\%data_sets);
+    %data_sets = Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 }
 
 if (defined $opt{output}) {
@@ -493,11 +497,14 @@ sub output_merge_problems {
 # Output the Tracking Matrix
 #######################################
 sub output_tracking_mat {
-    open OUTPUT, ">" . catdir($cfg{exp_results_folder}, $cfg{tracking_output_file});
+    my $out_hand = new IO::File ">" . catdir($cfg{exp_results_folder}, $cfg{tracking_output_file});
+    my $csv = Text::CSV->new();
 
     for my $i (0 .. $#tracking_mat) {
-        print OUTPUT join(",", @{ $tracking_mat[$i] }), "\n";
+        $csv->print($out_hand, \@{ $tracking_mat[$i] });
+        print $out_hand "\n";
     }
 
-    close OUTPUT;
+    $out_hand->close;
 }
+

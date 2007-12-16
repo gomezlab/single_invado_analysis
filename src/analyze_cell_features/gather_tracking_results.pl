@@ -5,20 +5,32 @@
 ###############################################################################
 use strict;
 use File::Temp qw/ tempfile tempdir /;
+use File::Spec::Functions;
 use File::Path;
-use Config::General qw/ ParseConfig /;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
 
+use lib "../lib";
+use Config::Adhesions;
+use Image::Data::Collection;
+
+#Perl built-in variable that controls buffering print output, 1 turns off 
+#buffering
+$| = 1;
+
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "input|i=s", "output|o=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
-my %cfg = &get_config;
+
+my @needed_vars =
+  qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files lineage_analysis_data_files tracking_output_file);
+my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
 # Main Program
@@ -26,14 +38,18 @@ my %cfg = &get_config;
 my %data_sets;
 
 print "\n\nGathering Data Files\n" if $opt{debug};
-&gather_data_sets;
+
+my @data_files;
+push @data_files, split(/\s+/, $cfg{general_data_files}); 
+push @data_files, split(/\s+/, $cfg{lineage_analysis_data_files}); 
+
+%data_sets = Image::Data::Collection::gather_data_sets(\%cfg,\%opt,\@data_files);
 
 print "\n\nRemoving Excluded Images\n" if $opt{debug};
-&trim_data_sets;
+%data_sets = Image::Data::Collection::trim_data_sets(\%cfg,\%opt,\%data_sets);
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
-my @tracking_mat;
-&gather_tracking_mat;
+my @tracking_mat = &read_in_tracking_mat;
 
 print "\n\nGathering Adhesion Lineage Properties\n", if $opt{debug};
 my %adh_lineage_props;
@@ -47,160 +63,14 @@ print "\n\nOutputing Adhesion Lineage Properties\n", if $opt{debug};
 ###############################################################################
 
 #######################################
-# Config Collection
-#######################################
-sub get_config {
-    my %cfg = ParseConfig(
-        -ConfigFile            => $opt{cfg},
-        -MergeDuplicateOptions => 1,
-    );
-
-    #check to see if a file for the frames that should be excluded from the
-    #analysis is included, if it is, collect the data from it, otherwise, set
-    #exclude_image_nums to 0
-    if (defined $cfg{exclude_file}) {
-        open EX_INPUT, $cfg{exclude_file}
-          or die "Can't open the specified exclude file: $cfg{exclude_file}";
-        my $temp_line = <EX_INPUT>;
-        close EX_INPUT;
-
-        chomp($temp_line);
-        @{ $cfg{exclude_image_nums} } = split(/\s/, $temp_line);
-
-        shift @{ $cfg{exclude_image_nums} } if (${ $cfg{exclude_image_nums} }[0] =~ //);
-    } else {
-        @{ $cfg{exclude_image_nums} } = (0);
-    }
-    if ($opt{debug}) {
-        print "Image numbers to be excluded:", join(", ", @{ $cfg{exclude_image_nums} }), "\n";
-    }
-
-    #check to see if files have been specified for the information used for the
-    #tracking, if it has not, die with a message to user to specify these files
-    if (not(defined $cfg{tracking_files})) {
-        die "ERROR: The files that will be used for tracking must be specified in ",
-          "the config file using the name tracking_files\n";
-    }
-
-    if (not(defined $cfg{lineage_props_folder})) {
-        die "ERROR: A folder must be specified in the config file which specifies ",
-          "where the lineage properties will be output, the variable name is ", "
-		  \"lineage_props_folder\".";
-    }
-
-    return %cfg;
-}
-
-#######################################
-# Data Set Collection
-#######################################
-sub gather_data_sets {
-    my @folders = <$cfg{results_folder}/*/$cfg{raw_data_folder}>;
-
-    my %data_gathered_from;
-    foreach my $this_folder (@folders) {
-        my $i_num;
-
-        if ($this_folder =~ /$cfg{results_folder}\/(.*)\/$cfg{raw_data_folder}/) {
-            $i_num = $1;
-            if (not($i_num =~ /^\d*$/)) {
-                print "ERROR: Problem finding image number in folder: $this_folder, ",
-                  "skipping folder in further computation.\n"
-                  if $opt{debug};
-                next;
-            }
-        } else {
-            print "ERROR: Problem finding image number in folder name: $this_folder, ",
-              "skipping folder in further computation.\n"
-              if $opt{debug};
-            next;
-        }
-
-        foreach my $file (split(/\s/, $cfg{tracking_files})) {
-            if (-e "$this_folder/$file") {
-                @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$this_folder/$file");
-                push @{ $data_gathered_from{$i_num} }, $file;
-                if ($file eq "Centroid") {
-                    @{ $data_sets{$i_num}{ $file . "_x" } } = &process_x_centroid_data(@{ $data_sets{$i_num}{$file} });
-                    @{ $data_sets{$i_num}{ $file . "_y" } } = &process_y_centroid_data(@{ $data_sets{$i_num}{$file} });
-                }
-
-                if ($file eq "Area" || $file eq "Centroid_dist_from_edge") {
-                    @{ $data_sets{$i_num}{$file} } = map sprintf("%d", $_), @{ $data_sets{$i_num}{$file} };
-                }
-            } else {
-                print "ERROR: Problem finding data file ($file) in folder: $this_folder.\n" if $opt{debug};
-            }
-        }
-    }
-
-    if ($opt{debug}) {
-        print "Data collected from ", scalar(keys %data_gathered_from), " images. ",
-          "Data files gathered for each image include: ", join(", ", split(/\s/, $cfg{tracking_files})), "\n";
-    }
-}
-
-sub process_x_centroid_data {
-    my @centroid = @_;
-    my @x;
-
-    for (0 .. $#centroid / 2) {
-        push @x, $centroid[ $_ * 2 ];
-    }
-
-    return @x;
-}
-
-sub process_y_centroid_data {
-    my @centroid = @_;
-    my @y;
-
-    for (0 .. $#centroid / 2) {
-        push @y, $centroid[ $_ * 2 + 1 ];
-    }
-
-    return @y;
-}
-
-sub gather_data_from_matlab_file {
-    my ($file) = @_;
-
-    open INPUT, "$file" or die "Problem opening $file";
-    my $this_line = <INPUT>;
-    chomp($this_line);
-    my @in = split("   ", $this_line);
-    close INPUT;
-
-    shift @in if ($in[0] eq "");
-    return @in;
-}
-
-sub trim_data_sets {
-    my @excluded_nums;
-    for my $ex_num (@{ $cfg{exclude_image_nums} }) {
-        my $match_found = 0;
-        for my $this_num (sort { $a <=> $b } keys %data_sets) {
-            if ($ex_num == $this_num) {
-                delete $data_sets{$ex_num};
-                push @excluded_nums, $ex_num;
-                $match_found = 1;
-            }
-        }
-        if (not($match_found)) {
-            print "ERROR: No match found for the excluded image num ($ex_num)\n";
-        }
-    }
-    if ($opt{debug}) {
-        print "Image number removed from further consideration: ", join(", ", @excluded_nums), "\n";
-    }
-}
-
-#######################################
 # Tracking Matrix Collection
 #######################################
 
-sub gather_tracking_mat {
-    open TRACK_IN, "$cfg{tracking_output_file}" or die;
+sub read_in_tracking_mat {
+	my @tracking_mat;
+	
+    open TRACK_IN, catdir($cfg{results_folder},$cfg{exp_name},$cfg{tracking_output_file}) 
+	  or die "Tried to open: ",catdir($cfg{results_folder},$cfg{exp_name},$cfg{tracking_output_file});
     foreach (<TRACK_IN>) {
         chomp($_);
         my @temp = split(",", $_);
@@ -211,6 +81,8 @@ sub gather_tracking_mat {
     print "Gathered ", scalar(@tracking_mat), " lineages, with ", scalar(@{ $tracking_mat[0] }),
       " timepoints from file ", $cfg{tracking_output_file}, ".\n"
       if $opt{debug};
+
+	 return @tracking_mat; 
 }
 
 #######################################
@@ -218,10 +90,46 @@ sub gather_tracking_mat {
 #######################################
 
 sub gather_adh_lineage_properties {
-    @{ $adh_lineage_props{area_shifts} }        = &gather_area_changes;
+    #@{ $adh_lineage_props{area_shifts} }        = &gather_area_changes;
     @{ $adh_lineage_props{areas} }              = &gather_areas;
     @{ $adh_lineage_props{longevities} }        = &gather_longevities;
+    @{ $adh_lineage_props{largest_areas} }        = &gather_largest_areas;
     @{ $adh_lineage_props{starting_edge_dist} } = &gather_starting_dist_from_edge;
+}
+
+sub gather_areas {
+    my @ad_areas;
+    my @data_keys = sort { $a <=> $b } keys %data_sets;
+    for my $j (0 .. $#{ $tracking_mat[0] }) {
+        my $i_num       = $data_keys[$j];
+        my @these_areas = @{ $data_sets{$i_num}{Area} };
+        for my $i (0 .. $#tracking_mat) {
+            if ($tracking_mat[$i][$j] > -1) {
+                $ad_areas[$i][$j] = $these_areas[ $tracking_mat[$i][$j] ];
+            } else {
+                $ad_areas[$i][$j] = 0;
+            }
+        }
+    }
+    return @ad_areas;
+}
+
+sub gather_largest_areas {
+    my @largest_areas;
+    my @data_keys = sort { $a <=> $b } keys %data_sets;
+    for my $i (0 .. $#tracking_mat) {
+		my $largest = 0;
+		for my $j (0 .. $#{ $tracking_mat[$i] }) {
+			my $i_num       = $data_keys[$j];
+			#my @these_areas = @{ $data_sets{$i_num}{Area} };
+			if (   $tracking_mat[$i][$j] > -1
+				&& $largest < ${ $data_sets{$i_num}{Area} }[ $tracking_mat[$i][$j] ]) {
+				$largest = ${ $data_sets{$i_num}{Area} }[ $tracking_mat[$i][$j] ];
+			} 
+		}
+		push @largest_areas, $largest;
+    }
+    return @largest_areas;
 }
 
 sub gather_longevities {
@@ -273,23 +181,6 @@ sub find_ad_area_changes {
     return @area_shifts;
 }
 
-sub gather_areas {
-    my @ad_areas;
-    my @data_keys = sort { $a <=> $b } keys %data_sets;
-    for my $j (0 .. $#{ $tracking_mat[0] }) {
-        my $i_num       = $data_keys[$j];
-        my @these_areas = @{ $data_sets{$i_num}{Area} };
-        for my $i (0 .. $#tracking_mat) {
-            if ($tracking_mat[$i][$j] > -1) {
-                $ad_areas[$i][$j] = $these_areas[ $tracking_mat[$i][$j] ];
-            } else {
-                $ad_areas[$i][$j] = 0;
-            }
-        }
-    }
-    return @ad_areas;
-}
-
 sub gather_starting_dist_from_edge {
     my @starting_dists;
     my @data_keys = sort { $a <=> $b } keys %data_sets;
@@ -314,11 +205,25 @@ sub output_adhesion_props {
         mkpath($cfg{lineage_props_folder});
     }
     &output_adhesion_longevity(@{ $adh_lineage_props{longevities} });
-    &output_area_changes;
+    #&output_area_changes;
+
+	&output_all;
+
     &output_adhesion_area_seqeunces(\@{ $adh_lineage_props{areas} }, \@{ $adh_lineage_props{longevities} });
     open OUTPUT, ">edge_dist.csv";
     print OUTPUT join("\n", @{ $adh_lineage_props{starting_edge_dist} });
     close OUTPUT;
+}
+
+sub output_all {
+    my @longevities = @{ $adh_lineage_props{longevities} };
+    my @largest_areas = @{ $adh_lineage_props{largest_areas} };
+    my @starting_dists = @{ $adh_lineage_props{starting_edge_dist} };
+	
+    open OUTPUT, ">$cfg{lineage_props_folder}/all.txt" or die "$!";
+	print OUTPUT join(",",qw(longev la sd)),"\n";
+	print OUTPUT join("\n", map {"$longevities[$_],$largest_areas[$_],$starting_dists[$_]"} (0 .. $#longevities));
+	close OUTPUT;
 }
 
 sub output_adhesion_longevity {

@@ -10,6 +10,14 @@ use Config::General qw/ ParseConfig /;
 use Getopt::Long;
 use Data::Dumper;
 
+use lib "../lib";
+use Config::Adhesions;
+use Image::Data::Collection;
+
+#Perl built-in variable that controls buffering print output, 1 turns off 
+#buffering
+$| = 1;
+
 my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg=s", "debug|d");
@@ -17,13 +25,16 @@ GetOptions(\%opt, "cfg=s", "debug|d");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
-my %cfg = &get_config;
+my @needed_vars =
+  qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files tracking_files tracking_output_file);
+my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
 # Main Program
 ###############################################################################
 
-my @folders = <$cfg{results_folder}/*/$cfg{raw_data_folder}>;
+my @folders = <$cfg{individual_results_folder}/*/$cfg{raw_data_folder}>;
 
 if ($opt{debug}) {
     print "Example Data Folder: ", join("\n", @folders[ 0 .. 0 ]), "\n";
@@ -31,7 +42,7 @@ if ($opt{debug}) {
 }
 
 for (@folders) {
-    $_ =~ /($cfg{data_folder}\/(\d+)\/)/;
+    $_ =~ /($cfg{individual_results_folder}\/(\d+)\/)/;
     my $picture_num = $2;
 
     my $plots_folder = "$1/plots";
@@ -40,7 +51,7 @@ for (@folders) {
     my $file_name = &write_data_file("$_/Centroid_dist_from_edge", "$_/Area");
     foreach (split(/\s/, $cfg{file_ext})) {
         &build_and_execute_gnuplot_file("cent_area", $file_name, "$plots_folder/Cent_dist_vs_area.$_");
-        &build_and_execute_r_file("cent_area", $file_name, "$plots_folder/Cent_dist_vs_area.$_");
+        #&build_and_execute_r_file("cent_area", $file_name, "$plots_folder/Cent_dist_vs_area.$_");
     }
 
     $file_name =
@@ -58,35 +69,6 @@ for (@folders) {
 ###############################################################################
 # Functions
 ###############################################################################
-
-sub get_config {
-    if ($opt{debug}) {
-        print "Collecting Configuration\n";
-    }
-
-    my %default_config = (file_ext => "svg png");
-    my %cfg = ParseConfig(
-        -ConfigFile            => $opt{cfg},
-        -DefaultConfig         => \%default_config,
-        -MergeDuplicateOptions => 1,
-    );
-    if (defined($cfg{pixel_size_file}) && defined($cfg{target_unit_size})) {
-        $cfg{scale_values} = 1;
-        if (-e $cfg{pixel_size_file}) {
-            open INPUT, "$cfg{pixel_size_file}" or die "Can't open specified pixel_size_file: $cfg{pixel_size_file}.";
-            $cfg{pixel_size} = <INPUT>;
-            chomp($cfg{pixel_size});
-            close INPUT;
-        } else {
-            die "Can't find specified pixel_size_file: $cfg{pixel_size_file}.";
-        }
-        if ($opt{debug}) {
-            print "Pixel Size -> $cfg{pixel_size}, Target Size -> $cfg{target_unit_size}.\n";
-        }
-    }
-
-    return %cfg;
-}
 
 sub gather_data_from_matlab_file {
     my ($file) = @_;
