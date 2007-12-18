@@ -238,6 +238,8 @@ sub var_descriptions {
     #subfolder under the folder identified in results_folder
     $desc{lineage_props_folder} =
       "Specifies the folder under results_folder/exp_name where the lineage properties will be saved.";
+	
+	$desc{single_lineage_props_file} = "Specifies the file name to use when outputing the properties of each lineage, csv format";
 
     return %desc;
 }

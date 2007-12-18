@@ -5,6 +5,7 @@
 ###############################################################################
 use strict;
 use warnings;
+use File::Spec;
 use Text::CSV::Simple;
 
 package Image::Data::Collection;
@@ -53,8 +54,8 @@ sub gather_data_sets {
                 if ($file eq "Centroid") {
                     @{ $data_sets{$i_num}{ $file . "_x" } } = &process_x_centroid_data(@{ $data_sets{$i_num}{$file} });
                     @{ $data_sets{$i_num}{ $file . "_y" } } = &process_y_centroid_data(@{ $data_sets{$i_num}{$file} });
-                	delete $data_sets{$i_num}{$file};
-				}
+                    delete $data_sets{$i_num}{$file};
+                }
                 if ($file eq "Area" || $file eq "Centroid_dist_from_edge") {
                     @{ $data_sets{$i_num}{$file} } = map sprintf("%f", $_), @{ $data_sets{$i_num}{$file} };
                 }
@@ -80,12 +81,12 @@ sub gather_data_sets {
 sub gather_data_from_matlab_file {
     my ($file) = @_;
 
-	my $parser = Text::CSV::Simple->new;	
-	my @data = $parser->read_file($file);
-	
-	die "Found two lines of data in $file" if scalar(@data) > 1;
+    my $parser = Text::CSV::Simple->new;
+    my @data   = $parser->read_file($file);
 
-    return @{$data[0]};
+    die "Found two lines of data in $file" if scalar(@data) > 1;
+
+    return @{ $data[0] };
 }
 
 sub process_x_centroid_data {
@@ -109,7 +110,6 @@ sub process_y_centroid_data {
 
     return @y;
 }
-
 
 sub gather_PixelIdxList_data {
     my $folder = $_[0];
@@ -145,7 +145,7 @@ sub check_data_set_lengths {
         }
     }
 
-    for my $key (sort {$a <=> $b} keys %data_sets_length) {
+    for my $key (sort { $a <=> $b } keys %data_sets_length) {
         my $all_same       = 1;
         my @data_type_keys = keys %{ $data_sets_length{$key} };
         my $length         = $data_sets_length{$key}{ $data_type_keys[0] };
@@ -164,7 +164,6 @@ sub check_data_set_lengths {
 ########################################
 # Other
 #######################################
-
 sub trim_data_sets {
     my %cfg       = %{ $_[0] };
     my %opt       = %{ $_[1] };
@@ -188,6 +187,21 @@ sub trim_data_sets {
     }
 
     return %data_sets;
+}
+
+sub read_in_tracking_mat {
+    my %cfg = %{ $_[0] };
+    my %opt = %{ $_[1] };
+    my $file = File::Spec->catdir($cfg{results_folder}, $cfg{exp_name}, $cfg{tracking_output_file});
+
+    my $parser = Text::CSV::Simple->new;
+    my @tracking_mat = $parser->read_file($file);
+
+    print "Gathered ", scalar(@tracking_mat), " lineages, with ", scalar(@{ $tracking_mat[0] }),
+      " timepoints from file ", $cfg{tracking_output_file}, ".\n"
+      if $opt{debug};
+
+    return @tracking_mat;
 }
 
 1;
