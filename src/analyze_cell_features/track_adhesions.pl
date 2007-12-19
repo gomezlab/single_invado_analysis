@@ -46,8 +46,6 @@ if (not(defined $opt{input}) || not(-e $opt{input})) {
 
     %data_sets = Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 
-    die;
-
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
 } else {
