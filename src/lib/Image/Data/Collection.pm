@@ -204,4 +204,20 @@ sub read_in_tracking_mat {
     return @tracking_mat;
 }
 
+sub gather_sorted_image_numbers {
+    my %cfg = %{ $_[0] };
+	
+    my @folders = <$cfg{individual_results_folder}/*>;
+
+	my @image_numbers;
+
+    foreach my $this_folder (@folders) {
+        if ($this_folder =~ /$cfg{individual_results_folder}\/(.*)/) {
+            push @image_numbers, $1 if not grep $1 == $_, @{ $cfg{exclude_image_nums} };
+		}
+	}
+
+	return sort {$a <=> $b} @image_numbers;
+}
+
 1;

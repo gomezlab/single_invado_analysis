@@ -22,7 +22,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "so|single-output=s", "si|single-input=s");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -37,7 +37,8 @@ my %cfg = $ad_conf->get_cfg_hash;
 # Main Program
 ###############################################################################
 my %data_sets;
-if (not(defined $opt{input}) || not(-e $opt{input})) {
+if (   (not(defined $opt{input}) || not(-e $opt{input}))
+    && (not(defined $opt{si}) || defined $opt{so})) {
     print "\n\nGathering Data Files\n" if $opt{debug};
 
     my @data_files;
@@ -48,7 +49,7 @@ if (not(defined $opt{input}) || not(-e $opt{input})) {
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
-} else {
+} elsif (defined $opt{input}) {
     print "\n\nGathering Data Files/Comparison Matrices from Data File\n" if $opt{debug};
     %data_sets = %{ retrieve($opt{input}) };
     %data_sets = Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
@@ -84,17 +85,23 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 #######################################
 sub make_comp_matices {
     my @data_keys = sort { $a <=> $b } keys %data_sets;
-
     for (0 .. $#data_keys) {
 
         #The last image can not be compared to a future image, so we skip
         #calculations on it
-        next if ($_ == $#data_keys);
+        if ($_ == $#data_keys) {
+            if (defined $opt{so}) {
+                my $key_1 = $data_keys[$_];
+                store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{so});
+                delete $data_sets{$key_1};
+            }
+            next;
+        }
 
         #These are the keys we will use for all the subsequent matrix creation
         my ($key_1, $key_2) = @data_keys[ $_, $_ + 1 ];
 
-        print "Working on image Number: $key_1 - ";
+        print "Working on image Number: $key_1 - " if $opt{debug};
 
         #Gather the Centroid distance matrix
         my @x1 = @{ $data_sets{$key_1}{Centroid_x} };
@@ -102,20 +109,24 @@ sub make_comp_matices {
         my @x2 = @{ $data_sets{$key_2}{Centroid_x} };
         my @y2 = @{ $data_sets{$key_2}{Centroid_y} };
         @{ $data_sets{$key_1}{Cent_dist} } = &make_dist_mat(\@x1, \@y1, \@x2, \@y2);
-        print "Cent_dist Collected - ";
+        print "Cent_dist Collected - " if $opt{debug};
 
         #Gather the Area difference matrix
         my @area1 = @{ $data_sets{$key_1}{Area} };
         my @area2 = @{ $data_sets{$key_2}{Area} };
         @{ $data_sets{$key_1}{Area_diff} } = &make_abs_diff_mat(\@area1, \@area2);
-        print "Area_diff Collected - ";
+        print "Area_diff Collected - " if $opt{debug};
 
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
-        print "Pix_sim Collected - ";
-        print "\r";
+        print "Pix_sim Collected - " if $opt{debug};
+        print "\r"                   if $opt{debug};
 
+        if (defined $opt{so}) {
+            store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{so});
+            delete $data_sets{$key_1};
+        }
     }
 }
 
@@ -176,17 +187,42 @@ sub calc_pix_sim {
 # Tracking Matrix Production
 #######################################
 sub make_tracking_mat {
-    &initialize_tracking_mat;
-    my @data_keys = sort { $a <=> $b } keys %data_sets;
-    for (0 .. $#data_keys) {
-        next if ($_ == $#data_keys);
+    my @data_keys;
+    if (scalar(keys %data_sets) == 0) {
+        @data_keys = Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
+    } else {
+        @data_keys = sort { $a <=> $b } keys %data_sets;
+    }
+
+    &initialize_tracking_mat($data_keys[0]);
+    for (0 .. $#data_keys - 1) {
 
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
+        $DB::single = 2;
 
+        #Collect data seta and comparison matrices if not present
+        if (not(defined $data_sets{$i_num})) {
+            if (defined $opt{si}) {
+                %{ $data_sets{$i_num} } = %{ retrieve(catfile($cfg{individual_results_folder}, $i_num, $opt{si})) };
+            } else {
+                die "Unable to find the data sets for image number \"$i_num\" needed to build the comparison matrix";
+            }
+        }
+        if (not(defined $data_sets{$next_i_num})) {
+            if (defined $opt{si}) {
+                %{ $data_sets{$next_i_num} } =
+                  %{ retrieve catfile($cfg{individual_results_folder}, $next_i_num, $opt{si}) };
+            } else {
+                die
+                  "Unable to find the data sets for image number \"$next_i_num\" needed to build the comparison matrix";
+            }
+        }
+
+        #Begin tracking
         print "Image #: $i_num - " if $opt{debug};
 
-        &track_live_adhesions($i_num, $next_i_num);
+        &track_live_adhesions($i_num);
         print "# Tracked: $tracking_facts{$i_num}{live_adhesions} - " if $opt{debug};
 
         &detect_merged_adhesions($i_num, $next_i_num);
@@ -198,13 +234,20 @@ sub make_tracking_mat {
 
         &check_tracking_mat_integrity;
         print "\r" if $opt{debug};
+
+        if (defined $opt{si}) {
+            delete $data_sets{$i_num};
+        }
     }
 }
 
 sub initialize_tracking_mat {
-    my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
+    my $first_key = $_[0];
     print "Intializing the tracking matrix on image #: $first_key\n" if $opt{debug};
 
+    if (not defined $data_sets{$first_key}) {
+        %{ $data_sets{$first_key} } = %{ retrieve(catfile($cfg{individual_results_folder}, $first_key, $opt{si})) };
+    }
     my $num_adhesions = $#{ $data_sets{$first_key}{Area} };
 
     for (0 .. $num_adhesions) {
@@ -213,7 +256,7 @@ sub initialize_tracking_mat {
 }
 
 sub track_live_adhesions {
-    my ($i_num, $next_i_num) = @_;
+    my ($i_num)         = @_;
     my $num_ad_lineages = $#tracking_mat;
     my $cur_step        = $#{ $tracking_mat[0] };
 
