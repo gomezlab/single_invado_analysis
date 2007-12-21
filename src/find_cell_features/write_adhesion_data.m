@@ -41,25 +41,41 @@ special_cases = strvcat('PixelIdxList');
 field_names = fieldnames(S);
 
 for i = 1:size(field_names,1)
+
     if(strmatch(field_names(i),to_exclude))
         continue;
     end
-    temp = [S.(cell2mat(field_names(i)))];
-    csvwrite(fullfile(out_dir,cell2mat(field_names(i))),temp);
+
+    data = [S.(cell2mat(field_names(i)))];
+
+    file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
+    file_handle = fopen(file_out,'wt');
+    for j = 1:size(data,2)
+        if (j < size(data,2))
+            fprintf(file_handle,'%f,',data(j));
+        else
+            fprintf(file_handle,'%f',data(j));
+        end
+    end
+    fclose(file_handle);
 end
 
 for i = 1:size(field_names,1)
-    if (strmatch(field_names(i),special_cases))
-        if (strmatch(field_names(i),'PixelIdxList'))
-            num_ad = size(S,1);
-            if (not(exist(fullfile(out_dir,'PixelIdxList'),'dir')))
-                mkdir(fullfile(out_dir,'PixelIdxList'));
-            end
-            
-            for j = 1:num_ad
-                temp = [S(j).PixelIdxList];
-                csvwrite(fullfile(out_dir,'PixelIdxList',num2str(j)),temp);
+    if (strmatch(field_names(i),'PixelIdxList'))
+        num_ad = size(S,1);
+
+        file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
+        file_handle = fopen(file_out,'wt');
+        for j = 1:num_ad
+            data = [S(j).PixelIdxList'];
+            for k = 1:size(data,2)
+                if (k < size(data,2))
+                    fprintf(file_handle,'%f,',data(k));
+                else
+                    fprintf(file_handle,'%f\n',data(k));
+                end
             end
         end
+        fclose(file_handle);
     end
 end
