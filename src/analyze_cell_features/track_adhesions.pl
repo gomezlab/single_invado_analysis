@@ -117,17 +117,44 @@ sub make_comp_matices {
         @{ $data_sets{$key_1}{Area_diff} } = &make_abs_diff_mat(\@area1, \@area2);
         print "Area_diff Collected - " if $opt{debug};
 
+		#Gather the Pixel Similarity matrix
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
+        #@{ $data_sets{$key_1}{Pix_sim_quick} } = &calc_pix_sim_quick(\@pix_id1, \@pix_id2);
+        #@{ $data_sets{$key_1}{Pix_sim_quick} } = @{ $data_sets{$key_1}{Pix_sim} };
+        #die if (&matrices_not_the_same(\@{ $data_sets{$key_1}{Pix_sim} }, \@{ $data_sets{$key_1}{Pix_sim_quick} }));
         print "Pix_sim Collected - " if $opt{debug};
         print "\r"                   if $opt{debug};
-
-        if (defined $opt{so}) {
+        
+		if (defined $opt{so}) {
             store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{so});
             delete $data_sets{$key_1};
         }
     }
+}
+
+sub matrices_not_the_same {
+    my @a = @{ $_[0] };
+    my @b = @{ $_[1] };
+
+    if (scalar(@a) != scalar(@b)) {
+        return 1;
+    }
+
+    for my $i (0 .. $#a) {
+
+        if (scalar(@{ $a[$i] }) != scalar(@{ $b[$i] })) {
+            return 1;
+        }
+        for my $j (0 .. $#{$a[$i]}) {
+            if ($a[$i][$j] != $b[$i][$j]) {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
 }
 
 sub make_dist_mat {
@@ -174,9 +201,49 @@ sub calc_pix_sim {
             my $match_count   = grep {
                 my $poss_match = $_;
                 my $a = grep $poss_match == $_, @pix_list;
+				if ($a > 1) {
+					die;
+				}
                 $a;
             } @matching_list;
             push @temp_sim, $match_count / scalar(@pix_list);
+        }
+        push @sim_percents, \@temp_sim;
+    }
+    return @sim_percents;
+}
+
+sub calc_pix_sim_quick {
+    my @pix_id1 = @{ $_[0] };
+    my @pix_id2 = @{ $_[1] };
+
+    my @sim_percents;
+    for my $i (0 .. $#pix_id1) {
+        my @temp_sim;
+        my @pix_list = @{ $pix_id1[$i] };
+		my $pix_list_size = scalar(@pix_list);
+        for my $j (0 .. $#pix_id2) {
+            my @matching_list = @{ $pix_id2[$j] };
+            my $match_count   = grep {
+                my $poss_match = $_;
+                
+				my @a = grep {
+                    my $testing_num = $pix_list[$_];
+                    if ($poss_match == $testing_num) {
+                        1;
+                    } else {
+                        0;
+                    }
+                } (0 .. $#pix_list);
+
+                if (scalar(@a) == 1) {
+                    @pix_list = @pix_list[ 0 .. ($a[0] - 1), ($a[0] + 1) .. $#pix_list ];
+                } elsif (scalar(@a) != 0) {
+                    die "prob with pix match ($pix_list_size, ", scalar(@pix_list),"): ",join(" ",@pix_list[@a]);
+                }
+                scalar(@a);
+            } @matching_list;
+            push @temp_sim, $match_count / $pix_list_size;
         }
         push @sim_percents, \@temp_sim;
     }
@@ -196,10 +263,8 @@ sub make_tracking_mat {
 
     &initialize_tracking_mat($data_keys[0]);
     for (0 .. $#data_keys - 1) {
-
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
-        $DB::single = 2;
 
         #Collect data seta and comparison matrices if not present
         if (not(defined $data_sets{$i_num})) {

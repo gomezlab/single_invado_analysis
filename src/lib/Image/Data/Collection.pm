@@ -20,7 +20,7 @@ sub gather_data_sets {
     my %cfg        = %{ $_[0] };
     my %opt        = %{ $_[1] };
     my @data_files = @{ $_[2] };
-
+	
     my %data_sets;
 
     my @folders     = <$cfg{individual_results_folder}/*/$cfg{raw_data_folder}>;
@@ -49,8 +49,12 @@ sub gather_data_sets {
         $image_count++;
 
         foreach my $file (@data_files) {
-            if (-e "$this_folder/$file" && -f "$this_folder/$file") {
-                @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$this_folder/$file");
+			my @file_matches = <$this_folder/$file.*>;
+			if (scalar(@file_matches) > 1) {
+				warn("Multiple data files for file name: $file\nFound in folder: $this_folder\nExtracting data from only the first file: $file_matches[0]\n\n");
+			}
+            if (-e "$file_matches[0]" && -f "$file_matches[0]" && -r "$file_matches[0]") {
+				@{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$file_matches[0]");
                 if ($file eq "Centroid") {
                     @{ $data_sets{$i_num}{ $file . "_x" } } = &process_x_centroid_data(@{ $data_sets{$i_num}{$file} });
                     @{ $data_sets{$i_num}{ $file . "_y" } } = &process_y_centroid_data(@{ $data_sets{$i_num}{$file} });
@@ -59,21 +63,24 @@ sub gather_data_sets {
                 if ($file eq "Area" || $file eq "Centroid_dist_from_edge") {
                     @{ $data_sets{$i_num}{$file} } = map sprintf("%f", $_), @{ $data_sets{$i_num}{$file} };
                 }
-            } elsif (-e "$this_folder/$file" && -d "$this_folder/$file") {
-                if ($file eq "PixelIdxList") {
-                    @{ $data_sets{$i_num}{$file} } = &gather_PixelIdxList_data("$this_folder/$file");
-                }
+            #} elsif (-e "$this_folder/$file" && -d "$this_folder/$file") {
+            #    if ($file eq "PixelIdxList") {
+            #        @{ $data_sets{$i_num}{$file} } = &gather_PixelIdxList_data("$this_folder/$file");
+            #    }
             } else {
-                print "ERROR: Problem finding data file ($file) in folder: $this_folder.\n" if $opt{debug};
+                warn("ERROR: Problem finding data file ($file) in folder: $this_folder.\n");
             }
         }
     }
-    if ($opt{debug}) {
+	
+	$DB::single = 2;
+    &check_data_set_lengths(\%data_sets);
+    &check_PixelIdxList_data(\%data_sets);
+    
+	if ($opt{debug}) {
         print "Data collected from ", $image_count, " images. ", "Data files gathered for each image include: ",
           join(", ", @data_files), "\n";
     }
-
-    &check_data_set_lengths(\%data_sets);
 
     return %data_sets;
 }
@@ -83,10 +90,12 @@ sub gather_data_from_matlab_file {
 
     my $parser = Text::CSV::Simple->new;
     my @data   = $parser->read_file($file);
+	
+	if (scalar(@data) == 1) {
+		@data = @{$data[0]};
+	}
 
-    die "Found two lines of data in $file" if scalar(@data) > 1;
-
-    return @{ $data[0] };
+    return @data;
 }
 
 sub process_x_centroid_data {
@@ -159,6 +168,29 @@ sub check_data_set_lengths {
               map { "    $_ - $data_sets_length{$key}{$_}\n" } keys %{ $data_sets_length{$key} };
         }
     }
+}
+
+sub check_PixelIdxList_data {
+	my %data_sets = %{$_[0]};
+	for my $key (sort keys %data_sets) {
+		print "Woring on checking PixelIdxList for $key\n";
+		my @overall_list;
+		my @origins;
+		my $count = 0;
+		for (@{ $data_sets{$key}{PixelIdxList} }) {
+			push @overall_list, @{$_};
+			for (@{$_}) {
+				push @origins, $count;
+			}
+			$count++;
+		}
+			
+		for my $i (0 .. $#overall_list) {
+			if (grep $overall_list[$_] == $overall_list[$i], (0 .. $i - 1, $i + 1 .. $#overall_list)) {
+				print "$key - $origins[$i] - $overall_list[$i]\n";
+			}
+		}
+	}
 }
 
 ########################################
