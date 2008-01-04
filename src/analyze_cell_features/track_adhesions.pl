@@ -79,7 +79,8 @@ sub make_comp_matices {
     for (0 .. $#data_keys) {
 
         #The last image can not be compared to a future image, so we skip
-        #calculations on it
+        #calculations on it, but still save the image data if the output
+        #option is specified
         if ($_ == $#data_keys) {
             if (defined $opt{output}) {
                 my $key_1 = $data_keys[$_];
@@ -111,12 +112,11 @@ sub make_comp_matices {
         #Gather the Pixel Similarity matrix
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
-
-        #@{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
+        @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
         @{ $data_sets{$key_1}{Pix_sim} } =
           &calc_pix_sim_quick(\@pix_id1, \@pix_id2, \@{ $data_sets{$key_1}{Area_diff} });
 
-        #die if (&matrices_not_the_same(\@{ $data_sets{$key_1}{Pix_sim} }, \@{ $data_sets{$key_1}{Pix_sim_quick} }));
+        die if (&matrices_not_the_same(\@{ $data_sets{$key_1}{Pix_sim} }, \@{ $data_sets{$key_1}{Pix_sim_quick} }));
         print "Pix_sim Collected - " if $opt{debug};
         print "\r"                   if $opt{debug};
 
@@ -252,15 +252,14 @@ sub make_tracking_mat {
                 %{ $data_sets{$next_i_num} } =
                   %{ retrieve catfile($cfg{individual_results_folder}, $next_i_num, $opt{input}) };
             } else {
-                die
-                  "Unable to find the data sets and comparison matrices for image number \"$next_i_num\".";
+                die "Unable to find the data sets and comparison matrices for image number \"$next_i_num\".";
             }
         }
-	
-		#Start the tracking matrix, if this is the first time throught the loop
-    	&initialize_tracking_mat($data_keys[0]) if $_ == 0;
-        
-		#Begin tracking
+
+        #Start the tracking matrix, if this is the first time throught the loop
+        &initialize_tracking_mat($data_keys[0]) if $_ == 0;
+
+        #Begin tracking
         print "Image #: $i_num - " if $opt{debug};
 
         &track_live_adhesions($i_num);
@@ -406,7 +405,6 @@ sub detect_merged_adhesions {
                 $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1 * $tracking_mat[ $lineage_nums[$_] ][$cur_step] - 1;
             }
         }
-
     }
 }
 
