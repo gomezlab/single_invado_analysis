@@ -12,6 +12,7 @@ use Storable;
 use Text::CSV;
 use IO::File;
 use Math::Matrix;
+use List::Util;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -423,15 +424,17 @@ sub select_best_merge_decision {
     my @sorted_pix_sim_indexes = sort { $pix_sims_set[$b] <=> $pix_sims_set[$a] } (0 .. $#pix_sims_set);
     my $best_pix_sim_index = $sorted_pix_sim_indexes[0];
 
+    $DB::single = 2;
+
     #There are several cases to deal with here:
     #
     # 1. The adhesion with the biggest starting area has to shift the least
     # amount and has the highest pixel similarity to the final merged adhesion.
     # This is expected when a large adhesion swallows a small one.
     #
-    # 2. The differences in area are negligible or equal, but there is a
-    # difference in the centroid shifts. In this case, choose the adhesion
-    # which is closest to the final adhesion.
+    # 2. The differences in area between two largest adhesions in the merge is 
+	# negligible or equal, but there is a difference in the centroid shifts. 
+	# In this case, choose the adhesion which is closest to the final adhesion.
 
     #Case 1
     if (   $biggest_area_index == $shortest_dist_index
@@ -449,6 +452,12 @@ sub select_best_merge_decision {
     my $first_area_diff = $merged_areas[$biggest_area_index] - $merged_areas[$second_biggest_area_index];
     if ($first_area_diff / $merged_areas[$biggest_area_index] <= $shift_percent) {
         $area_shifts_small = 1;
+        my $old = $shortest_dist_index;
+        if ($merged_areas[$biggest_area_index] > $merged_areas[$second_biggest_area_index]) {
+            $shortest_dist_index = $biggest_area_index;
+        } else {
+            $shortest_dist_index = $second_biggest_area_index;
+        }
     }
     if ($area_shifts_small) {
         return ($shortest_dist_index, 2);
