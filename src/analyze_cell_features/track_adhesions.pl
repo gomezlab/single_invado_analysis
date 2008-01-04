@@ -114,7 +114,7 @@ sub make_comp_matices {
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
-        @{ $data_sets{$key_1}{Pix_sim} } =
+        @{ $data_sets{$key_1}{Pix_sim_quick} } =
           &calc_pix_sim_quick(\@pix_id1, \@pix_id2, \@{ $data_sets{$key_1}{Area_diff} });
 
         die if (&matrices_not_the_same(\@{ $data_sets{$key_1}{Pix_sim} }, \@{ $data_sets{$key_1}{Pix_sim_quick} }));
@@ -187,7 +187,7 @@ sub calc_pix_sim {
                     die;
                 }
                 $a;
-            } @matching_list;
+            	} @matching_list;
             push @temp_sim, $match_count / scalar(@pix_list);
         }
         push @sim_percents, \@temp_sim;
