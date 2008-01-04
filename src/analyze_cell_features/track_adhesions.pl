@@ -11,6 +11,7 @@ use Data::Dumper;
 use Storable;
 use Text::CSV;
 use IO::File;
+use Math::Matrix;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -22,7 +23,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "so|single-output=s", "si|single-input=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -37,8 +38,7 @@ my %cfg = $ad_conf->get_cfg_hash;
 # Main Program
 ###############################################################################
 my %data_sets;
-if (   (not(defined $opt{input}) || not(-e $opt{input}))
-    && (not(defined $opt{si}) || defined $opt{so})) {
+if (not(defined $opt{input}) || defined $opt{output}) {
     print "\n\nGathering Data Files\n" if $opt{debug};
 
     my @data_files;
@@ -49,15 +49,6 @@ if (   (not(defined $opt{input}) || not(-e $opt{input}))
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
-} elsif (defined $opt{input}) {
-    print "\n\nGathering Data Files/Comparison Matrices from Data File\n" if $opt{debug};
-    %data_sets = %{ retrieve($opt{input}) };
-    %data_sets = Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
-}
-
-if (defined $opt{output}) {
-    print "\n\nStoring Data Files/Comparison Matrices\n" if $opt{debug};
-    store \%data_sets, $opt{output};
 }
 
 print "\n\nDetermining Tracking Matrix\n" if $opt{debug};
@@ -90,9 +81,9 @@ sub make_comp_matices {
         #The last image can not be compared to a future image, so we skip
         #calculations on it
         if ($_ == $#data_keys) {
-            if (defined $opt{so}) {
+            if (defined $opt{output}) {
                 my $key_1 = $data_keys[$_];
-                store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{so});
+                store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
                 delete $data_sets{$key_1};
             }
             next;
@@ -129,29 +120,18 @@ sub make_comp_matices {
         print "Pix_sim Collected - " if $opt{debug};
         print "\r"                   if $opt{debug};
 
-        if (defined $opt{so}) {
-            store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{so});
+        if (defined $opt{output}) {
+            store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
             delete $data_sets{$key_1};
         }
     }
 }
 
 sub matrices_not_the_same {
-    my @a = @{ $_[0] };
-    my @b = @{ $_[1] };
-
     my $a = new Math::Matrix @{ $_[0] };
     my $b = new Math::Matrix @{ $_[1] };
 
-    $DB::single = 2;
     if (not $a->equal($b)) {
-        for my $i (0 .. $#a) {
-            for my $j (0 .. $#{ $a[$i] }) {
-                if ($a[$i][$j] != $b[$i][$j]) {
-                    print "$i - $j - $a[$i][$j] - $b[$i][$j]\n";
-                }
-            }
-        }
         return 1;
     }
 
@@ -255,30 +235,32 @@ sub make_tracking_mat {
         @data_keys = sort { $a <=> $b } keys %data_sets;
     }
 
-    &initialize_tracking_mat($data_keys[0]);
     for (0 .. $#data_keys - 1) {
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
 
         #Collect data seta and comparison matrices if not present
         if (not(defined $data_sets{$i_num})) {
-            if (defined $opt{si}) {
-                %{ $data_sets{$i_num} } = %{ retrieve(catfile($cfg{individual_results_folder}, $i_num, $opt{si})) };
+            if (defined $opt{input}) {
+                %{ $data_sets{$i_num} } = %{ retrieve(catfile($cfg{individual_results_folder}, $i_num, $opt{input})) };
             } else {
-                die "Unable to find the data sets for image number \"$i_num\" needed to build the comparison matrix";
+                die "Unable to find the data sets and comparison matrices for image number \"$i_num\".";
             }
         }
         if (not(defined $data_sets{$next_i_num})) {
-            if (defined $opt{si}) {
+            if (defined $opt{input}) {
                 %{ $data_sets{$next_i_num} } =
-                  %{ retrieve catfile($cfg{individual_results_folder}, $next_i_num, $opt{si}) };
+                  %{ retrieve catfile($cfg{individual_results_folder}, $next_i_num, $opt{input}) };
             } else {
                 die
-                  "Unable to find the data sets for image number \"$next_i_num\" needed to build the comparison matrix";
+                  "Unable to find the data sets and comparison matrices for image number \"$next_i_num\".";
             }
         }
-
-        #Begin tracking
+	
+		#Start the tracking matrix, if this is the first time throught the loop
+    	&initialize_tracking_mat($data_keys[0]) if $_ == 0;
+        
+		#Begin tracking
         print "Image #: $i_num - " if $opt{debug};
 
         &track_live_adhesions($i_num);
@@ -294,24 +276,19 @@ sub make_tracking_mat {
         &check_tracking_mat_integrity;
         print "\r" if $opt{debug};
 
-        if (defined $opt{si}) {
-            delete $data_sets{$i_num};
-        }
+        delete $data_sets{$i_num};
     }
 }
 
 sub initialize_tracking_mat {
-    my $first_key = $_[0];
-    print "Intializing the tracking matrix on image #: $first_key\n" if $opt{debug};
+    my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
 
-    if (not defined $data_sets{$first_key}) {
-        %{ $data_sets{$first_key} } = %{ retrieve(catfile($cfg{individual_results_folder}, $first_key, $opt{si})) };
-    }
     my $num_adhesions = $#{ $data_sets{$first_key}{Area} };
 
     for (0 .. $num_adhesions) {
         push @{ $tracking_mat[$_] }, $_;
     }
+    print "Intialized the tracking matrix on image #: $first_key\n" if $opt{debug};
 }
 
 sub track_live_adhesions {
