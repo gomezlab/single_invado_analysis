@@ -335,7 +335,7 @@ sub track_live_adhesions {
         #Case 1 and 2    
         if ($high_p_sim > 0) {
             my @p_sim_close_ad_nums = grep {
-                my $this_p_sim = $pix_sim_to_next_adhesions[$sorted_p_sim_indexes[$_]];
+                my $this_p_sim = $p_sim_to_next_adhesions[$sorted_p_sim_indexes[$_]];
                 if ($this_p_sim >= $high_p_sim * $pix_sim_indeter_percent) {
                     1;
                 } else {
@@ -348,7 +348,7 @@ sub track_live_adhesions {
             } (@p_sim_close_ad_nums);
             
             if ($sorted_p_sim_indexes[0] != $sorted_by_dist[0]) {
-                $tracking_facts{best_pix_sim_not_selected}++;
+                $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
             }
                
             $tracking_guess = $sorted_by_dist[0];
@@ -438,8 +438,6 @@ sub select_best_merge_decision {
 
     my @sorted_pix_sim_indexes = sort { $pix_sims_set[$b] <=> $pix_sims_set[$a] } (0 .. $#pix_sims_set);
     my $best_pix_sim_index = $sorted_pix_sim_indexes[0];
-
-    $DB::single = 2;
 
     #There are several cases to deal with here:
     #
@@ -544,8 +542,6 @@ sub check_tracking_mat_integrity {
 sub output_tracking_facts {
     print "# of Adhesion Lineages: ", scalar(@tracking_mat), "\n";
     print "# of Live Adhesions Tracked: ",           &get_all_i_num_count("live_adhesions"),  "\n";
-    print "# of Positive Pixel Similarities: ",      &get_all_i_num_count("pos_sim_to_next"), "\n";
-    print "# of Indeterminate Pixel Similarities: ", &get_all_i_num_count("pix_sim_equal"),   "\n";
     print "# of Merge Operations/# Merge Problems: ",
       &get_all_i_num_count("merged_count"), "/", &get_all_i_num_count("merged_prob_count");
 }
