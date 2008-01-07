@@ -38,6 +38,7 @@ my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 # Main Program
 ###############################################################################
+
 my %data_sets;
 if (not(defined $opt{input}) || defined $opt{output}) {
     print "\n\nGathering Data Files\n" if $opt{debug};
@@ -45,7 +46,7 @@ if (not(defined $opt{input}) || defined $opt{output}) {
     my @data_files;
     push @data_files, split(/\s+/, $cfg{general_data_files});
     push @data_files, split(/\s+/, $cfg{tracking_files});
-
+	
     %data_sets = Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
@@ -114,11 +115,8 @@ sub make_comp_matices {
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
-        @{ $data_sets{$key_1}{Pix_sim_quick} } =
-          &calc_pix_sim_quick(\@pix_id1, \@pix_id2, \@{ $data_sets{$key_1}{Area_diff} });
 
-        die if (&matrices_not_the_same(\@{ $data_sets{$key_1}{Pix_sim} }, \@{ $data_sets{$key_1}{Pix_sim_quick} }));
-        print "Pix_sim Collected - " if $opt{debug};
+        print "Pix_sim Collected" if $opt{debug};
         print "\r"                   if $opt{debug};
 
         if (defined $opt{output}) {
@@ -126,17 +124,6 @@ sub make_comp_matices {
             delete $data_sets{$key_1};
         }
     }
-}
-
-sub matrices_not_the_same {
-    my $a = new Math::Matrix @{ $_[0] };
-    my $b = new Math::Matrix @{ $_[1] };
-
-    if (not $a->equal($b)) {
-        return 1;
-    }
-
-    return 0;
 }
 
 sub make_dist_mat {
@@ -195,36 +182,6 @@ sub calc_pix_sim {
     return @sim_percents;
 }
 
-sub calc_pix_sim_quick {
-    my @pix_id1 = @{ $_[0] };
-    my @pix_id2 = @{ $_[1] };
-
-    my @sim_percents;
-    for my $i (0 .. $#pix_id1) {
-        my @temp_sim;
-        my @pix_list      = @{ $pix_id1[$i] };
-        my $pix_list_size = scalar(@pix_list);
-        for my $j (0 .. $#pix_id2) {
-            my @matching_list = @{ $pix_id2[$j] };
-            my $match_count   = 0;
-            for my $k (0 .. $#matching_list) {
-                my @match_index = grep $matching_list[$k] == $pix_list[$_], 0 .. $#pix_list;
-
-                if (scalar(@match_index) > 1) {
-                    die "Too many matches found for a single pixel id number, check PixelIdxList for uniqueness.";
-                }
-                if (scalar(@match_index) == 1) {
-                    $match_count++;
-                    @pix_list = @pix_list[ 0 .. ($match_index[0] - 1), ($match_index[0] + 1 .. $#pix_list) ];
-                }
-            }
-            push @temp_sim, $match_count / $pix_list_size;
-        }
-        push @sim_percents, \@temp_sim;
-    }
-    return @sim_percents;
-}
-
 #######################################
 # Tracking Matrix Production
 #######################################
@@ -235,6 +192,25 @@ sub make_tracking_mat {
     } else {
         @data_keys = sort { $a <=> $b } keys %data_sets;
     }
+
+    #This loop contains all the commands used to create the tracking matrix.
+    #During each loop another time point is added to all lineages. There are
+    #four discrete steps in this process, each one addressing a specific
+    #operation in adhesion model, either birth, merging/death or survival.
+    #
+    #	Tracking Matrix Building Operations:
+    #
+    #	1. Initialize the tracking matrix with all the adhesion numbers present
+    #	   in the first image number (initial births)
+    #	2. Try to find a match for all the live adhesions in the next frame of
+    #	   the image set (survival)
+    #	3. Resolve the adhesion lineages that appear to merge, either by
+    #	   picking a lineage as the best match or declaring the other lineages
+    #	   dead (death/merging)
+    #	4. Find any adhesions in the next frame not assigned to a lineage and
+    #	   form a new lineage for each adhesion (birth)
+    #	5. Repeat 2-5 until the data from each image has been used to build the
+    #	   tracking matrix
 
     for (0 .. $#data_keys - 1) {
         my $i_num      = $data_keys[$_];
@@ -257,19 +233,23 @@ sub make_tracking_mat {
             }
         }
 
+        #STEP 1
         #Start the tracking matrix, if this is the first time throught the loop
         &initialize_tracking_mat($data_keys[0]) if $_ == 0;
 
         #Begin tracking
         print "Image #: $i_num - " if $opt{debug};
 
+        #STEP 2
         &track_live_adhesions($i_num);
         print "# Tracked: $tracking_facts{$i_num}{live_adhesions} - " if $opt{debug};
 
+        #STEP 3
         &detect_merged_adhesions($i_num, $next_i_num);
         print "# Merged: $tracking_facts{$i_num}{merged_count}/$tracking_facts{$i_num}{merged_prob_count} - "
           if $opt{debug};
 
+        #STEP 4
         &detect_new_adhesions($i_num, $next_i_num);
         print "# New: $tracking_facts{$i_num}{new_count}" if $opt{debug};
 
@@ -297,13 +277,41 @@ sub track_live_adhesions {
     my $cur_step        = $#{ $tracking_mat[0] };
 
     my @time_step_dists = @{ $data_sets{$i_num}{Cent_dist} };
-    my @area_diffs      = @{ $data_sets{$i_num}{Area_diff} };
     my @pix_sims        = @{ $data_sets{$i_num}{Pix_sim} };
 
     my $pix_sim_indeter_percent = 0.8;
     $pix_sim_indeter_percent = $cfg{pix_sim_indeter_percent} if defined $cfg{pix_sim_indeter_percent};
 
+    #This function makes a tracking guess for all the adhesion lineages living
+    #in the current image. The tracking guess is based on two factors: the
+    #distance to the adhesions in the next image and the percentage of pixels
+    #that overlap with the each of the adhesions in the next image (pixel
+    #similarity). There are several cases we need to deal with in making the
+    #tracking guess:
+    #
+    #    Live Tracking Cases:
+    #
+    #    1. There is a single pixel similarity value that is much higher than the
+    #       other values, select the adhesion with the best similarity
+    #
+    #    2. There are multiple adhesions with close pixel similarity value to the
+    #       current adhesion, select the adhesion with the smallest distance between
+    #       the centriods
+    #
+    #    3. There is no pixel similarity to the next adhesion set, select the
+    #       adehsion with the smallest distance between the centriods
+    #
+    #    Notes:
+    #
+    #    -how close the similarity measures have to be to trigger using centroid
+    #    distance between adhesions is defined in $pix_sim_indeter_percent, which
+    #    defaults to 0.8
+
     for my $i (0 .. $num_ad_lineages) {
+
+        #The tracking matrix code for dead lineage is any number less than or
+        #equal to -1, add another -1 to those lineages to make sure they stay
+        #the proper length, then skip to the next lineage
         if ($tracking_mat[$i][$cur_step] <= -1) {
             push @{ $tracking_mat[$i] }, -1;
             next;
@@ -312,33 +320,40 @@ sub track_live_adhesions {
         $tracking_facts{$i_num}{live_adhesions}++;
         my $adhesion_num              = ${ $tracking_mat[$i] }[$cur_step];
         my @dist_to_next_adhesions    = @{ $time_step_dists[$adhesion_num] };
-        my @pix_sim_to_next_adhesions = @{ $pix_sims[$adhesion_num] };
+        my @p_sim_to_next_adhesions = @{ $pix_sims[$adhesion_num] };
 
         my @sorted_dist_indexes =
           sort { $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] } (0 .. $#dist_to_next_adhesions);
 
-        my @sorted_pix_sim_indexes =
-          sort { $pix_sim_to_next_adhesions[$b] <=> $pix_sim_to_next_adhesions[$a] } (0 .. $#pix_sim_to_next_adhesions);
+        my @sorted_p_sim_indexes =
+          sort { $p_sim_to_next_adhesions[$b] <=> $p_sim_to_next_adhesions[$a] } (0 .. $#p_sim_to_next_adhesions);
+        
+        my $high_p_sim = $p_sim_to_next_adhesions[$sorted_p_sim_indexes[0]];
 
         my $tracking_guess;
-
-        my @best_pix_sims = map {
-            $pix_sim_to_next_adhesions[ $sorted_pix_sim_indexes[$_] ] -
-              $pix_sim_to_next_adhesions[ $sorted_pix_sim_indexes[$#sorted_pix_sim_indexes] ]
-        } (0 .. 20);
-
-        if ($best_pix_sims[0] != 0) {
-            $tracking_facts{$i_num}{pos_sim_to_next}++;
-        }
-
-        if (   $best_pix_sims[0] != 0
-            && $best_pix_sims[1] >= $pix_sim_indeter_percent * $best_pix_sims[0]) {
-            $tracking_facts{$i_num}{pix_sim_equal}++;
-        }
-
-        if ($best_pix_sims[0]) {
-            $tracking_guess = $sorted_pix_sim_indexes[0];
+            
+        #Case 1 and 2    
+        if ($high_p_sim > 0) {
+            my @p_sim_close_ad_nums = grep {
+                my $this_p_sim = $pix_sim_to_next_adhesions[$sorted_p_sim_indexes[$_]];
+                if ($this_p_sim >= $high_p_sim * $pix_sim_indeter_percent) {
+                    1;
+                } else {
+                    0;
+                }
+            } (0 .. $#sorted_p_sim_indexes);
+            
+            my @sorted_by_dist = sort {
+                $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] 
+            } (@p_sim_close_ad_nums);
+            
+            if ($sorted_p_sim_indexes[0] != $sorted_by_dist[0]) {
+                $tracking_facts{best_pix_sim_not_selected}++;
+            }
+               
+            $tracking_guess = $sorted_by_dist[0];
         } else {
+            #Case 3
             $tracking_guess = $sorted_dist_indexes[0];
         }
 
