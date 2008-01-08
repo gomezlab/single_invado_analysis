@@ -239,7 +239,6 @@ sub make_tracking_mat {
 
         #Begin tracking
         print "Image #: $i_num - " if $opt{debug};
-
         #STEP 2
         &track_live_adhesions($i_num);
         print "# Tracked: $tracking_facts{$i_num}{live_adhesions} - " if $opt{debug};
@@ -320,7 +319,7 @@ sub track_live_adhesions {
         $tracking_facts{$i_num}{live_adhesions}++;
         my $adhesion_num              = ${ $tracking_mat[$i] }[$cur_step];
         my @dist_to_next_adhesions    = @{ $time_step_dists[$adhesion_num] };
-        my @p_sim_to_next_adhesions = @{ $pix_sims[$adhesion_num] };
+        my @p_sim_to_next_adhesions   = @{ $pix_sims[$adhesion_num] };
 
         my @sorted_dist_indexes =
           sort { $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] } (0 .. $#dist_to_next_adhesions);
@@ -329,13 +328,16 @@ sub track_live_adhesions {
           sort { $p_sim_to_next_adhesions[$b] <=> $p_sim_to_next_adhesions[$a] } (0 .. $#p_sim_to_next_adhesions);
         
         my $high_p_sim = $p_sim_to_next_adhesions[$sorted_p_sim_indexes[0]];
-
+        
+        if ($sorted_p_sim_indexes[0] != $sorted_dist_indexes[0] && $high_p_sim > 0) {
+            $tracking_facts{$i_num}{dist_p_sim_guess_diff}++;
+        }
         my $tracking_guess;
             
         #Case 1 and 2    
         if ($high_p_sim > 0) {
             my @p_sim_close_ad_nums = grep {
-                my $this_p_sim = $p_sim_to_next_adhesions[$sorted_p_sim_indexes[$_]];
+                my $this_p_sim = $p_sim_to_next_adhesions[$_];
                 if ($this_p_sim >= $high_p_sim * $pix_sim_indeter_percent) {
                     1;
                 } else {
@@ -345,12 +347,18 @@ sub track_live_adhesions {
             
             my @sorted_by_dist = sort {
                 $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] 
-            } (@p_sim_close_ad_nums);
+            } @p_sim_close_ad_nums;
             
-            if ($sorted_p_sim_indexes[0] != $sorted_by_dist[0]) {
-                $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
+            if (scalar(@p_sim_close_ad_nums) > 1) {
+                $tracking_facts{$i_num}{multiple_good_p_sims}++;
+                if ($p_sim_to_next_adhesions[$sorted_p_sim_indexes[0]] != $p_sim_to_next_adhesions[$sorted_p_sim_indexes[1]]) {
+                    if ($sorted_by_dist[0] != $sorted_p_sim_indexes[0]) {
+                        #$DB::single = 1;
+                        $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
+                    }
+                }
             }
-               
+
             $tracking_guess = $sorted_by_dist[0];
         } else {
             #Case 3
@@ -541,7 +549,10 @@ sub check_tracking_mat_integrity {
 #######################################
 sub output_tracking_facts {
     print "# of Adhesion Lineages: ", scalar(@tracking_mat), "\n";
-    print "# of Live Adhesions Tracked: ",           &get_all_i_num_count("live_adhesions"),  "\n";
+    print "# of Live Adhesions Tracked: ", &get_all_i_num_count("live_adhesions"),  "\n";
+    print "# of Best Pixel Sim Not Selected: ", &get_all_i_num_count("best_pix_sim_not_selected"),  "\n";
+    print "# of Multiple Good P Sims: ", &get_all_i_num_count("multiple_good_p_sims"),  "\n";
+    print "# of Dist and P Sim Guesses Diff: ", &get_all_i_num_count("dist_p_sim_guess_diff"),  "\n";
     print "# of Merge Operations/# Merge Problems: ",
       &get_all_i_num_count("merged_count"), "/", &get_all_i_num_count("merged_prob_count");
 }
