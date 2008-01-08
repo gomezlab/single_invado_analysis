@@ -8,6 +8,7 @@ use File::Path;
 use File::Spec::Functions;
 use Getopt::Long;
 use IO::File;
+use Benchmark;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -23,7 +24,7 @@ GetOptions(\%opt, "cfg|config=s", "debug|d");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-print "Collecting Configuration\n" if $opt{debug};
+print "Collecting Overall Configuration\n\n" if $opt{debug};
 
 my @needed_vars =
   qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files tracking_files tracking_output_file);
@@ -38,9 +39,28 @@ if (-e $cfg{exp_results_folder}) {
     File::Path::rmtree($cfg{exp_results_folder});
 }
 
-chdir "../find_cell_features";
-system "./collect_mask_set.pl -d -cfg $opt{cfg}";
-system "./collect_fa_image_set.pl -d -cfg $opt{cfg}";
+my $debug_string = "";
+$debug_string = "-d" if $opt{debug};
 
+#Find Features
+chdir "../find_cell_features";
+print "\n\nCollecting Cell Mask Set\n\n" if $opt{debug};
+my $t1 = new Benchmark;
+system "./collect_mask_set.pl -cfg $opt{cfg} $debug_string";
+my $t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
+print "\n\nFinding Focal Adhesions\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./collect_fa_image_set.pl -cfg $opt{cfg} $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
+
+#Building the Tracking Matrix
 chdir "../analyze_cell_features";
-system "./track_adhesions.pl -d -cfg $opt{cfg} -o data.stor -i data.stor";
+print "\n\nTracking Focal Adhesions\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./track_adhesions.pl -cfg $opt{cfg} -o data.stor -i data.stor $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
