@@ -12,7 +12,6 @@ use Storable;
 use Text::CSV;
 use IO::File;
 use Math::Matrix;
-use List::Util;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -36,7 +35,7 @@ my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
-# Main Program
+#Main Program
 ###############################################################################
 
 my %data_sets;
@@ -70,7 +69,7 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 &output_tracking_mat;
 
 ###############################################################################
-# Functions
+#Functions
 ###############################################################################
 
 #######################################
@@ -332,9 +331,10 @@ sub track_live_adhesions {
         if ($sorted_p_sim_indexes[0] != $sorted_dist_indexes[0] && $high_p_sim > 0) {
             $tracking_facts{$i_num}{dist_p_sim_guess_diff}++;
         }
+    
         my $tracking_guess;
             
-        #Case 1 and 2    
+        #Case 1 and 2
         if ($high_p_sim > 0) {
             my @p_sim_close_ad_nums = grep {
                 my $this_p_sim = $p_sim_to_next_adhesions[$_];
@@ -353,7 +353,6 @@ sub track_live_adhesions {
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
                 if ($p_sim_to_next_adhesions[$sorted_p_sim_indexes[0]] != $p_sim_to_next_adhesions[$sorted_p_sim_indexes[1]]) {
                     if ($sorted_by_dist[0] != $sorted_p_sim_indexes[0]) {
-                        #$DB::single = 1;
                         $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
                     }
                 }
@@ -364,26 +363,29 @@ sub track_live_adhesions {
             #Case 3
             $tracking_guess = $sorted_dist_indexes[0];
         }
-
+           
         push @{ $tracking_mat[$i] }, $tracking_guess;
     }
 }
 
 sub detect_merged_adhesions {
     my ($i_num, $next_i_num) = @_;
+    
     my $num_ad_lineages = $#tracking_mat;
     my $cur_step        = $#{ $tracking_mat[0] };
     my @areas           = @{ $data_sets{$i_num}{Area} };
-    my @next_step_areas = @{ $data_sets{$next_i_num}{Area} };
     my @dists           = @{ $data_sets{$i_num}{Cent_dist} };
     my @pix_sims        = @{ $data_sets{$i_num}{Pix_sim} };
-
-    my %dest_adhesions;
-    for my $i (0 .. $num_ad_lineages) {
+    
+    # %dest_adhesions will act as the lookup table for adhesions predicted to
+    # merge  test to see what 
+    my %dest_adhesions; for my $i (0 .. $num_ad_lineages) { 
         next if $tracking_mat[$i][$cur_step] <= -1;
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{lineage_nums} }, $i;
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{starting_ad} },  $tracking_mat[$i][ $cur_step - 1 ];
-        push @{ $dest_adhesions{ $tracking_mat[$i][$cur_step] }{ending_ad} },    $tracking_mat[$i][$cur_step];
+        
+        my $this_ad = $tracking_mat[$i][$cur_step];
+        push @{ $dest_adhesions{$this_ad}{lineage_nums} }, $i;
+        push @{ $dest_adhesions{$this_ad}{starting_ad} },  $tracking_mat[$i][ $cur_step - 1 ];
+        push @{ $dest_adhesions{$this_ad}{ending_ad} },    $tracking_mat[$i][$cur_step];
     }
 
     $tracking_facts{$i_num}{merged_count}      = 0;
@@ -393,12 +395,11 @@ sub detect_merged_adhesions {
 
         $tracking_facts{$i_num}{merged_count}++;
 
-        my @merged_ad_nums = @{ $dest_adhesions{$i}{starting_ad} };
         my @lineage_nums   = @{ $dest_adhesions{$i}{lineage_nums} };
         my @starting_ads   = @{ $dest_adhesions{$i}{starting_ad} };
         my @ending_ads     = @{ $dest_adhesions{$i}{ending_ad} };
 
-        my @merged_areas = @areas[@merged_ad_nums];
+        my @merged_areas = @areas[@starting_ads];
 
         my @dist_shifts;
         my @pix_sims_set;
@@ -407,10 +408,8 @@ sub detect_merged_adhesions {
             push @pix_sims_set, $pix_sims[ $starting_ads[$_] ][ $ending_ads[$_] ];
         }
 
-        my $final_merged_area = $next_step_areas[ $ending_ads[0] ];
-
         my ($merge_guess_index, $guess_type) =
-          &select_best_merge_decision(\@merged_areas, \@dist_shifts, \@pix_sims_set, $final_merged_area);
+          &select_best_merge_decision(\@merged_areas, \@dist_shifts, \@pix_sims_set);
 
         if (!$guess_type) {
             $tracking_facts{$i_num}{merged_prob_count}++;
@@ -420,13 +419,12 @@ sub detect_merged_adhesions {
                 image_nums  => [ $i_num, $next_i_num ],
                 starting_ad => \@starting_ads,
                 ending_ad   => \@ending_ads,
-                winning_ad  => [ $merged_ad_nums[$merge_guess_index] ],
               };
         }
 
         foreach (0 .. $#lineage_nums) {
             if ($_ != $merge_guess_index) {
-                $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1 * $tracking_mat[ $lineage_nums[$_] ][$cur_step] - 1;
+                $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1 * ($tracking_mat[ $lineage_nums[$_] ][$cur_step] + 2);
             }
         }
     }
@@ -436,7 +434,6 @@ sub select_best_merge_decision {
     my @merged_areas = @{ $_[0] };
     my @dist_shifts  = @{ $_[1] };
     my @pix_sims_set = @{ $_[2] };
-    my $final_area   = $_[3];
 
     my @sorted_area_indexes = sort { $merged_areas[$b] <=> $merged_areas[$a] } (0 .. $#merged_areas);
     my $biggest_area_index = $sorted_area_indexes[0];
@@ -581,12 +578,10 @@ sub output_tracking_probs {
 
 sub output_merge_problems {
     my $full_probs_folder = catdir($cfg{exp_results_folder}, $cfg{tracking_probs_folder});
-    if (not(-e catdir($full_probs_folder, "merge"))) {
-        mkpath(catdir($full_probs_folder, "merge"));
-    }
+    
+    mkpath(catdir($full_probs_folder, "merge"));
 
     for my $i (keys %{ $tracking_probs{merge} }) {
-        mkpath(catdir($full_probs_folder, "merge", $i));
         for my $j (0 .. $#{ $tracking_probs{merge}{$i} }) {
             mkpath(catdir($full_probs_folder, "merge", $i, $j));
             my %merge_prob = %{ $tracking_probs{merge}{$i}->[$j] };

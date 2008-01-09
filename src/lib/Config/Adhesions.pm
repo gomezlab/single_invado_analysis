@@ -28,6 +28,7 @@ sub new {
     my $conf = new Config::General(
         -ConfigFile            => $opt{cfg},
         -MergeDuplicateOptions => 1,
+        -IncludeRelative       => 1,
     );
     my %cfg = $conf->getall;
     %{ $cfg{opt} }          = %opt;
@@ -40,7 +41,6 @@ sub new {
 
     $cfg_ref->check_for_missing_vars;
     $cfg_ref->build_derived_parameters;
-
     $cfg_ref->collect_cfg_info_from_files;
 
     return $cfg_ref;
