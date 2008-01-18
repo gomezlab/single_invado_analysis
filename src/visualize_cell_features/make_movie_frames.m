@@ -20,9 +20,8 @@ tracking_seqs = load(tracking_seq_file) + 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect files to exclude
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-exclude_fullfile = fullfile(fileparts(original_i_file),excluded_frames_filename);
-if (exist(exclude_fullfile,'file'))
-    excluded_frames = load(exclude_fullfile);
+if (exist(excluded_frames_file,'file'))
+    excluded_frames = load(excluded_frames_file);
 else
     excluded_frames = 0;
 end
@@ -30,23 +29,21 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find extreme values in adhesion images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-extr_val_full_path = fullfile(fileparts(original_i_file),extr_val_filename);
-if (exist(extr_val_full_path,'file'))
-    min_max = load(extr_val_full_path);
+if (exist(extr_val_file,'file'))
+    min_max = load(extr_val_file);
 else
     min_max = find_extr_values(original_i_file);
-    csvwrite(extr_val_full_path,min_max);
+    csvwrite(extr_val_file,min_max);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find extreme values in adhesion images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-bbox_full_path = fullfile(fileparts(original_i_file),bounding_box_filename);
-if (exist(bbox_full_path,'file'))
-    bounding_box = load(bbox_full_path);
+if (exist(bounding_box_file,'file'))
+    bounding_box = load(bounding_box_file);
 else
     bounding_box = find_time_series_bbox(I_folder);
-    csvwrite(bbox_full_path,bounding_box);
+    csvwrite(bbox_full_path,bounding_box_file);
 end
 
 bounding_box(1:2) = bounding_box(1:2) - image_padding_min;
@@ -155,7 +152,7 @@ for i = 1:i_count
     
     if (exist('out_path','var'))
         for j = 1:length(out_prefix)
-            output_filename = fullfile(out_path,[out_prefix{1,j},padded_i_seen,'.png']);
+            output_filename = fullfile(out_path,out_prefix{1,j},[padded_i_seen,'.png']);
             fullpath = fileparts(output_filename);
             if (not(exist(fullpath,'dir')))
                 mkdir(fullpath);

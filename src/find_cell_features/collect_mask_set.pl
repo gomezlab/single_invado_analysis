@@ -26,7 +26,7 @@ GetOptions(\%opt, "cfg=s", "debug");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder matlab_errors_folder cell_mask_errors_filename);
+  qw(data_folder results_folder exp_name single_image_folder matlab_errors_folder cell_mask_errors_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -61,7 +61,7 @@ foreach my $file_name (@cell_mask_files) {
         $matlab_code = $matlab_code . "find_cell_mask('$file_name','I_num',$i_num,'out_dir','$output_path')\n";
     }
 }
-my $error_folder = catdir($cfg{exp_result_folder},$cfg{matlab_errors_folder});
+my $error_folder = catdir($cfg{exp_results_folder},$cfg{matlab_errors_folder});
 if (not($matlab_wrapper->execute($matlab_code))) {
     mkpath($error_folder);
     open ERR_OUT, ">$error_folder/$cfg{cell_mask_errors_filename}";

@@ -41,13 +41,15 @@ if (-e $cfg{exp_results_folder}) {
 
 my $debug_string = "";
 $debug_string = "-d" if $opt{debug};
+my ($t1, $t2);
+
 
 #Find Features
 chdir "../find_cell_features";
 print "\n\nCollecting Cell Mask Set\n\n" if $opt{debug};
-my $t1 = new Benchmark;
+$t1 = new Benchmark;
 system "./collect_mask_set.pl -cfg $opt{cfg} $debug_string";
-my $t2 = new Benchmark;
+$t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
 print "\n\nFinding Focal Adhesions\n\n" if $opt{debug};
@@ -62,5 +64,13 @@ chdir "../analyze_cell_features";
 print "\n\nTracking Focal Adhesions\n\n" if $opt{debug};
 $t1 = new Benchmark;
 system "./track_adhesions.pl -cfg $opt{cfg} -o data.stor -i data.stor $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
+#Collecting Visualizations
+chdir "../visualize_cell_features";
+print "\n\nBuilding Tracking Visualization\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./collect_visualizations.pl -cfg $opt{cfg} $debug_string";
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
