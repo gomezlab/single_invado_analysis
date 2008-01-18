@@ -221,7 +221,7 @@ sub var_descriptions {
     $desc{extr_val_file} =
       "Specifies the filename to use when searching for the extreme values in the image data, should be in data_folder/exp_name";
 
-    $des{bounding_box_file} =
+    $desc{bounding_box_file} =
       "Specifies the filename to use when searching for the extreme values in the image data, should be in data_folder/exp_name";
 
     $desc{path_folders} =
