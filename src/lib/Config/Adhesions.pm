@@ -12,7 +12,7 @@ use base qw(Config::General);
 my %derived_vars = (
     individual_results_folder => [qw(results_folder exp_name single_image_folder)],
     exp_results_folder        => [qw(results_folder exp_name)],
-	exp_data_folder			  => [qw(data_folder exp_name)],
+    exp_data_folder           => [qw(data_folder exp_name)],
 );
 
 ###############################################################################
@@ -47,25 +47,25 @@ sub new {
 }
 
 sub collect_cfg_info_from_files {
-	my $cfg = shift;
-    
-	#check to see if a file for the frames that should be excluded from the
+    my $cfg = shift;
+
+    #check to see if a file for the frames that should be excluded from the
     #analysis is included, if it is, collect the data from it, otherwise, set
     #exclude_image_nums to 0
 
     if (defined $cfg->{exclude_file}) {
-		my $exclude_file = File::Spec->catfile($cfg->{data_folder}, $cfg->{exp_name}, $cfg->{exclude_file});
+        my $exclude_file = File::Spec->catfile($cfg->{data_folder}, $cfg->{exp_name}, $cfg->{exclude_file});
         open EX_INPUT, $exclude_file or die "Can't open the specified exclude file: $exclude_file";
         my $temp_line = <EX_INPUT>;
         close EX_INPUT;
 
-		if (not($temp_line)) {
-        	@{ $cfg->{exclude_image_nums} } = (0);
-		} else {
-        	chomp($temp_line);
-        	@{ $cfg->{exclude_image_nums} } = split(",", $temp_line);
-    	}
-	} else {
+        if (not($temp_line)) {
+            @{ $cfg->{exclude_image_nums} } = (0);
+        } else {
+            chomp($temp_line);
+            @{ $cfg->{exclude_image_nums} } = split(",", $temp_line);
+        }
+    } else {
         @{ $cfg->{exclude_image_nums} } = (0);
     }
     if ($cfg->{opt}->{debug}) {
@@ -110,26 +110,19 @@ sub var_descriptions {
     # General Parameters
     ########################################################################
 
-    #Experimenal Data Folder
     $desc{data_folder} =
-      "Specifies where the data folder is located." . " This folder should contain folders for individual experiments.";
+      "Specifies where the data folder is located. This folder should contain folders for individual experiments.";
 
-    #Where the results located
     $desc{results_folder} = "Specifies where the general results folder is located.";
 
-    #Experiment Name
     $desc{exp_name} = "Specifies the folder where the experimenal data is located.";
 
-    #Individual Image Folder
     $desc{single_image_folder} =
       "Specifies the subfolder in results_folder which contains the results from each single image.";
 
-    #The folder in each individual image folder with raw data
     $desc{raw_data_folder} =
       "Specifies the subfolder in each single_image_folder where the parameters extracted from MATLAB are stored.";
 
-    #The filename of the file which indicates which frames are to be excluded,
-    #should be located in data_folder/exclude_file
     $desc{exclude_file} =
       "Specifies the file name of the data file in the data_folder which contains the image numbers that are to be excluded in analysis.";
 
@@ -137,27 +130,17 @@ sub var_descriptions {
     # Feature Collection Parameters
     ########################################################################
 
-    #MATLAB executable to use
     $desc{matlab_executable} = "Specifies the location of the MATLAB executable.";
 
-    #Output Folder, if absent, use experiment name
-    $desc{feature_output_folder} =
-      "If present, value is used as the subfolder under results_folder where the feature data is stored, otherwise, exp_name is used. ";
-
-    #Prefix of the stack file to use for identifying the cell mask
     $desc{cell_mask_image_prefix} = "Specifies the prefix of the file that will be used to find the cell mask.";
 
-    #Prefix of the stack file to use for identifying the focal adhesions
     $desc{adhesion_image_prefix} = "Specifies the prefix of the file that will be used to find the adhesions.";
 
-    #Folder to use for MATLAB errors
     $desc{matlab_errors_folder} = "Specifies the folder where a record of the MATLAB errors will be stored.";
 
-    #Filename for MATLAB errors from cell mask collection
     $desc{cell_mask_errors_filename} =
       "Specifies the file name to use when storing the errors from the cell mask finding";
 
-    #Filename for MATLAB errors from cell mask collection
     $desc{adhesion_errors_filename} =
       "Specifies the file name to use when storing the errors from the adhesion finding.";
 
@@ -165,19 +148,10 @@ sub var_descriptions {
     # Plotting Parameters
     ###############################################################################
 
-    #File format of output plots
     $desc{file_ext} = "Specifies the kind of output plots desired for each plot created.";
 
-    #Where the pixel size file can be found
     $desc{pixel_size_file} = "Specifies the file in data_folder which contains the size of the pixels in meters.";
 
-    #Target units for measurements, e.g.
-    #	-assume that the pixels are each 100 nm (100E-9 m) on each edge
-    #		-set through the "pixel_size_file" file
-    #	-assume that the target units is 1 micro meter (1E-6 m)
-    #		-set through the "target_unit_size"
-    #	-Centroid_distance_from_edge = 140 pixels
-    #	 140 pix*(100E-9 m/1 pix)*(1 micro meter/1E-6 m) = 14 micro meters
     $desc{target_unit_size} = "Specifies the unit size that should be used on the plots.";
 
     ###############################################################################
@@ -188,7 +162,6 @@ sub var_descriptions {
     # General Parameters
     #######################################
 
-    #List of data files that will be needed in both the tracking and analysis
     $desc{general_data_files} =
       "Specifies the files in the raw_data_folder that are needed for both the tracking and analysis of the adhesions.";
 
@@ -196,16 +169,11 @@ sub var_descriptions {
     # Tracking Parameters
     #######################################
 
-    #Data files needed just for tracking
     $desc{tracking_files} = "Specifies the files in the raw_data_folder that are needed specifically for tracking.";
 
-    #Folder name to be used for output of tracking problems, will become a
-    #subfolder under the folder identified in results_folder
     $desc{tracking_probs_folder} =
       "Specifies the folder under results_folder where the tracking problems will be stored.";
 
-    #Filename to use for tracking matrix output, will be placed in the the folder
-    #identified in results_folder
     $desc{tracking_output_file} =
       "Specifies the file name under the results_folder that will be used to store the tracking matrix.";
 
@@ -220,8 +188,6 @@ sub var_descriptions {
     # Merge Parameters
     ####################
 
-    #allowable percent difference in adheison size to use centroid shift as merge
-    #determining factor, defaults to 0.25
     $desc{merge_shift_percent} =
       "Specifies the percentage of adhesion size difference that causes a merge decision to be made by the centroid shift of the merging adhesions.";
 
@@ -229,17 +195,50 @@ sub var_descriptions {
     # Lineage Analysis
     #######################################
 
-    #There are data files that are needed for the lineage analysis that aren't
-    #included in the general files list, they should be included in this list
     $desc{lineage_analysis_data_files} =
       "Specifies the files in the raw_data_folder that are needed specifically for analysis.";
 
-    #Folder to use to hold the analysis of the adhesion lineages, will become a
-    #subfolder under the folder identified in results_folder
     $desc{lineage_props_folder} =
       "Specifies the folder under results_folder/exp_name where the lineage properties will be saved.";
-	
-	$desc{single_lineage_props_file} = "Specifies the file name to use when outputing the properties of each lineage, csv format";
+
+    $desc{single_lineage_props_file} =
+      "Specifies the file name to use when outputing the properties of each lineage, csv format";
+
+    ###############################################################################
+    #Visualization Settings
+    ###############################################################################
+
+    #######################################
+    #General Settings
+    #######################################
+
+    $desc{vis_config_file} =
+      "Specifies the file name to use for the matlab visualization config, file will reside in results_folder/exp_name";
+
+    $desc{vis_errors_file} =
+      "Specifies the file name to use for storing any errors encountered during the creation of the visualization, will reside in results_folder/exp_name/matlab_errors_folder";
+
+    $desc{extr_val_file} =
+      "Specifies the filename to use when searching for the extreme values in the image data, should be in data_folder/exp_name";
+
+    $des{bounding_box_file} =
+      "Specifies the filename to use when searching for the extreme values in the image data, should be in data_folder/exp_name";
+
+    $desc{path_folders} =
+      "Specifies the folder which contains (or contains subfolders which contain) all the matlab programs needed for visualization";
+
+    $desc{image_padding_min} =
+      "Specifies the minimum number of pixels between the edge of the features on the extremes of an image and the edge of the image";
+
+    #######################################
+    #Movie Frame Settings
+    #######################################
+
+    $desc{movie_output_folder} =
+      "Specifies the folder where the movie frames will be saved, folder will be located in \"results_folder/exp_name\"";
+
+    $desc{movie_output_prefix} =
+      "Specifies the folders where each image written by the visualization code will placed, each folder will be based in \"results_folder/exp_name/movie_output_folder\"";
 
     return %desc;
 }
