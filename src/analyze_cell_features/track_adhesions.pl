@@ -16,6 +16,7 @@ use Math::Matrix;
 use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
+use Image::Data::Writing;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -66,7 +67,7 @@ print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
 &output_tracking_probs;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
-&output_tracking_mat;
+&Image::Data::Writing::output_mat_csv(\@tracking_mat,catdir($cfg{exp_results_folder}, $cfg{tracking_output_file}));
 
 ###############################################################################
 #Functions
@@ -593,19 +594,3 @@ sub output_merge_problems {
         }
     }
 }
-
-#######################################
-# Output the Tracking Matrix
-#######################################
-sub output_tracking_mat {
-    my $out_hand = new IO::File ">" . catdir($cfg{exp_results_folder}, $cfg{tracking_output_file});
-    my $csv = Text::CSV->new();
-
-    for my $i (0 .. $#tracking_mat) {
-        $csv->print($out_hand, \@{ $tracking_mat[$i] });
-        print $out_hand "\n";
-    }
-
-    $out_hand->close;
-}
-

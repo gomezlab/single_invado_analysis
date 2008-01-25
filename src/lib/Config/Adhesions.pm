@@ -102,6 +102,7 @@ sub check_for_missing_vars {
         }
     }
     die "Please fill in values for the above variables and rerun the program." if $missing_files;
+    delete $cfg->{var_desc};
 }
 
 sub var_descriptions {
