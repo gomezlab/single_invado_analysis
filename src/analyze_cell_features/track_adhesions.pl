@@ -46,7 +46,7 @@ if (not(defined $opt{input}) || defined $opt{output}) {
     my @data_files;
     push @data_files, split(/\s+/, $cfg{general_data_files});
     push @data_files, split(/\s+/, $cfg{tracking_files});
-	
+
     %data_sets = Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
@@ -67,7 +67,7 @@ print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
 &output_tracking_probs;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
-&Image::Data::Writing::output_mat_csv(\@tracking_mat,catdir($cfg{exp_results_folder}, $cfg{tracking_output_file}));
+&Image::Data::Writing::output_mat_csv(\@tracking_mat, catdir($cfg{exp_results_folder}, $cfg{tracking_output_file}));
 
 ###############################################################################
 #Functions
@@ -117,7 +117,7 @@ sub make_comp_matices {
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
 
         print "Pix_sim Collected" if $opt{debug};
-        print "\r"                   if $opt{debug};
+        print "\r"                if $opt{debug};
 
         if (defined $opt{output}) {
             store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
@@ -174,7 +174,7 @@ sub calc_pix_sim {
                     die;
                 }
                 $a;
-            	} @matching_list;
+            } @matching_list;
             push @temp_sim, $match_count / scalar(@pix_list);
         }
         push @sim_percents, \@temp_sim;
@@ -239,6 +239,7 @@ sub make_tracking_mat {
 
         #Begin tracking
         print "Image #: $i_num - " if $opt{debug};
+
         #STEP 2
         &track_live_adhesions($i_num);
         print "# Tracked: $tracking_facts{$i_num}{live_adhesions} - " if $opt{debug};
@@ -271,12 +272,11 @@ sub initialize_tracking_mat {
 }
 
 sub track_live_adhesions {
-    my ($i_num)         = @_;
-    my $num_ad_lineages = $#tracking_mat;
-    my $cur_step        = $#{ $tracking_mat[0] };
+    my ($i_num) = @_;
+    my $cur_step = $#{ $tracking_mat[0] };
 
-    my @time_step_dists = @{ $data_sets{$i_num}{Cent_dist} };
-    my @pix_sims        = @{ $data_sets{$i_num}{Pix_sim} };
+    my @time_step_dists  = @{ $data_sets{$i_num}{Cent_dist} };
+    my @time_step_p_sims = @{ $data_sets{$i_num}{Pix_sim} };
 
     my $pix_sim_indeter_percent = 0.8;
     $pix_sim_indeter_percent = $cfg{pix_sim_indeter_percent} if defined $cfg{pix_sim_indeter_percent};
@@ -306,53 +306,50 @@ sub track_live_adhesions {
     #    distance between adhesions is defined in $pix_sim_indeter_percent, which
     #    defaults to 0.8
 
-    for my $i (0 .. $num_ad_lineages) {
+    for my $i (0 .. $#tracking_mat) {
 
         #The tracking matrix code for dead lineage is any number less than or
         #equal to -1, add another -1 to those lineages to make sure they stay
         #the proper length, then skip to the next lineage
         if ($tracking_mat[$i][$cur_step] <= -1) {
-            push @{ $tracking_mat[$i] }, -1;
+            push @{ $tracking_mat[$i] }, $tracking_mat[$i][$cur_step];
             next;
         }
 
         $tracking_facts{$i_num}{live_adhesions}++;
-        my $adhesion_num              = ${ $tracking_mat[$i] }[$cur_step];
-        my @dist_to_next_adhesions    = @{ $time_step_dists[$adhesion_num] };
-        my @p_sim_to_next_adhesions   = @{ $pix_sims[$adhesion_num] };
+        my $adhesion_num      = ${ $tracking_mat[$i] }[$cur_step];
+        my @dist_to_next_ads  = @{ $time_step_dists[$adhesion_num] };
+        my @p_sim_to_next_ads = @{ $time_step_p_sims[$adhesion_num] };
 
         my @sorted_dist_indexes =
-          sort { $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] } (0 .. $#dist_to_next_adhesions);
+          sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } (0 .. $#dist_to_next_ads);
 
         my @sorted_p_sim_indexes =
-          sort { $p_sim_to_next_adhesions[$b] <=> $p_sim_to_next_adhesions[$a] } (0 .. $#p_sim_to_next_adhesions);
-        
-        my $high_p_sim = $p_sim_to_next_adhesions[$sorted_p_sim_indexes[0]];
-        
+          sort { $p_sim_to_next_ads[$b] <=> $p_sim_to_next_ads[$a] } (0 .. $#p_sim_to_next_ads);
+
+        my $high_p_sim = $p_sim_to_next_ads[ $sorted_p_sim_indexes[0] ];
+
         if ($sorted_p_sim_indexes[0] != $sorted_dist_indexes[0] && $high_p_sim > 0) {
             $tracking_facts{$i_num}{dist_p_sim_guess_diff}++;
         }
-    
+
         my $tracking_guess;
-            
+
         #Case 1 and 2
         if ($high_p_sim > 0) {
             my @p_sim_close_ad_nums = grep {
-                my $this_p_sim = $p_sim_to_next_adhesions[$_];
-                if ($this_p_sim >= $high_p_sim * $pix_sim_indeter_percent) {
+                if ($p_sim_to_next_ads[$_] >= $high_p_sim * $pix_sim_indeter_percent) {
                     1;
                 } else {
                     0;
                 }
-            } (0 .. $#sorted_p_sim_indexes);
-            
-            my @sorted_by_dist = sort {
-                $dist_to_next_adhesions[$a] <=> $dist_to_next_adhesions[$b] 
-            } @p_sim_close_ad_nums;
-            
+            } (0 .. $#p_sim_to_next_ads);
+
+            my @sorted_by_dist = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
+
             if (scalar(@p_sim_close_ad_nums) > 1) {
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
-                if ($p_sim_to_next_adhesions[$sorted_p_sim_indexes[0]] != $p_sim_to_next_adhesions[$sorted_p_sim_indexes[1]]) {
+                if ($p_sim_to_next_ads[ $sorted_p_sim_indexes[0] ] != $p_sim_to_next_ads[ $sorted_p_sim_indexes[1] ]) {
                     if ($sorted_by_dist[0] != $sorted_p_sim_indexes[0]) {
                         $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
                     }
@@ -361,28 +358,30 @@ sub track_live_adhesions {
 
             $tracking_guess = $sorted_by_dist[0];
         } else {
+
             #Case 3
             $tracking_guess = $sorted_dist_indexes[0];
         }
-           
+
         push @{ $tracking_mat[$i] }, $tracking_guess;
     }
 }
 
 sub detect_merged_adhesions {
     my ($i_num, $next_i_num) = @_;
-    
+
     my $num_ad_lineages = $#tracking_mat;
     my $cur_step        = $#{ $tracking_mat[0] };
     my @areas           = @{ $data_sets{$i_num}{Area} };
     my @dists           = @{ $data_sets{$i_num}{Cent_dist} };
     my @pix_sims        = @{ $data_sets{$i_num}{Pix_sim} };
-    
+
     # %dest_adhesions will act as the lookup table for adhesions predicted to
-    # merge  test to see what 
-    my %dest_adhesions; for my $i (0 .. $num_ad_lineages) { 
+    # merge
+    my %dest_adhesions;
+    for my $i (0 .. $num_ad_lineages) {
         next if $tracking_mat[$i][$cur_step] <= -1;
-        
+
         my $this_ad = $tracking_mat[$i][$cur_step];
         push @{ $dest_adhesions{$this_ad}{lineage_nums} }, $i;
         push @{ $dest_adhesions{$this_ad}{starting_ad} },  $tracking_mat[$i][ $cur_step - 1 ];
@@ -396,36 +395,22 @@ sub detect_merged_adhesions {
 
         $tracking_facts{$i_num}{merged_count}++;
 
-        my @lineage_nums   = @{ $dest_adhesions{$i}{lineage_nums} };
-        my @starting_ads   = @{ $dest_adhesions{$i}{starting_ad} };
-        my @ending_ads     = @{ $dest_adhesions{$i}{ending_ad} };
+        my @lineage_nums = @{ $dest_adhesions{$i}{lineage_nums} };
+        my @starting_ads = @{ $dest_adhesions{$i}{starting_ad} };
+        my @ending_ad    = @{ $dest_adhesions{$i}{ending_ad} };
 
         my @merged_areas = @areas[@starting_ads];
+        my @dist_shifts  = map { $dists[ $starting_ads[$_] ][ $ending_ad[$_] ] } (0 .. $#lineage_nums);
+        my @pix_sims_set = map { $pix_sims[ $starting_ads[$_] ][ $ending_ad[$_] ] } (0 .. $#lineage_nums);
 
-        my @dist_shifts;
-        my @pix_sims_set;
-        for (0 .. $#lineage_nums) {
-            push @dist_shifts,  $dists[ $starting_ads[$_] ][ $ending_ads[$_] ];
-            push @pix_sims_set, $pix_sims[ $starting_ads[$_] ][ $ending_ads[$_] ];
-        }
-
-        my ($merge_guess_index, $guess_type) =
-          &select_best_merge_decision(\@merged_areas, \@dist_shifts, \@pix_sims_set);
-
-        if (!$guess_type) {
-            $tracking_facts{$i_num}{merged_prob_count}++;
-
-            push @{ $tracking_probs{merge}{$i_num} },
-              {
-                image_nums  => [ $i_num, $next_i_num ],
-                starting_ad => \@starting_ads,
-                ending_ad   => \@ending_ads,
-              };
-        }
+        my @merge_decisions = &select_best_merge_decision(\@merged_areas, \@dist_shifts, \@pix_sims_set);
 
         foreach (0 .. $#lineage_nums) {
-            if ($_ != $merge_guess_index) {
-                $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1 * ($tracking_mat[ $lineage_nums[$_] ][$cur_step] + 2);
+            if ($merge_decisions[$_]{dead}) {
+                $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1;
+            } elsif (not $merge_decisions[$_]{winner}) {
+                $tracking_mat[ $lineage_nums[$_] ][$cur_step] =
+                  -1 * ($tracking_mat[ $lineage_nums[$_] ][$cur_step] + 2);
             }
         }
     }
@@ -442,57 +427,59 @@ sub select_best_merge_decision {
     my @sorted_dist_indexes = sort { $dist_shifts[$a] <=> $dist_shifts[$b] } (0 .. $#dist_shifts);
     my $shortest_dist_index = $sorted_dist_indexes[0];
 
-    my @sorted_pix_sim_indexes = sort { $pix_sims_set[$b] <=> $pix_sims_set[$a] } (0 .. $#pix_sims_set);
-    my $best_pix_sim_index = $sorted_pix_sim_indexes[0];
-
-    #There are several cases to deal with here:
+    #There are several cases to deal with in picking the adhesion which will
+    #continue:
     #
     # 1. The adhesion with the biggest starting area has to shift the least
-    # amount and has the highest pixel similarity to the final merged adhesion.
-    # This is expected when a large adhesion swallows a small one.
+    # amount, choose the largest adhesion.
     #
-    # 2. The differences in area between two largest adhesions in the merge is 
-	# negligible or equal, but there is a difference in the centroid shifts. 
-	# In this case, choose the adhesion which is closest to the final adhesion.
+    # 2. The differences in area between the largest adhesions in the merge is
+    # negligible, but there is a difference in the centroid shifts.  In this
+    # case, choose the adhesion from the large area adhesions which shifts the
+    # least distance.
+
+    my @merge_decisions = map { { winner => 0, dead => 0, case => 0 } } (0 .. $#merged_areas);
 
     #Case 1
-    if (   $biggest_area_index == $shortest_dist_index
-        && $biggest_area_index == $best_pix_sim_index
-        && $shortest_dist_index == $best_pix_sim_index) {
-        return ($biggest_area_index, 1);
+    if ($biggest_area_index == $shortest_dist_index) {
+        $merge_decisions[$biggest_area_index]{winner} = 1;
+        $merge_decisions[$biggest_area_index]{dead}   = 0;
+        $merge_decisions[$biggest_area_index]{case}   = 1;
+    } else {
+
+        #Case 2
+        my $shift_percent = 0.75;
+        $shift_percent = $cfg{merge_shift_percent} if defined($cfg{merge_shift_percent});
+
+        my @areas_close_indexes = grep {
+            if ($merged_areas[$biggest_area_index] / $merged_areas[$_]) {
+                1;
+            } else {
+                0;
+            }
+        } (0 .. $#merged_areas);
+
+        #GET COUNTS ON NUMBER OF SINGLE MEMBER
+
+        my @areas_close_dist_sort = sort { $dist_shifts[$a] <=> $dist_shifts[$b] } (@areas_close_indexes);
+
+        $merge_decisions[ $areas_close_dist_sort[0] ]{winner} = 1;
+        $merge_decisions[ $areas_close_dist_sort[0] ]{dead}   = 0;
+        $merge_decisions[ $areas_close_dist_sort[0] ]{case}   = 2;
     }
-
-    #Case 2
-    my $area_shifts_small = 0;
-    my $shift_percent     = 0.25;
-    $shift_percent = $cfg{merge_shift_percent} if defined($cfg{merge_shift_percent});
-    my $second_biggest_area_index = $sorted_area_indexes[ $#sorted_area_indexes - 1 ];
-
-    my $first_area_diff = $merged_areas[$biggest_area_index] - $merged_areas[$second_biggest_area_index];
-    if ($first_area_diff / $merged_areas[$biggest_area_index] <= $shift_percent) {
-        $area_shifts_small = 1;
-        my $old = $shortest_dist_index;
-        if ($merged_areas[$biggest_area_index] > $merged_areas[$second_biggest_area_index]) {
-            $shortest_dist_index = $biggest_area_index;
-        } else {
-            $shortest_dist_index = $second_biggest_area_index;
+    
+    #To detect dead adhesions we will examine the pixel similarities counts, if
+    #the similarity to the next adhesion is zero, then we know there wasn't any
+    #overlap with the merged adhesion and it is unlikely that the event
+    #constitutes a merge. Instead, it is more likely that we are observing a
+    #death event.
+    for (0 .. $#merge_decisions) {
+        if ($pix_sims_set[$_] == 0) {
+            $merge_decisions[$_]{dead} = 1;
         }
     }
-    if ($area_shifts_small) {
-        return ($shortest_dist_index, 2);
-    }
 
-    #Case 3
-    my @sorted_pix_sim_diffs = map {
-        $pix_sims_set[ $sorted_pix_sim_indexes[$_] ] -
-          $pix_sims_set[ $sorted_pix_sim_indexes[$#sorted_pix_sim_indexes] ]
-    } (0 .. $#sorted_pix_sim_indexes);
-
-    if ($sorted_pix_sim_diffs[0] != 0 && $sorted_pix_sim_diffs[1] == 0) {
-        return ($sorted_pix_sim_indexes[0], 3);
-    }
-
-    return ($biggest_area_index, 0);
+    return @merge_decisions;
 }
 
 sub detect_new_adhesions {
@@ -547,10 +534,10 @@ sub check_tracking_mat_integrity {
 #######################################
 sub output_tracking_facts {
     print "# of Adhesion Lineages: ", scalar(@tracking_mat), "\n";
-    print "# of Live Adhesions Tracked: ", &get_all_i_num_count("live_adhesions"),  "\n";
-    print "# of Best Pixel Sim Not Selected: ", &get_all_i_num_count("best_pix_sim_not_selected"),  "\n";
-    print "# of Multiple Good P Sims: ", &get_all_i_num_count("multiple_good_p_sims"),  "\n";
-    print "# of Dist and P Sim Guesses Diff: ", &get_all_i_num_count("dist_p_sim_guess_diff"),  "\n";
+    print "# of Live Adhesions Tracked: ",      &get_all_i_num_count("live_adhesions"),            "\n";
+    print "# of Best Pixel Sim Not Selected: ", &get_all_i_num_count("best_pix_sim_not_selected"), "\n";
+    print "# of Multiple Good P Sims: ",        &get_all_i_num_count("multiple_good_p_sims"),      "\n";
+    print "# of Dist and P Sim Guesses Diff: ", &get_all_i_num_count("dist_p_sim_guess_diff"),     "\n";
     print "# of Merge Operations/# Merge Problems: ",
       &get_all_i_num_count("merged_count"), "/", &get_all_i_num_count("merged_prob_count");
 }
@@ -579,7 +566,7 @@ sub output_tracking_probs {
 
 sub output_merge_problems {
     my $full_probs_folder = catdir($cfg{exp_results_folder}, $cfg{tracking_probs_folder});
-    
+
     mkpath(catdir($full_probs_folder, "merge"));
 
     for my $i (keys %{ $tracking_probs{merge} }) {
