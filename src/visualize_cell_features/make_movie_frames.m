@@ -130,7 +130,12 @@ for i = 1:i_count
             this_adhesion = zeros(i_size(1),i_size(2));
             this_adhesion(ad_label == tracking_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
-            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
+            
+            if (i_seen > 1)
+                highlighted_all = create_highlighted_image(highlighted_all,this_adhesion,'color',this_color_map);
+            else
+                highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
+            end
         end
     end
     
