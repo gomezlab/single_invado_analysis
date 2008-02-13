@@ -51,7 +51,7 @@ if (not(any(strcmp('out_dir',i_p.UsingDefaults))))
     end
 end
 
-%read in and normalize the input focal adhesion image
+%read in and normalize the input cell mask image
 if (not(any(strcmp('I_num',i_p.UsingDefaults))))
     mask_image = normalize_grayscale_image(imread(I_file,i_p.Results.I_num));
 else
