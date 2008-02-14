@@ -91,8 +91,7 @@ end
 %check to see if a min/max value file has been written, if not collect the
 %min/max values and write them to file
 if (not(exist(fullfile(image_data.data_folder,'min_max_vals.csv'),'file')))
-    image_data.extr_vals = find_extr_values(image_data.original_image_file);
-    csvwrite(fullfile(image_data.data_folder,'min_max_vals.csv'),image_data.extr_vals);
+    image_data.extr_vals = find_extr_values(image_data.data_folder,image_data.original_image_file);
 else
     image_data.extr_vals = load(fullfile(image_data.data_folder,'min_max_vals.csv'));
 end

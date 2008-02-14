@@ -54,7 +54,7 @@ if ($opt{debug}) {
 }
 
 my @matlab_code = &create_matlab_code;
-die "@matlab_code";
+
 my $error_file = catdir($cfg{exp_results_folder},$cfg{matlab_errors_folder},$cfg{adhesion_errors_file});
 
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
@@ -82,6 +82,8 @@ sub create_matlab_code {
 sub create_matlab_code_stack {
     my @matlab_code;
     
+    $matlab_code[0] .= &create_extr_val_code;
+
     my $total_stack_images = Image::Stack::get_image_stack_number($image_files[0]);
     foreach my $i_num (1 .. $total_stack_images) {
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
@@ -90,7 +92,7 @@ sub create_matlab_code_stack {
 
         my $output_path = catdir($cfg{individual_results_folder},$padded_num);
         mkpath($output_path);
-        $matlab_code[0] .= "find_focal_adhesions('$image_files[0]','I_num',$i_num,'out_dir','$output_path')\n";
+        $matlab_code[0] .= "find_focal_adhesions('$image_files[0]','I_num',$i_num,'out_dir','$output_path');\n";
     }
     return @matlab_code;
 }
@@ -98,6 +100,8 @@ sub create_matlab_code_stack {
 sub create_matlab_code_single {
     my @matlab_code;
 
+    $matlab_code[0] .= &create_extr_val_code;
+    
     foreach my $file_name (@image_files) {
         my $i_num;
         if ($file_name =~ /$cfg{adhesion_image_prefix}(\d+)\./) {
@@ -113,7 +117,11 @@ sub create_matlab_code_single {
 
         my $output_path = catdir($cfg{individual_results_folder},$padded_num);
         mkpath($output_path);
-        $matlab_code[0] .= "find_focal_adhesions('$file_name','out_dir','$output_path')\n";
+        $matlab_code[0] .= "find_focal_adhesions('$file_name','out_dir','$output_path');\n";
     }
     return @matlab_code;
+}
+
+sub create_extr_val_code {
+    return "find_extr_vals('$cfg{exp_data_folder}','" . join("','",@image_files) . "');";
 }
