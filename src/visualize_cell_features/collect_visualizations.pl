@@ -27,7 +27,7 @@ GetOptions(\%opt, "cfg=s", "debug");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my @needed_vars =
-  qw(data_folder results_folder exclude_file single_image_folder folder_divider exp_name single_image_folder matlab_errors_folder vis_config_file vis_errors_file extr_val_file bounding_box_file);
+  qw(data_folder results_folder single_image_folder folder_divider exp_name single_image_folder matlab_errors_folder vis_config_file vis_errors_file extr_val_file bounding_box_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 

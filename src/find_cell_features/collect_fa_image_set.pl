@@ -123,5 +123,5 @@ sub create_matlab_code_single {
 }
 
 sub create_extr_val_code {
-    return "find_extr_vals('$cfg{exp_data_folder}','" . join("','",@image_files) . "');";
+    return "find_extr_values('$cfg{exp_data_folder}','" . join("','",@image_files) . "');";
 }
