@@ -15,6 +15,7 @@ use File::Spec::Functions;
 use lib "../lib";
 use Config::Adhesions;
 use Image::Stack;
+use Math::Matlab::Extra;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -27,7 +28,9 @@ GetOptions(\%opt, "cfg=s", "debug");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my @needed_vars =
-  qw(data_folder results_folder single_image_folder folder_divider exp_name single_image_folder matlab_errors_folder vis_config_file vis_errors_file extr_val_file bounding_box_file);
+  qw(data_folder results_folder single_image_folder folder_divider exp_name 
+     single_image_folder matlab_errors_folder vis_config_file vis_errors_file 
+     extr_val_file bounding_box_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -44,21 +47,11 @@ if (defined $cfg{matlab_executable}) {
 
 &write_matlab_config;
 
-my $matlab_code = "make_movie_frames('" . catfile($cfg{exp_data_folder}, $cfg{vis_config_file}) . "')";
+my @matlab_code;
+$matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_data_folder}, $cfg{vis_config_file}) . "')";
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder});
-if (not($matlab_wrapper->execute($matlab_code))) {
-    mkpath($error_folder);
-    print $error_folder;
-    open ERR_OUT, ">" . catdir($error_folder, $cfg{vis_errors_file});
-    print ERR_OUT $matlab_wrapper->err_msg;
-    print ERR_OUT "\n\nMATLAB COMMANDS\n\n$matlab_code";
-    close ERR_OUT;
-
-    print $matlab_wrapper->err_msg if $opt{debug};
-
-    $matlab_wrapper->remove_files;
-}
+my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
+&Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
 
 ###############################################################################
 #Functions

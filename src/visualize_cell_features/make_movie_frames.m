@@ -37,7 +37,7 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Find extreme values in adhesion images
+% Find edges of image data in adhesion images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (exist(bounding_box_file,'file'))
     bounding_box = load(bounding_box_file);
