@@ -20,7 +20,7 @@ tracking_seqs = load(tracking_seq_file) + 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect files to exclude
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (exist(excluded_frames_file,'file'))
+if (exist(excluded_frames_file,'file') && not(exist(excluded_frames_file,'dir')))
     excluded_frames = load(excluded_frames_file);
 else
     excluded_frames = 0;
