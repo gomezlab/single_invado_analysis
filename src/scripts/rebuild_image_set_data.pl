@@ -12,7 +12,6 @@ use Benchmark;
 
 use lib "../lib";
 use Config::Adhesions;
-use Image::Data::Collection;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -46,6 +45,12 @@ my ($t1, $t2);
 
 #Find Features
 chdir "../find_cell_features";
+print "\n\nSetting Up Results Directory\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./setup_results_folder.pl -cfg $opt{cfg} $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
 print "\n\nCollecting Cell Mask Set\n\n" if $opt{debug};
 $t1 = new Benchmark;
 system "./collect_mask_set.pl -cfg $opt{cfg} $debug_string";
@@ -67,10 +72,10 @@ system "./track_adhesions.pl -cfg $opt{cfg} -o data.stor -i data.stor $debug_str
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
-#Collecting Visualizations
-chdir "../visualize_cell_features";
-print "\n\nBuilding Tracking Visualization\n\n" if $opt{debug};
-$t1 = new Benchmark;
-system "./collect_visualizations.pl -cfg $opt{cfg} $debug_string";
-$t2 = new Benchmark;
-print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+##Collecting Visualizations
+#chdir "../visualize_cell_features";
+#print "\n\nBuilding Tracking Visualization\n\n" if $opt{debug};
+#$t1 = new Benchmark;
+#system "./collect_visualizations.pl -cfg $opt{cfg} $debug_string";
+#$t2 = new Benchmark;
+#print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
