@@ -32,7 +32,6 @@ function min_max = find_extr_values(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 write_output_file = 0;
-output_file = 'min_max_vals.csv';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -40,13 +39,13 @@ output_file = 'min_max_vals.csv';
 
 min_max = [Inf, 0];
 
-if (exist(varargin{1},'dir'))
-    output_dir = varargin{1};
+if (exist(fileparts(varargin{1}),'dir'))
+    output_file = varargin{1};
     write_output_file = 1;
 end
 
 for i = 1:size(varargin,2)
-    if (exist(varargin{i},'dir'))
+    if (write_output_file && i == 1)
         continue;
     end
     
@@ -67,5 +66,5 @@ end
 min_max = double(min_max);
 
 if (write_output_file)
-    csvwrite(fullfile(output_dir,output_file),min_max);
+    csvwrite(output_file,min_max);
 end

@@ -1,4 +1,4 @@
-function [varargout] = find_cell_mask(I_file,varargin)
+function [varargout] = find_cell_mask(I_file,out_file)
 %CREATE_CELL_MASK_IMAGE   Gather the cell mask from a fluorescence image
 %
 %   create_cell_mask_image(I) finds the cell mask using the image in file
@@ -26,21 +26,9 @@ i_p.FunctionName = 'FIND_CELL_MASK';
 
 i_p.addRequired('I_file',@(x)exist(x,'file')==2);
 
-i_p.addParamValue('out_dir',pwd,@ischar);
-i_p.addParamValue('I_num',1,@(x)isnumeric(x) && x>0);
+i_p.addRequired('out_file',pwd,@ischar);
 
 i_p.parse(I_file,varargin{:});
-
-disp(i_p.UsingDefaults)
-
-%Determine if the image file specified has more than one image embedded, if
-%so, make sure there is a 'I_num' parameter
-if (size(imfinfo(I_file),2) > 1)
-    if (any(strcmp('I_num',i_p.UsingDefaults)))
-        error(['ERROR: ',i_p.FunctionName,' - Image file specified has more than one image embedded, must specify an ''I_num'' parameter']);
-    end
-    image_data.I_num = i_p.Results.I_num;
-end
 
 %determine if the out_dir was set in the parameters, if set, fill in the
 %output_dir field
@@ -51,12 +39,7 @@ if (not(any(strcmp('out_dir',i_p.UsingDefaults))))
     end
 end
 
-%read in and normalize the input cell mask image
-if (not(any(strcmp('I_num',i_p.UsingDefaults))))
-    mask_image = normalize_grayscale_image(imread(I_file,i_p.Results.I_num));
-else
-    mask_image = normalize_grayscale_image(imread(I_file));
-end
+
 
 output_file = 'cell_mask.png';
 

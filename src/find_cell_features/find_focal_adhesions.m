@@ -60,6 +60,9 @@ i_p.addParamValue('c',0,@(x)exist(x,'file')==2);
 
 i_p.parse(I_file,varargin{:});
 
+%Set the debug flag to true if either 'd' or 'debug' flag has been set to true
+image_data.debug = i_p.Results.d || i_p.Results.debug;
+
 %Start filling out the image_data struct with the parameters extracted
 %above
 
@@ -75,9 +78,6 @@ if (size(imfinfo(image_data.original_image_file),2) > 1)
     end
     image_data.I_num = i_p.Results.I_num;
 end
-
-%Set the debug flag on if either 'd' or 'debug' flag has been set to true
-image_data.debug = i_p.Results.d || i_p.Results.debug;
 
 %determine if the out_dir was set in the parameters, if set, fill in the
 %output_dir field
@@ -145,7 +145,6 @@ image_data.adhesions = find_watershed_adhesions(image_data.original_image,image_
 image_data.adhesion_properties = collect_adhesion_properties(image_data.adhesions,image_data.cell_mask,image_data.original_image);
 
 if (isfield(image_data,'output_dir'))
-    imwrite(image_data.original_image,fullfile(image_data.output_dir, 'focal_image.png'));
     imwrite(image_data.focal_markers,fullfile(image_data.output_dir,'focal_markers.png'));
     imwrite(image_data.watershed_edges,fullfile(image_data.output_dir, 'watershed_edges.png'));
     imwrite(image_data.adhesions,fullfile(image_data.output_dir, 'adhesions.png'));

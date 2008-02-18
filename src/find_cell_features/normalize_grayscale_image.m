@@ -43,6 +43,6 @@ if (size(image_size,2) > 2)
 end
 
 I = I - min_max(1);
-I = I/min_max(2);
+I = I/(min_max(2)-min_max(1));
  
 end
