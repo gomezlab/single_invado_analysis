@@ -1,5 +1,16 @@
 function write_normalized_image(I_file,out_file,min_max_file,varargin)
-% WRITE_GRAYSCALE_IMAGE   
+% WRITE_GRAYSCALE_IMAGE   Write a normalized image to a provided output
+%                         file using the minimum and maximum values
+%                         specified in a provided file
+%
+%   write_grayscale_image(I,out,min_max) normalize the image file 'I',
+%   using the value in the file 'min_max', writing the result to the file
+%   'out'
+%
+%   write_grayscale_image(I,out,min_max,'I_num',num) normalize image number
+%   'num' in the stacked image file 'I', using the value in the file
+%   'min_max', writing the result to the file 'out'
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line

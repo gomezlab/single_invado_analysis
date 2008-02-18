@@ -29,4 +29,7 @@ edge_binary_image = imfill(edge_binary_image,'holes');
 
 edge_binary_image = bwperim(edge_binary_image);
 
+edge_binary_image = imfill(edge_binary_image,'holes');
+edge_binary_image = imdilate(edge_binary_image,strel('diamond',1));
+
 end
