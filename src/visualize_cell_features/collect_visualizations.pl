@@ -16,6 +16,7 @@ use lib "../lib";
 use Config::Adhesions;
 use Image::Stack;
 use Math::Matlab::Extra;
+use Image::Data::Collection;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -61,6 +62,9 @@ sub build_matlab_visualization_config {
     my $adhesion_image = basename <$cfg{exp_data_folder}/$cfg{adhesion_image_prefix}*>;
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
+    
+    my @temp = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
+    my $i_num = scalar(@temp);
 
     my @config_lines = (
         "%Config file produced by collect_visualizations.pl\n",
@@ -72,7 +76,7 @@ sub build_matlab_visualization_config {
         "base_results_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})),
         "', exp_name)\n\n",
 
-        "original_i_file = fullfile(base_data_folder, '$adhesion_image')\n\n",
+        "i_count = $i_num\n\n",
 
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}')\n\n",
 

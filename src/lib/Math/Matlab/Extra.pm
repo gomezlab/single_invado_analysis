@@ -20,6 +20,8 @@ sub execute_commands {
     my @matlab_code = @{$_[1]};
     my $error_file = $_[2];
 
+    unlink($error_file) if (-e $error_file);
+
     foreach my $command (@matlab_code) {
         if (not($matlab_object->execute($command))) {
             &File::Path::mkpath(&File::Basename::dirname($error_file));

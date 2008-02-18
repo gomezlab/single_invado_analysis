@@ -13,7 +13,6 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-i_size = size(imread(original_i_file,1));
 i_count = size(imfinfo(original_i_file),2);
 tracking_seqs = load(tracking_seq_file) + 1;
 
@@ -77,12 +76,13 @@ for i = 1:i_count
     end
 
     i_seen = i_seen + 1;
-    
-    orig_i = normalize_grayscale_image(imread(original_i_file,i),'min_max',min_max);
 
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
 
+    orig_i = normalize_grayscale_image(imread(fullfile(I_folder,padded_i_num,adhesions_filename)),'min_max',min_max);
+    i_size = size(orig_i);
+    
     adhesions = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
 
     ad_label = bwlabel(adhesions,4);
