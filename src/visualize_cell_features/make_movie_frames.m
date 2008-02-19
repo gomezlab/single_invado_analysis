@@ -33,7 +33,7 @@ if (exist(bounding_box_file,'file'))
     bounding_box = load(bounding_box_file);
 else
     bounding_box = find_time_series_bbox(I_folder);
-    csvwrite(bbox_full_path,bounding_box_file);
+    csvwrite(base_data_folder,'bounding_box.csv');
 end
 
 bounding_box(1:2) = bounding_box(1:2) - image_padding_min;
