@@ -13,11 +13,10 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-i_count = size(imfinfo(original_i_file),2);
 tracking_seqs = load(tracking_seq_file) + 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Collect files to exclude
+% Collect image numbers to exclude
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (exist(excluded_frames_file,'file') && not(exist(excluded_frames_file,'dir')))
     excluded_frames = load(excluded_frames_file);
@@ -25,15 +24,7 @@ else
     excluded_frames = 0;
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Find extreme values in adhesion images
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (exist(extr_val_file,'file'))
-    min_max = load(extr_val_file);
-else
-    min_max = find_extr_values(original_i_file);
-    csvwrite(extr_val_file,min_max);
-end
+i_size = size(imread(fullfile(I_folder,sprintf(['%0',num2str(length(num2str(i_count))),'d'],1),focal_image)));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find edges of image data in adhesion images
@@ -51,7 +42,6 @@ if (bounding_box(1) <= 0), bounding_box(1) = 1; end
 if (bounding_box(2) <= 0), bounding_box(2) = 1; end
 if (bounding_box(3) > i_size(2)), bounding_box(3) = i_size(2); end
 if (bounding_box(4) > i_size(1)), bounding_box(4) = i_size(1); end
-
 
 edge_c_map = jet(i_count);
 
@@ -80,8 +70,9 @@ for i = 1:i_count
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
 
-    orig_i = normalize_grayscale_image(imread(fullfile(I_folder,padded_i_num,adhesions_filename)),'min_max',min_max);
-    i_size = size(orig_i);
+    orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
+    scale_factor = double(intmax(class(orig_i)));
+    orig_i = double(orig_i)/scale_factor;
     
     adhesions = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
 

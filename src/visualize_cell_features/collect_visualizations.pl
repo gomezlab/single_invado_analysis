@@ -71,15 +71,16 @@ sub build_matlab_visualization_config {
         "%@timestamp\n\n",
         "%General Parameters\n",
         "exp_name = '$cfg{exp_name}'\n",
-        "base_data_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{data_folder})),
-        "', exp_name)\n",
         "base_results_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})),
+        "', exp_name)\n\n",
+        "base_data_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{data_folder})),
         "', exp_name)\n\n",
 
         "i_count = $i_num\n\n",
 
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}')\n\n",
-
+        
+        "focal_image = 'focal_image.png'\n",
         "adhesions_filename = 'adhesions.png'\n",
         "edge_filename = 'cell_mask.png'\n",
 
@@ -89,7 +90,6 @@ sub build_matlab_visualization_config {
         "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'}\n\n",
 
         "excluded_frames_file = fullfile(base_data_folder,'$cfg{exclude_file}')\n",
-        "extr_val_file = fullfile(base_data_folder,'$cfg{extr_val_file}')\n",
         "bounding_box_file = fullfile(base_data_folder,'$cfg{bounding_box_file}')\n",
         "path_folders = '$cfg{path_folders}'\n\n",
 
