@@ -73,9 +73,9 @@ $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
 ##Collecting Visualizations
-#chdir "../visualize_cell_features";
-#print "\n\nBuilding Tracking Visualization\n\n" if $opt{debug};
-#$t1 = new Benchmark;
-#system "./collect_visualizations.pl -cfg $opt{cfg} $debug_string";
-#$t2 = new Benchmark;
-#print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+chdir "../visualize_cell_features";
+print "\n\nBuilding Tracking Visualization\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./collect_visualizations.pl -cfg $opt{cfg} $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
