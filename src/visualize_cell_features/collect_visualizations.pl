@@ -70,30 +70,30 @@ sub build_matlab_visualization_config {
         "%Config file produced by collect_visualizations.pl\n",
         "%@timestamp\n\n",
         "%General Parameters\n",
-        "exp_name = '$cfg{exp_name}'\n",
+        "exp_name = '$cfg{exp_name}';\n",
         "base_results_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})),
-        "', exp_name)\n\n",
+        "', exp_name);\n\n",
         "base_data_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{data_folder})),
-        "', exp_name)\n\n",
+        "', exp_name);\n\n",
 
-        "i_count = $i_num\n\n",
+        "i_count = $i_num;\n\n",
 
-        "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}')\n\n",
+        "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n\n",
         
-        "focal_image = 'focal_image.png'\n",
-        "adhesions_filename = 'adhesions.png'\n",
-        "edge_filename = 'cell_mask.png'\n",
+        "focal_image = 'focal_image.png';\n",
+        "adhesions_filename = 'adhesions.png';\n",
+        "edge_filename = 'cell_mask.png';\n",
 
-        "tracking_seq_file = fullfile(base_results_folder,'$cfg{tracking_output_file}')\n\n",
+        "tracking_seq_file = fullfile(base_results_folder,'$cfg{tracking_output_file}');\n\n",
 
-        "out_path = fullfile(base_results_folder,'$cfg{movie_output_folder}')\n",
-        "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'}\n\n",
+        "out_path = fullfile(base_results_folder,'$cfg{movie_output_folder}');\n",
+        "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'};\n\n",
 
-        "excluded_frames_file = fullfile(base_data_folder,'$cfg{exclude_file}')\n",
-        "bounding_box_file = fullfile(base_data_folder,'$cfg{bounding_box_file}')\n",
-        "path_folders = '$cfg{path_folders}'\n\n",
+        "excluded_frames_file = fullfile(base_data_folder,'$cfg{exclude_file}');\n",
+        "bounding_box_file = fullfile(base_data_folder,'$cfg{bounding_box_file}');\n",
+        "path_folders = '$cfg{path_folders}';\n\n",
 
-        "image_padding_min = $cfg{image_padding_min}\n\n",
+        "image_padding_min = $cfg{image_padding_min};\n\n",
 
         "%Comparison Specific Settings\n\n",
     );
