@@ -30,8 +30,9 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
 
-my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files lineage_analysis_data_files tracking_output_file single_lineage_props_file);
+my @needed_vars = qw(data_folder results_folder exp_name single_image_folder 
+    raw_data_folder general_data_files lineage_analysis_data_files 
+    tracking_output_file single_lineage_props_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -82,9 +83,10 @@ sub gather_adh_lineage_properties {
     $props{longevities}        = &gather_longevities(@para_set);
     $props{largest_areas}      = &gather_largest_areas(@para_set);
     $props{starting_edge_dist} = &gather_starting_dist_from_edge(@para_set);
-    ($props{speeds}, $props{max_speeds}) = &gather_adhesion_speeds(@para_set);
-    $props{ad_sig} = &gather_average_ad_sig(@para_set);
+    $props{ad_sig}             = &gather_average_ad_sig(@para_set);
 
+    ($props{speeds}, $props{max_speeds}) = &gather_adhesion_speeds(@para_set);
+    
     return %props;
 }
 
@@ -201,7 +203,6 @@ sub gather_average_ad_sig {
         for my $j (0 .. $#{ $tracking_mat[$i] }) {
             if ($tracking_mat[$i][$j] > -1) {
                 my $ad_num = $tracking_mat[$i][$j];
-
                 push @temp, ${ $data_sets{ $data_keys[$j] }{Average_adhesion_signal} }[$ad_num];
             }
         }
@@ -346,7 +347,7 @@ sub output_r_data {
 }
 
 ####################################### 
-#Output Adhesion Lineage Properties 
+#Output Adhesion Lineage Prop Sequences 
 #######################################
 
 sub output_adhesion_prop_seqs {

@@ -48,6 +48,7 @@ min_filtered_pix_intensity = 0.1;
 
 adhesions = zeros(size(focal_image));
 adhesions(find(high_passed_image > min_filtered_pix_intensity)) = 1;
+adhesions = imfill(adhesions,'holes');
 
 %adhesions = find_watershed_adhesions(focal_image,watershed_edges,cell_mask);
 adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_image);
