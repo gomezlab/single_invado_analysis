@@ -46,7 +46,6 @@ if (bounding_box(4) > i_size(1)), bounding_box(4) = i_size(1); end
 edge_c_map = jet(i_count);
 
 pix_count = i_size(1)*i_size(2);
-edge_image = ones(i_size(1),i_size(2),3);
 edge_image_ad = ones(i_size(1),i_size(2),3);
 
 max_live_adhesions = find_max_live_adhesions(tracking_seqs);
@@ -54,6 +53,7 @@ max_live_adhesions = find_max_live_adhesions(tracking_seqs);
 adhesion_tracking_map = jet(max_live_adhesions);
 
 live_adhesion_to_color_map = zeros(size(tracking_seqs,1),1);
+live_adhesion_time_map = jet(size(tracking_seqs,2));
 
 i_seen = 0;
 
@@ -64,7 +64,7 @@ for i = 1:i_count
     if (i_seen + 1 > size(tracking_seqs,2))
         continue;
     end
-
+    
     i_seen = i_seen + 1;
 
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
@@ -79,16 +79,20 @@ for i = 1:i_count
     ad_label = bwlabel(adhesions,4);
 
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
+    highlighted_time = cat(3,orig_i,orig_i,orig_i);
     search_ascending = 1;
     for j=1:size(tracking_seqs,1)
         if (tracking_seqs(j,i_seen) <= 0) 
             live_adhesion_to_color_map(j) = 0;
             continue;
         end
+
+        this_adhesion = zeros(i_size(1),i_size(2));
+        this_adhesion(ad_label == tracking_seqs(j,i_seen)) = 1;
+        
+        highlighted_time = create_highlighted_image(highlighted_time,bwperim(this_adhesion),'color',live_adhesion_time_map(i_seen,:));
         
         if (live_adhesion_to_color_map(j))
-            this_adhesion = zeros(i_size(1),i_size(2));
-            this_adhesion(ad_label == tracking_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
             highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
         else
@@ -118,8 +122,6 @@ for i = 1:i_count
                 live_adhesion_to_color_map(j) = poss_color;
             end
             
-            this_adhesion = zeros(i_size(1),i_size(2));
-            this_adhesion(ad_label == tracking_seqs(j,i_seen)) = 1;
             this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
             
             if (i_seen > 1)
@@ -140,12 +142,16 @@ for i = 1:i_count
     
     orig_i = orig_i(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3));
     highlighted_all = highlighted_all(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-    edge_image_bounded = edge_image(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
+    highlighted_time = highlighted_time(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
     edge_image_ad_bounded = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
 
-    frame = [cat(3,orig_i,orig_i,orig_i),0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all];
-    frame = {frame [edge_image_ad_bounded,0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3),highlighted_all]};
+    spacer = 0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3);
     
+    frame = cell(1,3);
+    frame{1} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
+    frame{2} = [edge_image_ad_bounded,spacer,highlighted_all];
+    frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
+
     if (exist('out_path','var'))
         for j = 1:length(out_prefix)
             output_filename = fullfile(out_path,out_prefix{1,j},[padded_i_seen,'.png']);
@@ -153,7 +159,7 @@ for i = 1:i_count
             if (not(exist(fullpath,'dir')))
                 mkdir(fullpath);
             end
-            imwrite(frame{1,j},output_filename);
+            imwrite(frame{j},output_filename);
         end
     end
 end
