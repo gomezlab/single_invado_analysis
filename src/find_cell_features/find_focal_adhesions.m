@@ -1,4 +1,4 @@
-function [varargout] = find_focal_adhesions(I_file,cell_mask)
+function [varargout] = find_focal_adhesions(I_file,cell_mask,varargin)
 % FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
@@ -18,8 +18,11 @@ i_p.FunctionName = 'FIND_FOCAL_ADHESIONS';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('cell_mask',@(x)exist(x,'file') == 2);
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_file,cell_mask);
+i_p.parse(I_file,cell_mask,varargin{:});
+
+debug = i_p.Results.debug;
 
 %read in and normalize the input focal adhesion image
 focal_image = imread(I_file);

@@ -1,4 +1,27 @@
-function make_movie_frames(cfg_file)
+function make_movie_frames(cfg_file,varargin)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+i_p = inputParser;
+i_p.FunctionName = 'MAKE_MOVIE_FRAMES';
+
+i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+
+i_p.parse(cfg_file,varargin{:});
+
+debug = i_p.Results.debug;
+
+[cfg_file_path,cfg_filename] = fileparts(cfg_file);
+addpath(cfg_file_path);
+eval(cfg_filename);
+rmpath(cfg_file_path);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process config file
@@ -50,10 +73,11 @@ edge_image_ad = ones(i_size(1),i_size(2),3);
 
 max_live_adhesions = find_max_live_adhesions(tracking_seqs);
 
-adhesion_tracking_map = jet(max_live_adhesions);
+adhesion_tracking_cmap = jet(max_live_adhesions);
+time_cmap = jet(size(tracking_seqs,2));
 
 live_adhesion_to_color_map = zeros(size(tracking_seqs,1),1);
-live_adhesion_time_map = jet(size(tracking_seqs,2));
+adhesion_time_to_cmap = zeros(size(tracking_seqs,1),1);
 
 i_seen = 0;
 
@@ -66,7 +90,9 @@ for i = 1:i_count
     end
     
     i_seen = i_seen + 1;
-
+    
+    if (debug && i_seen > 1) continue; end
+    
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
 
@@ -82,18 +108,27 @@ for i = 1:i_count
     highlighted_time = cat(3,orig_i,orig_i,orig_i);
     search_ascending = 1;
     for j=1:size(tracking_seqs,1)
-        if (tracking_seqs(j,i_seen) <= 0) 
+        if (tracking_seqs(j,i_seen) <= 0)
             live_adhesion_to_color_map(j) = 0;
             continue;
         end
-
+        
         this_adhesion = zeros(i_size(1),i_size(2));
         this_adhesion(ad_label == tracking_seqs(j,i_seen)) = 1;
         
-        highlighted_time = create_highlighted_image(highlighted_time,bwperim(this_adhesion),'color',live_adhesion_time_map(i_seen,:));
-        
+        %Time dependent colors
+        if (adhesion_time_to_cmap(j))
+            this_cmap = time_cmap(adhesion_time_to_cmap(j),:);
+            highlighted_time = create_highlighted_image(highlighted_time,bwperim(this_adhesion),'color',this_cmap);
+        else
+            adhesion_time_to_cmap(j) = i_seen;
+            this_cmap = time_cmap(adhesion_time_to_cmap(j),:);
+            highlighted_time = create_highlighted_image(highlighted_time,bwperim(this_adhesion),'color',this_cmap);
+        end
+
+        %Unique adhesion colors
         if (live_adhesion_to_color_map(j))
-            this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
+            this_color_map = adhesion_tracking_cmap(live_adhesion_to_color_map(j),:);
             highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
         else
             short_list = live_adhesion_to_color_map(live_adhesion_to_color_map > 0);
@@ -122,7 +157,7 @@ for i = 1:i_count
                 live_adhesion_to_color_map(j) = poss_color;
             end
             
-            this_color_map = adhesion_tracking_map(live_adhesion_to_color_map(j),:);
+            this_color_map = adhesion_tracking_cmap(live_adhesion_to_color_map(j),:);
             
             if (i_seen > 1)
                 highlighted_all = create_highlighted_image(highlighted_all,this_adhesion,'color',this_color_map);
