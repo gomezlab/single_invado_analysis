@@ -73,7 +73,7 @@ system "./track_adhesions.pl -cfg $opt{cfg} -o data.stor -i data.stor $debug_str
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
-Analyze the Adhesions
+#Analyze the Adhesions
 print "\n\nAnalyzing Focal Adhesions\n\n" if $opt{debug};
 $t1 = new Benchmark;
 system "./gather_tracking_results.pl -cfg $opt{cfg} $debug_string";
