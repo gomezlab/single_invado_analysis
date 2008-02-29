@@ -3,7 +3,7 @@ function bbox = find_time_series_bbox(folder,varargin)
 %                          image time series
 %
 %   [bbox] = find_time_series_bbox(f) searches through the folders in the
-%   provided folder 'f' for folders containing files named 'cell_mask.png',
+%   provided folder 'f' for folders containing files named 'adhesions.png',
 %   these files are used to calculate the overall bounding box for an image
 %   time series
 %
@@ -19,7 +19,7 @@ function bbox = find_time_series_bbox(folder,varargin)
 
 i_p = inputParser;
 i_p.addRequired('folder',@(x)exist(x,'dir')==7);
-i_p.addParamValue('image_filename','focal_image.png',@ischar);
+i_p.addParamValue('image_filename','adhesions.png',@ischar);
 
 i_p.parse(folder,varargin{:});
 

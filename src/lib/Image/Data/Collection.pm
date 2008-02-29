@@ -44,7 +44,7 @@ sub gather_data_sets {
             next;
         }
 
-        #Skip further processin on images in the excluded list
+        #Skip further processing on images in the excluded list
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
         $image_count++;
@@ -71,7 +71,7 @@ sub gather_data_sets {
             }
         }
     }
-
+    
     &check_data_set_lengths(\%data_sets);
     &check_PixelIdxList_lengths(\%data_sets);
 
@@ -144,7 +144,7 @@ sub gather_PixelIdxList_data {
 
 sub check_data_set_lengths {
     my %data_sets = %{ $_[0] };
-
+    
     my %data_sets_length;
     for my $key (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$key} }) {
@@ -172,7 +172,7 @@ sub check_PixelIdxList_lengths {
     my %data_sets = %{ $_[0] };
 
     my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
-
+    
     if (   not defined $data_sets{$first_key}{Area}
         || not defined $data_sets{$first_key}{PixelIdxList}) {
         return 1;

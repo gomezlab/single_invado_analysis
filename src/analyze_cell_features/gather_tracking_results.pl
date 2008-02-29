@@ -1,7 +1,9 @@
 #!/usr/bin/perl -w
 
 ###############################################################################
+#
 # Global Variables and Modules
+#
 ###############################################################################
 use strict;
 use File::Temp qw/ tempfile tempdir /;
@@ -37,9 +39,10 @@ my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
+#
 # Main Program
+#
 ###############################################################################
-
 print "\n\nGathering Data Files\n" if $opt{debug};
 
 my @data_files;
@@ -53,11 +56,17 @@ print "\n\nRemoving Excluded Images\n" if $opt{debug};
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
+print "\n\nCollecting Individual Adhesion Properties\n" if $opt{debug};
+my @single_ad_props = &gather_single_adh_props(\%cfg, \%opt);
+
 print "\n\nGathering Adhesion Lineage Properties\n", if $opt{debug};
 my %adh_lineage_props = &gather_adh_lineage_properties(\@tracking_mat,\%data_sets);
 
 print "\n\nGathering Adhesion Property Sequences\n", if $opt{debug};
 my %adh_lineage_prop_seqs = &gather_property_sequences(\@tracking_mat, \%data_sets);
+
+print "\n\nOutputing Single Adhesion Properties\n", if $opt{debug};
+&output_single_adhesion_props;
 
 print "\n\nOutputing Adhesion Lineage Properties\n", if $opt{debug};
 &output_adhesion_props;
@@ -66,13 +75,42 @@ print "\n\nOutputing Adhesion Lineage Sequence Properties\n", if $opt{debug};
 &output_adhesion_prop_seqs;
 
 ###############################################################################
+#
 # Functions
+#
 ###############################################################################
 
+####################################### 
+#
+#Single Lineage Props Collection
+#
 #######################################
-# Adhesion Lineage Property Collection
-#######################################
+sub gather_single_adh_props {
+    my @data;
+    
+    my @data_types = qw(Area Average_adhesion_signal Centroid_dist_from_edge Variance_adhesion_signal);
+    
+    my @first_line = qw(I_num ad_num);
+    push @first_line, @data_types;
+    push @data, \@first_line;
+    
+    for my $i_num (sort keys %data_sets) {
+        for my $ad_num (0 .. $#{$data_sets{$i_num}{$data_types[0]}}) {
+            my @line = ($i_num,$ad_num);
+            for my $i (0 .. $#data_types) {
+                push @line, $data_sets{$i_num}{$data_types[$i]}[$ad_num];
+            }
+            push @data, \@line;
+        }
+    }
+    return @data;
+}
 
+#######################################
+#
+#Adhesion Lineage Property Collection
+#
+#######################################
 sub gather_adh_lineage_properties {
     my @tracking_mat = @{ $_[0] };
     my %data_sets    = %{ $_[1] };
@@ -217,9 +255,10 @@ sub gather_average_ad_sig {
 }
 
 ####################################### 
-#Adhesion Lineage Property Sequence 
-#######################################
-
+#
+# Adhesion Lineage Property Sequence 
+#
+######################################
 sub gather_property_sequences {
     my @tracking_mat = @{ $_[0] };
     my %data_sets    = %{ $_[1] };
@@ -317,18 +356,37 @@ sub less_or_equal {
 }
 
 ####################################### 
+#
 #Output Adhesion Lineage Properties 
+#
 #######################################
+sub output_single_adhesion_props {
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    }
 
+    &output_all_single_ad_data;
+}
+
+sub output_all_single_ad_data {
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{individual_adhesions_props_file});
+    &Image::Data::Writing::output_mat_csv(\@single_ad_props,$output_file);
+}
+
+####################################### 
+#
+#Output Adhesion Lineage Properties 
+#
+#######################################
 sub output_adhesion_props {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
     }
 
-    &output_r_data;
+    &output_all_prop_data;
 }
 
-sub output_r_data {
+sub output_all_prop_data {
     my @longevities    = @{ $adh_lineage_props{longevities} };
     my @largest_areas  = @{ $adh_lineage_props{largest_areas} };
     my @starting_dists = @{ $adh_lineage_props{starting_edge_dist} };
@@ -347,9 +405,10 @@ sub output_r_data {
 }
 
 ####################################### 
+#
 #Output Adhesion Lineage Prop Sequences 
+#
 #######################################
-
 sub output_adhesion_prop_seqs {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
@@ -357,7 +416,6 @@ sub output_adhesion_prop_seqs {
     
     &output_sequence_trimmed_mat(\@{$adh_lineage_prop_seqs{area}{increasing}},"_increasing_area");
 }
-
 
 sub output_sequence_trimmed_mat {
     my @i_num_lists = @{$_[0]};
