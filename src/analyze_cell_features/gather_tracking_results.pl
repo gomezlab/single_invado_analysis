@@ -19,6 +19,7 @@ use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
 use Image::Data::Writing;
+use Math::R;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -73,6 +74,9 @@ print "\n\nOutputing Adhesion Lineage Properties\n", if $opt{debug};
 
 print "\n\nOutputing Adhesion Lineage Sequence Properties\n", if $opt{debug};
 &output_adhesion_prop_seqs;
+
+print "\n\nBuilding Plots\n", if $opt{debug};
+&build_r_plots;
 
 ###############################################################################
 #
@@ -446,4 +450,17 @@ sub output_sequence_trimmed_mat {
 
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $output_filename);
     &Image::Data::Writing::output_mat_csv(\@trimmed_tracking_mat,$output_file);
+}
+
+
+####################################### 
+#
+#Plotting 
+#
+#######################################
+
+sub build_r_plots {
+    my @r_code = "1 + 1";
+
+    &Math::R::execute_commands(\@r_code);
 }

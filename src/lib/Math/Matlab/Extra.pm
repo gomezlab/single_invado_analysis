@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use File::Path;
 use File::Basename;
+use Math::Matlab;
 
 package Math::Matlab::Extra;
 
