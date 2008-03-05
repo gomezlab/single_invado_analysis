@@ -2,12 +2,6 @@ function [varargout] = find_focal_adhesions(I_file,cell_mask,varargin)
 % FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
-%
-%   find_focal_adhesions(I,'out_dir',OUT_D,EXTRA_OPTIONS) finds the focal
-%   adhesions in image 'I', which is a single image file, the resulting
-%   binary segmented image is output in 'OUT_D' using the name
-%   'focal_adhesions.png', the parameters in 'EXTRA_OPTIONS' will also be
-%   used
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line

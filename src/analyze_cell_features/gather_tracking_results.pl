@@ -54,6 +54,8 @@ my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_
 print "\n\nRemoving Excluded Images\n" if $opt{debug};
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 
+%data_sets = &convert_data_to_units(\%data_sets,\%cfg);
+
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
@@ -83,6 +85,26 @@ print "\n\nBuilding Plots\n", if $opt{debug};
 # Functions
 #
 ###############################################################################
+
+sub convert_data_to_units {
+    my %data_sets = %{$_[0]};
+    my %cfg = %{$_[1]};
+    
+    my $lin_conv_factor = $cfg{pixel_size}/$cfg{target_unit_size};
+    my $sq_conv_factor = $lin_conv_factor**2;
+
+    for my $time (keys %data_sets) {
+        for my $data_type (keys %{$data_sets{$time}}) {
+            if ($data_type eq "Centroid_x" || "Centroid_y" || "Centroid_dist_from_edge") {
+                @{$data_sets{$time}{$data_type}} = map $lin_conv_factor*$_, @{$data_sets{$time}{$data_type}};
+            }
+            if ($data_type eq "Area") {
+                @{$data_sets{$time}{$data_type}} = map $sq_conv_factor*$_, @{$data_sets{$time}{$data_type}};
+            }
+        }
+    }
+    return %data_sets;
+}
 
 ####################################### 
 #
@@ -460,7 +482,52 @@ sub output_sequence_trimmed_mat {
 #######################################
 
 sub build_r_plots {
-    my @r_code = "1 + 1";
+    
+    my @r_code;
+    
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $plot_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder},$cfg{plot_folder});
+    
+    my $xy_default = "pch=19,cex=0.5";
+    my $pdf_default = "pointsize=19";
+    my @xy_plots = ({xy => "lineages\$longevity,lineages\$s_dist_from_edge",
+                     main => "",
+                     xlab => "'Longevity (min)'",
+                     ylab => "expression(paste('Starting Distance from Edge (', mu, 'm)'))",
+                     file_name => "longev_vs_s_dist.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                     {xy => "lineages\$longevity,lineages\$ad_sig",
+                     main => "",
+                     xlab => "'Longevity (min)'",
+                     ylab => "'Paxillin Concentration (AU)'",
+                     file_name => "longev_vs_pax.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                     {xy => "adhesions\$Area,adhesions\$Average_adhesion_signal",
+                     main => "",
+                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     ylab => "'Paxillin Concentration (AU)'",
+                     file_name => "area_vs_pax.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                   );
 
+
+    mkpath($plot_dir);
+
+    #Read in data
+    push @r_code, "lineages = read.table('$data_dir/$cfg{single_lineage_props_file}',header=T,sep=',');\n";
+    push @r_code, "adhesions = read.table('$data_dir/$cfg{individual_adhesions_props_file}',header=T,sep=',');\n";
+    
+    #Build the plots
+    foreach (@xy_plots) {
+        my %parameters = %{$_};
+        my $output_file = catfile($plot_dir,$parameters{file_name});
+        
+        push @r_code, "pdf('$output_file',$parameters{pdf_para})\n";
+        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
+        push @r_code, "dev.off();\n";
+    }
     &Math::R::execute_commands(\@r_code);
 }
