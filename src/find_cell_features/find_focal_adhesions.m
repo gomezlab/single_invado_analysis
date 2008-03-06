@@ -56,10 +56,6 @@ adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_imag
 imwrite(adhesions,fullfile(output_dir, 'adhesions.png'));
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(output_dir,'raw_data'));
 
-adhesion_props_filename = fullfile(output_dir, 'adhesion_props.mat');
-adhesion_properties = adhesion_properties;
-save(adhesion_props_filename, 'adhesion_properties');
-
 if (nargout > 0)
     varargout{1} = adhesions;
 end

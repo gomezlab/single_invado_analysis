@@ -482,13 +482,12 @@ sub output_sequence_trimmed_mat {
 #######################################
 
 sub build_r_plots {
-    
     my @r_code;
     
     my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
-    my $plot_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder},$cfg{plot_folder});
+    my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
-    my $xy_default = "pch=19,cex=0.5";
+    my $xy_default = "pch=19,cex=0.1";
     my $pdf_default = "pointsize=19";
     my @xy_plots = ({xy => "lineages\$longevity,lineages\$s_dist_from_edge",
                      main => "",
@@ -511,8 +510,21 @@ sub build_r_plots {
                      file_name => "area_vs_pax.pdf",
                      plot_para => $xy_default,
                      pdf_para => $pdf_default,},
+                     {xy => "adhesions\$Area,adhesions\$Centroid_dist_from_edge",
+                     main => "",
+                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
+                     file_name => "area_vs_dist.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                     {xy => "adhesions\$Average_adhesion_signal,adhesions\$Centroid_dist_from_edge",
+                     main => "",
+                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
+                     file_name => "sig_vs_dist.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
                    );
-
 
     mkpath($plot_dir);
 
@@ -526,6 +538,9 @@ sub build_r_plots {
         my $output_file = catfile($plot_dir,$parameters{file_name});
         
         push @r_code, "pdf('$output_file',$parameters{pdf_para})\n";
+        #push @r_code, "par(oma=c(0,0,0,0))\n"; push @r_code,
+        #"par(omi=c(0,0,0,0))\n";
+        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
         push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
         push @r_code, "dev.off();\n";
     }
