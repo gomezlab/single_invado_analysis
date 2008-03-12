@@ -1,9 +1,7 @@
 #!/usr/bin/perl -w
 
 ###############################################################################
-#
 # Global Variables and Modules
-#
 ###############################################################################
 use strict;
 use File::Temp qw/ tempfile tempdir /;
@@ -12,6 +10,7 @@ use File::Path;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
+use Imager;
 use Statistics::Descriptive;
 
 #local libraries
@@ -40,9 +39,7 @@ my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
-#
 # Main Program
-#
 ###############################################################################
 print "\n\nGathering Data Files\n" if $opt{debug};
 
@@ -54,19 +51,26 @@ my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_
 print "\n\nRemoving Excluded Images\n" if $opt{debug};
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 
+print "\n\nConverting Data to Physical Units\n";
 %data_sets = &convert_data_to_units(\%data_sets,\%cfg);
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
+print "\n\nCollecting Pixel Properties\n" if $opt{debug};
+my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
+
 print "\n\nCollecting Individual Adhesion Properties\n" if $opt{debug};
-my @single_ad_props = &gather_single_adh_props(\%cfg, \%opt);
+my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 
 print "\n\nGathering Adhesion Lineage Properties\n", if $opt{debug};
 my %adh_lineage_props = &gather_adh_lineage_properties(\@tracking_mat,\%data_sets);
 
 print "\n\nGathering Adhesion Property Sequences\n", if $opt{debug};
 my %adh_lineage_prop_seqs = &gather_property_sequences(\@tracking_mat, \%data_sets);
+
+print "\n\nOutputing Pixel Props Properties\n", if $opt{debug};
+&output_pixel_props;
 
 print "\n\nOutputing Single Adhesion Properties\n", if $opt{debug};
 &output_single_adhesion_props;
@@ -78,14 +82,11 @@ print "\n\nOutputing Adhesion Lineage Sequence Properties\n", if $opt{debug};
 &output_adhesion_prop_seqs;
 
 print "\n\nBuilding Plots\n", if $opt{debug};
-&build_r_plots;
+&build_scatter_r_plots;
 
 ###############################################################################
-#
 # Functions
-#
 ###############################################################################
-
 sub convert_data_to_units {
     my %data_sets = %{$_[0]};
     my %cfg = %{$_[1]};
@@ -106,12 +107,67 @@ sub convert_data_to_units {
     return %data_sets;
 }
 
+######################################
+#Pixel Value Props
+######################################
+sub gather_pixel_value_props {
+    my %cfg = %{$_[0]};
+    my %opt = %{$_[1]};
+    
+    my @focal_image_files = sort <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+    my @cell_mask_files = sort <$cfg{individual_results_folder}/*/cell_mask.png>;
+    
+
+    my @overall_stats = [qw(ImageNum Minimum Maximum Average)];
+
+    foreach my $i (0 .. $#focal_image_files) {
+        my $image_num;
+        if ($focal_image_files[$i] =~ /$cfg{individual_results_folder}\/(\d+)\/$cfg{adhesion_image_file}/) {
+            $image_num = $1;
+            next if grep $1 == $_, @{$cfg{exclude_image_nums}};
+        }
+
+        my $focal_img = Imager->new;
+        $focal_img->read(file => "$focal_image_files[$i]") or die;
+
+        my $cell_mask_img = Imager->new;
+        $cell_mask_img->read(file => "$cell_mask_files[$i]") or die;
+        
+        my @vals;
+        my @intra_cellular;
+        for my $y (0 .. $focal_img->getheight - 1) {
+            my @gray = $focal_img->getsamples(y=>$y, type => 'float');
+            push @vals, @gray;
+
+            my @cell_mask = $cell_mask_img->getsamples(y=>$y);
+            my @in_cell_indexes = grep $cell_mask[$_], (0 .. $#cell_mask);
+            push @intra_cellular, @gray[@in_cell_indexes];
+        }
+        my $total_stat = Statistics::Descriptive::Full->new();
+        $total_stat->add_data(@vals);
+
+        my $in_cell_stat = Statistics::Descriptive::Full->new();
+        $in_cell_stat->add_data(@intra_cellular);
+
+        push @overall_stats, [$image_num, $total_stat->min,$total_stat->max,$in_cell_stat->mean];
+    }
+
+    return @overall_stats;
+}
+
+sub output_pixel_props {
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    }
+    
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{pixel_props_file});
+    &Image::Data::Writing::output_mat_csv(\@pixel_values,$output_file);
+}
+
 ####################################### 
-#
 #Single Lineage Props Collection
-#
 #######################################
-sub gather_single_adh_props {
+sub gather_single_ad_props {
     my @data;
     
     my @data_types = qw(Area Average_adhesion_signal Centroid_dist_from_edge Variance_adhesion_signal);
@@ -133,9 +189,7 @@ sub gather_single_adh_props {
 }
 
 #######################################
-#
 #Adhesion Lineage Property Collection
-#
 #######################################
 sub gather_adh_lineage_properties {
     my @tracking_mat = @{ $_[0] };
@@ -281,9 +335,7 @@ sub gather_average_ad_sig {
 }
 
 ####################################### 
-#
 # Adhesion Lineage Property Sequence 
-#
 ######################################
 sub gather_property_sequences {
     my @tracking_mat = @{ $_[0] };
@@ -382,37 +434,25 @@ sub less_or_equal {
 }
 
 ####################################### 
-#
 #Output Adhesion Lineage Properties 
-#
 #######################################
 sub output_single_adhesion_props {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
     }
 
-    &output_all_single_ad_data;
-}
-
-sub output_all_single_ad_data {
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{individual_adhesions_props_file});
     &Image::Data::Writing::output_mat_csv(\@single_ad_props,$output_file);
 }
 
 ####################################### 
-#
 #Output Adhesion Lineage Properties 
-#
 #######################################
 sub output_adhesion_props {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
     }
-
-    &output_all_prop_data;
-}
-
-sub output_all_prop_data {
+    
     my @longevities    = @{ $adh_lineage_props{longevities} };
     my @largest_areas  = @{ $adh_lineage_props{largest_areas} };
     my @starting_dists = @{ $adh_lineage_props{starting_edge_dist} };
@@ -431,9 +471,7 @@ sub output_all_prop_data {
 }
 
 ####################################### 
-#
 #Output Adhesion Lineage Prop Sequences 
-#
 #######################################
 sub output_adhesion_prop_seqs {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
@@ -474,20 +512,18 @@ sub output_sequence_trimmed_mat {
     &Image::Data::Writing::output_mat_csv(\@trimmed_tracking_mat,$output_file);
 }
 
-
 ####################################### 
-#
 #Plotting 
-#
 #######################################
 
-sub build_r_plots {
+sub build_scatter_r_plots {
     my @r_code;
     
     my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
     my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
-    my $xy_default = "pch=19,cex=0.1";
+    #my $xy_default = "pch=19,cex=0.1";
+    my $xy_default = "";
     my $pdf_default = "pointsize=19";
     my @xy_plots = ({xy => "lineages\$longevity,lineages\$s_dist_from_edge",
                      main => "",
