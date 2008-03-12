@@ -26,7 +26,7 @@ i_p.parse(I_file);
 
 i_p.addRequired('cell_mask',@(x)exist(x,'file') == 2);
 
-i_p.addParamValue('filt_size',11,@(x)isnumeric(x) && x > 1);
+i_p.addParamValue('filt_size',23,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('min_intensity',0.1,@isnumeric);
 i_p.addParamValue('output_dir',fileparts(I_file),@(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
@@ -51,7 +51,7 @@ cell_mask = imread(cell_mask);
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-I_filt = fspecial('disk',filt_size);
+I_filt = fspecial('average',filt_size);
 high_passed_image = focal_image - imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 
 adhesions = zeros(size(focal_image,1),size(focal_image,2));
