@@ -96,7 +96,7 @@ print "\n\nBuild Movies\n\n" if $opt{debug};
 $t1 = new Benchmark;
 foreach (split(/\s/, $cfg{movie_output_prefix})) {
     my $input_folder = "$cfg{exp_results_folder}/$cfg{movie_output_folder}/$_";
-    system "ffmpeg -y -r 5 -b 100000 -i $input_folder/%0" . $image_num_length . "d.png $cfg{exp_results_folder}/$_.mp4";
+    system "ffmpeg -y -r 5 -b 100000 -i $input_folder/%0" . $image_num_length . "d.png $cfg{exp_results_folder}/$_.mov";
 }
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
