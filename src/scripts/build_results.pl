@@ -35,6 +35,10 @@ my %cfg = $ad_conf->get_cfg_hash;
 # Main Program
 ###############################################################################
 
+open STATUS, ">" . catfile($cfg{exp_data_folder},"status.txt");
+print STATUS "RUNNING";
+close STATUS;
+
 if (-e $cfg{exp_results_folder}) {
     File::Path::rmtree($cfg{exp_results_folder});
 }
@@ -43,7 +47,6 @@ my $debug_string = "";
 $debug_string = "-d" if $opt{debug};
 my ($t1, $t2);
 
-
 #Find Features
 chdir "../find_cell_features";
 print "\n\nSetting Up Results Directory\n\n" if $opt{debug};
@@ -51,6 +54,7 @@ $t1 = new Benchmark;
 system "./setup_results_folder.pl -cfg $opt{cfg} $debug_string";
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
 
 print "\n\nCollecting Cell Mask Set\n\n" if $opt{debug};
 $t1 = new Benchmark;
@@ -100,3 +104,7 @@ foreach (split(/\s/, $cfg{movie_output_prefix})) {
 }
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
+open STATUS, ">" . catfile($cfg{exp_data_folder},"status.txt");
+print STATUS "DONE";
+close STATUS;
