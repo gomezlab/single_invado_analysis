@@ -30,8 +30,6 @@ GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-print "Collecting Configuration\n" if $opt{debug};
-
 my @needed_vars = qw(data_folder results_folder exp_name single_image_folder 
     raw_data_folder general_data_files lineage_analysis_data_files 
     tracking_output_file single_lineage_props_file);
@@ -41,48 +39,36 @@ my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 # Main Program
 ###############################################################################
-print "\n\nGathering Data Files\n" if $opt{debug};
+print "\n\nGathering/Converting Data Files\n" if $opt{debug};
 
 my @data_files;
 push @data_files, split(/\s+/, $cfg{general_data_files});
 push @data_files, split(/\s+/, $cfg{lineage_analysis_data_files});
 my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
-
-print "\n\nRemoving Excluded Images\n" if $opt{debug};
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
-
-print "\n\nConverting Data to Physical Units\n";
 %data_sets = &convert_data_to_units(\%data_sets,\%cfg);
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
-print "\n\nCollecting Pixel Properties\n" if $opt{debug};
+print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
 my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
+&output_pixel_props;
+&build_photobleaching_plot;
 
-print "\n\nCollecting Individual Adhesion Properties\n" if $opt{debug};
+print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
+&output_single_adhesion_props;
+&build_single_ad_plots;
 
-print "\n\nGathering Adhesion Lineage Properties\n", if $opt{debug};
+print "\n\nCreating Adhesion Lineage Property Plots\n", if $opt{debug};
 my %adh_lineage_props = &gather_adh_lineage_properties(\@tracking_mat,\%data_sets);
+&output_adhesion_lineage_props;
+&build_lineage_plots;
 
 print "\n\nGathering Adhesion Property Sequences\n", if $opt{debug};
 my %adh_lineage_prop_seqs = &gather_property_sequences(\@tracking_mat, \%data_sets);
-
-print "\n\nOutputing Pixel Props Properties\n", if $opt{debug};
-&output_pixel_props;
-
-print "\n\nOutputing Single Adhesion Properties\n", if $opt{debug};
-&output_single_adhesion_props;
-
-print "\n\nOutputing Adhesion Lineage Properties\n", if $opt{debug};
-&output_adhesion_props;
-
-print "\n\nOutputing Adhesion Lineage Sequence Properties\n", if $opt{debug};
 &output_adhesion_prop_seqs;
-
-print "\n\nBuilding Plots\n", if $opt{debug};
-&build_scatter_r_plots;
 
 ###############################################################################
 # Functions
@@ -164,8 +150,47 @@ sub output_pixel_props {
     &Image::Data::Writing::output_mat_csv(\@pixel_values,$output_file);
 }
 
+sub build_photobleaching_plot {
+    my @r_code;
+    
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $plot_dir = catdir($data_dir,$cfg{plot_folder});
+    
+    my %para = (pdf_para => "",
+                xy => "pixel_values\$ImageNum,pixel_values\$Maximum",
+                file_name => "pix_max.pdf",
+                xlab => "\"Image Number\"",
+                ylab => "\"Maximum Normalized Fluorescence (AU)\"",
+                plot_opt => "type=\"l\",ylim=c(0,1)",
+               );
+    
+    my $output_file = catfile($plot_dir,$para{file_name});
+    
+    my $png_file = $para{file_name};
+    $png_file =~ s/\.pdf/\.png/;
+    my $output_file_png = catfile($plot_dir,'png',$png_file);
+    
+    mkpath($plot_dir);
+    mkpath(catdir($plot_dir,'png'));
+    
+    #Read in data
+    push @r_code, "pixel_values = read.table('$data_dir/$cfg{pixel_props_file}',header=T,sep=',');\n";
+    
+    #Build the plots
+    push @r_code, "pdf('$output_file',$para{pdf_para})\n";
+    push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+    push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
+    push @r_code, "dev.off();\n";
+    push @r_code, "png('$output_file_png')\n";
+    push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+    push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
+    push @r_code, "dev.off();\n";
+   
+    &Math::R::execute_commands(\@r_code);
+}
+
 ####################################### 
-#Single Lineage Props Collection
+#Single Lineage Props
 #######################################
 sub gather_single_ad_props {
     my @data;
@@ -186,6 +211,75 @@ sub gather_single_ad_props {
         }
     }
     return @data;
+}
+
+sub output_single_adhesion_props {
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    }
+
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{individual_adhesions_props_file});
+    &Image::Data::Writing::output_mat_csv(\@single_ad_props,$output_file);
+}
+
+sub build_single_ad_plots {
+    my @r_code;
+    
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $plot_dir = catdir($data_dir,$cfg{plot_folder});
+    
+    my $xy_default = "pch=19,cex=0.4";
+    #my $xy_default = "pch=19";
+    my $pdf_default = "";
+    my @xy_plots = ({xy => "adhesions\$Area,adhesions\$Average_adhesion_signal",
+                     main => "",
+                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     ylab => "'Paxillin Concentration (AU)'",
+                     file_name => "area_vs_pax.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                     {xy => "adhesions\$Area,adhesions\$Centroid_dist_from_edge",
+                     main => "",
+                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
+                     file_name => "area_vs_dist.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                     {xy => "adhesions\$Average_adhesion_signal,adhesions\$Centroid_dist_from_edge",
+                     main => "",
+                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
+                     file_name => "sig_vs_dist.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                   );
+
+    mkpath($plot_dir);
+    mkpath(catdir($plot_dir,'png'));
+
+    #Read in data
+    push @r_code, "adhesions = read.table('$data_dir/$cfg{individual_adhesions_props_file}',header=T,sep=',');\n";
+    
+    #Build the plots
+    foreach (@xy_plots) {
+        my %parameters = %{$_};
+        my $output_file = catfile($plot_dir,$parameters{file_name});
+        
+        my $png_file = $parameters{file_name};
+        $png_file =~ s/\.pdf/\.png/;
+        my $output_file_png = catfile($plot_dir,'png',$png_file);
+        
+        push @r_code, "pdf('$output_file',$parameters{pdf_para})\n";
+        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
+        push @r_code, "dev.off();\n";
+        
+        push @r_code, "png('$output_file_png',width=750,height=750,pointsize=24)\n";
+        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},pch=19,cex=0.2)\n";
+        push @r_code, "dev.off();\n";
+    }
+    &Math::R::execute_commands(\@r_code);
 }
 
 #######################################
@@ -334,6 +428,80 @@ sub gather_average_ad_sig {
     return \@pax_sig;
 }
 
+sub output_adhesion_lineage_props {
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    }
+    
+    my @longevities    = @{ $adh_lineage_props{longevities} };
+    my @largest_areas  = @{ $adh_lineage_props{largest_areas} };
+    my @starting_dists = @{ $adh_lineage_props{starting_edge_dist} };
+    my @speeds         = @{ $adh_lineage_props{speeds} };
+    my @max_speeds     = @{ $adh_lineage_props{max_speeds} };
+    my @ad_sig         = @{ $adh_lineage_props{ad_sig} };
+
+    my @all_data =
+      map { [ $longevities[$_], $largest_areas[$_], $starting_dists[$_], $speeds[$_], $max_speeds[$_], $ad_sig[$_] ] }
+      (0 .. $#longevities);
+    
+    unshift @all_data, [qw(longevity largest_area s_dist_from_edge speed max_speed ad_sig)];
+    
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{single_lineage_props_file});
+    &Image::Data::Writing::output_mat_csv(\@all_data,$output_file);
+}
+
+sub build_lineage_plots {
+    my @r_code;
+    
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $plot_dir = catdir($data_dir,$cfg{plot_folder});
+    
+    my $xy_default = "pch=19,cex=0.1";
+    #my $xy_default = "pch=19";
+    my $pdf_default = "";
+    my @xy_plots = ({xy => "lineages\$longevity,lineages\$s_dist_from_edge",
+                     main => "",
+                     xlab => "'Longevity (min)'",
+                     ylab => "expression(paste('Starting Distance from Edge (', mu, 'm)'))",
+                     file_name => "longev_vs_s_dist.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                     {xy => "lineages\$longevity,lineages\$ad_sig",
+                     main => "",
+                     xlab => "'Longevity (min)'",
+                     ylab => "'Paxillin Concentration (AU)'",
+                     file_name => "longev_vs_pax.pdf",
+                     plot_para => $xy_default,
+                     pdf_para => $pdf_default,},
+                   );
+
+    mkpath($plot_dir);
+    mkpath(catdir($plot_dir,'png'));
+
+    #Read in data
+    push @r_code, "lineages = read.table('$data_dir/$cfg{single_lineage_props_file}',header=T,sep=',');\n";
+    
+    #Build the plots
+    foreach (@xy_plots) {
+        my %parameters = %{$_};
+        my $output_file = catfile($plot_dir,$parameters{file_name});
+        
+        my $png_file = $parameters{file_name};
+        $png_file =~ s/\.pdf/\.png/;
+        my $output_file_png = catfile($plot_dir,'png',$png_file);
+        
+        push @r_code, "pdf('$output_file',$parameters{pdf_para})\n";
+        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
+        push @r_code, "dev.off();\n";
+        push @r_code, "png('$output_file_png',width=1000,height=1000,pointsize=24)\n";
+        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},cex=0.1)\n";
+        push @r_code, "dev.off();\n";
+    }
+    &Math::R::execute_commands(\@r_code);
+}
+
 ####################################### 
 # Adhesion Lineage Property Sequence 
 ######################################
@@ -433,46 +601,6 @@ sub less_or_equal {
     }
 }
 
-####################################### 
-#Output Adhesion Lineage Properties 
-#######################################
-sub output_single_adhesion_props {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
-    }
-
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{individual_adhesions_props_file});
-    &Image::Data::Writing::output_mat_csv(\@single_ad_props,$output_file);
-}
-
-####################################### 
-#Output Adhesion Lineage Properties 
-#######################################
-sub output_adhesion_props {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
-    }
-    
-    my @longevities    = @{ $adh_lineage_props{longevities} };
-    my @largest_areas  = @{ $adh_lineage_props{largest_areas} };
-    my @starting_dists = @{ $adh_lineage_props{starting_edge_dist} };
-    my @speeds         = @{ $adh_lineage_props{speeds} };
-    my @max_speeds     = @{ $adh_lineage_props{max_speeds} };
-    my @ad_sig         = @{ $adh_lineage_props{ad_sig} };
-
-    my @all_data =
-      map { [ $longevities[$_], $largest_areas[$_], $starting_dists[$_], $speeds[$_], $max_speeds[$_], $ad_sig[$_] ] }
-      (0 .. $#longevities);
-    
-    unshift @all_data, [qw(longevity largest_area s_dist_from_edge speed max_speed ad_sig)];
-    
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{single_lineage_props_file});
-    &Image::Data::Writing::output_mat_csv(\@all_data,$output_file);
-}
-
-####################################### 
-#Output Adhesion Lineage Prop Sequences 
-#######################################
 sub output_adhesion_prop_seqs {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
@@ -510,75 +638,4 @@ sub output_sequence_trimmed_mat {
 
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $output_filename);
     &Image::Data::Writing::output_mat_csv(\@trimmed_tracking_mat,$output_file);
-}
-
-####################################### 
-#Plotting 
-#######################################
-
-sub build_scatter_r_plots {
-    my @r_code;
-    
-    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
-    my $plot_dir = catdir($data_dir,$cfg{plot_folder});
-    
-    #my $xy_default = "pch=19,cex=0.1";
-    my $xy_default = "";
-    my $pdf_default = "pointsize=19";
-    my @xy_plots = ({xy => "lineages\$longevity,lineages\$s_dist_from_edge",
-                     main => "",
-                     xlab => "'Longevity (min)'",
-                     ylab => "expression(paste('Starting Distance from Edge (', mu, 'm)'))",
-                     file_name => "longev_vs_s_dist.pdf",
-                     plot_para => $xy_default,
-                     pdf_para => $pdf_default,},
-                     {xy => "lineages\$longevity,lineages\$ad_sig",
-                     main => "",
-                     xlab => "'Longevity (min)'",
-                     ylab => "'Paxillin Concentration (AU)'",
-                     file_name => "longev_vs_pax.pdf",
-                     plot_para => $xy_default,
-                     pdf_para => $pdf_default,},
-                     {xy => "adhesions\$Area,adhesions\$Average_adhesion_signal",
-                     main => "",
-                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
-                     ylab => "'Paxillin Concentration (AU)'",
-                     file_name => "area_vs_pax.pdf",
-                     plot_para => $xy_default,
-                     pdf_para => $pdf_default,},
-                     {xy => "adhesions\$Area,adhesions\$Centroid_dist_from_edge",
-                     main => "",
-                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
-                     ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
-                     file_name => "area_vs_dist.pdf",
-                     plot_para => $xy_default,
-                     pdf_para => $pdf_default,},
-                     {xy => "adhesions\$Average_adhesion_signal,adhesions\$Centroid_dist_from_edge",
-                     main => "",
-                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
-                     ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
-                     file_name => "sig_vs_dist.pdf",
-                     plot_para => $xy_default,
-                     pdf_para => $pdf_default,},
-                   );
-
-    mkpath($plot_dir);
-
-    #Read in data
-    push @r_code, "lineages = read.table('$data_dir/$cfg{single_lineage_props_file}',header=T,sep=',');\n";
-    push @r_code, "adhesions = read.table('$data_dir/$cfg{individual_adhesions_props_file}',header=T,sep=',');\n";
-    
-    #Build the plots
-    foreach (@xy_plots) {
-        my %parameters = %{$_};
-        my $output_file = catfile($plot_dir,$parameters{file_name});
-        
-        push @r_code, "pdf('$output_file',$parameters{pdf_para})\n";
-        #push @r_code, "par(oma=c(0,0,0,0))\n"; push @r_code,
-        #"par(omi=c(0,0,0,0))\n";
-        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
-        push @r_code, "dev.off();\n";
-    }
-    &Math::R::execute_commands(\@r_code);
 }
