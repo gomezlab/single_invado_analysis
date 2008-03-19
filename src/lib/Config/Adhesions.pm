@@ -68,13 +68,6 @@ sub collect_cfg_info_from_files {
     } else {
         @{ $cfg->{exclude_image_nums} } = (0);
     }
-    if ($cfg->{opt}->{debug}) {
-        if (${ $cfg->{exclude_image_nums} }[0] == 0) {
-            print "Image numbers to be excluded: none\n\n";
-        } else {
-            print "Image numbers to be excluded:", join(", ", @{ $cfg->{exclude_image_nums} }), "\n\n";
-        }
-    }
 }
 
 sub build_derived_parameters {
