@@ -247,7 +247,7 @@ sub build_single_ad_plots {
                      pdf_para => $pdf_default,},
                      {xy => "adhesions\$Average_adhesion_signal,adhesions\$Centroid_dist_from_edge",
                      main => "",
-                     xlab => "expression(paste('Area (', mu, m^2, ')'))",
+                     xlab => "'Paxillin Concentration (AU)'",
                      ylab => "expression(paste('Distance from Edge (', mu, 'm)'))",
                      file_name => "sig_vs_dist.pdf",
                      plot_para => $xy_default,
@@ -494,9 +494,9 @@ sub build_lineage_plots {
         push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
         push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
         push @r_code, "dev.off();\n";
-        push @r_code, "png('$output_file_png',width=1000,height=1000,pointsize=24)\n";
+        push @r_code, "png('$output_file_png',width=750,height=750,pointsize=24)\n";
         push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},cex=0.1)\n";
+        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},pch=19,cex=0.2)\n";
         push @r_code, "dev.off();\n";
     }
     &Math::R::execute_commands(\@r_code);
