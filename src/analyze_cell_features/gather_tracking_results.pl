@@ -12,7 +12,6 @@ use Data::Dumper;
 use Storable;
 use Imager;
 use Statistics::Descriptive;
-use Statistics::R;
 
 #local libraries
 use lib "../lib";
