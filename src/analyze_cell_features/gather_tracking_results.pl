@@ -12,6 +12,7 @@ use Data::Dumper;
 use Storable;
 use Imager;
 use Statistics::Descriptive;
+use Statistics::R;
 
 #local libraries
 use lib "../lib";
@@ -39,7 +40,7 @@ my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 # Main Program
 ###############################################################################
-print "\n\nGathering/Converting Data Files\n" if $opt{debug};
+print "Gathering/Converting Data Files\n" if $opt{debug};
 
 my @data_files;
 push @data_files, split(/\s+/, $cfg{general_data_files});
@@ -52,8 +53,9 @@ print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
 print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
-my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
-&output_pixel_props;
+#my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
+#&output_pixel_props;
+my @pixel_values;
 &build_photobleaching_plot;
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
@@ -156,7 +158,7 @@ sub build_photobleaching_plot {
     my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
     my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
-    my %para = (pdf_para => "",
+    my %para = (pdf_para => "width=12, height=12, pointsize=24",
                 xy => "pixel_values\$ImageNum,pixel_values\$Maximum",
                 file_name => "pix_max.pdf",
                 xlab => "\"Image Number\"",
@@ -170,6 +172,8 @@ sub build_photobleaching_plot {
     $png_file =~ s/\.pdf/\.png/;
     my $output_file_png = catfile($plot_dir,'png',$png_file);
     
+    my $png_convert_calls;
+
     mkpath($plot_dir);
     mkpath(catdir($plot_dir,'png'));
     
@@ -181,12 +185,15 @@ sub build_photobleaching_plot {
     push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
     push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
     push @r_code, "dev.off();\n";
-    push @r_code, "png('$output_file_png')\n";
-    push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-    push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
-    push @r_code, "dev.off();\n";
-   
+#    push @r_code, "png('$output_file_png')\n";
+#    push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+#    push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
+#    push @r_code, "dev.off();\n";
+
+    $png_convert_calls .= "convert $output_file $output_file_png\n";
+
     &Math::R::execute_commands(\@r_code);
+    system($png_convert_calls);
 }
 
 ####################################### 
@@ -256,6 +263,8 @@ sub build_single_ad_plots {
 
     mkpath($plot_dir);
     mkpath(catdir($plot_dir,'png'));
+    
+    my $png_convert_calls;
 
     #Read in data
     push @r_code, "adhesions = read.table('$data_dir/$cfg{individual_adhesions_props_file}',header=T,sep=',');\n";
@@ -273,13 +282,10 @@ sub build_single_ad_plots {
         push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
         push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
         push @r_code, "dev.off();\n";
-        
-        push @r_code, "png('$output_file_png',width=750,height=750,pointsize=24)\n";
-        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},pch=19,cex=0.2)\n";
-        push @r_code, "dev.off();\n";
+        $png_convert_calls .= "convert $output_file $output_file_png\n"
     }
     &Math::R::execute_commands(\@r_code);
+    system($png_convert_calls);
 }
 
 #######################################
@@ -456,9 +462,9 @@ sub build_lineage_plots {
     my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
     my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
-    my $xy_default = "pch=19,cex=0.1";
+    my $xy_default = "pch=19,cex=0.4";
     #my $xy_default = "pch=19";
-    my $pdf_default = "";
+    my $pdf_default = "height=12, width=12, pointsize=24";
     my @xy_plots = ({xy => "lineages\$longevity,lineages\$s_dist_from_edge",
                      main => "",
                      xlab => "'Longevity (min)'",
@@ -477,6 +483,8 @@ sub build_lineage_plots {
 
     mkpath($plot_dir);
     mkpath(catdir($plot_dir,'png'));
+    
+    my $png_convert_calls;
 
     #Read in data
     push @r_code, "lineages = read.table('$data_dir/$cfg{single_lineage_props_file}',header=T,sep=',');\n";
@@ -494,12 +502,10 @@ sub build_lineage_plots {
         push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
         push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
         push @r_code, "dev.off();\n";
-        push @r_code, "png('$output_file_png',width=750,height=750,pointsize=24)\n";
-        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},pch=19,cex=0.2)\n";
-        push @r_code, "dev.off();\n";
+        $png_convert_calls .= "convert $output_file $output_file_png\n";
     }
     &Math::R::execute_commands(\@r_code);
+    system($png_convert_calls);
 }
 
 ####################################### 
