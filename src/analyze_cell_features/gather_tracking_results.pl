@@ -32,7 +32,7 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my @needed_vars = qw(data_folder results_folder exp_name single_image_folder 
     raw_data_folder general_data_files lineage_analysis_data_files 
-    tracking_output_file single_lineage_props_file);
+    tracking_output_file lineage_summary_props_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -142,18 +142,18 @@ sub gather_pixel_value_props {
 }
 
 sub output_pixel_props {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
     }
     
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{pixel_props_file});
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{pixel_props_file});
     &Image::Data::Writing::output_mat_csv(\@pixel_values,$output_file);
 }
 
 sub build_photobleaching_plot {
     my @r_code;
     
-    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{adhesion_props_folder});
     my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
     my %para = (pdf_para => "width=12, height=12, pointsize=24",
@@ -183,10 +183,6 @@ sub build_photobleaching_plot {
     push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
     push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
     push @r_code, "dev.off();\n";
-#    push @r_code, "png('$output_file_png')\n";
-#    push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-#    push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
-#    push @r_code, "dev.off();\n";
 
     $png_convert_calls .= "convert $output_file $output_file_png\n";
 
@@ -195,7 +191,7 @@ sub build_photobleaching_plot {
 }
 
 ####################################### 
-#Single Lineage Props
+#Single Adhesion Props
 #######################################
 sub gather_single_ad_props {
     my @data;
@@ -219,18 +215,18 @@ sub gather_single_ad_props {
 }
 
 sub output_single_adhesion_props {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
     }
 
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{individual_adhesions_props_file});
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{individual_adhesions_props_file});
     &Image::Data::Writing::output_mat_csv(\@single_ad_props,$output_file);
 }
 
 sub build_single_ad_plots {
     my @r_code;
     
-    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{adhesion_props_folder});
     my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
     my $xy_default = "pch=19,cex=0.4";
@@ -433,8 +429,8 @@ sub gather_average_ad_sig {
 }
 
 sub output_adhesion_lineage_props {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
     }
     
     my @longevities    = @{ $adh_lineage_props{longevities} };
@@ -450,14 +446,14 @@ sub output_adhesion_lineage_props {
     
     unshift @all_data, [qw(longevity largest_area s_dist_from_edge speed max_speed ad_sig)];
     
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $cfg{single_lineage_props_file});
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
     &Image::Data::Writing::output_mat_csv(\@all_data,$output_file);
 }
 
 sub build_lineage_plots {
     my @r_code;
     
-    my $data_dir = catdir($cfg{exp_results_folder},$cfg{lineage_props_folder});
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{adhesion_props_folder});
     my $plot_dir = catdir($data_dir,$cfg{plot_folder});
     
     my $xy_default = "pch=19,cex=0.4";
@@ -485,7 +481,7 @@ sub build_lineage_plots {
     my $png_convert_calls;
 
     #Read in data
-    push @r_code, "lineages = read.table('$data_dir/$cfg{single_lineage_props_file}',header=T,sep=',');\n";
+    push @r_code, "lineages = read.table('$data_dir/$cfg{lineage_summary_props_file}',header=T,sep=',');\n";
     
     #Build the plots
     foreach (@xy_plots) {
@@ -606,8 +602,8 @@ sub less_or_equal {
 }
 
 sub output_adhesion_prop_seqs {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{lineage_props_folder}));
+    if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
+        mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
     }
     
     &output_sequence_trimmed_mat(\@{$adh_lineage_prop_seqs{area}{increasing}},"_increasing_area");
@@ -640,6 +636,6 @@ sub output_sequence_trimmed_mat {
         $output_filename = "seq_prop.csv";
     }
 
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{lineage_props_folder}, $output_filename);
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $output_filename);
     &Image::Data::Writing::output_mat_csv(\@trimmed_tracking_mat,$output_file);
 }
