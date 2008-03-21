@@ -53,9 +53,8 @@ print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
 print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
-#my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
-#&output_pixel_props;
-my @pixel_values;
+my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
+&output_pixel_props;
 &build_photobleaching_plot;
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
