@@ -107,6 +107,7 @@ for i = 1:i_count
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
     highlighted_time = cat(3,orig_i,orig_i,orig_i);
     search_ascending = 1;
+    
     for j=1:size(tracking_seqs,1)
         if (tracking_seqs(j,i_seen) <= 0)
             live_adhesion_to_color_map(j) = 0;
@@ -179,14 +180,20 @@ for i = 1:i_count
     highlighted_all = highlighted_all(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
     highlighted_time = highlighted_time(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
     edge_image_ad_bounded = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-
+    
     spacer = 0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3);
     
     frame = cell(1,3);
     frame{1} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
     frame{2} = [edge_image_ad_bounded,spacer,highlighted_all];
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
-
+    
+    if (exist('pixel_size','var'))
+        for i=1:size(frame,2)
+           frame{i} = draw_scale_bar(frame{i},pixel_size);
+        end
+    end
+    
     if (exist('out_path','var'))
         for j = 1:length(out_prefix)
             output_filename = fullfile(out_path,out_prefix{1,j},[padded_i_seen,'.png']);

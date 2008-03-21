@@ -94,9 +94,12 @@ sub build_matlab_visualization_config {
         "path_folders = '$cfg{path_folders}';\n\n",
 
         "image_padding_min = $cfg{image_padding_min};\n\n",
-
-        "%Comparison Specific Settings\n\n",
     );
+
+    if (exists($cfg{pixel_size})) {
+        push @config_lines, "pixel_size = $cfg{pixel_size};\n";
+    }
+
     return @config_lines;
 }
 
