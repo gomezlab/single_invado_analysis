@@ -4,8 +4,12 @@ use threads;
 use threads::shared;
 use File::Spec::Functions;
 use File::Basename;
+use Benchmark;
 
+$t1 = new Benchmark;
 $| = 1;
+
+unlink(<../../data/time_series_*/stat*>);
 
 my $max_processes = 4;
 
@@ -31,6 +35,7 @@ while (@processes) {
 }
 
 while(&gather_running_status(@started)) {
+	sleep 100;
 }
 
 sub print_sys_line {
@@ -66,3 +71,6 @@ sub gather_running_status {
 	}
 	return $running;
 }
+
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n";
