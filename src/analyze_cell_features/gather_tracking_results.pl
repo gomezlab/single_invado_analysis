@@ -26,7 +26,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "skip_pix_props");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -52,8 +52,11 @@ print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
 print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
-my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
-&output_pixel_props;
+my @pixel_values;
+if (not($opt{skip_pix_props})) {
+    my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
+    &output_pixel_props;
+}
 &build_photobleaching_plot;
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
@@ -231,7 +234,7 @@ sub build_single_ad_plots {
     
     my $xy_default = "pch=19,cex=0.4";
     #my $xy_default = "pch=19";
-    my $pdf_default = "";
+    my $pdf_default = "height=12, width=12, pointsize=24";
     my @xy_plots = ({xy => "adhesions\$Area,adhesions\$Average_adhesion_signal",
                      main => "",
                      xlab => "expression(paste('Area (', mu, m^2, ')'))",
