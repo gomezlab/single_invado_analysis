@@ -8,7 +8,7 @@ use CGI qw/:all/;
 use CGI::Carp;
 
 my $prefix = catdir('..','..','Documents');
-my $dir = catdir($prefix, 'focal_adhesions', 'results', 'average');
+my $dir = catdir($prefix, 'focal_adhesions', 'results', 'latest');
 my $col_num = 3;
 my $image_size = 200;
 my $exp_name;

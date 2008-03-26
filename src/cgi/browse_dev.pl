@@ -8,7 +8,7 @@ use CGI qw/:all/;
 use CGI::Carp;
 
 my $prefix = catdir('..','..','Documents');
-my $dir = catdir($prefix, 'focal_adhesions', 'results', 'average');
+my $dir = catdir($prefix, 'focal_adhesions', 'results', 'latest');
 my $col_num = 3;
 my $image_size = 200;
 my $exp_name;
@@ -166,8 +166,8 @@ sub browse_exp {
     my $edge_file = &rm_prefix(&get_last_movie_frame($base_dir));
     my $time_file = &rm_prefix(&get_last_movie_frame($base_dir,'time_track'));
 
-    push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "300px"}) . "</td>" . 
-                      "<td>" . $q->img({src => $time_file, width => "300px"}) . "</td>";
+    push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "100%"}) . "</td>" . 
+                      "<td>" . $q->img({src => $time_file, width => "100%"}) . "</td>";
     
     print $q->table(Tr(\@movie_rows));
     
@@ -175,19 +175,19 @@ sub browse_exp {
     print $q->h3('Individual Adhesion Properties');
     
     my $plots_dir = catdir($base_no_pre,'adhesion_props','plots','png');
-    my @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_dist.png')), width => "400px" }) . "</td>" .
-                  "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_pax.png')), width => "400px" }) . "</td>";
+    my @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_dist.png')), width => "100%" }) . "</td>" .
+                  "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_pax.png')), width => "100%" }) . "</td>";
     
-    push @img_row, "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'sig_vs_dist.png')), width => "400px" }) . "</td>";
+    push @img_row, "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'sig_vs_dist.png')), width => "100%" }) . "</td>";
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Lineage Properties');
-    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_pax.png')), width => "400px" }) . "</td>" .
-               "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_s_dist.png')), width => "400px" }) . "</td>";
+    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_pax.png')), width => "100%" }) . "</td>" .
+               "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_s_dist.png')), width => "100%" }) . "</td>";
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Pixel Value Properties');
-    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_max.png')), width => "400px" }) . "</td>"; 
+    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_max.png')), width => "50%" }) . "</td>"; 
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Misc Files');
