@@ -57,7 +57,7 @@ if (not($opt{skip_pix_props})) {
     @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
     &output_pixel_props;
 }
-&build_photobleaching_plot;
+&build_pixel_props_plots;
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
@@ -117,6 +117,7 @@ sub gather_pixel_value_props {
             next if grep $1 == $_, @{ $cfg{exclude_image_nums} };
         }
         print "$image_num " if $opt{debug};
+        next if $i > 2;
 
         my $focal_img = Imager->new;
         $focal_img->read(file => "$focal_image_files[$i]") or die;
@@ -155,43 +156,60 @@ sub output_pixel_props {
     &output_mat_csv(\@pixel_values, $output_file);
 }
 
-sub build_photobleaching_plot {
+sub build_pixel_props_plots {
     my @r_code;
 
+    
+    my $pdf_default = "width=12, height=12, pointsize=24";
+
+    my @plot_vars = (
+        {
+            pdf_para  => $pdf_default,
+            xy        => "pixel_values\$ImageNum,pixel_values\$Maximum",
+            file_name => "pix_max.pdf",
+            xlab      => "\"Image Number\"",
+            ylab      => "\"Maximum Normalized Fluorescence (AU)\"",
+            plot_opt  => "type=\"l\",ylim=c(0,1)", 
+        },
+        {
+            pdf_para  => $pdf_default,
+            xy        => "pixel_values\$ImageNum,pixel_values\$Average",
+            file_name => "pix_average.pdf",
+            xlab      => "\"Image Number\"",
+            ylab      => "\"Average Normalized Fluorescence (AU)\"",
+            plot_opt  => "type=\"l\"", 
+        },
+
+    );
+
+
+    my $png_convert_calls;
+    
     my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder});
     my $plot_dir = catdir($data_dir, $cfg{plot_folder});
 
-    my %para = (
-        pdf_para  => "width=12, height=12, pointsize=24",
-        xy        => "pixel_values\$ImageNum,pixel_values\$Maximum",
-        file_name => "pix_max.pdf",
-        xlab      => "\"Image Number\"",
-        ylab      => "\"Maximum Normalized Fluorescence (AU)\"",
-        plot_opt  => "type=\"l\",ylim=c(0,1)",
-    );
-
-    my $output_file = catfile($plot_dir, $para{file_name});
-
-    my $png_file = $para{file_name};
-    $png_file =~ s/\.pdf/\.png/;
-    my $output_file_png = catfile($plot_dir, 'png', $png_file);
-
-    my $png_convert_calls;
-
     mkpath($plot_dir);
     mkpath(catdir($plot_dir, 'png'));
+    
+    foreach (@plot_vars) {
+        my %para = %{$_};
+        my $output_file = catfile($plot_dir, $para{file_name});
 
-    #Read in data
-    push @r_code, "pixel_values = read.table('$data_dir/$cfg{pixel_props_file}',header=T,sep=',');\n";
+        my $png_file = $para{file_name};
+        $png_file =~ s/\.pdf/\.png/;
+        my $output_file_png = catfile($plot_dir, 'png', $png_file);
 
-    #Build the plots
-    push @r_code, "pdf('$output_file',$para{pdf_para})\n";
-    push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-    push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
-    push @r_code, "dev.off();\n";
+        #Read in data
+        push @r_code, "pixel_values = read.table('$data_dir/$cfg{pixel_props_file}',header=T,sep=',');\n";
 
-    $png_convert_calls .= "convert $output_file $output_file_png\n";
+        #Build the plots
+        push @r_code, "pdf('$output_file',$para{pdf_para})\n";
+        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
+        push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
+        push @r_code, "dev.off();\n";
 
+        $png_convert_calls .= "convert $output_file $output_file_png\n";
+    }
     &Math::R::execute_commands(\@r_code);
     system($png_convert_calls);
 }
