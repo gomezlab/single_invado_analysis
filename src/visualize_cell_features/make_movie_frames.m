@@ -14,11 +14,6 @@ i_p.parse(cfg_file,varargin{:});
 
 debug = i_p.Results.debug;
 
-[cfg_file_path,cfg_filename] = fileparts(cfg_file);
-addpath(cfg_file_path);
-eval(cfg_filename);
-rmpath(cfg_file_path);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,7 +51,7 @@ if (exist(bounding_box_file,'file'))
     bounding_box = load(bounding_box_file);
 else
     bounding_box = find_time_series_bbox(I_folder);
-    csvwrite(fullfile(base_data_folder,'bounding_box.csv'),bounding_box);
+    csvwrite(fullfile(base_results_folder,'bounding_box.csv'),bounding_box);
 end
 
 bounding_box(1:2) = bounding_box(1:2) - image_padding_min;

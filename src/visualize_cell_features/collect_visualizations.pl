@@ -49,7 +49,7 @@ if (defined $cfg{matlab_executable}) {
 &write_matlab_config;
 
 my @matlab_code;
-$matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_data_folder}, $cfg{vis_config_file}) . "')";
+$matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file}) . "','debug',1)";
 
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
@@ -90,7 +90,7 @@ sub build_matlab_visualization_config {
         "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'};\n\n",
 
         "excluded_frames_file = fullfile(base_data_folder,'$cfg{exclude_file}');\n",
-        "bounding_box_file = fullfile(base_data_folder,'$cfg{bounding_box_file}');\n",
+        "bounding_box_file = fullfile(base_results_folder,'$cfg{bounding_box_file}');\n",
         "path_folders = '$cfg{path_folders}';\n\n",
 
         "image_padding_min = $cfg{image_padding_min};\n\n",
@@ -105,9 +105,9 @@ sub build_matlab_visualization_config {
 
 sub write_matlab_config {
     my @config = &build_matlab_visualization_config;
-    open VIS_CFG_OUT, ">" . catfile($cfg{exp_data_folder}, $cfg{vis_config_file})
+    open VIS_CFG_OUT, ">" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file})
       or die "Unsuccessfully tried to open visualization config file: "
-      . catfile(qw($cfg{exp_data_folder} $cfg{vis_config_file}));
+      . catfile($cfg{exp_data_folder}, $cfg{vis_config_file});
     print VIS_CFG_OUT @config;
     close VIS_CFG_OUT;
 }
