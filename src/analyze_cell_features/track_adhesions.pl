@@ -5,6 +5,7 @@
 ###############################################################################
 use strict;
 use File::Path;
+use File::Basename;
 use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
@@ -16,7 +17,7 @@ use Math::Matrix;
 use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
-use Image::Data::Writing;
+use Text::CSV::Simple::Extra;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -47,7 +48,7 @@ if (not(defined $opt{input}) || defined $opt{output}) {
     push @data_files, split(/\s+/, $cfg{general_data_files});
     push @data_files, split(/\s+/, $cfg{tracking_files});
 
-    %data_sets = Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
+    %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
     &make_comp_matices;
@@ -67,7 +68,9 @@ print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
 &output_tracking_probs;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
-&Image::Data::Writing::output_mat_csv(\@tracking_mat, catdir($cfg{exp_results_folder}, $cfg{tracking_output_file}));
+my $tracking_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
+mkpath(dirname($tracking_output_file));
+&output_mat_csv(\@tracking_mat, $tracking_output_file);
 
 ###############################################################################
 #Functions

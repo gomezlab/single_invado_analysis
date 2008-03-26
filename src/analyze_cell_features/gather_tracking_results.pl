@@ -17,7 +17,7 @@ use Statistics::Descriptive;
 use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
-use Image::Data::Writing;
+use Text::CSV::Simple::Extra;
 use Math::R;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
@@ -54,7 +54,7 @@ my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
 my @pixel_values;
 if (not($opt{skip_pix_props})) {
-    my @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
+    @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
     &output_pixel_props;
 }
 &build_photobleaching_plot;
@@ -108,12 +108,15 @@ sub gather_pixel_value_props {
 
     my @overall_stats = [qw(ImageNum Minimum Maximum Average)];
 
+    print "Working on image #: " if $opt{debug};
+    
     foreach my $i (0 .. $#focal_image_files) {
         my $image_num;
         if ($focal_image_files[$i] =~ /$cfg{individual_results_folder}\/(\d+)\/$cfg{adhesion_image_file}/) {
             $image_num = $1;
             next if grep $1 == $_, @{ $cfg{exclude_image_nums} };
         }
+        print "$image_num " if $opt{debug};
 
         my $focal_img = Imager->new;
         $focal_img->read(file => "$focal_image_files[$i]") or die;
@@ -149,7 +152,7 @@ sub output_pixel_props {
     }
 
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{pixel_props_file});
-    &Image::Data::Writing::output_mat_csv(\@pixel_values, $output_file);
+    &output_mat_csv(\@pixel_values, $output_file);
 }
 
 sub build_photobleaching_plot {
@@ -224,7 +227,7 @@ sub output_single_adhesion_props {
 
     my $output_file =
       catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{individual_adhesions_props_file});
-    &Image::Data::Writing::output_mat_csv(\@single_ad_props, $output_file);
+    &output_mat_csv(\@single_ad_props, $output_file);
 }
 
 sub build_single_ad_plots {
@@ -298,11 +301,11 @@ sub build_single_ad_plots {
 #Adhesion Lineage Property Collection
 #######################################
 sub gather_ad_lineage_properties {
-    
     my %props;
     $props{longevities}             = &gather_longevities;
     $props{Area}                    = &gather_prop_seq("Area");
     $props{largest_areas}           = &gather_largest_areas($props{Area});
+    $props{Centroid_dist_to_center} = &gather_prop_seq("Centroid_dist_to_center");
     $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
     $props{starting_edge_dist}      = &gather_starting_dist_from_edge($props{Centroid_dist_from_edge});
     $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
@@ -471,12 +474,12 @@ sub output_adhesion_lineage_props {
     unshift @all_data, [qw(longevity largest_area s_dist_from_edge speed max_speed ad_sig)];
 
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
-    &Image::Data::Writing::output_mat_csv(\@all_data, $output_file);
+    &output_mat_csv(\@all_data, $output_file);
 
-    my @single_output_props = qw(Speed Area Centroid_dist_from_edge Average_adhesion_signal);
+    my @single_output_props = qw(Speed Area Centroid_dist_from_edge Centroid_dist_to_center Average_adhesion_signal);
     foreach (@single_output_props) {
         my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}, $_ . ".csv");
-        &Image::Data::Writing::output_mat_csv($ad_lineage_props{$_}, $output_file);
+        &output_mat_csv($ad_lineage_props{$_}, $output_file);
    } 
 }
 
@@ -676,5 +679,5 @@ sub output_sequence_trimmed_mat {
     }
 
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $output_filename);
-    &Image::Data::Writing::output_mat_csv(\@trimmed_tracking_mat, $output_file);
+    &output_mat_csv(\@trimmed_tracking_mat, $output_file);
 }

@@ -3,13 +3,14 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+package Image::Data::Collection;
+
 use strict;
 use warnings;
-use File::Spec;
 use Text::CSV::Simple;
 use Math::Matrix;
+use File::Spec::Functions;
 
-package Image::Data::Collection;
 ###############################################################################
 # Functions
 ###############################################################################
@@ -71,6 +72,8 @@ sub gather_data_sets {
             }
         }
     }
+
+    warn "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
     
     &check_data_set_lengths(\%data_sets);
     &check_PixelIdxList_lengths(\%data_sets);
@@ -251,14 +254,10 @@ sub trim_data_sets {
 sub read_in_tracking_mat {
     my %cfg  = %{ $_[0] };
     my %opt  = %{ $_[1] };
-    my $file = File::Spec->catdir($cfg{results_folder}, $cfg{exp_name}, $cfg{tracking_output_file});
+    my $file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
 
     my $parser       = Text::CSV::Simple->new;
     my @tracking_mat = $parser->read_file($file);
-
-    print "Gathered ", scalar(@tracking_mat), " lineages, with ", scalar(@{ $tracking_mat[0] }),
-      " timepoints from file ", $cfg{tracking_output_file}, ".\n"
-      if $opt{debug};
 
     return @tracking_mat;
 }

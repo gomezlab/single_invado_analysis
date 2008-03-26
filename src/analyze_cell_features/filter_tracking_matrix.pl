@@ -42,7 +42,6 @@ my %adh_lineage_props;
 print "\n\nFiltering Tracking Matrix\n" if $opt{debug};
 &filter_adhesion_lineages;
 
-
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 &output_tracking_mat;
 
@@ -53,7 +52,6 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 #######################################
 # Tracking Matrix Collection
 #######################################
-
 sub read_in_tracking_mat {
     open TRACK_IN, catdir($cfg{results_folder},$cfg{exp_name},$cfg{tracking_output_file}) 
 	  or die "Tried to open: ",catdir($cfg{results_folder},$cfg{exp_name},$cfg{tracking_output_file});
@@ -74,19 +72,7 @@ sub read_in_tracking_mat {
 #######################################
 
 sub gather_adh_lineage_properties {
-    @{ $adh_lineage_props{longevities} }        = &gather_longevities;
-}
-
-sub gather_longevities {
-    my @longevities;
-    for my $i (0 .. $#tracking_mat) {
-        my $count = 0;
-        for my $j (0 .. $#{ $tracking_mat[$i] }) {
-            $count++ if ($tracking_mat[$i][$j] > -1);
-        }
-        push @longevities, $count;
-    }
-    return @longevities;
+    @{ $adh_lineage_props{longevities} } = &gather_longevities;
 }
 
 #######################################
