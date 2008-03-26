@@ -88,7 +88,7 @@ sub build_matlab_visualization_config {
         "adhesions_filename = 'adhesions.png';\n",
         "edge_filename = 'cell_mask.png';\n",
 
-        "tracking_seq_file = fullfile(base_results_folder,'$cfg{tracking_output_file}');\n\n",
+        "tracking_seq_file = fullfile(base_results_folder,'$cfg{tracking_folder}','$cfg{tracking_output_file}');\n\n",
 
         "out_path = fullfile(base_results_folder,'$cfg{movie_output_folder}');\n",
         "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'};\n\n",
