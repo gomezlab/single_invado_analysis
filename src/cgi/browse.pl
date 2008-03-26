@@ -2,6 +2,7 @@
 
 use strict;
 use File::Path;
+use File::Basename;
 use File::Spec::Functions;
 use POSIX;
 use CGI qw/:all/;
@@ -11,6 +12,7 @@ my $prefix = catdir('..','..','Documents');
 my $dir = catdir($prefix, 'focal_adhesions', 'results', 'latest');
 my $col_num = 3;
 my $image_size = 200;
+my $script_name = basename($0);
 my $exp_name;
 
 my $q = new CGI;
@@ -110,11 +112,11 @@ sub browse_all {
     print $q->start_html('Focal Adhesion Analysis Results');
     print $q->h1('Focal Adhesion Analysis Results');
     print $q->h2('Display Options:'), "\n";
-    print "Column Count: <A HREF=browse.pl?col_num=", $col_num + 1, "&image_size=$image_size>+</A> 
-                      <A HREF=browse.pl?col_num=", $col_num - 1, "&image_size=$image_size>-</A>"; 
+    print "Column Count: <A HREF=$script_name?col_num=", $col_num + 1, "&image_size=$image_size>+</A> 
+                      <A HREF=$script_name?col_num=", $col_num - 1, "&image_size=$image_size>-</A>"; 
     print "<BR>";
-    print "Image Size: <A HREF=browse.pl?col_num=$col_num&image_size=", $image_size + 50, ">+</A> 
-                      <A HREF=browse.pl?col_num=$col_num&image_size=", $image_size - 50, ">-</A>"; 
+    print "Image Size: <A HREF=$script_name?col_num=$col_num&image_size=", $image_size + 50, ">+</A> 
+                      <A HREF=$script_name?col_num=$col_num&image_size=", $image_size - 50, ">-</A>"; 
     print "<BR><BR>";
     
     my @rows;
@@ -128,10 +130,10 @@ sub browse_all {
             my $this_name = $exp_list[$index];
             $this_name =~ s/.*\/(.*?)/$1/;
 
-            $rows[$i] .= "\n<td><A HREF=browse.pl?exp_name=$this_name>" . $q->h3($title) . "</A><BR>\n";
+            $rows[$i] .= "\n<td><A HREF=$script_name?exp_name=$this_name>" . $q->h3($title) . "</A><BR>\n";
             
             my $this_file = &rm_prefix($frame_list[$index]);
-            $rows[$i] .= $q->img({src => $this_file, width => $image_size. "px"}) . "</td>"; 
+            $rows[$i] .= $q->a({-href => "$script_name?exp_name=$this_name"},$q->img({src => $this_file, width => $image_size. "px"})) . "</td>"; 
         }
         $rows[$i] .= "\n"
     }
@@ -166,8 +168,8 @@ sub browse_exp {
     my $edge_file = &rm_prefix(&get_last_movie_frame($base_dir));
     my $time_file = &rm_prefix(&get_last_movie_frame($base_dir,'time_track'));
 
-    push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "300px"}) . "</td>" . 
-                      "<td>" . $q->img({src => $time_file, width => "300px"}) . "</td>";
+    push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "80%"}) . "</td>" . 
+                      "<td>" . $q->img({src => $time_file, width => "80%"}) . "</td>";
     
     print $q->table(Tr(\@movie_rows));
     
@@ -175,19 +177,19 @@ sub browse_exp {
     print $q->h3('Individual Adhesion Properties');
     
     my $plots_dir = catdir($base_no_pre,'adhesion_props','plots','png');
-    my @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_dist.png')), width => "400px" }) . "</td>" .
-                  "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_pax.png')), width => "400px" }) . "</td>";
+    my @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_dist.png')), width => "80%" }) . "</td>" .
+                  "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'area_vs_pax.png')), width => "80%" }) . "</td>";
     
-    push @img_row, "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'sig_vs_dist.png')), width => "400px" }) . "</td>";
-    print $q->table(Tr(\@img_row));
+    push @img_row, "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'sig_vs_dist.png')), width => "80%" }) . "</td>";
+    print $q->table(Tr({-valign=>"LEFT"},\@img_row));
     
     print $q->h3('Lineage Properties');
-    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_pax.png')), width => "400px" }) . "</td>" .
-               "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_s_dist.png')), width => "400px" }) . "</td>";
+    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_pax.png')), width => "80%" }) . "</td>" .
+               "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_s_dist.png')), width => "80%" }) . "</td>";
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Pixel Value Properties');
-    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_max.png')), width => "400px" }) . "</td>"; 
+    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_max.png')), width => "40%" }) . "</td>"; 
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Misc Files');
