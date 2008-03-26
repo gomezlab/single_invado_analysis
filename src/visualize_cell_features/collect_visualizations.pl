@@ -24,7 +24,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug");
+GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -49,7 +49,11 @@ if (defined $cfg{matlab_executable}) {
 &write_matlab_config;
 
 my @matlab_code;
-$matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file}). "')";
+if ($opt{movie_debug}) {
+    $matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file}). "','debug',1)";
+} else {
+    $matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file}). "')";
+}
 
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
