@@ -26,8 +26,6 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Overall Configuration\n\n" if $opt{debug};
 
-my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files tracking_files tracking_output_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -55,7 +53,6 @@ system "./setup_results_folder.pl -cfg $opt{cfg} $debug_string";
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
-
 print "\n\nCollecting Cell Mask Set\n\n" if $opt{debug};
 $t1 = new Benchmark;
 system "./collect_mask_set.pl -cfg $opt{cfg} $debug_string";
@@ -74,6 +71,13 @@ chdir "../analyze_cell_features";
 print "\n\nTracking Focal Adhesions\n\n" if $opt{debug};
 $t1 = new Benchmark;
 system "./track_adhesions.pl -cfg $opt{cfg} -o data.stor -i data.stor $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
+#Building the Tracking Matrix
+print "\n\nFiltering the Tracking Matrix\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./filter_tracking_matrix.pl -cfg $opt{cfg} $debug_string";
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
