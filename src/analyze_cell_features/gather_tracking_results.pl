@@ -117,7 +117,6 @@ sub gather_pixel_value_props {
             next if grep $1 == $_, @{ $cfg{exclude_image_nums} };
         }
         print "$image_num " if $opt{debug};
-        next if $i > 2;
 
         my $focal_img = Imager->new;
         $focal_img->read(file => "$focal_image_files[$i]") or die;
