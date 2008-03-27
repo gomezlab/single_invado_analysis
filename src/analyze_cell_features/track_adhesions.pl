@@ -65,7 +65,7 @@ print "\n\nTracking Results\n" if $opt{debug};
 print "\n"                     if $opt{debug};
 
 print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
-&output_tracking_probs;
+#&output_tracking_probs;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 my $tracking_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});

@@ -11,6 +11,9 @@ use Text::CSV::Simple;
 use Math::Matrix;
 use File::Spec::Functions;
 
+our @EXPORT = qw( read_in_tracking_mat gather_data_sets);
+use base qw(Exporter);
+
 ###############################################################################
 # Functions
 ###############################################################################

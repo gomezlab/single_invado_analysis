@@ -4,16 +4,16 @@
 # Global Variables and Modules
 ###############################################################################
 use strict;
-use File::Temp qw/ tempfile tempdir /;
 use File::Path;
 use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
-use Storable;
+use Text::CSV::Simple;
 
 use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
+use Text::CSV::Simple::Extra;
 
 my %opt;
 $opt{debug} = 0;
@@ -32,73 +32,64 @@ my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
-my @tracking_mat;
-&read_in_tracking_mat;
+my @tracking_mat = &read_in_tracking_mat(\%cfg, \%opt);
 
 print "\n\nGathering Adhesion Lineage Properties\n", if $opt{debug};
-my %adh_lineage_props;
-&gather_adh_lineage_properties;
+my %lin_props = &collect_ad_props;
 
 print "\n\nFiltering Tracking Matrix\n" if $opt{debug};
-&filter_adhesion_lineages;
+my %filtered_matrix_set = &filter_tracking_matrix;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
-&output_tracking_mat;
+&output_trimmed_matrices;
 
 ###############################################################################
 # Functions
 ###############################################################################
 
-#######################################
-# Tracking Matrix Collection
-#######################################
-sub read_in_tracking_mat {
-    open TRACK_IN, catdir($cfg{results_folder},$cfg{exp_name},$cfg{tracking_output_file}) 
-	  or die "Tried to open: ",catdir($cfg{results_folder},$cfg{exp_name},$cfg{tracking_output_file});
-    foreach (<TRACK_IN>) {
-        chomp($_);
-        my @temp = split(",", $_);
-        push @tracking_mat, \@temp;
+sub collect_ad_props {
+    my $data_file = catfile($cfg{exp_results_folder},$cfg{adhesion_props_folder},$cfg{lineage_summary_props_file});
+    
+    my $parser = Text::CSV::Simple->new();
+    my @data = $parser->read_file($data_file);
+    
+    my @header_line =  @{shift @data};
+    
+    #print Dumper(@header_line);
+    my %lin_props;
+    foreach (@data) {
+        my @data_line = @{$_};
+        foreach my $i (0 .. $#header_line) {
+            push @{$lin_props{$header_line[$i]}}, $data_line[$i];
+        }
     }
-    close TRACK_IN;
-
-    print "Gathered ", scalar(@tracking_mat), " lineages, with ", scalar(@{ $tracking_mat[0] }),
-      " timepoints from file ", $cfg{tracking_output_file}, ".\n"
-      if $opt{debug};
+    return %lin_props;
 }
 
-#######################################
-# Adhesion Lineage Property Collection
-#######################################
+sub filter_tracking_matrix {
+    my %matrix_set;
 
-sub gather_adh_lineage_properties {
-    @{ $adh_lineage_props{longevities} } = &gather_longevities;
-}
-
-#######################################
-# Adhesion Lineage Filtering
-#######################################
-sub filter_adhesion_lineages {
-	my $min_life = 2;
-
-	my @new_track_mat;
-	for my $i (0 .. $#tracking_mat) {
-		if (${$adh_lineage_props{longevities}}[$i] >= $min_life) {
-			push @new_track_mat, $tracking_mat[$i];
-		}
-	}
-	@tracking_mat = @new_track_mat;
-}
-
-#######################################
-# Output Tracking Matrix
-#######################################
-sub output_tracking_mat {
-    open OUTPUT, ">filtered_tracking_matrix.csv";
-
-    for my $i (0 .. $#tracking_mat) {
-        print OUTPUT join(",", @{ $tracking_mat[$i] }), "\n";
+    for (2 .. 5) {
+        my $required_longevity = $_;
+        for my $i (0 .. $#{$lin_props{'longevity'}}) {
+            if ($lin_props{'longevity'}->[$i] >= $required_longevity) {
+                push @{$matrix_set{'longevity'}{$required_longevity}}, $tracking_mat[$i];
+            }
+        }
     }
 
-    close OUTPUT;
+    return %matrix_set;
+}
+
+sub output_trimmed_matrices {
+    my $base_folder = catdir($cfg{exp_results_folder},$cfg{tracking_folder},'filtered');
+    mkpath($base_folder);
+
+    foreach my $type (keys %filtered_matrix_set) {
+        my $filtered_path = catdir($base_folder, $type);
+        mkpath($filtered_path);
+        foreach my $i (keys %{$filtered_matrix_set{$type}}) {
+            output_mat_csv(\@{$filtered_matrix_set{$type}{$i}}, catfile($filtered_path, $i . '.csv'));
+        }
+    }
 }

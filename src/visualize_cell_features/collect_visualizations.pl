@@ -10,6 +10,7 @@ use File::Basename;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
+use Data::Dumper;
 use File::Spec::Functions;
 
 use lib "../lib";
@@ -46,15 +47,36 @@ if (defined $cfg{matlab_executable}) {
 #Main Program
 ###############################################################################
 
-&write_matlab_config;
+my $movie_debug_string = ",'debug',1" if $opt{movie_debug};
+
+my @movie_folders = split(/\s/,$cfg{movie_output_folders});
+
+#set the first parameter set to be empty to use all the defaults
+my @movie_params = (
+    {
+        movie_path => $movie_folders[0],
+    },
+    {
+        tracking_file => catfile($cfg{exp_results_folder},$cfg{tracking_folder},'filtered','longevity','5.csv'),
+        movie_path => $movie_folders[1],
+        output_file => catfile($cfg{exp_results_folder},$movie_folders[1],'filtered_' . $cfg{vis_config_file}),
+    }
+);
 
 my @matlab_code;
-if ($opt{movie_debug}) {
-    $matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file}). "','debug',1)";
-} else {
-    $matlab_code[0] .= "make_movie_frames('" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file}). "')";
-}
+foreach (@movie_params) {
+    my %params = %{$_};
 
+    if (not exists $params{'output_file'}) {
+        $params{'output_file'} = catfile($cfg{exp_results_folder}, $params{movie_path}, $cfg{vis_config_file})
+    }
+    
+    mkpath(dirname($params{'output_file'}));
+    print Dumper(%params), "\n\n";
+
+    &write_matlab_config(%params);
+    push @matlab_code, "make_movie_frames('" . $params{'output_file'} . "'$movie_debug_string)";
+}
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
 
@@ -63,7 +85,12 @@ my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $c
 ###############################################################################
 
 sub build_matlab_visualization_config {
-    my $adhesion_image = basename <$cfg{exp_data_folder}/$cfg{adhesion_image_prefix}*>;
+    my %params = @_;
+    
+    if (not exists $params{'tracking_file'}) {
+        $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
+    }
+
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
     
@@ -88,13 +115,13 @@ sub build_matlab_visualization_config {
         "adhesions_filename = 'adhesions.png';\n",
         "edge_filename = 'cell_mask.png';\n",
 
-        "tracking_seq_file = fullfile(base_results_folder,'$cfg{tracking_folder}','$cfg{tracking_output_file}');\n\n",
+        "tracking_seq_file = '$params{tracking_file}';\n\n",
 
-        "out_path = fullfile(base_results_folder,'$cfg{movie_output_folder}');\n",
+        "out_path = fullfile(base_results_folder,'$params{movie_path}');\n",
         "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'};\n\n",
 
         "excluded_frames_file = fullfile(base_data_folder,'$cfg{exclude_file}');\n",
-        "bounding_box_file = fullfile(base_results_folder,'$cfg{bounding_box_file}');\n",
+        "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');\n",
         "path_folders = '$cfg{path_folders}';\n\n",
 
         "image_padding_min = $cfg{image_padding_min};\n\n",
@@ -108,10 +135,11 @@ sub build_matlab_visualization_config {
 }
 
 sub write_matlab_config {
-    my @config = &build_matlab_visualization_config;
-    open VIS_CFG_OUT, ">" . catfile($cfg{exp_results_folder}, $cfg{vis_config_file})
-      or die "Unsuccessfully tried to open visualization config file: "
-      . catfile($cfg{exp_results_folder}, $cfg{vis_config_file});
+    my %params = @_;
+    
+    my @config = &build_matlab_visualization_config(@_);
+    open VIS_CFG_OUT, ">" . $params{'output_file'}
+      or die "Unsuccessfully tried to open visualization config file: $params{output_file}";
     print VIS_CFG_OUT @config;
     close VIS_CFG_OUT;
 }
