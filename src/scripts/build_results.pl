@@ -26,12 +26,16 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Overall Configuration\n\n" if $opt{debug};
 
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
 # Main Program
 ###############################################################################
+my $debug_string = "";
+$debug_string = "-d" if $opt{debug};
+
+my ($t1, $t2);
 
 open STATUS, ">" . catfile($cfg{exp_data_folder},"status.txt");
 print STATUS "RUNNING";
@@ -41,9 +45,6 @@ if (-e $cfg{exp_results_folder}) {
     File::Path::rmtree($cfg{exp_results_folder});
 }
 
-my $debug_string = "";
-$debug_string = "-d" if $opt{debug};
-my ($t1, $t2);
 
 #Find Features
 chdir "../find_cell_features";
@@ -74,17 +75,17 @@ system "./track_adhesions.pl -cfg $opt{cfg} -o data.stor -i data.stor $debug_str
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
-#Building the Tracking Matrix
-print "\n\nFiltering the Tracking Matrix\n\n" if $opt{debug};
-$t1 = new Benchmark;
-system "./filter_tracking_matrix.pl -cfg $opt{cfg} $debug_string";
-$t2 = new Benchmark;
-print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
-
 #Analyze the Adhesions
 print "\n\nAnalyzing Focal Adhesions\n\n" if $opt{debug};
 $t1 = new Benchmark;
 system "./gather_tracking_results.pl -cfg $opt{cfg} $debug_string";
+$t2 = new Benchmark;
+print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
+
+#Filtering the Tracking Matrix
+print "\n\nFiltering the Tracking Matrix\n\n" if $opt{debug};
+$t1 = new Benchmark;
+system "./filter_tracking_matrix.pl -cfg $opt{cfg} $debug_string";
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 

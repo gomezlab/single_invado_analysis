@@ -23,7 +23,8 @@ package Config::Adhesions;
 sub new {
     my $class        = $_[0];
     my %opt          = %{ $_[1] };
-    my @needed_files = @{ $_[2] };
+    my @needed_files = ();
+    @needed_files = @{ $_[2] } if (scalar(@_) > 2);
 
     my $conf = new Config::General(
         -ConfigFile            => $opt{cfg},
