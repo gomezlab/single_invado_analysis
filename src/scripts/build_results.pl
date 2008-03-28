@@ -106,7 +106,7 @@ $t1 = new Benchmark;
 foreach my $f1 (split(/\s/, $cfg{movie_output_folders})) {
     foreach my $f2 (split(/\s/, $cfg{movie_output_prefix})) {
         my $input_folder = "$cfg{exp_results_folder}/$f1/$f2";
-        system "ffmpeg -y -r 5 -b 100000 -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov";
+        system "ffmpeg -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov";
     }
 }
 $t2 = new Benchmark;
