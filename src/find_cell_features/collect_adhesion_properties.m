@@ -47,13 +47,13 @@ Centroid_dist_to_center = zeros(1,max(labeled_adhesions(:)));
 Angle_to_center = zeros(1,max(labeled_adhesions(:)));
 
 for i=1:max(labeled_adhesions(:))
-    Average_adhesion_signal(i) = mean(orig_I(find(labeled_adhesions == i)));
-    Variance_adhesion_signal(i) = var(orig_I(find(labeled_adhesions == i)));
+    Average_adhesion_signal(i) = mean(orig_I(labeled_adhesions == i));
+    Variance_adhesion_signal(i) = var(orig_I(labeled_adhesions == i));
 
     centroid_pos = round(adhesion_props(i).Centroid);
     centroid_unrounded = adhesion_props(i).Centroid;
     if(size(centroid_pos,1) == 0)
-        warning('collect_adhesion_properties - centroid not found');
+        warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
         adhesion_props(i).Centroid_dist_from_edge = NaN;
     else
         Centroid_dist_from_edge(i) = dists(centroid_pos(2),centroid_pos(1));
@@ -72,3 +72,4 @@ adhesion_props(1).Variance_adhesion_signal = Variance_adhesion_signal;
 adhesion_props(1).Centroid_dist_from_edge = Centroid_dist_from_edge;
 adhesion_props(1).Centroid_dist_to_center = Centroid_dist_to_center;
 adhesion_props(1).Angle_to_center = Angle_to_center;
+adhesion_props(1).Cell_size = sum(cell_mask(:));

@@ -22,7 +22,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my @needed_vars =
@@ -42,13 +42,13 @@ if (defined $cfg{matlab_executable}) {
 # Main Program
 ###############################################################################
 
-my @image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+my @focal_image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
 
 if ($opt{debug}) {
-    if (scalar(@image_files) > 1) {
-        print "Adhesion files found: $image_files[0] - $image_files[$#image_files]\n";
+    if (scalar(@focal_image_files) > 1) {
+        print "Adhesion files found: $focal_image_files[0] - $focal_image_files[$#focal_image_files]\n";
     } else {
-        print "Adhesion file found: $image_files[0]\n";
+        print "Adhesion file found: $focal_image_files[0]\n";
     }
 }
 
@@ -64,7 +64,7 @@ my $error_file = catfile($cfg{exp_results_folder},$cfg{matlab_errors_folder},$cf
 sub create_matlab_code {
     my @matlab_code;
 
-    foreach my $file_name (@image_files) {
+    foreach my $file_name (@focal_image_files) {
         my $i_num;
         if ($file_name =~ /$cfg{individual_results_folder}\/(\d+)\//) {
             $i_num = $1;
@@ -73,12 +73,10 @@ sub create_matlab_code {
                 "Unable to find image number.";
             next;
         }
+        next if ($i_num > 1 && $opt{fa_debug});
 
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
         
-        my $padded_num = sprintf("%0" . length(scalar(@image_files)) . "d", $i_num);
-
-        my $output_dir = dirname($file_name);
         my $cell_mask = catfile(dirname($file_name),"cell_mask.png");
 
         $matlab_code[0] .= "find_focal_adhesions('$file_name','$cell_mask')\n";

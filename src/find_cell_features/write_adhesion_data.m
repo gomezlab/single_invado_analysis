@@ -32,7 +32,6 @@ if (not(exist(out_dir,'dir')))
 end
 
 to_exclude = strvcat('ConvexHull','ConvexImage','Image','FilledImage','PixelIdxList','PixelList','SubarrayIdx');
-special_cases = strvcat('PixelIdxList');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
