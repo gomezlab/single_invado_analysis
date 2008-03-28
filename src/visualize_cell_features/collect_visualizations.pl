@@ -72,7 +72,6 @@ foreach (@movie_params) {
     }
     
     mkpath(dirname($params{'output_file'}));
-    print Dumper(%params), "\n\n";
 
     &write_matlab_config(%params);
     push @matlab_code, "make_movie_frames('" . $params{'output_file'} . "'$movie_debug_string)";
