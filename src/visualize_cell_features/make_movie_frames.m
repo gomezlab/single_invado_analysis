@@ -179,8 +179,8 @@ for i = 1:i_count
     spacer = 0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3);
     
     frame = cell(1,3);
-    frame{1} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
-    frame{2} = [edge_image_ad_bounded,spacer,highlighted_all];
+    frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
+    frame{2} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
     
     if (exist('pixel_size','var'))
