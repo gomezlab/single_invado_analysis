@@ -1,8 +1,18 @@
 #!/usr/bin/env perl
 
-###############################################################################
+=head1 Name
+
+setup_results_folder.pl - Moves the experimental data into the proper location in the results folder
+
+=head1 Synopsis
+
+setup_results_folder.pl -cfg adhesion_config_file -debug
+
+=cut
+
+################################################################################
 # Global Variables and Modules
-###############################################################################
+################################################################################
 
 use strict;
 use File::Path;
@@ -25,13 +35,8 @@ $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder matlab_errors_folder 
-     setup_errors_file cell_mask_image_prefix cell_mask_file 
-     adhesion_image_prefix adhesion_image_file min_max_file);
-
 print "Gathering Config\n" if $opt{debug};
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 my $matlab_wrapper;
@@ -41,9 +46,9 @@ if (defined $cfg{matlab_executable}) {
     $matlab_wrapper = Math::Matlab::Local->new();
 }
 
-###############################################################################
+################################################################################
 # Main Program
-###############################################################################
+################################################################################
 
 mkpath($cfg{individual_results_folder});
 
@@ -75,9 +80,9 @@ foreach (@image_sets) {
 my $error_file = catdir($cfg{exp_results_folder},$cfg{matlab_errors_folder},$cfg{setup_errors_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
 
-###############################################################################
+################################################################################
 #Functions
-###############################################################################
+################################################################################
 
 sub create_matlab_code {
     my @image_files = @{$_[0]};

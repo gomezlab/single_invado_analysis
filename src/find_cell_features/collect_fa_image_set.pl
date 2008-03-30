@@ -1,8 +1,18 @@
 #!/usr/bin/env perl
 
-###############################################################################
+=head1 Name
+
+collect_fa_image_set.pl - 
+
+=head1 Synopsis
+
+collect_fa_image_set.pl -cfg adhesion_config_file -debug -fa_debug
+
+=cut
+
+################################################################################
 # Global Variables and Modules
-###############################################################################
+################################################################################
 
 use strict;
 use File::Path;
@@ -25,10 +35,7 @@ $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder matlab_errors_folder 
-     adhesion_image_file adhesion_errors_file);
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 my $matlab_wrapper;
@@ -38,9 +45,9 @@ if (defined $cfg{matlab_executable}) {
     $matlab_wrapper = Math::Matlab::Local->new();
 }
 
-###############################################################################
+################################################################################
 # Main Program
-###############################################################################
+################################################################################
 
 my @focal_image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
 
@@ -57,9 +64,9 @@ my @matlab_code = &create_matlab_code;
 my $error_file = catfile($cfg{exp_results_folder},$cfg{matlab_errors_folder},$cfg{adhesion_image_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
 
-###############################################################################
+################################################################################
 #Functions
-###############################################################################
+################################################################################
 
 sub create_matlab_code {
     my @matlab_code;

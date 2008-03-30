@@ -1,5 +1,15 @@
 #!/usr/bin/env perl
 
+=head1 Name
+
+collect_mask_set.pl - Finds the cell bodies in a set of mRFP images
+
+=head1 Synopsis
+
+collect_mask_set.pl -cfg adhesion_config_file -debug
+
+=cut
+
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
@@ -22,14 +32,11 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug");
+GetOptions(\%opt, "cfg=s", "debug|d");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my @needed_vars =
-  qw(results_folder exp_name single_image_folder matlab_errors_folder 
-     cell_mask_file cell_mask_errors_file);
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 my $matlab_wrapper;
