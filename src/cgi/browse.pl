@@ -9,9 +9,10 @@ use CGI qw/:all/;
 use CGI::Carp;
 
 my $prefix = catdir('..','..','Documents');
-my $dir = catdir($prefix, 'focal_adhesions', 'results', 'latest');
+my $all_exp_dir = catdir($prefix, 'focal_adhesions', 'results', 'latest');
 my $col_num = 3;
 my $image_size = 200;
+
 my $script_name = basename($0);
 my $exp_name;
 
@@ -65,12 +66,37 @@ sub rm_prefix {
     return $text;
 }
 
+sub get_last_movie_frame {
+    my $base_dir = $_[0];
+    
+    my $folder = "edge_track";
+    $folder = $_[1] if scalar(@_) > 1;
+
+    my @movie_files = <$base_dir/$folder/*>;
+    @movie_files = sort @movie_files;
+    
+    if (scalar(@movie_files) == 0) {
+        $movie_files[0] = "EMPTY! - $base_dir - $folder";
+    }
+
+    return $movie_files[-1];
+}
+
+sub convert_folder_to_title {
+    my ($title) = @_; 
+    if ($title =~ /.*\/(.*?)$/) {
+        $title = &convert_to_title($1);
+    }
+    
+    return $title;
+}
+
 #######################################
 # Browse All
 #######################################
 sub get_experiment_list {
     my @exp_list;
-    foreach (<$dir/*>) {
+    foreach (<$all_exp_dir/*>) {
         push @exp_list, $_ if (-d $_);
     }
     return sort @exp_list;
@@ -82,30 +108,9 @@ sub get_last_movie_frame_list {
 
     my @frame_list;
     foreach (@exp_list) {
-        push @frame_list, &get_last_movie_frame($_, $folder);
+        push @frame_list, &get_last_movie_frame(catdir($_,'movies','all'), $folder);
     }
     return @frame_list;
-}
-
-sub get_last_movie_frame {
-    my $base_dir = $_[0];
-    
-    my $folder = "edge_track";
-    $folder = $_[1] if scalar(@_) > 1;
-
-    my @movie_files = <$base_dir/*/$folder/*>;
-    @movie_files = sort @movie_files;
-    
-    return $movie_files[-1];
-}
-
-sub convert_folder_to_title {
-    my ($title) = @_; 
-    if ($title =~ /.*\/(.*?)$/) {
-        $title = &convert_to_title($1);
-    }
-    
-    return $title;
 }
 
 sub browse_all {
@@ -148,7 +153,7 @@ sub browse_all {
 #######################################
 
 sub browse_exp {
-    my $base_dir = catdir($dir,$exp_name);
+    my $base_dir = catdir($all_exp_dir,$exp_name);
     my $base_no_pre = rm_prefix($base_dir);
 
     if (not( -e $base_dir)) {
@@ -161,17 +166,33 @@ sub browse_exp {
     print $q->start_html('Focal Adhesion Analysis Results: ' . $title);
     print $q->h1('Focal Adhesion Analysis Results: ' . $title);
     print $q->h2('Movies');
+    print $q->h3('Unfiltered');
     
-    my @movie_rows = "<td><h3><A HREF=\"" . catdir($base_no_pre,'edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
-                     "<td><h3><A HREF=\"" . catdir($base_no_pre,'time_track.mov') . "\">Time Tracking</A></h3></td>";
-    
-    my $edge_file = &rm_prefix(&get_last_movie_frame($base_dir));
-    my $time_file = &rm_prefix(&get_last_movie_frame($base_dir,'time_track'));
+    my $movies_base = catdir($base_dir,'movies');
+    my $movies_base_no_pre = rm_prefix(catdir($base_dir,'movies'));
 
+    my @movie_rows = "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'all','edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
+                     "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'all','time_track.mov') . "\">Time Tracking</A></h3></td>";
+    
+    my $edge_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'all')));
+    my $time_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'all'),'time_track'));
     push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "80%"}) . "</td>" . 
                       "<td>" . $q->img({src => $time_file, width => "80%"}) . "</td>";
     
     print $q->table(Tr(\@movie_rows));
+    
+    print $q->h3('Lineage Longevity Filtered (alive for 5 minutes)');
+    my @movie_rows = "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'longev_filtered','edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
+                     "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'longev_filtered','time_track.mov') . "\">Time Tracking</A></h3></td>";
+    
+    $edge_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'longev_filtered')));
+    $time_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'longev_filtered'),'time_track'));
+    
+    push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "80%"}) . "</td>" . 
+                      "<td>" . $q->img({src => $time_file, width => "80%"}) . "</td>";
+    
+    print $q->table(Tr(\@movie_rows));
+    
     
     print $q->h2('Plots');
     print $q->h3('Individual Adhesion Properties');
@@ -186,10 +207,12 @@ sub browse_exp {
     print $q->h3('Lineage Properties');
     @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_pax.png')), width => "80%" }) . "</td>" .
                "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_s_dist.png')), width => "80%" }) . "</td>";
+    push @img_row, "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'longev_vs_largest_area.png')), width => "80%" }) . "</td>";
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Pixel Value Properties');
-    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_max.png')), width => "40%" }) . "</td>"; 
+    @img_row = "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_max.png')), width => "80%" }) . "</td>" .
+               "<td>" . $q->img({src => rm_prefix(catdir($plots_dir,'pix_average.png')), width => "80%" }) . "</td>";
     print $q->table(Tr(\@img_row));
     
     print $q->h3('Misc Files');
