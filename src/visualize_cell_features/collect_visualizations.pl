@@ -59,7 +59,12 @@ my @movie_params = (
     {
         tracking_file => catfile($cfg{exp_results_folder},$cfg{tracking_folder},'filtered','longevity','5.csv'),
         movie_path => $movie_folders[1],
-        output_file => catfile($cfg{exp_results_folder},$movie_folders[1],'filtered_' . $cfg{vis_config_file}),
+        config_file => catfile($cfg{exp_results_folder},$movie_folders[1], $cfg{vis_config_file}),
+    },
+    {
+        tracking_file => catfile($cfg{exp_results_folder},$cfg{tracking_folder},'filtered','dead','dead.csv'),
+        movie_path => $movie_folders[2],
+        config_file => catfile($cfg{exp_results_folder},$movie_folders[2], $cfg{vis_config_file}),
     }
 );
 
@@ -67,14 +72,14 @@ my @matlab_code;
 foreach (@movie_params) {
     my %params = %{$_};
 
-    if (not exists $params{'output_file'}) {
-        $params{'output_file'} = catfile($cfg{exp_results_folder}, $params{movie_path}, $cfg{vis_config_file})
+    if (not exists $params{'config_file'}) {
+        $params{'config_file'} = catfile($cfg{exp_results_folder}, $params{movie_path}, $cfg{vis_config_file})
     }
     
-    mkpath(dirname($params{'output_file'}));
+    mkpath(dirname($params{'config_file'}));
 
     &write_matlab_config(%params);
-    push @matlab_code, "make_movie_frames('" . $params{'output_file'} . "'$movie_debug_string)";
+    push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
 }
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
@@ -137,8 +142,8 @@ sub write_matlab_config {
     my %params = @_;
     
     my @config = &build_matlab_visualization_config(@_);
-    open VIS_CFG_OUT, ">" . $params{'output_file'}
-      or die "Unsuccessfully tried to open visualization config file: $params{output_file}";
+    open VIS_CFG_OUT, ">" . $params{'config_file'}
+      or die "Unsuccessfully tried to open visualization config file: $params{config_file}";
     print VIS_CFG_OUT @config;
     close VIS_CFG_OUT;
 }

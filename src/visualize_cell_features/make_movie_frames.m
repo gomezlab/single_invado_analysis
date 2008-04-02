@@ -86,7 +86,7 @@ for i = 1:i_count
     
     i_seen = i_seen + 1;
     
-    if (debug && i_seen > 1) continue; end
+    if (debug && i_seen > 1); continue; end
     
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
@@ -100,10 +100,14 @@ for i = 1:i_count
     ad_label = bwlabel(adhesions,4);
 
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
-    highlighted_time = cat(3,orig_i,orig_i,orig_i);
+    highlighted_all = create_highlighted_image(highlighted_all,bwperim(adhesions));
+    highlighted_time = highlighted_all;
     search_ascending = 1;
     
     for j=1:size(tracking_seqs,1)
+        
+        if (debug && j > 10); continue; end
+        
         if (tracking_seqs(j,i_seen) <= 0)
             live_adhesion_to_color_map(j) = 0;
             continue;
@@ -184,8 +188,8 @@ for i = 1:i_count
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
     
     if (exist('pixel_size','var'))
-        for i=1:size(frame,2)
-           frame{i} = draw_scale_bar(frame{i},pixel_size);
+        for j=1:size(frame,2)
+           frame{i} = draw_scale_bar(frame{j},pixel_size);
         end
     end
     
