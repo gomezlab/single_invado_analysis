@@ -30,10 +30,7 @@ GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "skip_pi
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my @needed_vars = qw(data_folder results_folder exp_name single_image_folder
-  raw_data_folder general_data_files lineage_analysis_data_files
-  tracking_output_file lineage_summary_props_file);
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
@@ -52,12 +49,12 @@ print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
 print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
-my @pixel_values;
+my @image_values;
 if (not($opt{skip_pix_props})) {
-    @pixel_values = &gather_pixel_value_props(\%cfg, \%opt);
-    &output_pixel_props;
+    @image_values = &gather_image_value_props(\%cfg, \%opt);
+    &output_image_props;
 }
-&build_pixel_props_plots;
+&build_image_props_plots;
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
@@ -88,7 +85,7 @@ sub convert_data_to_units {
             if ($data_type eq "Centroid_x" || "Centroid_y" || "Centroid_dist_from_edge") {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             }
-            if ($data_type eq "Area") {
+            if ($data_type eq "Area" || "Cell_size") {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             }
         }
@@ -99,14 +96,14 @@ sub convert_data_to_units {
 ######################################
 #Pixel Value Props
 ######################################
-sub gather_pixel_value_props {
+sub gather_image_value_props {
     my %cfg = %{ $_[0] };
     my %opt = %{ $_[1] };
 
     my @focal_image_files = sort <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
     my @cell_mask_files   = sort <$cfg{individual_results_folder}/*/cell_mask.png>;
 
-    my @overall_stats = [qw(ImageNum Minimum Maximum Average)];
+    my @overall_stats = [qw(ImageNum CellSize AdhesionTotalSize Minimum Maximum Average)];
 
     print "Working on image #: " if $opt{debug};
     
@@ -139,32 +136,38 @@ sub gather_pixel_value_props {
 
         my $in_cell_stat = Statistics::Descriptive::Full->new();
         $in_cell_stat->add_data(@intra_cellular);
+        
+        my $all_ad_size = 0;
+        $all_ad_size += $_ foreach (@{$data_sets{$image_num}{Area}});
 
-        push @overall_stats, [ $image_num, $total_stat->min, $total_stat->max, $in_cell_stat->mean ];
+        push @overall_stats, [ $image_num, 
+                               $data_sets{$image_num}{"Cell_size"}[0], 
+                               $all_ad_size, 
+                               $total_stat->min, 
+                               $total_stat->max, 
+                               $in_cell_stat->mean ];
     }
 
     return @overall_stats;
 }
 
-sub output_pixel_props {
+sub output_image_props {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
     }
 
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{pixel_props_file});
-    &output_mat_csv(\@pixel_values, $output_file);
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{image_props_file});
+    &output_mat_csv(\@image_values, $output_file);
 }
 
-sub build_pixel_props_plots {
-    my @r_code;
-
+sub build_image_props_plots {
     
     my $pdf_default = "width=12, height=12, pointsize=24";
 
     my @plot_vars = (
         {
             pdf_para  => $pdf_default,
-            xy        => "pixel_values\$ImageNum,pixel_values\$Maximum",
+            xy        => "image_values\$ImageNum,image_values\$Maximum",
             file_name => "pix_max.pdf",
             xlab      => "\"Image Number\"",
             ylab      => "\"Maximum Normalized Fluorescence (AU)\"",
@@ -172,13 +175,12 @@ sub build_pixel_props_plots {
         },
         {
             pdf_para  => $pdf_default,
-            xy        => "pixel_values\$ImageNum,pixel_values\$Average",
+            xy        => "image_values\$ImageNum,image_values\$Average",
             file_name => "pix_average.pdf",
             xlab      => "\"Image Number\"",
             ylab      => "\"Average Normalized Fluorescence (AU)\"",
             plot_opt  => "type=\"l\"", 
         },
-
     );
 
 
@@ -190,6 +192,8 @@ sub build_pixel_props_plots {
     mkpath($plot_dir);
     mkpath(catdir($plot_dir, 'png'));
     
+    my @r_code;
+    
     foreach (@plot_vars) {
         my %para = %{$_};
         my $output_file = catfile($plot_dir, $para{file_name});
@@ -199,7 +203,7 @@ sub build_pixel_props_plots {
         my $output_file_png = catfile($plot_dir, 'png', $png_file);
 
         #Read in data
-        push @r_code, "pixel_values = read.table('$data_dir/$cfg{pixel_props_file}',header=T,sep=',');\n";
+        push @r_code, "image_values = read.table('$data_dir/$cfg{image_props_file}',header=T,sep=',');\n";
 
         #Build the plots
         push @r_code, "pdf('$output_file',$para{pdf_para})\n";
@@ -513,7 +517,6 @@ sub build_lineage_plots {
     my @xy_plots    = (
         {
             xy        => "lineages\$longevity,lineages\$s_dist_from_edge",
-            main      => "",
             xlab      => "'Longevity (min)'",
             ylab      => "expression(paste('Starting Distance from Edge (', mu, 'm)'))",
             file_name => "longev_vs_s_dist.pdf",
@@ -521,8 +524,15 @@ sub build_lineage_plots {
             pdf_para  => $pdf_default,
         },
         {
+            xy        => "lineages\$longevity,lineages\$largest_area",
+            xlab      => "'Longevity (min)'",
+            ylab      => "expression(paste('Largest Area Attained (', mu, m^2, ')'))",
+            file_name => "longev_vs_largest_area.pdf",
+            plot_para => $xy_default,
+            pdf_para  => $pdf_default,
+        },
+        {
             xy        => "lineages\$longevity,lineages\$ad_sig",
-            main      => "",
             xlab      => "'Longevity (min)'",
             ylab      => "'Paxillin Concentration (AU)'",
             file_name => "longev_vs_pax.pdf",
