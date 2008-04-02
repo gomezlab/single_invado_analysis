@@ -17,15 +17,13 @@ use Text::CSV::Simple::Extra;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "input|i=s", "output|o=s");
+GetOptions(\%opt, "cfg=s", "debug|d");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
 
-my @needed_vars =
-  qw(tracking_output_file);
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 # Main Program
@@ -72,8 +70,21 @@ sub filter_tracking_matrix {
     for (2 .. 5) {
         my $required_longevity = $_;
         for my $i (0 .. $#{$lin_props{'longevity'}}) {
-            if ($lin_props{'longevity'}->[$i] >= $required_longevity) {
+            my $this_longev = $lin_props{'longevity'}->[$i];
+            if ($this_longev >= $required_longevity ||
+                $this_longev >= $#tracking_mat) {
                 push @{$matrix_set{'longevity'}{$required_longevity}}, $tracking_mat[$i];
+            }
+        }
+    }
+
+    for my $i (0 .. $#tracking_mat) {
+        my $in_lin = 0;
+        for my $j (0 .. $#{$tracking_mat[$i]}) {
+            $in_lin = 1 if ($tracking_mat[$i][$j] >= 0);
+            if ($in_lin && $tracking_mat[$i][$j] <= -1) {
+                push @{$matrix_set{'dead'}{'dead'}}, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
+                $in_lin = 0;
             }
         }
     }
