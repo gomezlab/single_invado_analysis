@@ -154,6 +154,7 @@ sub check_data_set_lengths {
     my %data_sets_length;
     for my $key (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$key} }) {
+            next if ($data_type eq "Cell_size");
             $data_sets_length{$key}{$data_type} = scalar(@{ $data_sets{$key}{$data_type} });
         }
     }
@@ -162,11 +163,12 @@ sub check_data_set_lengths {
         my $all_same       = 1;
         my @data_type_keys = keys %{ $data_sets_length{$key} };
         my $length         = $data_sets_length{$key}{ $data_type_keys[0] };
-        for my $data_type (keys %{ $data_sets_length{$key} }) {
+        for my $data_type (@data_type_keys) {
             if ($data_sets_length{$key}{$data_type} != $length) {
                 $all_same = 0;
             }
         }
+
         if (not $all_same) {
             warn "Data set lengths do not match in image number $key:\n",
               map { "    $_ - $data_sets_length{$key}{$_}\n" } keys %{ $data_sets_length{$key} };
@@ -246,8 +248,6 @@ sub trim_data_sets {
     if ($opt{debug}) {
         if (scalar(@excluded_nums) != 0) {
             print "Image number removed from further Dataset: ", join(", ", @excluded_nums), "\n";
-        } else {
-            print "Image number removed from further Dataset: none\n";
         }
     }
 
