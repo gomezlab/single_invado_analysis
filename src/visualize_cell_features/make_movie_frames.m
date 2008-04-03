@@ -104,9 +104,9 @@ for i = 1:i_count
     highlighted_time = highlighted_all;
     search_ascending = 1;
     
-    for j=1:size(tracking_seqs,1)
+    for j = 1:size(tracking_seqs,1)
         
-        if (debug && j > 10); continue; end
+        if (debug && j > 100); continue; end
         
         if (tracking_seqs(j,i_seen) <= 0)
             live_adhesion_to_color_map(j) = 0;
@@ -128,8 +128,8 @@ for i = 1:i_count
 
         %Unique adhesion colors
         if (live_adhesion_to_color_map(j))
-            this_color_map = adhesion_tracking_cmap(live_adhesion_to_color_map(j),:);
-            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
+            this_cmap = adhesion_tracking_cmap(live_adhesion_to_color_map(j),:);
+            highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_cmap);
         else
             short_list = live_adhesion_to_color_map(live_adhesion_to_color_map > 0);
             unique_used_colors = unique(short_list);
@@ -151,18 +151,18 @@ for i = 1:i_count
             end
             
             if (not(poss_color))
-                warning(['Could not find a unique color for adhesion lineage #: ', num2str(j)])
+                warning('Matlab:adColor',['Could not find a unique color for adhesion lineage #: ', num2str(j)])
                 live_adhesion_to_color_map(j) = 1;
             else        
                 live_adhesion_to_color_map(j) = poss_color;
             end
             
-            this_color_map = adhesion_tracking_cmap(live_adhesion_to_color_map(j),:);
+            this_cmap = adhesion_tracking_cmap(live_adhesion_to_color_map(j),:);
             
             if (i_seen > 1)
-                highlighted_all = create_highlighted_image(highlighted_all,this_adhesion,'color',this_color_map);
+                highlighted_all = create_highlighted_image(highlighted_all,this_adhesion,'color',this_cmap);
             else
-                highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_color_map);
+                highlighted_all = create_highlighted_image(highlighted_all,bwperim(this_adhesion),'color',this_cmap);
             end
         end
     end
@@ -170,7 +170,6 @@ for i = 1:i_count
     cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
 
     for j = 1:3
-        edge_image(find(cell_edge)+(j-1)*pix_count) = edge_c_map(i,j);
         edge_image_ad(find(cell_edge)+(j-1)*pix_count) = edge_c_map(i,j);
         edge_image_ad(find(bwperim(adhesions))+(j-1)*pix_count) = edge_c_map(i,j);
     end
@@ -188,8 +187,8 @@ for i = 1:i_count
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
     
     if (exist('pixel_size','var'))
-        for j=1:size(frame,2)
-           frame{i} = draw_scale_bar(frame{j},pixel_size);
+        for j = 1:size(frame,2)
+           frame{j} = draw_scale_bar(frame{j},pixel_size);
         end
     end
     
