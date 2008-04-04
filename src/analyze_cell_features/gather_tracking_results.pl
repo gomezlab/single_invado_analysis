@@ -26,12 +26,20 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "skip_pix_props");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", 
+                  "skip_pix_props", "tracking_mat=s", "out_folder=s");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
+
+if (exists $opt{tracking_mat}) {
+    $cfg{tracking_output_file} = $opt{tracking_mat};
+}
+if (exists $opt{out_folder}) {
+    $cfg{adhesion_props_folder} = $opt{out_folder};
+}
 
 ###############################################################################
 # Main Program
@@ -68,7 +76,7 @@ my %ad_lineage_props = &gather_ad_lineage_properties;
 
 print "\n\nGathering Adhesion Property Sequences\n", if $opt{debug};
 my %ad_lineage_prop_seqs = &gather_property_sequences(\@tracking_mat, \%data_sets);
-&output_adhesion_prop_seqs;
+#&output_adhesion_prop_seqs;
 
 ###############################################################################
 # Functions
@@ -223,14 +231,26 @@ sub build_image_props_plots {
 sub gather_single_ad_props {
     my @data;
 
-    my @data_types = qw(Area Average_adhesion_signal Centroid_dist_from_edge Variance_adhesion_signal);
+    my @data_types = qw(Area Average_adhesion_signal Centroid_dist_from_edge Centroid_dist_from_center Variance_adhesion_signal);
 
     my @first_line = qw(I_num ad_num);
     push @first_line, @data_types;
     push @data,       \@first_line;
+    
+    my @i_num_list = sort keys %data_sets;
+    my %i_num_to_col = map {$i_num_list[$_] => $_} (0 .. $#i_num_list);
 
     for my $i_num (sort keys %data_sets) {
-        for my $ad_num (0 .. $#{ $data_sets{$i_num}{ $data_types[0] } }) {
+        my $col = $i_num_to_col{$i_num};
+        my @ad_nums_to_include = map {
+            if ($tracking_mat[$_][$col] >= 0) {
+                $tracking_mat[$_][$col];
+            } else {
+                ();
+            }
+        } (0 .. $#tracking_mat);
+        @ad_nums_to_include = sort {$a <=> $b} @ad_nums_to_include;
+        foreach my $ad_num (@ad_nums_to_include) {
             my @line = ($i_num, $ad_num);
             for my $i (0 .. $#data_types) {
                 push @line, $data_sets{$i_num}{ $data_types[$i] }[$ad_num];
@@ -326,7 +346,7 @@ sub gather_ad_lineage_properties {
     $props{longevities}             = &gather_longevities;
     $props{Area}                    = &gather_prop_seq("Area");
     $props{largest_areas}           = &gather_largest_areas($props{Area});
-    $props{Centroid_dist_to_center} = &gather_prop_seq("Centroid_dist_to_center");
+    $props{Centroid_dist_to_center} = &gather_prop_seq("Centroid_dist_from_center");
     $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
     $props{starting_edge_dist}      = &gather_starting_dist_from_edge($props{Centroid_dist_from_edge});
     $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
@@ -366,7 +386,7 @@ sub gather_prop_seq {
 
             my $i_num = $data_keys[$j];
             if (not defined ${ $data_sets{$i_num}{$prop} }[$ad_num]) {
-                print "$i_num, $tracking_mat[$i][$j]";
+                print "$i_num, $ad_num, $prop";
                 die;
             }
 
