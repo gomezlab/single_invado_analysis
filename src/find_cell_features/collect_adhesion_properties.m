@@ -59,7 +59,7 @@ for i=1:max(labeled_adhesions(:))
         Centroid_dist_from_edge(i) = dists(centroid_pos(2),centroid_pos(1));
   
         Centroid_dist_from_center(i) = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
-        Angle_to_center(i) = acos((centroid_unrounded(2) - cell_centroid(2))/Centroid_dist_to_center(i));
+        Angle_to_center(i) = acos((centroid_unrounded(2) - cell_centroid(2))/Centroid_dist_from_center(i));
         if (centroid_pos(2) - cell_centroid(2) < 0)
             Angle_to_center(i) = Angle_to_center(i) + pi;
         end

@@ -61,7 +61,7 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_matlab_code;
 
-my $error_file = catfile($cfg{exp_results_folder},$cfg{matlab_errors_folder},$cfg{adhesion_image_file});
+my $error_file = catfile($cfg{exp_results_folder},$cfg{matlab_errors_folder},$cfg{adhesion_errors_file});
 &Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
 
 ################################################################################
