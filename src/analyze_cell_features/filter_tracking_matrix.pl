@@ -70,7 +70,7 @@ sub filter_tracking_matrix {
     for (2 .. 5) {
         my $required_longevity = $_;
         for my $i (0 .. $#{$lin_props{'longevity'}}) {
-            my $this_longev = $lin_props{'longevity'}->[$i];
+            my $this_longev = $lin_props{'longevity'}[$i];
             if ($this_longev >= $required_longevity ||
                 $this_longev >= $#tracking_mat) {
                 push @{$matrix_set{'longevity'}{$required_longevity}}, $tracking_mat[$i];
@@ -85,6 +85,9 @@ sub filter_tracking_matrix {
             if ($in_lin && $tracking_mat[$i][$j] <= -1) {
                 push @{$matrix_set{'dead'}{'dead'}}, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
                 $in_lin = 0;
+                if ($lin_props{'longevity'}[$i] >= 10) {
+                    push @{$matrix_set{'dead'}{'10'}}, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
+                }
             }
         }
     }
