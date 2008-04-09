@@ -63,12 +63,12 @@ sub gather_data_sets {
             if (-e "$file_matches[0]" && -f "$file_matches[0]" && -r "$file_matches[0]") {
                 @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$file_matches[0]");
                 if ($file eq "Centroid") {
-                    @{ $data_sets{$i_num}{ $file . "_x" } } = &process_x_centroid_data(@{ $data_sets{$i_num}{$file} });
-                    @{ $data_sets{$i_num}{ $file . "_y" } } = &process_y_centroid_data(@{ $data_sets{$i_num}{$file} });
+                    @{ $data_sets{$i_num}{ $file . "_x" } } = 
+                        map $data_sets{$i_num}{$file}[$_ * 2], (0 .. $#{ $data_sets{$i_num}{$file} }/2);
+                    @{ $data_sets{$i_num}{ $file . "_y" } } = 
+                        map $data_sets{$i_num}{$file}[$_ * 2 + 1], (0 .. $#{ $data_sets{$i_num}{$file} }/2);
+                    
                     delete $data_sets{$i_num}{$file};
-                }
-                if ($file eq "Area" || $file eq "Centroid_dist_from_edge") {
-                    @{ $data_sets{$i_num}{$file} } = map sprintf("%f", $_), @{ $data_sets{$i_num}{$file} };
                 }
             } else {
                 warn("ERROR: Problem finding data file ($file) in folder: $this_folder.\n");
@@ -76,7 +76,7 @@ sub gather_data_sets {
         }
     }
 
-    warn "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
+    die "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
     
     &check_data_set_lengths(\%data_sets);
     &check_PixelIdxList_lengths(\%data_sets);
@@ -100,28 +100,6 @@ sub gather_data_from_matlab_file {
     }
 
     return @data;
-}
-
-sub process_x_centroid_data {
-    my @centroid = @_;
-    my @x;
-
-    for (0 .. $#centroid / 2) {
-        push @x, $centroid[ $_ * 2 ];
-    }
-
-    return @x;
-}
-
-sub process_y_centroid_data {
-    my @centroid = @_;
-    my @y;
-
-    for (0 .. $#centroid / 2) {
-        push @y, $centroid[ $_ * 2 + 1 ];
-    }
-
-    return @y;
 }
 
 sub gather_PixelIdxList_data {
