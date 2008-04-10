@@ -12,6 +12,7 @@ use Math::Matlab::Local;
 use Getopt::Long;
 use Data::Dumper;
 use File::Spec::Functions;
+use Benchmark;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -29,10 +30,9 @@ GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my @needed_vars =
-  qw(data_folder results_folder single_image_folder folder_divider exp_name 
-     single_image_folder matlab_errors_folder vis_config_file vis_errors_file 
-     extr_val_file bounding_box_file);
+my @needed_vars = qw(data_folder results_folder single_image_folder folder_divider exp_name
+  single_image_folder matlab_errors_folder vis_config_file vis_errors_file
+  extr_val_file bounding_box_file);
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
@@ -49,22 +49,20 @@ if (defined $cfg{matlab_executable}) {
 
 my $movie_debug_string = ",'debug',1" if $opt{movie_debug};
 
-my @movie_folders = split(/\s/,$cfg{movie_output_folders});
+my @movie_folders = split(/\s/, $cfg{movie_output_folders});
 
 #set the first parameter set to be empty to use all the defaults
 my @movie_params = (
+    { movie_path => $movie_folders[0], },
     {
-        movie_path => $movie_folders[0],
+        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'longevity', '5.csv'),
+        movie_path    => $movie_folders[1],
+        config_file => catfile($cfg{exp_results_folder}, $movie_folders[1], $cfg{vis_config_file}),
     },
     {
-        tracking_file => catfile($cfg{exp_results_folder},$cfg{tracking_folder},'filtered','longevity','5.csv'),
-        movie_path => $movie_folders[1],
-        config_file => catfile($cfg{exp_results_folder},$movie_folders[1], $cfg{vis_config_file}),
-    },
-    {
-        tracking_file => catfile($cfg{exp_results_folder},$cfg{tracking_folder},'filtered','dead','dead.csv'),
-        movie_path => $movie_folders[2],
-        config_file => catfile($cfg{exp_results_folder},$movie_folders[2], $cfg{vis_config_file}),
+        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'dead', 'dead.csv'),
+        movie_path    => $movie_folders[2],
+        config_file => catfile($cfg{exp_results_folder}, $movie_folders[2], $cfg{vis_config_file}),
     }
 );
 
@@ -73,16 +71,20 @@ foreach (@movie_params) {
     my %params = %{$_};
 
     if (not exists $params{'config_file'}) {
-        $params{'config_file'} = catfile($cfg{exp_results_folder}, $params{movie_path}, $cfg{vis_config_file})
+        $params{'config_file'} = catfile($cfg{exp_results_folder}, $params{movie_path}, $cfg{vis_config_file});
     }
-    
+
     mkpath(dirname($params{'config_file'}));
 
     &write_matlab_config(%params);
-    push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+    my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
+    my @matlab_code = "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+    
+    my $t1 = new Benchmark;
+    &Math::Matlab::Extra::execute_commands($matlab_wrapper, \@matlab_code, $error_file);
+    my $t2 = new Benchmark;
+    print "Movie: $params{movie_path}\n" ,timestr(timediff($t2,$t1),"nop"), "\n" if $opt{debug};
 }
-my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
-&Math::Matlab::Extra::execute_commands($matlab_wrapper,\@matlab_code,$error_file);
 
 ###############################################################################
 #Functions
@@ -90,15 +92,15 @@ my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $c
 
 sub build_matlab_visualization_config {
     my %params = @_;
-    
+
     if (not exists $params{'tracking_file'}) {
         $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
     }
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
-    
-    my @temp = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
+
+    my @temp  = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
     my $i_num = scalar(@temp);
 
     my @config_lines = (
@@ -114,7 +116,7 @@ sub build_matlab_visualization_config {
         "i_count = $i_num;\n\n",
 
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n\n",
-        
+
         "focal_image = 'focal_image.png';\n",
         "adhesions_filename = 'adhesions.png';\n",
         "edge_filename = 'cell_mask.png';\n",
@@ -140,7 +142,7 @@ sub build_matlab_visualization_config {
 
 sub write_matlab_config {
     my %params = @_;
-    
+
     my @config = &build_matlab_visualization_config(@_);
     open VIS_CFG_OUT, ">" . $params{'config_file'}
       or die "Unsuccessfully tried to open visualization config file: $params{config_file}";
