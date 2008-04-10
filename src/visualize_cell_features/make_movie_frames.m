@@ -100,7 +100,11 @@ for i = 1:i_count
     ad_label = bwlabel(adhesions,4);
 
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
-    highlighted_all = create_highlighted_image(highlighted_all,bwperim(adhesions));
+    
+    %Uncomment the following line to highlight all the focal adhesions
+    %with green before lineage colors are applied
+    %highlighted_all = create_highlighted_image(highlighted_all,bwperim(adhesions));
+
     highlighted_time = highlighted_all;
     search_ascending = 1;
     
