@@ -83,13 +83,6 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg     = $ad_conf->get_cfg_hash;
 
-my $matlab_wrapper;
-if (defined $cfg{matlab_executable}) {
-    $matlab_wrapper = Math::Matlab::Local->new({ cmd => "$cfg{matlab_executable} -nodisplay -nojvm -nosplash", });
-} else {
-    $matlab_wrapper = Math::Matlab::Local->new();
-}
-
 ###############################################################################
 # Main Program
 ###############################################################################
@@ -108,7 +101,7 @@ my @matlab_code = &create_matlab_code;
 
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{cell_mask_errors_file});
 
-&Math::Matlab::Extra::execute_commands($matlab_wrapper, \@matlab_code, $error_file);
+&Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 
 ###############################################################################
 #Functions

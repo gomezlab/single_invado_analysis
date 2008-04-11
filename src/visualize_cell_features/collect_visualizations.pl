@@ -36,13 +36,6 @@ my @needed_vars = qw(data_folder results_folder single_image_folder folder_divid
 my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
 my %cfg = $ad_conf->get_cfg_hash;
 
-my $matlab_wrapper;
-if (defined $cfg{matlab_executable}) {
-    $matlab_wrapper = Math::Matlab::Local->new({ cmd => "$cfg{matlab_executable} -nodisplay -nojvm -nosplash", });
-} else {
-    $matlab_wrapper = Math::Matlab::Local->new();
-}
-
 ###############################################################################
 #Main Program
 ###############################################################################
@@ -81,7 +74,7 @@ foreach (@movie_params) {
     my @matlab_code = "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
     
     my $t1 = new Benchmark;
-    &Math::Matlab::Extra::execute_commands($matlab_wrapper, \@matlab_code, $error_file);
+    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
     my $t2 = new Benchmark;
     print "Movie: $params{movie_path}\n" ,timestr(timediff($t2,$t1),"nop"), "\n" if $opt{debug};
 }

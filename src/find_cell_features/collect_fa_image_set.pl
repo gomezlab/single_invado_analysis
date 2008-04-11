@@ -67,14 +67,13 @@ Documentation last updated: 4/10/2008
 
 use strict;
 use File::Path;
-use Image::ExifTool;
-use Math::Matlab::Local;
-use Getopt::Long;
 use File::Spec::Functions;
+use File::Basename;
+use Image::ExifTool;
+use Getopt::Long;
 
 use lib "../lib";
 use Config::Adhesions;
-use Image::Stack;
 use Math::Matlab::Extra;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
@@ -88,13 +87,6 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg     = $ad_conf->get_cfg_hash;
-
-my $matlab_wrapper;
-if (defined $cfg{matlab_executable}) {
-    $matlab_wrapper = Math::Matlab::Local->new({ cmd => "$cfg{matlab_executable} -nodisplay -nojvm -nosplash", });
-} else {
-    $matlab_wrapper = Math::Matlab::Local->new();
-}
 
 ################################################################################
 # Main Program
@@ -113,7 +105,7 @@ if ($opt{debug}) {
 my @matlab_code = &create_matlab_code;
 
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{adhesion_errors_file});
-&Math::Matlab::Extra::execute_commands($matlab_wrapper, \@matlab_code, $error_file);
+&Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 
 ################################################################################
 #Functions

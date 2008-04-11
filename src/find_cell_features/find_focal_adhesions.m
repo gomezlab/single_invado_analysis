@@ -8,10 +8,14 @@ function [varargout] = find_focal_adhesions(I_file,cell_mask,varargin)
 %   cell mask in file , 'C'
 %
 %   Options:
-%       -filt_size:
-%       -min_intensity:
-%       -output_dir:
-%       -debug:
+%
+%       -filt_size: size of the MATLAB average filter to use, defaults to
+%        23
+%       -min_intensity: threshold used to identify focal adhesions in the
+%        average filtered image, defaults to 0.1
+%       -output_dir: folder used to hold all the results, defaults to the
+%        same folder as the image file, 'I'
+%       -debug: set to 1 to output debugging information, defaults to 0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -33,10 +37,10 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,cell_mask,varargin{:});
 
-%Pull out the 
+%Pull out the parameters specfied on the command line
+debug = i_p.Results.debug;
 filt_size = i_p.Results.filt_size;
 min_intensity = i_p.Results.min_intensity;
-debug = i_p.Results.debug;
 output_dir = i_p.Results.output_dir;
 
 %read in and normalize the input focal adhesion image
@@ -58,10 +62,15 @@ adhesions = zeros(size(focal_image,1),size(focal_image,2));
 adhesions(find(high_passed_image > min_intensity)) = 1;
 adhesions = imfill(adhesions,'holes');
 
+[B,F,T] = otsuThresholding(high_passed_image(find(cell_mask)));
+disp(T)
+adhesions_otsu = im2bw(high_passed_image,T);
+
 adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_image);
 
 %write the results to files
 imwrite(adhesions,fullfile(output_dir, 'adhesions.png'));
+imwrite(adhesions_otsu,fullfile(output_dir, 'adhesions_otsu.png'));
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(output_dir,'raw_data'));
 
 if (nargout > 0)
