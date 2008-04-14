@@ -105,8 +105,8 @@ print "\n\nBuild Movies\n\n" if $opt{debug};
 $t1 = new Benchmark;
 foreach my $f1 (split(/\s/, $cfg{movie_output_folders})) {
     foreach my $f2 (split(/\s/, $cfg{movie_output_prefix})) {
-        my $input_folder = "$cfg{exp_results_folder}/$f1/$f2";
-        system "ffmpeg -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov";
+        my $input_folder = catdir($cfg{exp_results_folder},$f1,$f2);
+        system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov > movie_error.txt 2>&1";
     }
 }
 $t2 = new Benchmark;
