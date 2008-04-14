@@ -56,10 +56,11 @@ Documentation last updated: 4/10/2008
 
 use strict;
 use File::Path;
+use File::Spec::Functions;
+use File::Basename;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
-use File::Spec::Functions;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -115,7 +116,7 @@ foreach (@image_sets) {
 }
 
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{setup_errors_file});
-&Math::Matlab::Extra::execute_commands($matlab_wrapper, \@matlab_code, $error_file);
+&Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 
 ################################################################################
 #Functions
