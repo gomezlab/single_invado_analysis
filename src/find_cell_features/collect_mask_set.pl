@@ -60,10 +60,11 @@ Documentation last updated: 4/10/2008
 
 use strict;
 use File::Path;
+use File::Spec::Functions;
+use File::Basename;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
-use File::Spec::Functions;
 
 use lib "../lib";
 use Config::Adhesions;
