@@ -61,10 +61,12 @@ high_passed_image = focal_image - imfilter(focal_image,I_filt,'same',mean(focal_
 adhesions = zeros(size(focal_image,1),size(focal_image,2));
 adhesions(find(high_passed_image > min_intensity)) = 1;
 adhesions = imfill(adhesions,'holes');
+adhesions = find_in_cell_ads(adhesions,cell_mask);
 
 [B,F,T] = otsuThresholding(high_passed_image(find(cell_mask)));
 disp(T)
 adhesions_otsu = im2bw(high_passed_image,T);
+adhesions_otsu = find_in_cell_ads(adhesions_otsu,cell_mask);
 
 adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_image);
 
@@ -75,6 +77,24 @@ write_adhesion_data(adhesion_properties,'out_dir',fullfile(output_dir,'raw_data'
 
 if (nargout > 0)
     varargout{1} = adhesions;
+end
+
+function filtered_adhesions = find_in_cell_ads(ad,cm)
+    
+    labeled_ad = bwlabel(ad,4);
+    
+    filtered_adhesions = zeros(size(ad,1),size(ad,2));
+    
+    for i = 1:max(labeled_ad(:))
+        this_adhesion = zeros(size(ad,1),size(ad,2));
+        this_adhesion(labeled_ad == i) = 1;
+        overlap = and(this_adhesion,cm);
+        
+        if (sum(overlap(:)))
+            filtered_adhesions(overlap) = 1;
+        end
+    end
+    
 end
 
 end

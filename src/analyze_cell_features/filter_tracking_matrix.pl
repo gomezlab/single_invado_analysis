@@ -53,7 +53,6 @@ sub collect_ad_props {
     
     my @header_line =  @{shift @data};
     
-    #print Dumper(@header_line);
     my %lin_props;
     foreach (@data) {
         my @data_line = @{$_};
@@ -91,7 +90,7 @@ sub filter_tracking_matrix {
             }
         }
     }
-
+    
     return %matrix_set;
 }
 

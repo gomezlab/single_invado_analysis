@@ -315,7 +315,7 @@ sub track_live_adhesions {
         #equal to -1, add another -1 to those lineages to make sure they stay
         #the proper length, then skip to the next lineage
         if ($tracking_mat[$i][$cur_step] <= -1) {
-            push @{ $tracking_mat[$i] }, $tracking_mat[$i][$cur_step];
+            push @{ $tracking_mat[$i] }, -1;
             next;
         }
 

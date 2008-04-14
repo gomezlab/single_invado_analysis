@@ -383,7 +383,8 @@ sub gather_ad_lineage_properties {
     $props{merge}                     = &gather_merge_count;
     $props{All_speeds}                = &gather_adhesion_speeds;
 
-    ($props{average_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
+    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) 
+      = &gather_speed_props($props{All_speeds});
 
     return %props;
 }
@@ -484,14 +485,19 @@ sub gather_adhesion_speeds {
             my $end_ad_num   = $tracking_mat[$i][ $j + 1 ];
 
             if ($start_ad_num > -1 && $end_ad_num > -1) {
-
                 my $start_x = ${ $data_sets{ $data_keys[$j] }{Centroid_x} }[$start_ad_num];
                 my $start_y = ${ $data_sets{ $data_keys[$j] }{Centroid_y} }[$start_ad_num];
 
                 my $end_x = ${ $data_sets{ $data_keys[ $j + 1 ] }{Centroid_x} }[$end_ad_num];
                 my $end_y = ${ $data_sets{ $data_keys[ $j + 1 ] }{Centroid_y} }[$end_ad_num];
+                
+                my $speed = sqrt(($start_x - $end_x)**2 + ($start_y - $end_y)**2);
+                
+                if ($speed > 10) {
+                    #print $i, ",";
+                }
 
-                push @{ $speed[$i] }, sqrt(($start_x - $end_x)**2 + ($start_y - $end_y)**2);
+                push @{ $speed[$i] }, $speed;
             } else {
                 push @{ $speed[$i] }, "NaN";
             }
@@ -505,22 +511,30 @@ sub gather_speed_props {
     my @speed = @{ $_[0] };
 
     my @av_speeds;
+    my @var_speeds;
     my @max_speeds;
+
     for my $i (0 .. $#speed) {
         my $stat = Statistics::Descriptive::Full->new();
-        for my $j (0 .. $#{ $speed[$i] }) {
-            $stat->add_data($speed[$i][$j]) if ($speed[$i][$j] ne "NaN");
-        }
+        
+        my @these_speeds = grep $_ ne "NaN", @{$speed[$i]};
 
+        $stat->add_data(@these_speeds) if (scalar(@these_speeds) != 0);
+        
         if ($stat->count() > 0) {
             push @av_speeds,  $stat->mean();
+            push @var_speeds, $stat->variance();
             push @max_speeds, $stat->max();
         } else {
             push @av_speeds,  "NaN";
+            push @var_speeds, "NaN";
             push @max_speeds, "NaN";
         }
     }
-    return \@av_speeds, \@max_speeds;
+    my $stat = Statistics::Descriptive::Full->new();
+    $stat->add_data(grep $_ ne "NaN", @av_speeds);
+    #print $stat->max();
+    return \@av_speeds, \@var_speeds, \@max_speeds;
 }
 
 sub gather_merge_count {
