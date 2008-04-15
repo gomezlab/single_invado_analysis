@@ -73,3 +73,6 @@ adhesion_props(1).Centroid_dist_from_edge = Centroid_dist_from_edge;
 adhesion_props(1).Centroid_dist_from_center = Centroid_dist_from_center;
 adhesion_props(1).Angle_to_center = Angle_to_center;
 adhesion_props(1).Cell_size = sum(cell_mask(:));
+
+adhesion_props(1).Class = kmeans([Centroid_dist_from_edge;Centroid_dist_from_center]',2);
+adhesion_props(1).Class = adhesion_props(1).Class';

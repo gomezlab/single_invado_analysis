@@ -1,4 +1,6 @@
 function make_movie_frames(cfg_file,varargin)
+%MAKE_MOVIE_FRAMES    
+%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -108,6 +110,8 @@ for i = 1:i_count
     highlighted_time = highlighted_all;
     search_ascending = 1;
     
+    any_highlights = 0;
+    
     for j = 1:size(tracking_seqs,1)
         
         if (debug && j > 100); continue; end
@@ -116,6 +120,8 @@ for i = 1:i_count
             live_adhesion_to_color_map(j) = 0;
             continue;
         end
+        
+        any_highlights = 1;
         
         this_adhesion = zeros(i_size(1),i_size(2));
         this_adhesion(ad_label == tracking_seqs(j,i_seen)) = 1;
@@ -184,6 +190,8 @@ for i = 1:i_count
     edge_image_ad_bounded = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
     
     spacer = 0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3);
+    
+    if (not(any_highlights)); continue; end
     
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
