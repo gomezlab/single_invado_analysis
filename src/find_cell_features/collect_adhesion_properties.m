@@ -76,3 +76,13 @@ adhesion_props(1).Cell_size = sum(cell_mask(:));
 
 adhesion_props(1).Class = kmeans([Centroid_dist_from_edge;Centroid_dist_from_center]',2);
 adhesion_props(1).Class = adhesion_props(1).Class';
+
+min_dist_index = find([adhesion_props(1).Centroid_dist_from_center] == max(adhesion_props(1).Centroid_dist_from_center));
+
+if (adhesion_props(1).Class(min_dist_index(1)) == 2)
+    temp = adhesion_props(1).Class;
+    hold = adhesion_props(1).Class;
+    temp(find(hold == 2)) = 1;
+    temp(find(hold == 1)) = 2;
+    adhesion_props(1).Class = temp;
+end

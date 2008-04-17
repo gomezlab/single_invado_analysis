@@ -64,11 +64,21 @@ adhesions = imfill(adhesions,'holes');
 adhesions = find_in_cell_ads(adhesions,cell_mask);
 
 [B,F,T] = otsuThresholding(high_passed_image(find(cell_mask)));
-disp(T)
 adhesions_otsu = im2bw(high_passed_image,T);
 adhesions_otsu = find_in_cell_ads(adhesions_otsu,cell_mask);
 
 adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_image);
+
+class_1_ind = find([adhesion_properties.Class] == 1);
+class_2_ind = find([adhesion_properties.Class] == 2);
+h = plot(adhesion_properties(1).Centroid_dist_from_center(class_1_ind),adhesion_properties(1).Centroid_dist_from_edge(class_1_ind),'go');
+hold on;
+xlabel('Dist from Center');
+xlabel('Dist from Edge');
+plot(adhesion_properties(1).Centroid_dist_from_center(class_2_ind),adhesion_properties(1).Centroid_dist_from_edge(class_2_ind),'ro');
+hold off;
+saveas(h,fullfile(output_dir, 'class_plot.png'));
+close all;
 
 %write the results to files
 imwrite(adhesions,fullfile(output_dir, 'adhesions.png'));
