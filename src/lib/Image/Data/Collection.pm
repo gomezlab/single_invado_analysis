@@ -75,6 +75,7 @@ sub gather_data_sets {
             }
         }
     }
+    
 
     die "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
     
@@ -159,8 +160,10 @@ sub check_PixelIdxList_lengths {
 
     my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
     
-    if (   not defined $data_sets{$first_key}{Area}
-        || not defined $data_sets{$first_key}{PixelIdxList}) {
+
+
+    if (   not(exists $data_sets{$first_key}{"Area"})
+        || not(exists $data_sets{$first_key}{"PixelIdxList"})) {
         return 1;
     }
 

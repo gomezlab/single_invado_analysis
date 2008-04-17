@@ -52,6 +52,7 @@ my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 %data_sets = &convert_data_to_units(\%data_sets, \%cfg);
 
+
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
@@ -95,7 +96,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif (grep $data_type eq $_, qw(Average_adhesion_signal Variance_adhesion_signal PixelIdxList)) {
+            } elsif (grep $data_type eq $_, qw(Average_adhesion_signal Variance_adhesion_signal Class)) {
 
                 #This is the arbitrary units place, don't do any unit
                 #conversion
@@ -235,7 +236,7 @@ sub gather_single_ad_props {
     my @data;
 
     my @data_types =
-      qw(Area Average_adhesion_signal Centroid_dist_from_edge Centroid_dist_from_center Variance_adhesion_signal);
+      qw(Area Average_adhesion_signal Centroid_dist_from_edge Centroid_dist_from_center Class Variance_adhesion_signal);
 
     my @first_line = qw(I_num ad_num);
     push @first_line, @data_types;
@@ -245,7 +246,6 @@ sub gather_single_ad_props {
     my %i_num_to_col = map { $i_num_list[$_] => $_ } (0 .. $#i_num_list);
 
     foreach my $i_num (sort keys %data_sets) {
-
         my $col                = $i_num_to_col{$i_num};
         my @ad_nums_to_include = map {
             if ($tracking_mat[$_][$col] >= 0) {
@@ -320,6 +320,15 @@ sub build_single_ad_plots {
             pdf_para  => $pdf_default,
         },
         {
+            xy        => "adhesions\$Centroid_dist_from_edge,adhesions\$Centroid_dist_from_center",
+            main      => "",
+            xlab      => "expression(paste('Distance from Edge (', mu, 'm)'))",
+            ylab      => "expression(paste('Distance from Center (', mu, 'm)'))",
+            file_name => "center_dist_vs_edge_dist.pdf",
+            plot_para => $xy_default,
+            pdf_para  => $pdf_default,
+        },
+        {
             xy        => "adhesions\$Area,adhesions\$Centroid_dist_from_edge",
             main      => "",
             xlab      => "expression(paste('Area (', mu, m^2, ')'))",
@@ -372,6 +381,8 @@ sub build_single_ad_plots {
 sub gather_ad_lineage_properties {
     my %props;
     $props{longevities}               = &gather_longevities;
+    $props{Class}                     = &gather_prop_seq("Class");
+    $props{ad_region_shift}           = &gather_class_transition($props{"Class"});
     $props{Area}                      = &gather_prop_seq("Area");
     $props{largest_areas}             = &gather_largest_areas($props{Area});
     $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
@@ -411,9 +422,11 @@ sub gather_prop_seq {
     for my $i (0 .. $#tracking_mat) {
         for my $j (0 .. $#{ $tracking_mat[$i] }) {
             my $ad_num = $tracking_mat[$i][$j];
-
-            push @{ $prop_vals[$i] }, $default_val if ($ad_num <= -1);
-            next if ($ad_num <= -1);
+            
+            if ($ad_num <= -1) {
+                push @{ $prop_vals[$i] }, $default_val;
+                next;
+            }
 
             my $i_num = $data_keys[$j];
             if (not defined ${ $data_sets{$i_num}{$prop} }[$ad_num]) {
@@ -425,6 +438,33 @@ sub gather_prop_seq {
         }
     }
     return \@prop_vals;
+}
+
+sub gather_class_transition {
+    my @classes = @{$_[0]};
+
+    my $same_class = 0;
+    my $tran = 0;
+    my $one = 0;
+    my $max = 0;
+
+    for my $i (0 .. $#classes) {
+        my @class_labels = grep $_ ne "NaN", @{$classes[$i]};
+        $one++ if (scalar(@class_labels) == 1);
+        my $first = $class_labels[0];
+        my $not_diff = 1;
+        foreach (@class_labels) {
+            if ($first != $_) {
+                $tran++;
+                $not_diff = 0;
+                last;
+            }
+        }
+        die if (scalar(@class_labels) == 1 && not($not_diff));
+        $same_class++ if ($not_diff);
+        $max = scalar(@class_labels) if (scalar(@class_labels) > $max);
+    }
+    #die $same_class-$one, " ", $tran,"\n","Max Length: $max";
 }
 
 sub gather_largest_areas {
@@ -493,7 +533,7 @@ sub gather_adhesion_speeds {
                 
                 my $speed = sqrt(($start_x - $end_x)**2 + ($start_y - $end_y)**2);
                 
-                if ($speed > 10) {
+                if ($speed > 5) {
                     #print $i, ",";
                 }
 
@@ -517,9 +557,9 @@ sub gather_speed_props {
     for my $i (0 .. $#speed) {
         my $stat = Statistics::Descriptive::Full->new();
         
-        my @these_speeds = grep $_ ne "NaN", @{$speed[$i]};
+        my @ad_speeds = grep $_ ne "NaN", @{$speed[$i]};
 
-        $stat->add_data(@these_speeds) if (scalar(@these_speeds) != 0);
+        $stat->add_data(@ad_speeds) if (scalar(@ad_speeds) != 0);
         
         if ($stat->count() > 0) {
             push @av_speeds,  $stat->mean();
@@ -533,7 +573,7 @@ sub gather_speed_props {
     }
     my $stat = Statistics::Descriptive::Full->new();
     $stat->add_data(grep $_ ne "NaN", @av_speeds);
-    #print $stat->max();
+    #print "$cfg{exp_name}:", $stat->mean()*60,"\n";
     return \@av_speeds, \@var_speeds, \@max_speeds;
 }
 
@@ -584,7 +624,7 @@ sub output_adhesion_lineage_props {
     &output_mat_csv(\@all_data, $output_file);
 
     my @single_output_props =
-      qw(All_speeds Area Centroid_dist_from_edge Centroid_dist_from_center Average_adhesion_signal);
+      qw(All_speeds Area Centroid_dist_from_edge Centroid_dist_from_center Average_adhesion_signal Class);
     foreach (@single_output_props) {
         my $output_file =
           catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}, $_ . ".csv");

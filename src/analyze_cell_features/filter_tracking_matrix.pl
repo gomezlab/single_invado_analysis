@@ -90,7 +90,10 @@ sub filter_tracking_matrix {
             }
         }
     }
-    
+  
+    #ad-hoc line to pick out specific lineages
+    #@{$matrix_set{'special'}{'high_speed'}} = map $tracking_mat[$_], (146,262,516);
+
     return %matrix_set;
 }
 

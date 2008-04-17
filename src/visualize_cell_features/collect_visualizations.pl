@@ -40,7 +40,7 @@ my %cfg = $ad_conf->get_cfg_hash;
 #Main Program
 ###############################################################################
 
-my $movie_debug_string = ",'debug',1" if $opt{movie_debug};
+my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
 
 my @movie_folders = split(/\s/, $cfg{movie_output_folders});
 
@@ -50,13 +50,16 @@ my @movie_params = (
     {
         tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'longevity', '5.csv'),
         movie_path    => $movie_folders[1],
-        config_file => catfile($cfg{exp_results_folder}, $movie_folders[1], $cfg{vis_config_file}),
     },
     {
         tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'dead', 'dead.csv'),
         movie_path    => $movie_folders[2],
-        config_file => catfile($cfg{exp_results_folder}, $movie_folders[2], $cfg{vis_config_file}),
-    }
+    },
+#    {
+#        tracking_file =>
+#          catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'special', 'high_speed.csv'),
+#        movie_path  => 'movies/special',
+#    },
 );
 
 my @matlab_code;
@@ -72,11 +75,11 @@ foreach (@movie_params) {
     &write_matlab_config(%params);
     my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
     my @matlab_code = "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
-    
+
     my $t1 = new Benchmark;
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
     my $t2 = new Benchmark;
-    print "Movie: $params{movie_path}\n" ,timestr(timediff($t2,$t1),"nop"), "\n" if $opt{debug};
+    print "Movie: $params{movie_path}\n", timestr(timediff($t2, $t1), "nop"), "\n" if $opt{debug};
 }
 
 ###############################################################################
