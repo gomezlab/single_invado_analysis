@@ -52,7 +52,6 @@ my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 %data_sets = &convert_data_to_units(\%data_sets, \%cfg);
 
-
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
@@ -382,7 +381,7 @@ sub gather_ad_lineage_properties {
     my %props;
     $props{longevities}               = &gather_longevities;
     $props{Class}                     = &gather_prop_seq("Class");
-    $props{ad_region_shift}           = &gather_class_transition($props{"Class"});
+    $props{overall_class}             = &gather_overall_class($props{"Class"});
     $props{Area}                      = &gather_prop_seq("Area");
     $props{largest_areas}             = &gather_largest_areas($props{Area});
     $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
@@ -394,8 +393,7 @@ sub gather_ad_lineage_properties {
     $props{merge}                     = &gather_merge_count;
     $props{All_speeds}                = &gather_adhesion_speeds;
 
-    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) 
-      = &gather_speed_props($props{All_speeds});
+    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
 
     return %props;
 }
@@ -422,7 +420,7 @@ sub gather_prop_seq {
     for my $i (0 .. $#tracking_mat) {
         for my $j (0 .. $#{ $tracking_mat[$i] }) {
             my $ad_num = $tracking_mat[$i][$j];
-            
+
             if ($ad_num <= -1) {
                 push @{ $prop_vals[$i] }, $default_val;
                 next;
@@ -440,31 +438,20 @@ sub gather_prop_seq {
     return \@prop_vals;
 }
 
-sub gather_class_transition {
-    my @classes = @{$_[0]};
+sub gather_overall_class {
+    my @classes = @{ $_[0] };
 
-    my $same_class = 0;
-    my $tran = 0;
-    my $one = 0;
-    my $max = 0;
+    my @overall_class;
 
     for my $i (0 .. $#classes) {
-        my @class_labels = grep $_ ne "NaN", @{$classes[$i]};
-        $one++ if (scalar(@class_labels) == 1);
-        my $first = $class_labels[0];
-        my $not_diff = 1;
-        foreach (@class_labels) {
-            if ($first != $_) {
-                $tran++;
-                $not_diff = 0;
-                last;
-            }
+        my @class_labels = grep $_ ne "NaN", @{ $classes[$i] };
+        if (grep $_ != $class_labels[0], @class_labels) {
+            push @overall_class, "NaN";
+        } else {
+            push @overall_class, $class_labels[0];
         }
-        die if (scalar(@class_labels) == 1 && not($not_diff));
-        $same_class++ if ($not_diff);
-        $max = scalar(@class_labels) if (scalar(@class_labels) > $max);
     }
-    #die $same_class-$one, " ", $tran,"\n","Max Length: $max";
+    return \@overall_class;
 }
 
 sub gather_largest_areas {
@@ -530,10 +517,11 @@ sub gather_adhesion_speeds {
 
                 my $end_x = ${ $data_sets{ $data_keys[ $j + 1 ] }{Centroid_x} }[$end_ad_num];
                 my $end_y = ${ $data_sets{ $data_keys[ $j + 1 ] }{Centroid_y} }[$end_ad_num];
-                
+
                 my $speed = sqrt(($start_x - $end_x)**2 + ($start_y - $end_y)**2);
-                
+
                 if ($speed > 5) {
+
                     #print $i, ",";
                 }
 
@@ -556,11 +544,11 @@ sub gather_speed_props {
 
     for my $i (0 .. $#speed) {
         my $stat = Statistics::Descriptive::Full->new();
-        
-        my @ad_speeds = grep $_ ne "NaN", @{$speed[$i]};
+
+        my @ad_speeds = grep $_ ne "NaN", @{ $speed[$i] };
 
         $stat->add_data(@ad_speeds) if (scalar(@ad_speeds) != 0);
-        
+
         if ($stat->count() > 0) {
             push @av_speeds,  $stat->mean();
             push @var_speeds, $stat->variance();
@@ -573,6 +561,7 @@ sub gather_speed_props {
     }
     my $stat = Statistics::Descriptive::Full->new();
     $stat->add_data(grep $_ ne "NaN", @av_speeds);
+
     #print "$cfg{exp_name}:", $stat->mean()*60,"\n";
     return \@av_speeds, \@var_speeds, \@max_speeds;
 }
@@ -600,25 +589,27 @@ sub output_adhesion_lineage_props {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}));
     }
 
-    my @longevities           = @{ $ad_lineage_props{longevities} };
-    my @largest_areas         = @{ $ad_lineage_props{largest_areas} };
-    my @starting_edge_dists   = @{ $ad_lineage_props{starting_edge_dist} };
-    my @starting_center_dists = @{ $ad_lineage_props{starting_center_dist} };
-    my @merge_counts          = @{ $ad_lineage_props{merge} };
-    my @average_speeds        = @{ $ad_lineage_props{average_speeds} };
-    my @max_speeds            = @{ $ad_lineage_props{max_speeds} };
-    my @ad_sig                = @{ $ad_lineage_props{ad_sig} };
+    my @longevities           = ("longevity",          @{ $ad_lineage_props{longevities} });
+    my @largest_areas         = ("largest_area",       @{ $ad_lineage_props{largest_areas} });
+    my @starting_edge_dists   = ("s_dist_from_edge",   @{ $ad_lineage_props{starting_edge_dist} });
+    my @starting_center_dists = ("s_dist_from_center", @{ $ad_lineage_props{starting_center_dist} });
+    my @merge_counts          = ("merge_count",        @{ $ad_lineage_props{merge} });
+    my @average_speeds        = ("speed",              @{ $ad_lineage_props{average_speeds} });
+    my @max_speeds            = ("max_speed",          @{ $ad_lineage_props{max_speeds} });
+    my @ad_sig                = ("ad_sig",             @{ $ad_lineage_props{ad_sig} });
+    my @overall_class         = ("class",              @{ $ad_lineage_props{overall_class} });
 
     my @all_data =
       map {
         [
-            $longevities[$_],           $largest_areas[$_],  $starting_edge_dists[$_],
-            $starting_center_dists[$_], $average_speeds[$_], $max_speeds[$_],
-            $ad_sig[$_]
+            $longevities[$_],           $largest_areas[$_], $starting_edge_dists[$_],
+            $starting_center_dists[$_], $merge_counts[$_],  $average_speeds[$_],
+            $max_speeds[$_],            $ad_sig[$_],        $overall_class[$_],
         ]
       } (0 .. $#longevities);
 
-    unshift @all_data, [qw(longevity largest_area s_dist_from_edge s_dist_from_center speed max_speed ad_sig)];
+    #unshift @all_data,
+    #  [qw(longevity largest_area s_dist_from_edge s_dist_from_center merge_count speed max_speed ad_sig class_change)];
 
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
     &output_mat_csv(\@all_data, $output_file);

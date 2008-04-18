@@ -9,7 +9,7 @@ use File::Spec::Functions;
 use Cwd 'abs_path';
 use Getopt::Long;
 
-use lib "lib";
+use lib "../lib";
 use Config::Adhesions;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
@@ -18,16 +18,15 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug");
 
-die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
-die "Can't find program to execute on the command line" if not exists $opt{program};
+die "Can't find cfg file ($opt{cfg}) specified on the command line" if not(exists $opt{cfg});
+die "Can't find program to execute on the command line" if not(exists $opt{program});
 
 print "Collecting Configuration\n" if $opt{debug};
 
 my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
-
 
 ###############################################################################
 #Main Program
@@ -45,5 +44,9 @@ my @exp = <$cfg{data_folder}/*/*$cfg_suffix>;
 
 foreach (@exp) {
     next if /config\/default/; 
-    system("./$program_base -cfg $_ $debug_string");
+    if ($opt{run_all_debug}) {
+        print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
+    } else {
+        system("./$program_base -cfg $_ $debug_string $opt{extra}");
+    }
 }
