@@ -52,7 +52,7 @@ my @movie_params = (
         movie_path    => $movie_folders[1],
     },
     {
-        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'dead', 'dead.csv'),
+        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'dead', 'all.csv'),
         movie_path    => $movie_folders[2],
     },
     {
