@@ -74,9 +74,12 @@ class_2_ind = find([adhesion_properties.Class] == 2);
 h = plot(adhesion_properties(1).Centroid_dist_from_center(class_1_ind),adhesion_properties(1).Centroid_dist_from_edge(class_1_ind),'go');
 hold on;
 xlabel('Dist from Center');
-xlabel('Dist from Edge');
+ylabel('Dist from Edge');
 plot(adhesion_properties(1).Centroid_dist_from_center(class_2_ind),adhesion_properties(1).Centroid_dist_from_edge(class_2_ind),'ro');
+plot(mean(adhesion_properties(1).Centroid_dist_from_center(class_2_ind)),mean(adhesion_properties(1).Centroid_dist_from_edge(class_2_ind)),'k+','MarkerSize',20,'LineWidth',4);
+plot(mean(adhesion_properties(1).Centroid_dist_from_center(class_1_ind)),mean(adhesion_properties(1).Centroid_dist_from_edge(class_1_ind)),'k+','MarkerSize',20,'LineWidth',4);
 hold off;
+saveas(h,fullfile(output_dir, 'class_plot.pdf'));
 saveas(h,fullfile(output_dir, 'class_plot.png'));
 close all;
 
