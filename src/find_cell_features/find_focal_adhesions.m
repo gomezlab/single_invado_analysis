@@ -71,17 +71,28 @@ adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_imag
 
 class_1_ind = find([adhesion_properties.Class] == 1);
 class_2_ind = find([adhesion_properties.Class] == 2);
-h = plot(adhesion_properties(1).Centroid_dist_from_center(class_1_ind),adhesion_properties(1).Centroid_dist_from_edge(class_1_ind),'go');
+h = plot(adhesion_properties(1).Centroid_dist_from_center(class_1_ind),adhesion_properties(1).Centroid_dist_from_edge(class_1_ind),'ro');
 hold on;
-xlabel('Dist from Center');
-ylabel('Dist from Edge');
-plot(adhesion_properties(1).Centroid_dist_from_center(class_2_ind),adhesion_properties(1).Centroid_dist_from_edge(class_2_ind),'ro');
+xlabel('Distance from Center (pixels)','FontSize',16);
+ylabel('Distance from Edge (pixels)','FontSize',16);
+plot(adhesion_properties(1).Centroid_dist_from_center(class_2_ind),adhesion_properties(1).Centroid_dist_from_edge(class_2_ind),'go');
 plot(mean(adhesion_properties(1).Centroid_dist_from_center(class_2_ind)),mean(adhesion_properties(1).Centroid_dist_from_edge(class_2_ind)),'k+','MarkerSize',20,'LineWidth',4);
 plot(mean(adhesion_properties(1).Centroid_dist_from_center(class_1_ind)),mean(adhesion_properties(1).Centroid_dist_from_edge(class_1_ind)),'k+','MarkerSize',20,'LineWidth',4);
 hold off;
 saveas(h,fullfile(output_dir, 'class_plot.pdf'));
 saveas(h,fullfile(output_dir, 'class_plot.png'));
 close all;
+
+labeled_ad = bwlabel(adhesions,4);
+class_highlight = focal_image;
+
+for i = 1:max(labeled_ad(:))
+    this_ad = zeros(size(labeled_ad,1),size(labeled_ad,2));
+    this_ad(find(labeled_ad == i)) = 1;
+    this_ad = bwperim(this_ad);
+    class_highlight = create_highlighted_image(class_highlight,this_ad,'color',adhesion_properties(1).Class(i));
+end
+imwrite(class_highlight,fullfile(output_dir, 'ad_class.png'));
 
 %write the results to files
 imwrite(adhesions,fullfile(output_dir, 'adhesions.png'));

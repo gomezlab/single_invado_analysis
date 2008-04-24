@@ -93,6 +93,8 @@ my @image_files = <$cfg{individual_results_folder}/*/$cfg{cell_mask_file}>;
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
         print "Cell mask files found: $image_files[0] - $image_files[$#image_files]\n";
+    } elsif ( scalar(@image_files) == 0) {
+        die "Couldn't find any cell mask files in $cfg{individual_results_folder} subfolders\n\n";
     } else {
         print "Cell mask file found: $image_files[0]\n";
     }

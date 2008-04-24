@@ -94,7 +94,6 @@ if (defined $cfg{matlab_executable}) {
 mkpath($cfg{individual_results_folder});
 
 my @image_sets = ([qw(cell_mask_image_prefix cell_mask_file)], [qw(adhesion_image_prefix adhesion_image_file)]);
-
 my @matlab_code;
 
 foreach (@image_sets) {
@@ -102,10 +101,13 @@ foreach (@image_sets) {
     my $out_file = $cfg{ $_->[1] };
 
     my @image_files = <$cfg{exp_data_folder}/$prefix*>;
-
+    
     if ($opt{debug}) {
         if (scalar(@image_files) > 1) {
             print "Image files found: $image_files[0] - $image_files[$#image_files]\n";
+        } elsif (scalar(@image_files) == 0) {
+            print "No image files found matching $cfg{exp_data_folder}/$prefix, moving onto next image set.\n";
+            next;
         } else {
             print "Image file found: $image_files[0]\n";
         }
@@ -178,6 +180,7 @@ sub create_matlab_code_single {
 
     foreach my $file_name (@image_files) {
         my $i_num;
+        $prefix =~ s/\'//g;
         if ($file_name =~ /$prefix(\d+)\./) {
             $i_num = $1;
         } else {
