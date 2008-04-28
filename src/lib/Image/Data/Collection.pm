@@ -55,11 +55,15 @@ sub gather_data_sets {
 
         foreach my $file (@data_files) {
             my @file_matches = <$this_folder/$file.*>;
+            
             if (scalar(@file_matches) > 1) {
                 warn(
                     "Multiple data files for file name: $file\nFound in folder: $this_folder\nExtracting data from only the first file: $file_matches[0]\n\n"
                 );
             }
+
+            next if (scalar(@file_matches) == 0);
+            
             if (-e "$file_matches[0]" && -f "$file_matches[0]" && -r "$file_matches[0]") {
                 @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$file_matches[0]");
                 if ($file eq "Centroid") {
@@ -70,8 +74,6 @@ sub gather_data_sets {
                     
                     delete $data_sets{$i_num}{$file};
                 }
-            } else {
-                warn("ERROR: Problem finding data file ($file) in folder: $this_folder.\n");
             }
         }
     }
@@ -81,11 +83,6 @@ sub gather_data_sets {
     
     &check_data_set_lengths(\%data_sets);
     &check_PixelIdxList_lengths(\%data_sets);
-
-    if ($opt{debug}) {
-        print "Data collected from ", $image_count, " images. ", "Data files gathered for each image include: ",
-          join(", ", @data_files), "\n";
-    }
 
     return %data_sets;
 }

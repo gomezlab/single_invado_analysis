@@ -1,4 +1,4 @@
-function [varargout] = find_focal_adhesions(I_file,cell_mask,varargin)
+function [varargout] = find_focal_adhesions(I_file,varargin)
 % FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
@@ -28,14 +28,19 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 
 i_p.parse(I_file);
 
-i_p.addRequired('cell_mask',@(x)exist(x,'file') == 2);
-
+i_p.addParamValue('cell_mask',0,@(x)exist(x,'file') == 2);
 i_p.addParamValue('filt_size',23,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('min_intensity',0.1,@isnumeric);
 i_p.addParamValue('output_dir',fileparts(I_file),@(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_file,cell_mask,varargin{:});
+i_p.parse(I_file,varargin{:});
+
+%read in the cell mask image if defined in parameter set
+if (not(i_p.Results.cell_mask))
+else
+    cell_mask = imread(i_p.Results.cell_mask);
+end 
 
 %Pull out the parameters specfied on the command line
 debug = i_p.Results.debug;
@@ -48,9 +53,6 @@ focal_image  = imread(I_file);
 scale_factor = double(intmax(class(focal_image)));
 focal_image  = double(focal_image)/scale_factor;
 
-%read in the cell mask image
-cell_mask = imread(cell_mask);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,49 +61,36 @@ I_filt = fspecial('average',filt_size);
 high_passed_image = focal_image - imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 
 adhesions = zeros(size(focal_image,1),size(focal_image,2));
-adhesions(find(high_passed_image > min_intensity)) = 1;
+adhesions(high_passed_image > min_intensity) = 1;
 adhesions = imfill(adhesions,'holes');
-adhesions = find_in_cell_ads(adhesions,cell_mask);
-
-[B,F,T] = otsuThresholding(high_passed_image(find(cell_mask)));
-adhesions_otsu = im2bw(high_passed_image,T);
-adhesions_otsu = find_in_cell_ads(adhesions_otsu,cell_mask);
-
-adhesion_properties = collect_adhesion_properties(adhesions,cell_mask,focal_image);
-
-class_1_ind = find([adhesion_properties.Class] == 1);
-class_2_ind = find([adhesion_properties.Class] == 2);
-h = plot(adhesion_properties(1).Centroid_dist_from_center(class_1_ind),adhesion_properties(1).Centroid_dist_from_edge(class_1_ind),'ro');
-hold on;
-xlabel('Distance from Center (pixels)','FontSize',16);
-ylabel('Distance from Edge (pixels)','FontSize',16);
-plot(adhesion_properties(1).Centroid_dist_from_center(class_2_ind),adhesion_properties(1).Centroid_dist_from_edge(class_2_ind),'go');
-plot(mean(adhesion_properties(1).Centroid_dist_from_center(class_2_ind)),mean(adhesion_properties(1).Centroid_dist_from_edge(class_2_ind)),'k+','MarkerSize',20,'LineWidth',4);
-plot(mean(adhesion_properties(1).Centroid_dist_from_center(class_1_ind)),mean(adhesion_properties(1).Centroid_dist_from_edge(class_1_ind)),'k+','MarkerSize',20,'LineWidth',4);
-hold off;
-saveas(h,fullfile(output_dir, 'class_plot.pdf'));
-saveas(h,fullfile(output_dir, 'class_plot.png'));
-close all;
-
-labeled_ad = bwlabel(adhesions,4);
-class_highlight = focal_image;
-
-for i = 1:max(labeled_ad(:))
-    this_ad = zeros(size(labeled_ad,1),size(labeled_ad,2));
-    this_ad(find(labeled_ad == i)) = 1;
-    this_ad = bwperim(this_ad);
-    class_highlight = create_highlighted_image(class_highlight,this_ad,'color',adhesion_properties(1).Class(i));
+if (exist('cell_mask','var'))
+    adhesions = find_in_cell_ads(adhesions,cell_mask);
 end
-imwrite(class_highlight,fullfile(output_dir, 'ad_class.png'));
 
+if (exist('cell_mask','var'))
+    [B,F,T] = otsuThresholding(high_passed_image(cell_mask));
+    adhesions_otsu = im2bw(high_passed_image,T);
+    adhesions_otsu = find_in_cell_ads(adhesions_otsu,cell_mask);
+    imwrite(adhesions_otsu,fullfile(output_dir, 'adhesions_otsu.png'));
+end
+
+if (exist('cell_mask','var'))
+    adhesion_properties = collect_adhesion_properties(adhesions,focal_image,'cell_mask',cell_mask);
+else
+    adhesion_properties = collect_adhesion_properties(adhesions,focal_image);
+end
+    
 %write the results to files
 imwrite(adhesions,fullfile(output_dir, 'adhesions.png'));
-imwrite(adhesions_otsu,fullfile(output_dir, 'adhesions_otsu.png'));
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(output_dir,'raw_data'));
 
 if (nargout > 0)
     varargout{1} = adhesions;
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function filtered_adhesions = find_in_cell_ads(ad,cm)
     
@@ -119,6 +108,102 @@ function filtered_adhesions = find_in_cell_ads(ad,cm)
         end
     end
     
+end
+
+
+function adhesion_props = collect_adhesion_properties(ad_I,orig_I,varargin)
+% COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
+%                                properties are collected concerning the
+%                                morphology and physical properties of the
+%                                adhesions
+%
+%   ad_p = collect_adhesion_properties(ad_I,c_m,orig_I) collects the
+%   properties of the adhesions identified in the binary image 'ad_I',
+%   using the cell mask in 'c_m' and the original focal image data in
+%   'orig_I', returning a structure 'ad_p' containing properties
+%
+%   Properties Collected:
+%       -all of the properties collected by regioprops(...,'all')
+%       -the distance of each adhesion's centroid from the nearest cell
+%        edge
+%       -the average and variance of the normalized fluorescence signal
+%        within each adhesion
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+i_p = inputParser;
+i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
+
+i_p.addRequired('ad_I',@(x)isnumeric(x) || islogical(x));
+i_p.addRequired('orig_I',@isnumeric);
+
+i_p.addParamValue('cell_mask',0,@(x)isnumeric(x) || islogical(x));
+
+i_p.parse(ad_I,orig_I,varargin{:});
+
+%read in the cell mask image if defined in parameter set
+if (not(i_p.Results.cell_mask))
+else
+    cell_mask = i_p.Results.cell_mask;
+end 
+
+labeled_adhesions = bwlabel(ad_I,4);
+adhesion_props = regionprops(labeled_adhesions,'all');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Average_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
+Variance_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
+
+for i=1:max(labeled_adhesions(:))
+    Average_adhesion_signal(i) = mean(orig_I(labeled_adhesions == i));
+    Variance_adhesion_signal(i) = var(orig_I(labeled_adhesions == i));
+end
+
+adhesion_props(1).Average_adhesion_signal = Average_adhesion_signal;
+adhesion_props(1).Variance_adhesion_signal = Variance_adhesion_signal;
+
+if (exist('cell_mask','var'))
+    dists = bwdist(~cell_mask);
+    cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
+    cell_centroid = cell_centroid.Centroid;
+
+    Centroid_dist_from_edge = zeros(1,max(labeled_adhesions(:)));
+    Centroid_dist_from_center = zeros(1,max(labeled_adhesions(:)));
+    Angle_to_center = zeros(1,max(labeled_adhesions(:)));
+
+    for i=1:max(labeled_adhesions(:))
+        Average_adhesion_signal(i) = mean(orig_I(labeled_adhesions == i));
+        Variance_adhesion_signal(i) = var(orig_I(labeled_adhesions == i));
+
+        centroid_pos = round(adhesion_props(i).Centroid);
+        centroid_unrounded = adhesion_props(i).Centroid;
+        if(size(centroid_pos,1) == 0)
+            warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
+            adhesion_props(i).Centroid_dist_from_edge = NaN;
+        else
+            Centroid_dist_from_edge(i) = dists(centroid_pos(2),centroid_pos(1));
+
+            Centroid_dist_from_center(i) = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
+            Angle_to_center(i) = acos((centroid_unrounded(2) - cell_centroid(2))/Centroid_dist_from_center(i));
+            if (centroid_pos(2) - cell_centroid(2) < 0)
+                Angle_to_center(i) = Angle_to_center(i) + pi;
+            end
+        end
+
+    end
+
+    adhesion_props(1).Centroid_dist_from_edge = Centroid_dist_from_edge;
+    adhesion_props(1).Centroid_dist_from_center = Centroid_dist_from_center;
+    adhesion_props(1).Angle_to_center = Angle_to_center;
+    adhesion_props(1).Cell_size = sum(cell_mask(:));
+end
+
 end
 
 end

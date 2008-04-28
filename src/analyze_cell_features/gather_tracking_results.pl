@@ -52,6 +52,7 @@ push @data_files, split(/\s+/, $cfg{lineage_analysis_data_files});
 my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 %data_sets = &convert_data_to_units(\%data_sets, \%cfg);
+my @available_data_types = &gather_data_types;
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
@@ -67,7 +68,6 @@ if (not($opt{skip_pix_props})) {
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 &output_single_adhesion_props;
-&output_single_adhesion_props_density;
 &build_single_ad_plots;
 
 print "\n\nCreating Adhesion Lineage Property Plots\n", if $opt{debug};
@@ -108,6 +108,11 @@ sub convert_data_to_units {
     return %data_sets;
 }
 
+sub gather_data_types {
+    my $first_key = (keys %data_sets)[0];
+    return (keys %{ $data_sets{$first_key} });
+}
+
 ######################################
 #Pixel Value Props
 ######################################
@@ -134,7 +139,9 @@ sub gather_image_value_props {
         $focal_img->read(file => "$focal_image_files[$i]") or die;
 
         my $cell_mask_img = Imager->new;
-        $cell_mask_img->read(file => "$cell_mask_files[$i]") or die;
+        if (scalar(@cell_mask_files) > 0) {
+            $cell_mask_img->read(file => "$cell_mask_files[$i]") or die;
+        }
 
         my @vals;
         my @intra_cellular;
@@ -142,10 +149,17 @@ sub gather_image_value_props {
             my @gray = $focal_img->getsamples(y => $y, type => 'float');
             push @vals, @gray;
 
-            my @cell_mask = $cell_mask_img->getsamples(y => $y);
-            my @in_cell_indexes = grep $cell_mask[$_], (0 .. $#cell_mask);
-            push @intra_cellular, @gray[@in_cell_indexes];
+            my @in_cell_indexes;
+            if (scalar(@cell_mask_files) > 0) {
+                my @cell_mask = $cell_mask_img->getsamples(y => $y);
+                my @in_cell_indexes = grep $cell_mask[$_], (0 .. $#cell_mask);
+                push @intra_cellular, @gray[@in_cell_indexes];
+            } else {
+                push @intra_cellular, @gray;
+            }
+
         }
+
         my $total_stat = Statistics::Descriptive::Full->new();
         $total_stat->add_data(@vals);
 
@@ -235,15 +249,20 @@ sub build_image_props_plots {
 sub gather_single_ad_props {
     my @data;
 
-    my @data_types =
-      qw(Area Average_adhesion_signal Centroid_dist_from_edge Centroid_dist_from_center Class Variance_adhesion_signal);
+    my @possible_data_types =
+      qw(Area Average_adhesion_signal Centroid_dist_from_edge Centroid_dist_from_center Variance_adhesion_signal);
 
-    my @first_line = qw(I_num ad_num);
-    push @first_line, @data_types;
-    push @data,       \@first_line;
+    my @single_ad_data_types = map {
+        my $type = $_;
+        grep $type eq $_, @available_data_types;
+    } @possible_data_types;
 
     my @i_num_list = sort keys %data_sets;
     my %i_num_to_col = map { $i_num_list[$_] => $_ } (0 .. $#i_num_list);
+
+    my @first_line = qw(I_num ad_num);
+    push @first_line, @single_ad_data_types;
+    push @data,       \@first_line;
 
     foreach my $i_num (sort keys %data_sets) {
         my $col                = $i_num_to_col{$i_num};
@@ -254,12 +273,13 @@ sub gather_single_ad_props {
                 ();
             }
         } (0 .. $#tracking_mat);
+
         @ad_nums_to_include = sort { $a <=> $b } @ad_nums_to_include;
 
         foreach my $ad_num (@ad_nums_to_include) {
             my @line = ($i_num, $ad_num);
-            for my $i (0 .. $#data_types) {
-                push @line, $data_sets{$i_num}{ $data_types[$i] }[$ad_num];
+            for my $i (0 .. $#single_ad_data_types) {
+                push @line, $data_sets{$i_num}{ $single_ad_data_types[$i] }[$ad_num];
             }
             push @data, \@line;
         }
@@ -277,28 +297,6 @@ sub output_single_adhesion_props {
     &output_mat_csv(\@single_ad_props, $output_file);
 }
 
-sub output_single_adhesion_props_density {
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'density.csv');
-
-    &collect_density;
-}
-
-sub collect_density {
-    my $box_num = 100;
-
-    my $prop_1 = "Area";
-    my $prop_2 = "Centroid_dist_from_center";
-
-    my $col_num_1 = (grep $single_ad_props[0][$_] eq $prop_1, (0 .. $#{ $single_ad_props[0] }))[0];
-    my $col_num_2 = (grep $single_ad_props[0][$_] eq $prop_2, (0 .. $#{ $single_ad_props[0] }))[0];
-
-    my @prop_1 = map $single_ad_props[$_][$col_num_1], (1 .. $#single_ad_props);
-    my @prop_2 = map $single_ad_props[$_][$col_num_2], (1 .. $#single_ad_props);
-
-    my $stat = Statistics::Descriptive::Full->new();
-    $stat->add_data(@prop_1);
-}
-
 sub build_single_ad_plots {
     my @r_code;
 
@@ -307,9 +305,8 @@ sub build_single_ad_plots {
 
     my $xy_default = "pch=19,cex=0.4";
 
-    #my $xy_default = "pch=19";
-    my $pdf_default = "height=12, width=12, pointsize=24";
-    my @xy_plots    = (
+    my $pdf_default       = "height=12, width=12, pointsize=24";
+    my @possible_xy_plots = (
         {
             xy        => "adhesions\$Area,adhesions\$Average_adhesion_signal",
             main      => "",
@@ -348,6 +345,18 @@ sub build_single_ad_plots {
         },
     );
 
+    my @prop_types = @{ $single_ad_props[0] };
+
+    my @xy_plots;
+    for (@possible_xy_plots) {
+        my %para_set = %{$_};
+        $para_set{xy} =~ /\$(.*),.*\$(.*)/ or die $para_set{xy};
+
+        if ((grep $1 eq $_, @prop_types) && (grep $2 eq $_, @prop_types)) {
+            push @xy_plots, \%para_set;
+        }
+    }
+
     mkpath($plot_dir);
     mkpath(catdir($plot_dir, 'png'));
 
@@ -380,23 +389,29 @@ sub build_single_ad_plots {
 #######################################
 sub gather_ad_lineage_properties {
     my %props;
-    $props{longevities}               = &gather_longevities;
-    $props{Area}                      = &gather_prop_seq("Area");
-    $props{largest_areas}             = &gather_largest_areas($props{Area});
-    $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
-    $props{starting_center_dist}      = &gather_starting_dist($props{Centroid_dist_from_center});
-    $props{Centroid_dist_from_edge}   = &gather_prop_seq("Centroid_dist_from_edge");
-    $props{starting_edge_dist}        = &gather_starting_dist($props{Centroid_dist_from_edge});
-    $props{Average_adhesion_signal}   = &gather_prop_seq("Average_adhesion_signal");
-    $props{ad_sig}                    = &gather_average_ad_sig($props{Average_adhesion_signal});
-    $props{merge}                     = &gather_merge_count;
-    $props{All_speeds}                = &gather_adhesion_speeds;
+
+    $props{longevity}               = &gather_longevities;
+    $props{merge_count}             = &gather_merge_count;
+    $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
+    $props{ad_sig}                  = &gather_average_ad_sig($props{Average_adhesion_signal});
+    $props{All_speeds}              = &gather_adhesion_speeds;
 
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
-    
-    $props{Class}                     = &gather_prop_seq("Class");
-    $props{overall_class}             = &gather_overall_class($props{"Class"});
-    $props{class_props}               = &gather_class_props(%props);
+
+    if (grep "Area" eq $_, @available_data_types) {
+        $props{Area}         = &gather_prop_seq("Area");
+        $props{largest_area} = &gather_largest_areas($props{Area});
+    }
+
+    if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
+        $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
+        $props{starting_center_dist}      = &gather_starting_dist($props{Centroid_dist_from_center});
+    }
+
+    if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
+        $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
+        $props{starting_edge_dist}      = &gather_starting_dist($props{Centroid_dist_from_edge});
+    }
 
     return %props;
 }
@@ -568,72 +583,6 @@ sub gather_merge_count {
     return \@merge_count;
 }
 
-sub gather_overall_class {
-    my @classes = @{ $_[0] };
-
-    my @overall_class;
-
-    for my $i (0 .. $#classes) {
-        my @class_labels = grep $_ ne "NaN", @{ $classes[$i] };
-        if (grep $_ != $class_labels[0], @class_labels) {
-            push @overall_class, "NaN";
-        } else {
-            push @overall_class, $class_labels[0];
-        }
-    }
-    return \@overall_class;
-}
-
-sub gather_class_props {
-    my %props = @_;
-    
-    my $exp_num = $cfg{exp_name};
-    $exp_num =~ s/.*?(\d+)/$1/;
-
-    print "$exp_num & ";
-    
-    my $c1_count = grep $_ == 1, @{$props{overall_class}};
-    my $c2_count = grep $_ == 2, @{$props{overall_class}};
-    my $cNaN_count = grep $_ eq "NaN", @{$props{overall_class}};
-
-    print join("& ",($c1_count, $c2_count, $cNaN_count)), "& ";
-
-    my $crit_point = Statistics::Distributions::udistr(.05);
-    for my $data (qw(average_speeds longevities ad_sig)) {
-        my @stat_sets;
-        for my $class (qw(1 2)) {
-            my @indexes = grep $props{$data}[$_] ne "NaN" && $props{overall_class}[$_] == $class, 
-                               (0 .. $#{$props{overall_class}});
-            my @set = @{$props{$data}}[@indexes];
-            next if (scalar(@set) == 0);
-            my $stat = Statistics::Descriptive::Full->new();
-            $stat->add_data(@{$props{$data}}[@indexes]);
-            
-            push @stat_sets, $stat;
-
-        #    print "For $data, class $class, Count: ", $stat->count," Average: ", sprintf("%.3f",$stat->mean), 
-        #          " Samp STDEV: ",  sprintf("%.3f",sqrt($stat->variance/$stat->count)), "\n";
-        }
-        my ($s1, $s2) = @stat_sets;
-        #print "Confidence Interval: (", 
-        #      sprintf("%.3f",$s1->mean - $s2->mean - $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count)),
-        #      ",",
-        #      sprintf("%.3f",$s1->mean - $s2->mean + $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count)), 
-        #      ")\n\n";
-        my @conf_int = ($s1->mean - $s2->mean - $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count),
-                        $s1->mean - $s2->mean + $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count)); 
-        my $signif = 1 if (($conf_int[0] < 0 && $conf_int[1] < 0) || ($conf_int[0] > 0 && $conf_int[1] > 0));
-        my @trimmed = map sprintf("%.3f",$_) , ($s1->mean,$s2->mean);
-        @trimmed = map "\\textbf{$_}", @trimmed if $signif;
-        print join("& ", @trimmed);
-        if ($data ne "ad_sig") {
-            print "& "; 
-        } else {
-            print "\\\\\n";
-        }
-    }
-}
-
 sub output_adhesion_lineage_props {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
@@ -642,38 +591,41 @@ sub output_adhesion_lineage_props {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}));
     }
 
-    my @longevities           = ("longevity",          @{ $ad_lineage_props{longevities} });
-    my @largest_areas         = ("largest_area",       @{ $ad_lineage_props{largest_areas} });
-    my @starting_edge_dists   = ("s_dist_from_edge",   @{ $ad_lineage_props{starting_edge_dist} });
-    my @starting_center_dists = ("s_dist_from_center", @{ $ad_lineage_props{starting_center_dist} });
-    my @merge_counts          = ("merge_count",        @{ $ad_lineage_props{merge} });
-    my @average_speeds        = ("speed",              @{ $ad_lineage_props{average_speeds} });
-    my @max_speeds            = ("max_speed",          @{ $ad_lineage_props{max_speeds} });
-    my @ad_sig                = ("ad_sig",             @{ $ad_lineage_props{ad_sig} });
-    my @overall_class         = ("class",              @{ $ad_lineage_props{overall_class} });
-
-    my @all_data =
-      map {
-        [
-            $longevities[$_],           $largest_areas[$_], $starting_edge_dists[$_],
-            $starting_center_dists[$_], $merge_counts[$_],  $average_speeds[$_],
-            $max_speeds[$_],            $ad_sig[$_],        $overall_class[$_],
-        ]
-      } (0 .. $#longevities);
-
-    #unshift @all_data,
-    #  [qw(longevity largest_area s_dist_from_edge s_dist_from_center merge_count speed max_speed ad_sig class_change)];
-
+    my @lin_summary_data = &gather_lineage_summary_data;
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
-    &output_mat_csv(\@all_data, $output_file);
+    &output_mat_csv(\@lin_summary_data, $output_file);
 
-    my @single_output_props =
-      qw(All_speeds Area Centroid_dist_from_edge Centroid_dist_from_center Average_adhesion_signal Class);
-    foreach (@single_output_props) {
+    my @ts_props = qw(All_speeds Area Centroid_dist_from_edge
+      Centroid_dist_from_center Average_adhesion_signal);
+    foreach (@ts_props) {
+        my $this_result = $_;
+        next if (not(grep $this_result eq $_, keys %ad_lineage_props));
+
         my $output_file =
-          catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}, $_ . ".csv");
+          catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder},
+            $this_result . ".csv");
         &output_mat_csv($ad_lineage_props{$_}, $output_file);
     }
+}
+
+sub gather_lineage_summary_data {
+    my @possible_props = qw(longevity largest_area starting_edge_dist
+      starting_center_dist starting_center_dist merge_count average_speeds
+      max_speeds ad_sig);
+
+    my @lin_summary_data;
+    for (@possible_props) {
+        my $this_prop = $_;
+        next if (not(grep $this_prop eq $_, keys %ad_lineage_props));
+
+        push @{ $lin_summary_data[0] }, $this_prop;
+
+        for my $i (0 .. $#{ $ad_lineage_props{$this_prop} }) {
+            push @{ $lin_summary_data[ $i + 1 ] }, $ad_lineage_props{$this_prop}[$i];
+        }
+    }
+
+    return @lin_summary_data;
 }
 
 sub build_lineage_plots {
@@ -684,11 +636,10 @@ sub build_lineage_plots {
 
     my $xy_default = "pch=19,cex=0.4";
 
-    #my $xy_default = "pch=19";
-    my $pdf_default = "height=12, width=12, pointsize=24";
-    my @xy_plots    = (
+    my $pdf_default       = "height=12, width=12, pointsize=24";
+    my @possible_xy_plots = (
         {
-            xy        => "lineages\$longevity,lineages\$s_dist_from_edge",
+            xy        => "lineages\$longevity,lineages\$starting_edge_dist",
             xlab      => "'Longevity (min)'",
             ylab      => "expression(paste('Starting Distance from Edge (', mu, 'm)'))",
             file_name => "longev_vs_s_dist.pdf",
@@ -712,6 +663,19 @@ sub build_lineage_plots {
             pdf_para  => $pdf_default,
         },
     );
+
+    my @summary_data = &gather_lineage_summary_data;
+    my @prop_types   = @{ $summary_data[0] };
+
+    my @xy_plots;
+    for (@possible_xy_plots) {
+        my %para_set = %{$_};
+        $para_set{xy} =~ /\$(.*),.*\$(.*)/ or die $para_set{xy};
+
+        if ((grep $1 eq $_, @prop_types) && (grep $2 eq $_, @prop_types)) {
+            push @xy_plots, \%para_set;
+        }
+    }
 
     mkpath($plot_dir);
     mkpath(catdir($plot_dir, 'png'));

@@ -127,8 +127,12 @@ sub create_matlab_code {
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
         my $cell_mask = catfile(dirname($file_name), "cell_mask.png");
-
-        $matlab_code[0] .= "find_focal_adhesions('$file_name','$cell_mask')\n";
+        
+        if (-e $cell_mask) {
+            $matlab_code[0] .= "find_focal_adhesions('$file_name','cell_mask','$cell_mask')\n";
+        } else {
+            $matlab_code[0] .= "find_focal_adhesions('$file_name')\n";
+        }
     }
 
     return @matlab_code;
