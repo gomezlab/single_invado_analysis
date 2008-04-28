@@ -7,6 +7,7 @@
 use strict;
 use File::Path;
 use File::Basename;
+use File::Find;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
@@ -30,10 +31,7 @@ GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my @needed_vars = qw(data_folder results_folder single_image_folder folder_divider exp_name
-  single_image_folder matlab_errors_folder vis_config_file vis_errors_file
-  extr_val_file bounding_box_file);
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
@@ -44,31 +42,18 @@ my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
 
 my @movie_folders = split(/\s/, $cfg{movie_output_folders});
 
-#set the first parameter set to be empty to use all the defaults
-my @movie_params = (
-    { movie_path => $movie_folders[0], },
+our @files;
+find(\&include_in_vis, (catdir($cfg{exp_results_folder}, $cfg{tracking_folder})));
+
+my @movie_params = map { 
+    my $base_dir = catdir($cfg{exp_results_folder}, $cfg{tracking_folder});
+    my $movie_path = $_;
+    $movie_path =~ s/$base_dir(.*)\.csv/$1/;
     {
-        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'longevity', '5.csv'),
-        movie_path    => $movie_folders[1],
-    },
-    {
-        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'dead', 'all.csv'),
-        movie_path    => $movie_folders[2],
-    },
-    {
-        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'class', '1.csv'),
-        movie_path    => "movies/class_1",
-    },
-    {
-        tracking_file => catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'class', '2.csv'),
-        movie_path    => "movies/class_2",
-    },
-#    {
-#        tracking_file =>
-#          catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered', 'special', 'high_speed.csv'),
-#        movie_path  => 'movies/special',
-#    },
-);
+        tracking_file => $_, 
+        movie_path => catdir($cfg{movie_output_folder},$movie_path),
+    }
+} @files;
 
 my @matlab_code;
 foreach (@movie_params) {
@@ -93,6 +78,13 @@ foreach (@movie_params) {
 ###############################################################################
 #Functions
 ###############################################################################
+
+sub include_in_vis {
+    if (   $File::Find::name =~ /.csv/ 
+        && not($File::Find::name =~ /no_movie/) ) {
+       push @files, $File::Find::name;
+    }
+}
 
 sub build_matlab_visualization_config {
     my %params = @_;

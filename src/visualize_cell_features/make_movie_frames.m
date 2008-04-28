@@ -176,12 +176,17 @@ for i = 1:i_count
             end
         end
     end
-    
-    cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
 
-    for j = 1:3
-        edge_image_ad(find(cell_edge)+(j-1)*pix_count) = edge_c_map(i,j);
-        edge_image_ad(find(bwperim(adhesions))+(j-1)*pix_count) = edge_c_map(i,j);
+    if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
+        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
+
+        for j = 1:3
+            edge_image_ad(find(cell_edge)+(j-1)*pix_count) = edge_c_map(i,j);
+        end
+    else
+        for j = 1:3
+            edge_image_ad(find(bwperim(adhesions))+(j-1)*pix_count) = edge_c_map(i,j);
+        end
     end
     
     orig_i = orig_i(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3));
