@@ -12,6 +12,7 @@ use Data::Dumper;
 use Storable;
 use Imager;
 use Statistics::Descriptive;
+use Statistics::Distributions;
 
 #local libraries
 use lib "../lib";
@@ -380,8 +381,6 @@ sub build_single_ad_plots {
 sub gather_ad_lineage_properties {
     my %props;
     $props{longevities}               = &gather_longevities;
-    $props{Class}                     = &gather_prop_seq("Class");
-    $props{overall_class}             = &gather_overall_class($props{"Class"});
     $props{Area}                      = &gather_prop_seq("Area");
     $props{largest_areas}             = &gather_largest_areas($props{Area});
     $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
@@ -394,6 +393,10 @@ sub gather_ad_lineage_properties {
     $props{All_speeds}                = &gather_adhesion_speeds;
 
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
+    
+    $props{Class}                     = &gather_prop_seq("Class");
+    $props{overall_class}             = &gather_overall_class($props{"Class"});
+    $props{class_props}               = &gather_class_props(%props);
 
     return %props;
 }
@@ -436,22 +439,6 @@ sub gather_prop_seq {
         }
     }
     return \@prop_vals;
-}
-
-sub gather_overall_class {
-    my @classes = @{ $_[0] };
-
-    my @overall_class;
-
-    for my $i (0 .. $#classes) {
-        my @class_labels = grep $_ ne "NaN", @{ $classes[$i] };
-        if (grep $_ != $class_labels[0], @class_labels) {
-            push @overall_class, "NaN";
-        } else {
-            push @overall_class, $class_labels[0];
-        }
-    }
-    return \@overall_class;
 }
 
 sub gather_largest_areas {
@@ -579,6 +566,72 @@ sub gather_merge_count {
     }
 
     return \@merge_count;
+}
+
+sub gather_overall_class {
+    my @classes = @{ $_[0] };
+
+    my @overall_class;
+
+    for my $i (0 .. $#classes) {
+        my @class_labels = grep $_ ne "NaN", @{ $classes[$i] };
+        if (grep $_ != $class_labels[0], @class_labels) {
+            push @overall_class, "NaN";
+        } else {
+            push @overall_class, $class_labels[0];
+        }
+    }
+    return \@overall_class;
+}
+
+sub gather_class_props {
+    my %props = @_;
+    
+    my $exp_num = $cfg{exp_name};
+    $exp_num =~ s/.*?(\d+)/$1/;
+
+    print "$exp_num & ";
+    
+    my $c1_count = grep $_ == 1, @{$props{overall_class}};
+    my $c2_count = grep $_ == 2, @{$props{overall_class}};
+    my $cNaN_count = grep $_ eq "NaN", @{$props{overall_class}};
+
+    print join("& ",($c1_count, $c2_count, $cNaN_count)), "& ";
+
+    my $crit_point = Statistics::Distributions::udistr(.05);
+    for my $data (qw(average_speeds longevities ad_sig)) {
+        my @stat_sets;
+        for my $class (qw(1 2)) {
+            my @indexes = grep $props{$data}[$_] ne "NaN" && $props{overall_class}[$_] == $class, 
+                               (0 .. $#{$props{overall_class}});
+            my @set = @{$props{$data}}[@indexes];
+            next if (scalar(@set) == 0);
+            my $stat = Statistics::Descriptive::Full->new();
+            $stat->add_data(@{$props{$data}}[@indexes]);
+            
+            push @stat_sets, $stat;
+
+        #    print "For $data, class $class, Count: ", $stat->count," Average: ", sprintf("%.3f",$stat->mean), 
+        #          " Samp STDEV: ",  sprintf("%.3f",sqrt($stat->variance/$stat->count)), "\n";
+        }
+        my ($s1, $s2) = @stat_sets;
+        #print "Confidence Interval: (", 
+        #      sprintf("%.3f",$s1->mean - $s2->mean - $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count)),
+        #      ",",
+        #      sprintf("%.3f",$s1->mean - $s2->mean + $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count)), 
+        #      ")\n\n";
+        my @conf_int = ($s1->mean - $s2->mean - $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count),
+                        $s1->mean - $s2->mean + $crit_point*sqrt($s1->variance/$s1->count + $s2->variance/$s2->count)); 
+        my $signif = 1 if (($conf_int[0] < 0 && $conf_int[1] < 0) || ($conf_int[0] > 0 && $conf_int[1] > 0));
+        my @trimmed = map sprintf("%.3f",$_) , ($s1->mean,$s2->mean);
+        @trimmed = map "\\textbf{$_}", @trimmed if $signif;
+        print join("& ", @trimmed);
+        if ($data ne "ad_sig") {
+            print "& "; 
+        } else {
+            print "\\\\\n";
+        }
+    }
 }
 
 sub output_adhesion_lineage_props {
