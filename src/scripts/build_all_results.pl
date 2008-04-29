@@ -25,8 +25,8 @@ my @processes :shared;
 my @started;
 while (@processes) {
 	while (@processes && &gather_running_status(@started) < $max_processes) {
-		my $command = pop @processes;
-		my $config = pop @config_files;
+		my $command = shift @processes;
+		my $config = shift @config_files;
 		push @started, $config;
 
 		print "Executing $command\n";

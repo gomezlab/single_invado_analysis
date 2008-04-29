@@ -103,10 +103,14 @@ my $image_num_length = length(scalar(@image_numbers));
 
 print "\n\nBuild Movies\n\n" if $opt{debug};
 $t1 = new Benchmark;
-foreach my $f1 (split(/\s/, $cfg{movie_output_folders})) {
+
+our @movie_dirs; 
+find(\&add_to_movie_dir, (catdir($cfg{exp_results_folder},'movies')));
+
+foreach my $f1 (@movie_dirs) {
     foreach my $f2 (split(/\s/, $cfg{movie_output_prefix})) {
-        my $input_folder = catdir($cfg{exp_results_folder},$f1,$f2);
-        system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov > movie_error.txt 2>&1";
+        my $input_folder = catdir($f1,$f2);
+        system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov 2>&1";
     }
 }
 $t2 = new Benchmark;
@@ -115,3 +119,13 @@ print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 open STATUS, ">" . catfile($cfg{exp_data_folder},"status.txt");
 print STATUS "DONE";
 close STATUS;
+
+###############################################################################
+# Functions
+###############################################################################
+
+sub add_to_movie_dir {
+    if ($File::Find::name =~ /$cfg{vis_config_file}/) {
+        push @movie_dirs, $File::Find::dir;
+    }
+}
