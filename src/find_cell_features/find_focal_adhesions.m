@@ -3,12 +3,13 @@ function [varargout] = find_focal_adhesions(I_file,varargin)
 %                         optionally returns the segmented image or writes
 %                         the segmented image to a file
 %
-%   find_focal_adhesions(I,C,OPTIONS) locate the focal adhesions in image
-%   file, 'I', and collects the properties of the focal adhesions using the
-%   cell mask in file , 'C'
+%   find_focal_adhesions(I,OPTIONS) locate the focal adhesions in image
+%   file, 'I', and collects the properties of the focal adhesions
 %
 %   Options:
 %
+%       -cell_mask: file which contains the cell mask, defaults to not
+%        present
 %       -filt_size: size of the MATLAB average filter to use, defaults to
 %        23
 %       -min_intensity: threshold used to identify focal adhesions in the
@@ -159,14 +160,20 @@ adhesion_props = regionprops(labeled_adhesions,'all');
 
 Average_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
 Variance_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
+Max_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
+Min_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
 
 for i=1:max(labeled_adhesions(:))
     Average_adhesion_signal(i) = mean(orig_I(labeled_adhesions == i));
     Variance_adhesion_signal(i) = var(orig_I(labeled_adhesions == i));
+    Max_adhesion_signal(i) = max(orig_I(labeled_adhesions == i));
+    Min_adhesion_signal(i) = min(orig_I(labeled_adhesions == i));
 end
 
 adhesion_props(1).Average_adhesion_signal = Average_adhesion_signal;
 adhesion_props(1).Variance_adhesion_signal = Variance_adhesion_signal;
+adhesion_props(1).Max_adhesion_signal = Max_adhesion_signal;
+adhesion_props(1).Min_adhesion_signal = Min_adhesion_signal;
 
 if (exist('cell_mask','var'))
     dists = bwdist(~cell_mask);
