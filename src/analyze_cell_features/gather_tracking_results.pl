@@ -79,8 +79,8 @@ print "\n\nGathering Adhesion Property Sequences\n", if $opt{debug};
 my %ad_lineage_prop_seqs = &gather_property_sequences(\@tracking_mat, \%data_sets);
 &output_adhesion_prop_seqs;
 
-print "\n\nCreating Vis Project Files\n", if $opt{debug};
-&#create_vis_project_files;
+#print "\n\nCreating Vis Project Files\n", if $opt{debug};
+#create_vis_project_files;
 
 if (exists $cfg{treatment_time}) {
     print "\n\nGathering Treatment Results\n", if $opt{debug};
@@ -402,6 +402,7 @@ sub gather_ad_lineage_properties {
     $props{merge_count}             = &gather_merge_count;
     $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
     $props{ad_sig}                  = &gather_average_ad_sig($props{Average_adhesion_signal});
+    $props{Max_adhesion_signal} = &gather_prop_seq("Max_adhesion_signal");
     ($props{All_speeds},$props{velocity})              = &gather_adhesion_speeds;
 
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
@@ -602,7 +603,7 @@ sub output_adhesion_lineage_props {
     &output_mat_csv(\@lin_summary_data, $output_file);
 
     my @ts_props = qw(All_speeds Area Centroid_dist_from_edge
-      Centroid_dist_from_center Average_adhesion_signal);
+      Centroid_dist_from_center Average_adhesion_signal Max_adhesion_signal);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, keys %ad_lineage_props));
