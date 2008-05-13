@@ -68,6 +68,7 @@ for i=1:max(labeled_adhesions(:))
 end
 
 adhesion_props(1).Average_adhesion_signal = Average_adhesion_signal;
+adhesion_props(1).Average_pixel_adhesion_signal = Average_adhesion_signal*(2^12 - 1);
 adhesion_props(1).Variance_adhesion_signal = Variance_adhesion_signal;
 adhesion_props(1).Centroid_dist_from_edge = Centroid_dist_from_edge;
 adhesion_props(1).Centroid_dist_from_center = Centroid_dist_from_center;

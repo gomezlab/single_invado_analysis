@@ -171,6 +171,7 @@ for i=1:max(labeled_adhesions(:))
 end
 
 adhesion_props(1).Average_adhesion_signal = Average_adhesion_signal;
+adhesion_props(1).Average_pixel_adhesion_signal = Average_adhesion_signal*(2^12 - 1);
 adhesion_props(1).Variance_adhesion_signal = Variance_adhesion_signal;
 adhesion_props(1).Max_adhesion_signal = Max_adhesion_signal;
 adhesion_props(1).Min_adhesion_signal = Min_adhesion_signal;

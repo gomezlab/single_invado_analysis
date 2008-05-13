@@ -55,7 +55,7 @@ end
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-normalized_image = normalize_grayscale_image(input_image,'min_max',min_max);
+normalized_image = normalize_grayscale_image(input_image,'min_max',[0,2^12 - 1]);
 
 imwrite(normalized_image,out_file,'Bitdepth',output_bits);
 
