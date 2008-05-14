@@ -23,33 +23,44 @@ plot_ad_seq <- function (plot_params,this_ad_seq,num,dir='../plots/linear_region
 	dev.off();
 }
 
-gather_linear_regions <- function (dir, min_length=5) {
+gather_linear_regions <- function (dir, min_length=5, file='Average_adhesion_signal.csv') {
 
-	ad_sig <- read.table(paste(dir,'Average_adhesion_signal.csv',sep=''),header = FALSE, sep  = ',');
+	ad_sig <- read.table(paste(dir,file,sep=''),header = FALSE, sep  = ',');
 	ad_props <- read.table(paste(dir,'../single_lin.csv',sep=''), header = TRUE, sep=',');
 
-	m_results <- list(early_offset = array(min_length, dim = c(dim(ad_sig)[[1]])),
-					  early_R_sq = array(0, dim = c(dim(ad_sig)[[1]])), 
-#					  early_inter = array(NaN, dim = c(dim(ad_sig)[[1]])), 
-#					  early_slope = array(NaN, dim = c(dim(ad_sig)[[1]])),
-					  late_offset = array(min_length, dim = c(dim(ad_sig)[[1]])),
-					  late_R_sq = array(0, dim = c(dim(ad_sig)[[1]]))
-#					  late_inter = array(NaN, dim = c(dim(ad_sig)[[1]])), 
-#					  late_slope = array(NaN, dim = c(dim(ad_sig)[[1]]))
+	rows <- dim(ad_sig)[[1]]
+	cols <- dim(ad_sig)[[2]]
+
+	m_results <- list(early_offset = array(min_length, dim = rowsc(rows)),
+					  early_R_sq = array(0, dim = c(rows)),
+					  early_inter = array(NaN, dim = c(rows)), 
+					  early_slope = array(NaN, dim = c(rows)),
+					  late_offset = array(min_length, dim = c(rows)),
+					  late_R_sq = array(0, dim = c(rows)),
+					  late_inter = array(NaN, dim = c(rows)), 
+					  late_slope = array(NaN, dim = c(rows))
 					 );
-					 
-	for (i in 1:dim(ad_sig)[[1]]) {
-		if ((i %% 1000) == 0) {
-			#print(i)
-		}
-		if (ad_props$longevity[[i]] < min_length * 2) {
-			next
-		}
 	
+	for (i in 1:rows) {
+		
 		temp = ad_sig[i,];
 		temp = temp[!(is.nan(temp))];
 		this_ad_sig = data.frame(y = t(temp[1,]), x = 1:dim(temp)[[2]]);
 		names(this_ad_sig) <- c('y','x');
+		
+		m_results$seq_length[[i]] = length(temp);
+		
+		if ((i %% 1000) == 0) {
+			#print(i)
+		}
+		#Skip over adhesions which don't live long enough
+		if (ad_props$longevity[[i]] < min_length * 2) {
+			next
+		}
+		#Skip over adhesions where we don't see the entire life cycle
+		if (is.finite(ad_sig[i,1]) && is.finite(ad_sig[i,cols])) {
+			next
+		}
 	
 		cur_offset = m_results$early_offset[[i]]
 		for (j in cur_offset:dim(this_ad_sig)[[1]]) {
@@ -62,6 +73,7 @@ gather_linear_regions <- function (dir, min_length=5) {
 			if (summary$r.squared > m_results$early_R_sq[[i]]) {
 				m_results$early_R_sq[[i]] = summary$r.squared;
 				m_results$early_length[[i]] = length(this_subset);
+				m_results$early_model[[i]] = model;
 				m_results$early_offset[[i]] = cur_offset;
 				m_results$early_inter[[i]] = coef(model)[[1]];
 				m_results$early_slope[[i]] = coef(model)[[2]];
@@ -84,31 +96,14 @@ gather_linear_regions <- function (dir, min_length=5) {
 				m_results$late_inter[[i]] = coef(model)[[1]];
 				m_results$late_slope[[i]] = coef(model)[[2]];
 			}
-		
 			cur_offset = cur_offset + 1
-		}
-	
-	}
-
-	for (i in 1:dim(ad_sig)[[1]]) {
-
-		if (ad_props$longevity[[i]] < min_length * 2) {
-			next
-		}
-		if (m_results$early_R_sq[[i]] < 0.9 || m_results$late_R_sq[[i]] < 0.9) {
-			next
-		}
-#		if (m_results$early_slope[[i]] < 0 || m_results$late_slope[[i]] > 0) {
-#			next
-#		}
-	
-		#plot_ad_seq(m_results[i,],ad_sig[i,],i,dir=paste(dir,'../plots/linear_regions/',sep=''))
-		count = count + 1;
+		}	
 	}
 
 	m_results
 }
 
+prefix = '../../results/focal_adhesions/';
 
 dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
          'time_series_05/adhesion_props/lin_time_series/','time_series_06/adhesion_props/lin_time_series/',
@@ -124,89 +119,133 @@ dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesi
 
 all_data <- list();
 
-#for (i in 1:length(dirs)) {
-    for (i in 2:2) {
-        dir = dirs[[i]];
+for (i in 1:length(dirs)) {
+#for (i in 2:2) {
+	dir = paste(prefix,dirs[[i]],sep='');
+	print(dir)
+	all_data$five_results[[i]] = gather_linear_regions(dir);
+	all_data$ten_results[[i]] = gather_linear_regions(dir,10);
+}
 
-        all_data$five_results[[i]] = gather_linear_regions(dir);
-        all_data$ten_results[[i]] = gather_linear_regions(dir,10);
-        five_results <- all_data$five_results[[i]];
-        ten_results <- all_data$ten_results[[i]];
+for (i in 1:length(all_data$ten_results)) {
+	results <- all_data$ten_results[[i]]
+	
+	count = 0;
+	for (j in 1:length(results$early_R_sq)) {
+		if (results$early_length[[j]] + results$late_length[[j]] > results$seq_length[[j]]) {
+			count = count + 1;
+		}
+	}
+	print(count/length(results$early_offset))
+}
 
-        five_early <- array(0,c(10,1));
-        five_late <- array(0,c(10,1));
-        ten_late <- array(0,c(10,1));
-        ten_early <- array(0,c(10,1));
-        five_early_error <- array(0,c(10,1));
-        five_late_error <- array(0,c(10,1));
-        ten_late_error <- array(0,c(10,1));
-        ten_early_error <- array(0,c(10,1));
+for (i in 1:length(dirs)) {
+#for (i in 2:2) {
+	dir = paste(prefix,dirs[[i]],sep='');
 
-        for (i in 1:10) {
-            five_set_early = five_results$early_R_sq > ((i-1)/10);		five_set_late = five_results$late_R_sq > ((i-1)/10);
-            ten_set_early = ten_results$early_R_sq > ((i-1)/10);
-            ten_set_late = ten_results$late_R_sq > ((i-1)/10);
+	five_results <- all_data$five_results[[i]];
+    ten_results <- all_data$ten_results[[i]];
+		
+    five_early <- array(0,c(10,1));
+    five_late <- array(0,c(10,1));
+    ten_late <- array(0,c(10,1));
+    ten_early <- array(0,c(10,1));
+    five_early_error <- array(0,c(10,1));
+    five_late_error <- array(0,c(10,1));
+    ten_late_error <- array(0,c(10,1));
+    ten_early_error <- array(0,c(10,1));
 
-            five_early[[i]] = mean(five_results$early_slope[five_set_early]);
-            five_early_error[[i]] = sqrt(var(five_results$early_slope[five_set_early]/length(five_results$early_slope[five_set_early])));
+    for (i in 1:10) {
+        five_set_early = five_results$early_R_sq > ((i-1)/10);		five_set_late = five_results$late_R_sq > ((i-1)/10);
+        ten_set_early = ten_results$early_R_sq > ((i-1)/10);
+        ten_set_late = ten_results$late_R_sq > ((i-1)/10);
 
-            five_late[[i]] = mean(five_results$late_slope[five_set_late]);
-            five_late_error[[i]] = sqrt(var(five_results$late_slope[five_set_late]/length(five_results$late_slope[five_set_late])));
+        five_early[[i]] = mean(five_results$early_slope[five_set_early]);
+        five_early_error[[i]] = sqrt(var(five_results$early_slope[five_set_early]/length(five_results$early_slope[five_set_early])));
 
-            ten_early[[i]] = mean(ten_results$early_slope[ten_set_early]);
-            ten_early_error[[i]] = sqrt(var(ten_results$early_slope[ten_set_early]/length(ten_results$early_slope[ten_set_early])));
+        five_late[[i]] = mean(five_results$late_slope[five_set_late]);
+        five_late_error[[i]] = sqrt(var(five_results$late_slope[five_set_late]/length(five_results$late_slope[five_set_late])));
 
-            ten_late[[i]] = mean(ten_results$late_slope[ten_set_late]);
-            ten_late_error[[i]] = sqrt(var(ten_results$late_slope[ten_set_late]/length(ten_results$late_slope[ten_set_late])));
-        }
+        ten_early[[i]] = mean(ten_results$early_slope[ten_set_early]);
+        ten_early_error[[i]] = sqrt(var(ten_results$early_slope[ten_set_early]/length(ten_results$early_slope[ten_set_early])));
 
-        pdf(paste(dir,'/../plots/linear_regions.pdf',sep=''),width=8.5,height=8.5,pointsize=14);
-        par(mfrow=c(2,2),bty='n')
-
-#Plot 1 - Slope versus R squared (early)
-        all_x = c(five_results$early_slope[five_results$early_R_sq != 0],
-                  ten_results$early_slope[ten_results$early_R_sq != 0]);
-        all_y = c(five_results$early_R_sq[five_results$early_R_sq != 0],
-                  ten_results$early_R_sq[ten_results$early_R_sq != 0]);
-
-        plot(five_results$early_slope[five_results$early_R_sq != 0],
-             five_results$early_R_sq[five_results$early_R_sq != 0],
-             xlab='Early Slope', ylab='Early R Squared',
-             xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)))
-        points(ten_results$early_slope[ten_results$early_R_sq != 0],
-               ten_results$early_R_sq[ten_results$early_R_sq != 0],
-               col='red');
-
-#Plot 2 - R squared versus Slope (late)
-        all_x = c(five_results$late_slope[five_results$early_R_sq != 0],ten_results$late_slope[ten_results$early_R_sq != 0]);
-        all_y = c(five_results$late_R_sq[five_results$early_R_sq != 0],ten_results$late_R_sq[ten_results$early_R_sq != 0]);
-
-        plot(five_results$late_slope[five_results$early_R_sq != 0],	 five_results$late_R_sq[five_results$early_R_sq != 0],
-                xlab='Late Slope', ylab='Late R Squared',
-                xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)))
-            points(ten_results$late_slope[ten_results$early_R_sq != 0],
-                    ten_results$late_R_sq[ten_results$early_R_sq != 0],
-                    col='red');
-
-#Plot 3
-        all_x = seq(0,0.9,by=0.1);
-        all_y = c(five_early,ten_early)
-            errbar(seq(0,0.9,by=0.1),five_early,
-                    five_early - five_early_error,five_early + five_early_error, 
-                    xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)),
-                    xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
-            points(seq(0,0.9,by=0.1),ten_early,col='red')
-            errbar(seq(0,0.9,by=0.1),ten_early, ten_early - ten_early_error, ten_early + ten_early_error, add=T, col='red')
-
-#Plot 4
-            all_x = seq(0,0.9,by=0.1);
-        all_y = c(five_late,ten_late)
-            errbar(seq(0,0.9,by=0.1),five_late,
-                    five_late - five_late_error,five_late + five_late_error, 
-                    xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)),
-                    xlab = 'R squared cutoff', ylab='Degradation Rate (/min)')
-            points(seq(0,0.9,by=0.1),ten_late,col='red')
-            errbar(seq(0,0.9,by=0.1),ten_late, ten_late - ten_late_error, ten_late + ten_late_error, add=T, col='red')
-            dev.off()
-
+        ten_late[[i]] = mean(ten_results$late_slope[ten_set_late]);
+        ten_late_error[[i]] = sqrt(var(ten_results$late_slope[ten_set_late]/length(ten_results$late_slope[ten_set_late])));
     }
+	
+	library(Hmisc)
+    pdf(paste(dir,'/../plots/linear_regions.pdf',sep=''),width=8.5,height=8.5,pointsize=14);
+    par(mfrow=c(2,2),bty='n')
+
+	#Plot 1 - Slope versus R squared (early)
+    all_x = c(five_results$early_slope[five_results$early_R_sq != 0],
+              ten_results$early_slope[ten_results$early_R_sq != 0]);
+    all_y = c(five_results$early_R_sq[five_results$early_R_sq != 0],
+              ten_results$early_R_sq[ten_results$early_R_sq != 0]);
+
+    plot(five_results$early_slope[five_results$early_R_sq != 0],
+         five_results$early_R_sq[five_results$early_R_sq != 0],
+         xlab='Early Slope', ylab='Early R Squared',
+         xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)))
+    points(ten_results$early_slope[ten_results$early_R_sq != 0],
+           ten_results$early_R_sq[ten_results$early_R_sq != 0],
+           col='red');
+
+	#Plot 2 - R squared versus Slope (late)
+    all_x = c(five_results$late_slope[five_results$early_R_sq != 0],ten_results$late_slope[ten_results$early_R_sq != 0]);
+    all_y = c(five_results$late_R_sq[five_results$early_R_sq != 0],ten_results$late_R_sq[ten_results$early_R_sq != 0]);
+
+    plot(five_results$late_slope[five_results$early_R_sq != 0],	 	 five_results$late_R_sq[five_results$early_R_sq != 0],
+         xlab='Late Slope', ylab='Late R Squared',
+         xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)))
+    points(ten_results$late_slope[ten_results$early_R_sq != 0],
+           ten_results$late_R_sq[ten_results$early_R_sq != 0],
+           col='red');
+
+	#Plot 3
+    all_x = seq(0,0.9,by=0.1);
+    all_y = c(five_early,ten_early)
+    errbar(seq(0,0.9,by=0.1),five_early,
+    	   five_early - five_early_error,five_early + five_early_error, 
+           xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)),
+           xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
+    points(seq(0,0.9,by=0.1),ten_early,col='red')
+    errbar(seq(0,0.9,by=0.1),ten_early, ten_early - ten_early_error, ten_early + ten_early_error, add=T, col='red')
+
+	#Plot 4
+    all_x = seq(0,0.9,by=0.1);
+    all_y = c(five_late,ten_late)
+    errbar(seq(0,0.9,by=0.1),five_late,
+           five_late - five_late_error,five_late + five_late_error, 
+           xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)),
+           xlab = 'R squared cutoff', ylab='Degradation Rate (/min)')
+    points(seq(0,0.9,by=0.1),ten_late,col='red')
+    errbar(seq(0,0.9,by=0.1),ten_late, ten_late - ten_late_error, ten_late + ten_late_error, add=T, col='red')
+    
+    #Plot 5
+    hist(five_results$early_length, xlab = 'Linear Sequence Length (min)')
+    
+    #Plot 6
+    hist(five_results$late_length, xlab = 'Linear Sequence Length (min)')
+    
+    #Plot 7
+    hist(ten_results$early_length, xlab = 'Linear Sequence Length (min)',col='red')
+    
+    #Plot 8
+    hist(ten_results$late_length, xlab = 'Linear Sequence Length (min)',col='red')
+    
+    dev.off()
+
+}
+
+early_slopes <- c()
+late_slopes <- c()
+
+for (i in 1:length(all_data$ten_results)) {
+	r_cutoff = 0.9
+	
+	results <- all_data$ten_results[[i]]
+	
+	early_slopes <- c(early_slopes, results$early_slope[results$early_R_sq > r_cutoff]);
+	late_slopes <- c(late_slopes, results$late_slope[results$late_R_sq > r_cutoff]);
+}
