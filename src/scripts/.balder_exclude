@@ -1,5 +1,8 @@
 *.DS_Store*
-config*
-archive*
-raw_data*
-excluded_experiments*
+data/config*
+data/raw_data*
+data/excluded_experiments*
+results/archive*
+doc*
+src*
+README.txt
