@@ -94,6 +94,22 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function filtered_adhesions = find_in_cell_ads(ad,cm)
+% COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
+%                                properties are collected concerning the
+%                                morphology and physical properties of the
+%                                adhesions
+%
+%   ad_p = collect_adhesion_properties(ad_I,c_m,orig_I) collects the
+%   properties of the adhesions identified in the binary image 'ad_I',
+%   using the cell mask in 'c_m' and the original focal image data in
+%   'orig_I', returning a structure 'ad_p' containing properties
+%
+%   Properties Collected:
+%       -all of the properties collected by regioprops(...,'all')
+%       -the distance of each adhesion's centroid from the nearest cell
+%        edge
+%       -the average and variance of the normalized fluorescence signal
+%        within each adhesion
     
     labeled_ad = bwlabel(ad,4);
     
@@ -110,7 +126,6 @@ function filtered_adhesions = find_in_cell_ads(ad,cm)
     end
     
 end
-
 
 function adhesion_props = collect_adhesion_properties(ad_I,orig_I,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
@@ -129,7 +144,6 @@ function adhesion_props = collect_adhesion_properties(ad_I,orig_I,varargin)
 %        edge
 %       -the average and variance of the normalized fluorescence signal
 %        within each adhesion
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line

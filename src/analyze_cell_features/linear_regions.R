@@ -1,108 +1,337 @@
-plot_ad_seq <- function (plot_params,this_ad_seq,num,dir='../plots/linear_regions/') {
+plot_ad_seq <- function (results,index,dir) {
 	
-	this_ad_seq = this_ad_seq[!(is.nan(this_ad_seq))];
+	ad_seq = results$exp_data[index,]
+	ad_seq = t(ad_seq[!(is.nan(ad_seq))]);
 	if (! file.exists(dir)) {
 		dir.create(dir)
 	}
 	
-	pdf(paste(dir,num,'.pdf',sep=''));
-	plot(1:dim(this_ad_seq)[[2]],this_ad_seq,xlab='Time (minutes)',ylab='Average Paxillin Signal (AU)')
+	pdf(paste(dir,index,'.pdf',sep=''));
+	par(mfrow=c(1,2),bty='n', mar=c(5,4,1,1))
+			
+	if (is.finite(results$early_slope[index])) {
+		early_ad_seq = ad_seq[1:results$early_offset[index]];
+#		print(this_ad_seq)
+		early_ad_seq = early_ad_seq/early_ad_seq[1];
+#		print(log(this_ad_seq))
+		
+		plot(1:results$early_offset[index],early_ad_seq,xlab='Time (minutes)',ylab='Normalized Paxillin Signal')
+		
+		x = c(0,results$early_offset[index]);
+		y = c(results$early_slope[index]*x[1] + results$early_inter[index],
+		   	  results$early_slope[index]*x[2] + results$early_inter[index])
+		
+		lines(x,y,col='red',lwd=2)
+	}
 	
-	early_x = c(0,plot_params$early_offset);
-	early_y = c(early_x[[1]]*plot_params$early_slope + plot_params$early_inter,
-				early_x[[2]]*plot_params$early_slope + plot_params$early_inter);
-	lines(early_x,early_y,col='red',lwd=2)
-	
-	late_x = c(dim(this_ad_seq)[[2]] - plot_params$late_offset, dim(this_ad_seq)[[2]]);
-	late_y = c(late_x[[1]]*plot_params$late_slope + plot_params$late_inter,
-			   late_x[[2]]*plot_params$late_slope + plot_params$late_inter);
-	lines(late_x, late_y, col='blue',lwd=2)
-	
-	#legend(late_x[[1]] + 1, late_y[[1]], paste(sprintf('%.1f',plot_params$late_R_sq),plot_params$late_slope,sep='\n'))
-	#legend(early_x[[1]] + 1, early_y[[1]], paste(sprintf('%.1f',plot_params$early_R_sq),plot_params$early_slope,sep='\n'))
+	if (is.finite(results$late_slope[index])) {
+		this_ad_seq = ad_seq[(length(ad_seq) - results$late_offset[index]) : length(ad_seq)];
+		this_ad_seq = this_ad_seq/this_ad_seq[1];
+		
+		plot((length(ad_seq) - results$late_offset[index]) : length(ad_seq),
+			 this_ad_seq, xlab='Time (minutes)', ylab='Normalized Paxillin Signal')
+		
+		x = c(length(ad_seq) - results$late_offset[index],length(ad_seq));
+		y = c(results$late_slope[index]*x[1] + results$late_inter[index],
+		   	  results$late_slope[index]*x[2] + results$late_inter[index])
+		
+		lines(x,y,col='red',lwd=2)
+	}
+		
 	dev.off();
 }
 
-gather_linear_regions <- function (dir, min_length=5, file='Average_adhesion_signal.csv') {
+#plot_ad_seq(norm_all_data[[1]],498,'./')
 
-	ad_sig <- read.table(paste(dir,file,sep=''),header = FALSE, sep  = ',');
-	ad_props <- read.table(paste(dir,'../single_lin.csv',sep=''), header = TRUE, sep=',');
-
-	rows <- dim(ad_sig)[[1]]
-	cols <- dim(ad_sig)[[2]]
-
-	m_results <- list(early_offset = array(min_length, dim = rowsc(rows)),
-					  early_R_sq = array(0, dim = c(rows)),
-					  early_inter = array(NaN, dim = c(rows)), 
-					  early_slope = array(NaN, dim = c(rows)),
-					  late_offset = array(min_length, dim = c(rows)),
-					  late_R_sq = array(0, dim = c(rows)),
-					  late_inter = array(NaN, dim = c(rows)), 
-					  late_slope = array(NaN, dim = c(rows))
-					 );
+gather_linear_regions <- function (dirs, min_length=10, data_file='Average_adhesion_signal.csv', col_lims = NaN, normed = 1, log_lin = 0) {
 	
-	for (i in 1:rows) {
+	results = list()
+	
+	for (k in 1:length(dirs)) {
 		
-		temp = ad_sig[i,];
-		temp = temp[!(is.nan(temp))];
-		this_ad_sig = data.frame(y = t(temp[1,]), x = 1:dim(temp)[[2]]);
-		names(this_ad_sig) <- c('y','x');
-		
-		m_results$seq_length[[i]] = length(temp);
-		
-		if ((i %% 1000) == 0) {
-			#print(i)
-		}
-		#Skip over adhesions which don't live long enough
-		if (ad_props$longevity[[i]] < min_length * 2) {
+		if (is.na(dirs[[k]])) {
 			next
 		}
-		#Skip over adhesions where we don't see the entire life cycle
-		if (is.finite(ad_sig[i,1]) && is.finite(ad_sig[i,cols])) {
-			next
+		
+		print(dirs[[k]])
+		
+		ad_sig <- read.table(paste(dirs[[k]],data_file,sep=''),header = FALSE, sep  = ',');
+		ad_props <- read.table(paste(dirs[[k]],'../single_lin.csv',sep=''), header = TRUE, sep=',');
+		
+		if (is.numeric(col_lims) && length(col_lims) == 2) {
+			ad_sig = ad_sig[,col_lims[1]:col_lims[2]];
 		}
+		
+		rows <- dim(ad_sig)[[1]]
+		cols <- dim(ad_sig)[[2]]
+
+		m_results <- list(early_offset = array(min_length, dim = c(rows)),
+						  early_R_sq = array(0, dim = c(rows)),
+						  early_inter = array(NaN, dim = c(rows)), 
+						  early_slope = array(NaN, dim = c(rows)),
+						  late_offset = array(min_length, dim = c(rows)),
+						  late_R_sq = array(0, dim = c(rows)),
+						  late_inter = array(NaN, dim = c(rows)), 
+						  late_slope = array(NaN, dim = c(rows)),
+						  exp_data = ad_sig,
+						  exp_props = ad_props
+						 );
 	
-		cur_offset = m_results$early_offset[[i]]
-		for (j in cur_offset:dim(this_ad_sig)[[1]]) {
-			this_subset = this_ad_sig[1:cur_offset,]
-		
-			model <- lm(y ~ x, data = this_subset)
-		
-			summary <- summary(model);
+		for (i in 1:rows) {
+			temp = ad_sig[i,];
+			temp = temp[!(is.nan(temp))];
 			
-			if (summary$r.squared > m_results$early_R_sq[[i]]) {
-				m_results$early_R_sq[[i]] = summary$r.squared;
-				m_results$early_length[[i]] = length(this_subset);
-				m_results$early_model[[i]] = model;
-				m_results$early_offset[[i]] = cur_offset;
-				m_results$early_inter[[i]] = coef(model)[[1]];
-				m_results$early_slope[[i]] = coef(model)[[2]];
+			if (dim(temp)[[2]] == 0) {
+				m_results$seq_length[[i]] = 0;
+				next;
+			}	
+			
+			this_ad_sig = data.frame(y = t(temp[1,]), x = 1:dim(temp)[[2]]);
+			names(this_ad_sig) <- c('y','x');
+		
+			m_results$seq_length[[i]] = length(temp);
+		
+			#Skip over adhesions which don't live long enough
+			if (m_results$seq_length[[i]] < min_length * 2) {
+				next
 			}
-		
-			cur_offset = cur_offset + 1
-		}
+			#Skip over adhesions where we don't see the entire life cycle
+			if (is.finite(ad_sig[i,1])) {
+				next
+			}
 	
-		cur_offset = m_results$late_offset[[i]]
-		for (j in cur_offset:dim(this_ad_sig)[[1]]) {
-			this_subset = this_ad_sig[(dim(this_ad_sig)[[1]]-cur_offset):dim(this_ad_sig)[[1]],]
-		
-			model <- lm(y ~ x, data = this_subset)
+			cur_offset = m_results$early_offset[[i]];
+			for (j in cur_offset:dim(this_ad_sig)[[1]]) {
+				early_subset = this_ad_sig[1:cur_offset,]
+				if (normed) {
+					early_subset$y = early_subset$y/early_subset$y[1]
+				}
+				if (log_lin) {
+					early_subset$y = log(early_subset$y)
+				}
 				
-			summary <- summary(model);
+				model <- lm(y ~ x, data = early_subset)
+		
+				summary <- summary(model);
 			
-			if (summary$r.squared > m_results$late_R_sq[[i]]) {				m_results$late_R_sq[[i]] = summary$r.squared;
-				m_results$late_length[[i]] = length(this_subset);
-				m_results$late_offset[[i]] = cur_offset;
-				m_results$late_inter[[i]] = coef(model)[[1]];
-				m_results$late_slope[[i]] = coef(model)[[2]];
+				if (summary$r.squared > m_results$early_R_sq[[i]]) {
+					m_results$early_R_sq[[i]] = summary$r.squared;
+					m_results$early_length[[i]] = dim(early_subset)[[1]];
+					m_results$early_model[[i]] = model;
+					m_results$early_offset[[i]] = cur_offset;
+					m_results$early_inter[[i]] = coef(model)[[1]];
+					m_results$early_slope[[i]] = coef(model)[[2]];
+				}
+				cur_offset = cur_offset + 1
 			}
-			cur_offset = cur_offset + 1
-		}	
+			
+			cur_offset = m_results$late_offset[[i]]
+			for (j in cur_offset:dim(this_ad_sig)[[1]]) {
+				late_subset = this_ad_sig[(dim(this_ad_sig)[[1]]-cur_offset):dim(this_ad_sig)[[1]],]
+				if (normed) {
+#					late_subset$y = late_subset$y/late_subset$y[[length(late_subset$y)]]
+					late_subset$y = late_subset$y[[1]]/late_subset$y
+				}
+				if (log_lin) {
+					late_subset$y = log(late_subset$y)
+				}
+	
+				model <- lm(y ~ x, data = late_subset)
+				
+				summary <- summary(model);
+			
+				if (summary$r.squared > m_results$late_R_sq[[i]]) {
+					m_results$late_R_sq[[i]] = summary$r.squared;
+					m_results$late_length[[i]] = dim(late_subset)[[1]];
+					m_results$late_model[[i]] = model;
+					m_results$late_offset[[i]] = cur_offset;
+					m_results$late_inter[[i]] = coef(model)[[1]];
+					m_results$late_slope[[i]] = coef(model)[[2]];
+				}
+				cur_offset = cur_offset + 1
+			}
+		}
+		results[[k]] <- m_results
 	}
-
-	m_results
+	results
 }
 
+plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA) {
+	
+	early_slope = c()
+	early_error = c()
+	early_n = c()
+	late_slope  = c()
+	late_error  = c()
+	late_n = c()
+	for (i in 1:10) {
+		slope_ests = exp_set_slope_estimate(results,r_cutoff = ((i - 1)/10));
+		early_slope[i] = slope_ests$early
+		early_n[i] = slope_ests$early_n
+		early_error[i] = slope_ests$early_sem
+		late_slope[i] = slope_ests$late
+		late_n[i] = slope_ests$late_n
+		late_error[i] = slope_ests$late_sem
+	}
+	
+	library(Hmisc)
+    pdf(paste(dir,file,sep=''),width=8.5,height=8.5,pointsize=14);
+    par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
+	
+	#Plot 1 - Slope versus R squared (early)
+#    plot(results$early_slope[results$early_R_sq != 0],
+#         results$early_R_sq[results$early_R_sq != 0],
+#         xlab='Formation Slope', ylab='R Squared'
+#        );
+
+	slopes = results$early_slope 
+	R_sqs = results$early_R_sq
+	init_filter = R_sqs != 0;
+	all_x = slopes[init_filter]
+	all_y = R_sqs[init_filter]
+	cols = rainbow(10);
+	c_l = length(cols);
+
+	dist_list = results$exp_props$starting_edge_dist
+	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));
+	
+	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
+	x = slopes[indexes]
+	y = R_sqs[indexes]
+	plot(x, y, col=cols[1], 
+		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
+		 cex = 0.5, xlab='Formation Slope (/min)', ylab='R Squared')
+	
+	for (i in 2:c_l) {
+		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
+		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
+		x = slopes[indexes]
+		y = R_sqs[indexes]
+		points(x,y,col=cols[i], cex = 0.5)
+	}
+	
+	x_range = c(0.14,0.15);
+	y_range = c(0.1,0.6);
+	
+	for (i in 1:c_l) {
+		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+			 col=cols[i], border = NA)
+	}
+	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
+	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
+
+	#Plot 2 - R squared versus Slope (late)
+#    plot(results$late_slope[results$late_R_sq != 0 & results$exp_props$death_status],
+#		  results$late_R_sq[results$late_R_sq != 0 & results$exp_props$death_status],
+#         xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5
+#        )
+
+	slopes = results$late_slope
+	R_sqs = results$late_R_sq
+	init_filter = R_sqs != 0  & results$exp_props$death_status
+	all_x = slopes[init_filter]
+	all_y = R_sqs[init_filter]
+	cols = rainbow(10);
+	c_l = length(cols);
+
+	dist_list = results$exp_props$starting_edge_dist
+	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));	
+	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
+	x = slopes[indexes]
+	y = R_sqs[indexes]
+	plot(x, y, col=cols[1], 
+		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
+		 cex = 0.5, xlab='Decay Slope (/min)', ylab='R Squared')
+	
+	for (i in 2:c_l) {
+		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
+		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
+		x = slopes[indexes]
+		y = R_sqs[indexes]
+		points(x,y,col=cols[i], cex = 0.5)
+	}
+	
+	x_range = c(max(all_x)*0.8,max(all_x)*0.85);
+	y_range = c(0.1,0.6);
+	
+	for (i in 1:c_l) {
+		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+			 col=cols[i], border = NA)
+	}
+	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
+	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
+    
+	#Plot 3
+    errbar(seq(0,0.9,by=0.1), early_slope, early_slope - early_error, early_slope + early_error, xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
+    for (i in 1:10) {
+    	x_points = seq(0,0.9,by=0.1)
+    	text(x_points[i],early_slope[i]+early_error[i],early_n[i])
+    }
+	
+	#Plot 4
+    errbar(seq(0,0.9,by=0.1), late_slope, late_slope - late_error, late_slope + late_error, xlab = 'R squared cutoff', ylab='Decay Rate (/min)')
+    for (i in 1:10) {
+    	x_points = seq(0,0.9,by=0.1)
+    	text(x_points[i],late_slope[i]+late_error[i],late_n[i])
+    }
+	
+	if (! is.na(hist_file)) {
+	    pdf(paste(dir,hist_file,sep=''),width=8.5,height=8.5,pointsize=14);
+    	par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
+        
+	    #Plot 1
+    	hist(results$early_length, xlab = 'Linear Sequence Length (min)', main='')
+    
+	    #Plot 2
+    	hist(results$late_length, xlab = 'Linear Sequence Length (min)', main='')
+    
+	    #Plot 3
+    	hist(results$early_slope[results$early_R_sq > 0.9], xlab = 'Slope (/min)', main='')
+
+	    #Plot 4
+    	hist(results$late_slope[results$late_R_sq > 0.9 & results$exp_props$death_status], xlab = 'Slope (/min)', main='')
+    	dev.off()
+    }
+    
+    dev.off()
+}
+
+exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
+	early_slopes <- c()
+	late_slopes <- c()
+	
+	if (! is.null(names(results))) {
+		results = list(results);
+	}	
+	for (i in 1:length(results)) {
+		res = results[[i]];
+#		early_slopes <- c(early_slopes, res$early_slope[res$early_R_sq > r_cutoff & res$early_slope > 0]);
+#		late_slopes  <- c(late_slopes, res$late_slope[res$late_R_sq > r_cutoff & res$late_slope < 0]);
+		early_slopes <- c(early_slopes, res$early_slope[res$early_R_sq > r_cutoff]);
+		late_slopes  <- c(late_slopes, res$late_slope[res$late_R_sq > r_cutoff & res$exp_props$death_status]);
+	}
+#	print(length(early_slopes))
+#	print(length(late_slopes))
+	slopes <- list(early = mean(early_slopes),
+				   early_n = length(early_slopes),
+				   early_cv = sd(early_slopes)/mean(early_slopes),
+				   early_sem = sd(early_slopes)/sqrt(length(early_slopes)),
+				   early_sd = sd(early_slopes),
+				   late = mean(late_slopes),	
+				   late_n = length(late_slopes),
+				   late_cv = sd(late_slopes)/mean(late_slopes),
+				   late_sem = sd(late_slopes)/sqrt(length(late_slopes)),
+				   late_sd = sd(late_slopes)
+				  )
+}
+
+####################################################################################################
+# Main Program
+####################################################################################################
+
+#Paxillin
 prefix = '../../results/focal_adhesions/';
 
 dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
@@ -117,135 +346,51 @@ dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesi
          'time_series_21/adhesion_props/lin_time_series/','time_series_22/adhesion_props/lin_time_series/',
          'time_series_23/adhesion_props/lin_time_series/');
 
-all_data <- list();
-
+pre_dirs <- c()
 for (i in 1:length(dirs)) {
-#for (i in 2:2) {
-	dir = paste(prefix,dirs[[i]],sep='');
-	print(dir)
-	all_data$five_results[[i]] = gather_linear_regions(dir);
-	all_data$ten_results[[i]] = gather_linear_regions(dir,10);
+#for (i in 1:1) {
+	pre_dirs[i] = paste(prefix,dirs[i],sep='')
 }
 
-for (i in 1:length(all_data$ten_results)) {
-	results <- all_data$ten_results[[i]]
-	
-	count = 0;
-	for (j in 1:length(results$early_R_sq)) {
-		if (results$early_length[[j]] + results$late_length[[j]] > results$seq_length[[j]]) {
-			count = count + 1;
-		}
-	}
-	print(count/length(results$early_offset))
-}
+#print('No Norm')
+#all_data = gather_linear_regions(pre_dirs,normed = 0)
+print('Norm')
+norm = gather_linear_regions(pre_dirs)
+print('Norm Log lin')
+log = gather_linear_regions(pre_dirs,log_lin = 1)
 
-for (i in 1:length(dirs)) {
-#for (i in 2:2) {
-	dir = paste(prefix,dirs[[i]],sep='');
+#for (i in 1:length(dirs)) {
+#for (i in 1:1) {
+#	if (is.na(pre_dirs[i])) {
+#		next
+#	}	
+#	plot_lin_reg_set(norm[[i]],paste(pre_dirs[i],'../plots/',sep=''),hist_file='lin_hist.pdf')
+#}
 
-	five_results <- all_data$five_results[[i]];
-    ten_results <- all_data$ten_results[[i]];
-		
-    five_early <- array(0,c(10,1));
-    five_late <- array(0,c(10,1));
-    ten_late <- array(0,c(10,1));
-    ten_early <- array(0,c(10,1));
-    five_early_error <- array(0,c(10,1));
-    five_late_error <- array(0,c(10,1));
-    ten_late_error <- array(0,c(10,1));
-    ten_early_error <- array(0,c(10,1));
+#all_est <- exp_set_slope_estimate(all_data[[1]])
+#norm_est <- exp_set_slope_estimate(norm_all_data[[1]])
+#log_est <- exp_set_slope_estimate(log_all_data[[1]])
+#
+#
+##FAK
+#prefix = '../../results/FAK/';
+#
+#dirs = c('time_series_01/adhesion_props/lin_time_series/');
+#
+#pre_dirs <- c()
+#for (i in 1:length(dirs)) {
+##for (i in 2:2) {	
+#	pre_dirs[i] = paste(prefix,dirs[i],sep='')
+#}
 
-    for (i in 1:10) {
-        five_set_early = five_results$early_R_sq > ((i-1)/10);		five_set_late = five_results$late_R_sq > ((i-1)/10);
-        ten_set_early = ten_results$early_R_sq > ((i-1)/10);
-        ten_set_late = ten_results$late_R_sq > ((i-1)/10);
+#pre_fak = gather_linear_regions(pre_dirs,col_lims = c(1,33))
+#post_fak = gather_linear_regions(pre_dirs,col_lims = c(34,90))
 
-        five_early[[i]] = mean(five_results$early_slope[five_set_early]);
-        five_early_error[[i]] = sqrt(var(five_results$early_slope[five_set_early]/length(five_results$early_slope[five_set_early])));
+#for (i in 1:length(dirs)) {
+#	if (is.na(pre_dirs[i])) {
+#		next
+#	}	
+#	plot_lin_reg_set(norm_all_data[[i]],paste(pre_dirs[i],'../plots/',sep=''))
+#}
 
-        five_late[[i]] = mean(five_results$late_slope[five_set_late]);
-        five_late_error[[i]] = sqrt(var(five_results$late_slope[five_set_late]/length(five_results$late_slope[five_set_late])));
-
-        ten_early[[i]] = mean(ten_results$early_slope[ten_set_early]);
-        ten_early_error[[i]] = sqrt(var(ten_results$early_slope[ten_set_early]/length(ten_results$early_slope[ten_set_early])));
-
-        ten_late[[i]] = mean(ten_results$late_slope[ten_set_late]);
-        ten_late_error[[i]] = sqrt(var(ten_results$late_slope[ten_set_late]/length(ten_results$late_slope[ten_set_late])));
-    }
-	
-	library(Hmisc)
-    pdf(paste(dir,'/../plots/linear_regions.pdf',sep=''),width=8.5,height=8.5,pointsize=14);
-    par(mfrow=c(2,2),bty='n')
-
-	#Plot 1 - Slope versus R squared (early)
-    all_x = c(five_results$early_slope[five_results$early_R_sq != 0],
-              ten_results$early_slope[ten_results$early_R_sq != 0]);
-    all_y = c(five_results$early_R_sq[five_results$early_R_sq != 0],
-              ten_results$early_R_sq[ten_results$early_R_sq != 0]);
-
-    plot(five_results$early_slope[five_results$early_R_sq != 0],
-         five_results$early_R_sq[five_results$early_R_sq != 0],
-         xlab='Early Slope', ylab='Early R Squared',
-         xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)))
-    points(ten_results$early_slope[ten_results$early_R_sq != 0],
-           ten_results$early_R_sq[ten_results$early_R_sq != 0],
-           col='red');
-
-	#Plot 2 - R squared versus Slope (late)
-    all_x = c(five_results$late_slope[five_results$early_R_sq != 0],ten_results$late_slope[ten_results$early_R_sq != 0]);
-    all_y = c(five_results$late_R_sq[five_results$early_R_sq != 0],ten_results$late_R_sq[ten_results$early_R_sq != 0]);
-
-    plot(five_results$late_slope[five_results$early_R_sq != 0],	 	 five_results$late_R_sq[five_results$early_R_sq != 0],
-         xlab='Late Slope', ylab='Late R Squared',
-         xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)))
-    points(ten_results$late_slope[ten_results$early_R_sq != 0],
-           ten_results$late_R_sq[ten_results$early_R_sq != 0],
-           col='red');
-
-	#Plot 3
-    all_x = seq(0,0.9,by=0.1);
-    all_y = c(five_early,ten_early)
-    errbar(seq(0,0.9,by=0.1),five_early,
-    	   five_early - five_early_error,five_early + five_early_error, 
-           xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)),
-           xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
-    points(seq(0,0.9,by=0.1),ten_early,col='red')
-    errbar(seq(0,0.9,by=0.1),ten_early, ten_early - ten_early_error, ten_early + ten_early_error, add=T, col='red')
-
-	#Plot 4
-    all_x = seq(0,0.9,by=0.1);
-    all_y = c(five_late,ten_late)
-    errbar(seq(0,0.9,by=0.1),five_late,
-           five_late - five_late_error,five_late + five_late_error, 
-           xlim=c(min(all_x),max(all_x)),ylim=c(min(all_y),max(all_y)),
-           xlab = 'R squared cutoff', ylab='Degradation Rate (/min)')
-    points(seq(0,0.9,by=0.1),ten_late,col='red')
-    errbar(seq(0,0.9,by=0.1),ten_late, ten_late - ten_late_error, ten_late + ten_late_error, add=T, col='red')
-    
-    #Plot 5
-    hist(five_results$early_length, xlab = 'Linear Sequence Length (min)')
-    
-    #Plot 6
-    hist(five_results$late_length, xlab = 'Linear Sequence Length (min)')
-    
-    #Plot 7
-    hist(ten_results$early_length, xlab = 'Linear Sequence Length (min)',col='red')
-    
-    #Plot 8
-    hist(ten_results$late_length, xlab = 'Linear Sequence Length (min)',col='red')
-    
-    dev.off()
-
-}
-
-early_slopes <- c()
-late_slopes <- c()
-
-for (i in 1:length(all_data$ten_results)) {
-	r_cutoff = 0.9
-	
-	results <- all_data$ten_results[[i]]
-	
-	early_slopes <- c(early_slopes, results$early_slope[results$early_R_sq > r_cutoff]);
-	late_slopes <- c(late_slopes, results$late_slope[results$late_R_sq > r_cutoff]);
-}
+#rm(i)

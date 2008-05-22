@@ -400,6 +400,7 @@ sub gather_ad_lineage_properties {
 
     $props{longevity}               = &gather_longevities;
     $props{merge_count}             = &gather_merge_count;
+    $props{death_status}            = &gather_death_status;
     $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
     $props{ad_sig}                  = &gather_average_ad_sig($props{Average_adhesion_signal});
     $props{Average_pixel_adhesion_signal} = &gather_prop_seq("Average_pixel_adhesion_signal");
@@ -415,12 +416,14 @@ sub gather_ad_lineage_properties {
 
     if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
         $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
-        $props{starting_center_dist}      = &gather_starting_dist($props{Centroid_dist_from_center});
+        $props{starting_center_dist}      = &gather_first_dist($props{Centroid_dist_from_center});
+        $props{ending_center_dist}      = &gather_last_dist($props{Centroid_dist_from_center});
     }
 
     if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
         $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
-        $props{starting_edge_dist}      = &gather_starting_dist($props{Centroid_dist_from_edge});
+        $props{starting_edge_dist}      = &gather_first_dist($props{Centroid_dist_from_edge});
+        $props{ending_edge_dist}      = &gather_last_dist($props{Centroid_dist_from_edge});
     }
 
     return %props;
@@ -481,19 +484,26 @@ sub gather_largest_areas {
     return \@largest_areas;
 }
 
-sub gather_starting_dist {
+sub gather_first_dist {
     my @dists = @{ $_[0] };
 
     my @starting_dists;
     for my $i (0 .. $#dists) {
-        for my $j (0 .. $#{ $dists[$i] }) {
-            if ($dists[$i][$j] ne "NaN") {
-                $starting_dists[$i] = $dists[$i][$j];
-                last;
-            }
-        }
+        my $first_data_index = (grep $dists[$i][$_] ne "NaN", (0 .. $#{ $dists[$i] }))[0];
+        $starting_dists[$i] = $dists[$i][$first_data_index];
     }
     return \@starting_dists;
+}
+
+sub gather_last_dist {
+    my @dists = @{ $_[0] };
+
+    my @res_dists;
+    for my $i (0 .. $#dists) {
+        my $last_data_index = (grep $dists[$i][$_] ne "NaN", (0 .. $#{ $dists[$i] }))[-1];
+        $res_dists[$i] = $dists[$i][$last_data_index];
+    }
+    return \@res_dists;
 }
 
 sub gather_average_ad_sig {
@@ -591,6 +601,22 @@ sub gather_merge_count {
     return \@merge_count;
 }
 
+sub gather_death_status {
+    my @death_status = map 0, (0 .. $#tracking_mat);
+    my @data_keys = sort keys %data_sets;
+    for my $i (0 .. $#tracking_mat) {
+        my $in_seq = 0;
+        for my $j (0 .. $#{ $tracking_mat[$i] }) {
+            $in_seq = 1 if ($tracking_mat[$i][$j] >= 0);
+            $death_status[$i] = 1 if ($tracking_mat[$i][$j] == -1 && $in_seq); 
+            $in_seq = 0 if ($tracking_mat[$i][$j] <= -1 && $in_seq); 
+            
+        }
+    }
+
+    return \@death_status;
+}
+
 sub output_adhesion_lineage_props {
     if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
         mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
@@ -618,9 +644,8 @@ sub output_adhesion_lineage_props {
 }
 
 sub gather_lineage_summary_data {
-    my @possible_props = qw(longevity largest_area starting_edge_dist
-      starting_center_dist starting_center_dist merge_count average_speeds
-      max_speeds ad_sig);
+    my @possible_props = qw(longevity largest_area starting_edge_dist ending_edge_dist
+      starting_center_dist ending_center_dist merge_count death_status average_speeds max_speeds ad_sig);
 
     my @lin_summary_data;
     for (@possible_props) {
