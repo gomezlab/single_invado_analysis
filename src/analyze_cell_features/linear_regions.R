@@ -1,49 +1,219 @@
-plot_ad_seq <- function (results,index,dir) {
+plot_ad_seq <- function (results,index,dir,type='early') {
 	
+	library(base)
 	ad_seq = results$exp_data[index,]
 	ad_seq = t(ad_seq[!(is.nan(ad_seq))]);
 	if (! file.exists(dir)) {
-		dir.create(dir)
+		dir.create(dir,recursive=TRUE)
 	}
 	
-	pdf(paste(dir,index,'.pdf',sep=''));
+	pdf(paste(dir,paste(index,'.pdf',sep=''),sep='/'),width=12);
 	par(mfrow=c(1,2),bty='n', mar=c(5,4,1,1))
-			
-	if (is.finite(results$early_slope[index])) {
-		early_ad_seq = ad_seq[1:results$early_offset[index]];
-#		print(this_ad_seq)
-		early_ad_seq = early_ad_seq/early_ad_seq[1];
-#		print(log(this_ad_seq))
-		
-		plot(1:results$early_offset[index],early_ad_seq,xlab='Time (minutes)',ylab='Normalized Paxillin Signal')
-		
+	
+	resid = c()
+	
+	if (type ==  'early') {
+		this_ad_seq = ad_seq[1:results$early_offset[index]];
+		this_ad_seq = this_ad_seq/this_ad_seq[1];
+
 		x = c(0,results$early_offset[index]);
 		y = c(results$early_slope[index]*x[1] + results$early_inter[index],
 		   	  results$early_slope[index]*x[2] + results$early_inter[index])
 		
+		plot(1:results$early_offset[index],this_ad_seq,xlab='Time (minutes)',ylab='Normalized Paxillin Signal',
+				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		
 		lines(x,y,col='red',lwd=2)
+	
+		x = 1:length(this_ad_seq)
+		y = c()
+	
+		for (i in 1:length(this_ad_seq)) {
+			y[i] = this_ad_seq[i] - (results$early_slope[index]*x[i] + results$early_inter[index])
+		}
+	
+		plot(x,y,ylab='Residual Value')
+		
+		resid = c(resid,y)
 	}
 	
-	if (is.finite(results$late_slope[index])) {
+	if (type == 'late') {
 		this_ad_seq = ad_seq[(length(ad_seq) - results$late_offset[index]) : length(ad_seq)];
-		this_ad_seq = this_ad_seq/this_ad_seq[1];
-		
-		plot((length(ad_seq) - results$late_offset[index]) : length(ad_seq),
-			 this_ad_seq, xlab='Time (minutes)', ylab='Normalized Paxillin Signal')
-		
+		this_ad_seq = this_ad_seq[1]/this_ad_seq;
+
 		x = c(length(ad_seq) - results$late_offset[index],length(ad_seq));
 		y = c(results$late_slope[index]*x[1] + results$late_inter[index],
 		   	  results$late_slope[index]*x[2] + results$late_inter[index])
 		
-		lines(x,y,col='red',lwd=2)
-	}
+		plot((length(ad_seq) - results$late_offset[index]) : length(ad_seq),
+			 this_ad_seq, xlab='Time (minutes)', ylab='Normalized Paxillin Signal',
+			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
+		lines(x,y,col='red',lwd=2)
+		
+		x = (length(ad_seq) - results$late_offset[index]) : length(ad_seq)
+		y = c()
+	
+		for (i in 1:length(this_ad_seq)) {
+			y[i] = this_ad_seq[i] - (results$late_slope[index]*x[i] + results$late_inter[index])
+		}
+	
+		plot(x,y,ylab='Residual Value')
+		resid = c(resid,y)
+	}
+	
 	dev.off();
+	
+	resid
 }
 
-#plot_ad_seq(norm_all_data[[1]],498,'./')
+gather_linear_regions <- function(data_set, props, 
+	min_length = 10, col_lims = NaN, normed = 1, 
+	log_lin = 0, boot.samp = NA) {
+		
+	print(boot.samp)
+	if (is.numeric(col_lims) && length(col_lims) == 2) {
+		data_set = data_set[,col_lims[1]:col_lims[2]];
+	}
+		
+	rows <- dim(data_set)[[1]]
+	cols <- dim(data_set)[[2]]
 
-gather_linear_regions <- function (dirs, min_length=10, data_file='Average_adhesion_signal.csv', col_lims = NaN, normed = 1, log_lin = 0) {
+	m_results <- list(early_offset = array(min_length, dim = c(rows)),
+					  early_R_sq = array(0, dim = c(rows)),
+					  early_inter = array(NaN, dim = c(rows)), 
+					  early_slope = array(NaN, dim = c(rows)),
+					  late_offset = array(min_length, dim = c(rows)),
+					  late_R_sq = array(0, dim = c(rows)),
+					  late_inter = array(NaN, dim = c(rows)), 
+					  late_slope = array(NaN, dim = c(rows)),
+					  exp_data = data_set,
+					  exp_props = props						 		);
+	
+	for (i in 1:rows) {
+		temp = data_set[i,];
+		temp = temp[!(is.nan(temp))];
+		
+		if (i %% 100 == 0) {
+			print(i)
+		}
+		
+		if (length(temp) == 0) {
+			m_results$seq_length[[i]] = 0;
+			next;
+		}	
+			
+		this_data_set = data.frame(y = temp, x = 1:length(temp));
+	
+		m_results$seq_length[[i]] = length(temp);
+		
+		#Skip over adhesions which don't live long enough
+		if (m_results$seq_length[[i]] < min_length * 2) {
+			next
+		}
+		#Skip over adhesions where we don't see the entire life cycle
+		if (is.finite(data_set[i,1])) {
+			next
+		}
+
+		cur_offset = m_results$early_offset[[i]];
+		for (j in cur_offset:dim(this_data_set)[[1]]) {
+			early_subset = this_data_set[1:cur_offset,]
+			if (normed) {
+				early_subset$y = early_subset$y/early_subset$y[1]
+			}
+			if (log_lin) {
+				early_subset$y = log(early_subset$y)
+			}
+				
+			model <- lm(y ~ x, data = early_subset)
+		
+			summary <- summary(model);
+			
+			if (summary$r.squared > m_results$early_R_sq[[i]]) {
+				m_results$early_R_sq[[i]] = summary$r.squared;
+				m_results$early_length[[i]] = dim(early_subset)[[1]];
+				m_results$early_model[[i]] = model;
+				m_results$early_offset[[i]] = cur_offset;
+				m_results$early_inter[[i]] = coef(model)[[1]];
+				m_results$early_slope[[i]] = coef(model)[[2]];
+			}
+			cur_offset = cur_offset + 1
+		}
+			
+		cur_offset = m_results$late_offset[[i]]
+		for (j in cur_offset:dim(this_data_set)[[1]]) {
+			late_subset = this_data_set[(dim(this_data_set)[[1]]-cur_offset):dim(this_data_set)[[1]],]
+			if (normed) {
+				late_subset$y = late_subset$y[[1]]/late_subset$y
+			}
+			if (log_lin) {
+				late_subset$y = log(late_subset$y)
+			}
+	
+			model <- lm(y ~ x, data = late_subset)
+				
+			summary <- summary(model);
+			
+			if (summary$r.squared > m_results$late_R_sq[[i]]) {
+				m_results$late_R_sq[[i]] = summary$r.squared;
+				m_results$late_length[[i]] = dim(late_subset)[[1]];
+				m_results$late_model[[i]] = model;
+				m_results$late_offset[[i]] = cur_offset;
+				m_results$late_inter[[i]] = coef(model)[[1]];
+				m_results$late_slope[[i]] = coef(model)[[2]];
+			}
+			cur_offset = cur_offset + 1
+		}
+		
+		m_results$stable_lifetime[[i]] = length(temp) - (m_results$late_offset[[i]] + m_results$early_offset[[i]])
+	}
+	
+	if (is.numeric(boot.samp)) {
+	
+		m_results$sim_results <- gather_linear_regions.boot(m_results, min_length=min_length, col_lims=col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
+	
+	}
+	
+	m_results
+}
+
+gather_linear_regions.boot <- function(results, 
+	min_length = 10, col_lims = NaN, normed = 1, 
+	log_lin = 0, boot.samp = NA) {
+
+	sim_results <- list()
+
+	all_ad_sig = c()
+	all_length = c()
+	for (i in 1:dim(results$exp_data)[[2]]) {
+		temp = as.numeric(results$exp_data[i,])
+		temp = temp[! is.nan(temp)]
+		if (results$seq_length[[i]] >= min_length * 2) {
+			all_length = c(all_length,length(temp))
+			all_ad_sig = c(all_ad_sig,temp)	
+		}
+	}
+	sim_ad_sig <- array(NaN, dim = c(boot.samp, max(all_length) + 2))
+	sim_props = list(death_status = list(1, dim=c(boot.samp,1)))
+
+	for (i in 1:boot.samp) {
+		this_length = sample(all_length,1);
+		data = sample(all_ad_sig, this_length, replace = TRUE);
+		sim_ad_sig[i,] <- c(NaN, data, array(NaN, dim = c(max(all_length) - length(data) + 1))) 
+	}
+	
+	sim_results <- gather_linear_regions(sim_ad_sig, sim_props, 
+				       min_length = min_length, col_lims=col_lims, 
+				       normed = normed, log_lin = log_lin)
+}	
+
+
+gather_models_from_dirs <- function (dirs, min_length=10, 
+	data_file='Average_adhesion_signal.csv', col_lims = NA, 
+	normed = 1, log_lin = 0, boot.samp = NA) {
+	
+	print(boot.samp)
 	
 	results = list()
 	
@@ -54,105 +224,18 @@ gather_linear_regions <- function (dirs, min_length=10, data_file='Average_adhes
 		}
 		
 		print(dirs[[k]])
+		print(boot.samp)
 		
-		ad_sig <- read.table(paste(dirs[[k]],data_file,sep=''),header = FALSE, sep  = ',');
+		ad_sig <- as.matrix(read.table(paste(dirs[[k]],data_file,sep=''),header = FALSE, sep  = ','));
+
 		ad_props <- read.table(paste(dirs[[k]],'../single_lin.csv',sep=''), header = TRUE, sep=',');
 		
-		if (is.numeric(col_lims) && length(col_lims) == 2) {
-			ad_sig = ad_sig[,col_lims[1]:col_lims[2]];
-		}
-		
-		rows <- dim(ad_sig)[[1]]
-		cols <- dim(ad_sig)[[2]]
-
-		m_results <- list(early_offset = array(min_length, dim = c(rows)),
-						  early_R_sq = array(0, dim = c(rows)),
-						  early_inter = array(NaN, dim = c(rows)), 
-						  early_slope = array(NaN, dim = c(rows)),
-						  late_offset = array(min_length, dim = c(rows)),
-						  late_R_sq = array(0, dim = c(rows)),
-						  late_inter = array(NaN, dim = c(rows)), 
-						  late_slope = array(NaN, dim = c(rows)),
-						  exp_data = ad_sig,
-						  exp_props = ad_props
-						 );
-	
-		for (i in 1:rows) {
-			temp = ad_sig[i,];
-			temp = temp[!(is.nan(temp))];
-			
-			if (dim(temp)[[2]] == 0) {
-				m_results$seq_length[[i]] = 0;
-				next;
-			}	
-			
-			this_ad_sig = data.frame(y = t(temp[1,]), x = 1:dim(temp)[[2]]);
-			names(this_ad_sig) <- c('y','x');
-		
-			m_results$seq_length[[i]] = length(temp);
-		
-			#Skip over adhesions which don't live long enough
-			if (m_results$seq_length[[i]] < min_length * 2) {
-				next
-			}
-			#Skip over adhesions where we don't see the entire life cycle
-			if (is.finite(ad_sig[i,1])) {
-				next
-			}
-	
-			cur_offset = m_results$early_offset[[i]];
-			for (j in cur_offset:dim(this_ad_sig)[[1]]) {
-				early_subset = this_ad_sig[1:cur_offset,]
-				if (normed) {
-					early_subset$y = early_subset$y/early_subset$y[1]
-				}
-				if (log_lin) {
-					early_subset$y = log(early_subset$y)
-				}
-				
-				model <- lm(y ~ x, data = early_subset)
-		
-				summary <- summary(model);
-			
-				if (summary$r.squared > m_results$early_R_sq[[i]]) {
-					m_results$early_R_sq[[i]] = summary$r.squared;
-					m_results$early_length[[i]] = dim(early_subset)[[1]];
-					m_results$early_model[[i]] = model;
-					m_results$early_offset[[i]] = cur_offset;
-					m_results$early_inter[[i]] = coef(model)[[1]];
-					m_results$early_slope[[i]] = coef(model)[[2]];
-				}
-				cur_offset = cur_offset + 1
-			}
-			
-			cur_offset = m_results$late_offset[[i]]
-			for (j in cur_offset:dim(this_ad_sig)[[1]]) {
-				late_subset = this_ad_sig[(dim(this_ad_sig)[[1]]-cur_offset):dim(this_ad_sig)[[1]],]
-				if (normed) {
-#					late_subset$y = late_subset$y/late_subset$y[[length(late_subset$y)]]
-					late_subset$y = late_subset$y[[1]]/late_subset$y
-				}
-				if (log_lin) {
-					late_subset$y = log(late_subset$y)
-				}
-	
-				model <- lm(y ~ x, data = late_subset)
-				
-				summary <- summary(model);
-			
-				if (summary$r.squared > m_results$late_R_sq[[i]]) {
-					m_results$late_R_sq[[i]] = summary$r.squared;
-					m_results$late_length[[i]] = dim(late_subset)[[1]];
-					m_results$late_model[[i]] = model;
-					m_results$late_offset[[i]] = cur_offset;
-					m_results$late_inter[[i]] = coef(model)[[1]];
-					m_results$late_slope[[i]] = coef(model)[[2]];
-				}
-				cur_offset = cur_offset + 1
-			}
-		}
-		results[[k]] <- m_results
+		results[[k]] <- gather_linear_regions(ad_sig, ad_props, 
+							min_length = min_length, col_lims = col_lims, 
+							normed = normed, log_lin = log_lin, 
+							boot.samp = boot.samp)
 	}
+	
 	results
 }
 
@@ -178,7 +261,9 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
     pdf(paste(dir,file,sep=''),width=8.5,height=8.5,pointsize=14);
     par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
 	
+	#########################################################################
 	#Plot 1 - Slope versus R squared (early)
+	#########################################################################	
 #    plot(results$early_slope[results$early_R_sq != 0],
 #         results$early_R_sq[results$early_R_sq != 0],
 #         xlab='Formation Slope', ylab='R Squared'
@@ -221,7 +306,9 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
 	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
 	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
 
+	#########################################################################
 	#Plot 2 - R squared versus Slope (late)
+	#########################################################################	
 #    plot(results$late_slope[results$late_R_sq != 0 & results$exp_props$death_status],
 #		  results$late_R_sq[results$late_R_sq != 0 & results$exp_props$death_status],
 #         xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5
@@ -304,22 +391,22 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 	
 	if (! is.null(names(results))) {
 		results = list(results);
-	}	
+	}
 	for (i in 1:length(results)) {
 		res = results[[i]];
-#		early_slopes <- c(early_slopes, res$early_slope[res$early_R_sq > r_cutoff & res$early_slope > 0]);
-#		late_slopes  <- c(late_slopes, res$late_slope[res$late_R_sq > r_cutoff & res$late_slope < 0]);
+
 		early_slopes <- c(early_slopes, res$early_slope[res$early_R_sq > r_cutoff]);
+		print(early_slopes)
 		late_slopes  <- c(late_slopes, res$late_slope[res$late_R_sq > r_cutoff & res$exp_props$death_status]);
 	}
-#	print(length(early_slopes))
-#	print(length(late_slopes))
 	slopes <- list(early = mean(early_slopes),
+				   early_slopes = early_slopes,
 				   early_n = length(early_slopes),
 				   early_cv = sd(early_slopes)/mean(early_slopes),
 				   early_sem = sd(early_slopes)/sqrt(length(early_slopes)),
 				   early_sd = sd(early_slopes),
 				   late = mean(late_slopes),	
+				   late_slopes = late_slopes,
 				   late_n = length(late_slopes),
 				   late_cv = sd(late_slopes)/mean(late_slopes),
 				   late_sem = sd(late_slopes)/sqrt(length(late_slopes)),
@@ -352,12 +439,14 @@ for (i in 1:length(dirs)) {
 	pre_dirs[i] = paste(prefix,dirs[i],sep='')
 }
 
-#print('No Norm')
-#all_data = gather_linear_regions(pre_dirs,normed = 0)
 print('Norm')
-norm = gather_linear_regions(pre_dirs)
+norm = gather_models_from_dirs(pre_dirs,boot.samp = 5000)
 print('Norm Log lin')
-log = gather_linear_regions(pre_dirs,log_lin = 1)
+log = gather_linear_regions(pre_dirs,log_lin = 1,boot.samp = 5000)
+
+temp = list(norm = norm, log = log)
+save(temp,'latest.data')
+#load('latest.data'); norm = temp$norm; log = temp$log; rm(temp);
 
 #for (i in 1:length(dirs)) {
 #for (i in 1:1) {
@@ -367,10 +456,49 @@ log = gather_linear_regions(pre_dirs,log_lin = 1)
 #	plot_lin_reg_set(norm[[i]],paste(pre_dirs[i],'../plots/',sep=''),hist_file='lin_hist.pdf')
 #}
 
-#all_est <- exp_set_slope_estimate(all_data[[1]])
-#norm_est <- exp_set_slope_estimate(norm_all_data[[1]])
-#log_est <- exp_set_slope_estimate(log_all_data[[1]])
+#boot.samp = 5000
+#sim_results <- list()
 #
+#for (j in 1:length(norm)) {
+#	all_ad_sig = c()
+#	all_length = c()
+#	for (i in 1:dim(norm[[j]]$exp_data)[[2]]) {
+#		temp = as.numeric(norm[[j]]$exp_data[i,])
+#		temp = temp[! is.nan(temp)]
+#		if (length(temp) >= 20) {
+#			all_length = c(all_length,length(temp))
+#		}	
+#		all_ad_sig = c(all_ad_sig,temp)
+#	}
+#	sim_ad_sig <- array(NaN, dim = c(boot.samp, max(all_length) + 2))
+#
+#	for (i in 1:boot.samp) {
+#		this_length = sample(all_length,1);
+#		data = sample(all_ad_sig, this_length, replace = TRUE);
+#		sim_ad_sig[i,] <- c(NaN, data, array(NaN, dim = c(max(all_length) - length(data) + 1))) 
+#	}
+#	
+#	sim_results[[j]] <- gather_linear_model_results(sim_ad_sig,list())
+#	print(j)
+#}
+
+#for (j in 1:length(norm)) {
+#	pdf(paste(pre_dirs[[j]],'../plots/bootstrap.pdf',sep=''))
+#    par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
+#    
+#    sim_early <- hist(sim_results[[j]]$early_R_sq,seq(0,1.0,by=.1),main="Sim Accumulation Rates",xlab ="Accumulation Rates")
+#    sim_late <- hist(sim_results[[j]]$late_R_sq,seq(0,1.0,by=.1),main="Sim Decay Rates",xlab = "Decay Rates")
+#   
+#    hist(norm[[j]]$early_R_sq[norm[[j]]$early_R_sq != 0],seq(0,1.0,by=.1),main="Accumulation Rates",xlab = "Accumulation Rates")
+#    hist(norm[[j]]$late_R_sq[norm[[j]]$early_R_sq != 0 & norm[[j]]$exp_props$death_status],seq(0,1.0,by=.1),main="Decay Rates",xlab = "Decay Rates")
+#	dev.off()
+#	
+#	early_model = lm(sim_early$breaks[1:4] ~ log(sim_early$counts[1:4]))
+#	print(coef(early_model))
+#	print(j)
+#	
+#}
+
 #
 ##FAK
 #prefix = '../../results/FAK/';
@@ -392,5 +520,6 @@ log = gather_linear_regions(pre_dirs,log_lin = 1)
 #	}	
 #	plot_lin_reg_set(norm_all_data[[i]],paste(pre_dirs[i],'../plots/',sep=''))
 #}
+
 
 #rm(i)
