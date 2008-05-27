@@ -208,17 +208,15 @@ gather_linear_regions.boot <- function(results,
 				       normed = normed, log_lin = log_lin)
 }	
 
-
 gather_models_from_dirs <- function (dirs, min_length=10, 
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
-	normed = 1, log_lin = 0, boot.samp = NA) {
+	normed = 1, log_lin = 0, boot.samp = NA, model_file = NA) {
 	
 	print(boot.samp)
 	
 	results = list()
 	
 	for (k in 1:length(dirs)) {
-		
 		if (is.na(dirs[[k]])) {
 			next
 		}
@@ -234,13 +232,17 @@ gather_models_from_dirs <- function (dirs, min_length=10,
 							min_length = min_length, col_lims = col_lims, 
 							normed = normed, log_lin = log_lin, 
 							boot.samp = boot.samp)
+        
+        if (! is.na(model_file)) {
+            model = results[[k]]
+            save(model,file = paste(pre_dirs[[k]],model_file,sep=''))
+        }
 	}
 	
 	results
 }
 
 plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA) {
-	
 	early_slope = c()
 	early_error = c()
 	early_n = c()
@@ -414,9 +416,9 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 				  )
 }
 
-####################################################################################################
+################################################################################
 # Main Program
-####################################################################################################
+################################################################################
 
 #Paxillin
 prefix = '../../results/focal_adhesions/';
@@ -440,12 +442,13 @@ for (i in 1:length(dirs)) {
 }
 
 print('Norm')
-norm = gather_models_from_dirs(pre_dirs,boot.samp = 5000)
+norm = gather_models_from_dirs(pre_dirs,boot.samp = 5000,model_file='lin_model.data')
 print('Norm Log lin')
-log = gather_linear_regions(pre_dirs,log_lin = 1,boot.samp = 5000)
+log = gather_models_from_dirs(pre_dirs,log_lin = 1,boot.samp = 5000,model_file='log_lin_model.data')
 
 temp = list(norm = norm, log = log)
-save(temp,'latest.data')
+save(temp,file = 'latest.data')
+exit()
 #load('latest.data'); norm = temp$norm; log = temp$log; rm(temp);
 
 #for (i in 1:length(dirs)) {

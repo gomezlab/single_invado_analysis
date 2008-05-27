@@ -47,7 +47,7 @@ my @matlab_code = &create_matlab_code;
 
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{adhesion_errors_file});
 &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
-print(@matlab_code)
+
 ################################################################################
 #Functions
 ################################################################################

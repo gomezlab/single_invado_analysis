@@ -1,54 +1,5 @@
 #!/usr/bin/env perl
 
-=head1 NAME
-
-setup_results_folder.pl - Move all the raw data files into the proper locations
-in the results folder
-
-=head1 SYNOPSIS
-
-setup_results_folder.pl -cfg FA_config
-
-=head1 Description
-
-Since the the data sets being used come in multiple forms, mostly split and
-stacked image sequences, it became easier to write a single function to move all
-the data files into a standard results directory. Then all the downstream
-programs would have an easier time trying to find specific images. This program
-scans through a the data directory for an experiment and moves all the files
-into the correct locations.
-
-Required parameter(s):
-
-=over 
-
-=item * cfg or c: the focal adhesion analysis config file
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: print debuging information during program execution
-
-=back
-
-=head1 EXAMPLES
-
-setup_results_folder.pl -cfg FA_config
-
-OR
-
-setup_results_folder.pl -cfg FA_config -d
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 4/10/2008 
-
-=cut
 
 ################################################################################
 # Global Variables and Modules
@@ -61,6 +12,7 @@ use File::Basename;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
+use Data::Dumper;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -95,12 +47,14 @@ mkpath($cfg{individual_results_folder});
 
 my @image_sets = ([qw(cell_mask_image_prefix cell_mask_file)], [qw(adhesion_image_prefix adhesion_image_file)]);
 my @matlab_code;
+my $all_images_empty = 1;
 
 foreach (@image_sets) {
     my $prefix   = $cfg{ $_->[0] };
     my $out_file = $cfg{ $_->[1] };
-
+    
     my @image_files = <$cfg{exp_data_folder}/$prefix*>;
+    $all_images_empty = 0 if (@image_files > 1);
     
     if ($opt{debug}) {
         if (scalar(@image_files) > 1) {
@@ -112,10 +66,13 @@ foreach (@image_sets) {
             print "Image file found: $image_files[0]\n";
         }
         print "For Config Variable: ", $_->[0], "\n\n";
+    } else {
+        next if (not @image_files);
     }
 
     push @matlab_code, &create_matlab_code(\@image_files, $prefix, $out_file);
 }
+die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{setup_errors_file});
 &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
@@ -206,3 +163,57 @@ sub create_extr_val_code {
 
     return "find_extr_values('$min_max_file','" . join("','", @image_files) . "');\n";
 }
+
+################################################################################
+#Documentation
+################################################################################
+
+=head1 NAME
+
+setup_results_folder.pl - Move all the raw data files into the proper locations
+in the results folder
+
+=head1 SYNOPSIS
+
+setup_results_folder.pl -cfg FA_config
+
+=head1 Description
+
+Since the the data sets being used come in multiple forms, mostly split and
+stacked image sequences, it became easier to write a single function to move all
+the data files into a standard results directory. Then all the downstream
+programs would have an easier time trying to find specific images. This program
+scans through a the data directory for an experiment and moves all the files
+into the correct locations.
+
+Required parameter(s):
+
+=over 
+
+=item * cfg or c: the focal adhesion analysis config file
+
+=back
+
+Optional parameter(s):
+
+=over 
+
+=item * debug or d: print debuging information during program execution
+
+=back
+
+=head1 EXAMPLES
+
+setup_results_folder.pl -cfg FA_config
+
+OR
+
+setup_results_folder.pl -cfg FA_config -d
+
+=head1 AUTHORS
+
+Matthew Berginski (mbergins@unc.edu)
+
+Documentation last updated: 4/10/2008 
+
+=cut
