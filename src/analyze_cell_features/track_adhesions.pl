@@ -31,9 +31,7 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
 
-my @needed_vars =
-  qw(data_folder results_folder exp_name single_image_folder raw_data_folder general_data_files tracking_files tracking_output_file);
-my $ad_conf = new Config::Adhesions(\%opt, \@needed_vars);
+my $ad_conf = new Config::Adhesions(\%opt);
 my %cfg = $ad_conf->get_cfg_hash;
 
 ###############################################################################
@@ -45,8 +43,8 @@ if (not(defined $opt{input}) || defined $opt{output}) {
     print "\n\nGathering Data Files\n" if $opt{debug};
 
     my @data_files;
-    push @data_files, split(/\s+/, $cfg{general_data_files});
-    push @data_files, split(/\s+/, $cfg{tracking_files});
+    push @data_files, @{$cfg{general_data_files}};
+    push @data_files, @{$cfg{tracking_files}};
 
     %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 

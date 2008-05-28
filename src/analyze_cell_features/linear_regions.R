@@ -1,6 +1,5 @@
 plot_ad_seq <- function (results,index,dir,type='early') {
 	
-	library(base)
 	ad_seq = results$exp_data[index,]
 	ad_seq = t(ad_seq[!(is.nan(ad_seq))]);
 	if (! file.exists(dir)) {
@@ -71,7 +70,6 @@ gather_linear_regions <- function(data_set, props,
 	min_length = 10, col_lims = NaN, normed = 1, 
 	log_lin = 0, boot.samp = NA) {
 		
-	print(boot.samp)
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
 	}
@@ -204,15 +202,12 @@ gather_linear_regions.boot <- function(results,
 	}
 	
 	sim_results <- gather_linear_regions(sim_ad_sig, sim_props, 
-				       min_length = min_length, col_lims=col_lims, 
-				       normed = normed, log_lin = log_lin)
+				       min_length = min_length, normed = normed, log_lin = log_lin)
 }	
 
 gather_models_from_dirs <- function (dirs, min_length=10, 
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
 	normed = 1, log_lin = 0, boot.samp = NA, model_file = NA) {
-	
-	print(boot.samp)
 	
 	results = list()
 	
@@ -222,20 +217,28 @@ gather_models_from_dirs <- function (dirs, min_length=10,
 		}
 		
 		print(dirs[[k]])
-		print(boot.samp)
 		
 		ad_sig <- as.matrix(read.table(paste(dirs[[k]],data_file,sep=''),header = FALSE, sep  = ','));
 
 		ad_props <- read.table(paste(dirs[[k]],'../single_lin.csv',sep=''), header = TRUE, sep=',');
 		
+		this_col_lim = NA
+		if (! is.na(as.matrix(col_lims)[1,1])) {
+			if(dim(col_lims)[[2]] == 1) {
+				this_col_lim = c(col_lims[k],dim(ad_sig)[[2]])
+			} else {
+				this_col_lim = col_lims[k,]
+			}
+		}
+		
 		results[[k]] <- gather_linear_regions(ad_sig, ad_props, 
-							min_length = min_length, col_lims = col_lims, 
+							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log_lin = log_lin, 
 							boot.samp = boot.samp)
         
         if (! is.na(model_file)) {
             model = results[[k]]
-            save(model,file = paste(pre_dirs[[k]],model_file,sep=''))
+            save(model,file = paste(dirs[[k]],model_file,sep=''))
         }
 	}
 	
@@ -266,91 +269,94 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
 	#########################################################################
 	#Plot 1 - Slope versus R squared (early)
 	#########################################################################	
-#    plot(results$early_slope[results$early_R_sq != 0],
-#         results$early_R_sq[results$early_R_sq != 0],
-#         xlab='Formation Slope', ylab='R Squared'
-#        );
+    plot(results$early_slope[results$early_R_sq != 0],
+         results$early_R_sq[results$early_R_sq != 0],
+         xlab='Formation Slope', ylab='R Squared', cex = 0.5,
+         ylim = c(0,1)
+        );
 
-	slopes = results$early_slope 
-	R_sqs = results$early_R_sq
-	init_filter = R_sqs != 0;
-	all_x = slopes[init_filter]
-	all_y = R_sqs[init_filter]
-	cols = rainbow(10);
-	c_l = length(cols);
-
-	dist_list = results$exp_props$starting_edge_dist
-	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));
-	
-	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
-	x = slopes[indexes]
-	y = R_sqs[indexes]
-	plot(x, y, col=cols[1], 
-		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
-		 cex = 0.5, xlab='Formation Slope (/min)', ylab='R Squared')
-	
-	for (i in 2:c_l) {
-		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
-		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
-		x = slopes[indexes]
-		y = R_sqs[indexes]
-		points(x,y,col=cols[i], cex = 0.5)
-	}
-	
-	x_range = c(0.14,0.15);
-	y_range = c(0.1,0.6);
-	
-	for (i in 1:c_l) {
-		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-			 col=cols[i], border = NA)
-	}
-	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
-	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
+#	slopes = results$early_slope 
+#	R_sqs = results$early_R_sq
+#	init_filter = R_sqs != 0;
+#	all_x = slopes[init_filter]
+#	all_y = R_sqs[init_filter]
+#	cols = rainbow(10);
+#	c_l = length(cols);
+#
+#	dist_list = results$exp_props$starting_edge_dist
+#	print(length(dist_list))
+#	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));
+#	
+#	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
+#	x = slopes[indexes]
+#	y = R_sqs[indexes]
+#	plot(x, y, col=cols[1], 
+#		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
+#		 cex = 0.5, xlab='Formation Slope (/min)', ylab='R Squared')
+#	
+#	for (i in 2:c_l) {
+#		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
+#		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
+#		x = slopes[indexes]
+#		y = R_sqs[indexes]
+#		points(x,y,col=cols[i], cex = 0.5)
+#	}
+#	
+#	x_range = c(0.14,0.15);
+#	y_range = c(0.1,0.6);
+#	
+#	for (i in 1:c_l) {
+#		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+#			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+#			 col=cols[i], border = NA)
+#	}
+#	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
+#	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
 
 	#########################################################################
 	#Plot 2 - R squared versus Slope (late)
 	#########################################################################	
-#    plot(results$late_slope[results$late_R_sq != 0 & results$exp_props$death_status],
-#		  results$late_R_sq[results$late_R_sq != 0 & results$exp_props$death_status],
-#         xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5
-#        )
+    plot(results$late_slope[results$late_R_sq != 0 & results$exp_props$death_status],
+		 results$late_R_sq[results$late_R_sq != 0 & results$exp_props$death_status],
+         xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5,
+         ylim = c(0,1)
+        )
 
-	slopes = results$late_slope
-	R_sqs = results$late_R_sq
-	init_filter = R_sqs != 0  & results$exp_props$death_status
-	all_x = slopes[init_filter]
-	all_y = R_sqs[init_filter]
-	cols = rainbow(10);
-	c_l = length(cols);
-
-	dist_list = results$exp_props$starting_edge_dist
-	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));	
-	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
-	x = slopes[indexes]
-	y = R_sqs[indexes]
-	plot(x, y, col=cols[1], 
-		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
-		 cex = 0.5, xlab='Decay Slope (/min)', ylab='R Squared')
-	
-	for (i in 2:c_l) {
-		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
-		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
-		x = slopes[indexes]
-		y = R_sqs[indexes]
-		points(x,y,col=cols[i], cex = 0.5)
-	}
-	
-	x_range = c(max(all_x)*0.8,max(all_x)*0.85);
-	y_range = c(0.1,0.6);
-	
-	for (i in 1:c_l) {
-		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-			 col=cols[i], border = NA)
-	}
-	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
-	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
+#	slopes = results$late_slope
+#	R_sqs = results$late_R_sq
+#	init_filter = R_sqs != 0  & results$exp_props$death_status
+#	all_x = slopes[init_filter]
+#	all_y = R_sqs[init_filter]
+#	cols = rainbow(10);
+#	c_l = length(cols);
+#
+#	dist_list = results$exp_props$starting_edge_dist
+#	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));	
+#	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
+#	x = slopes[indexes]
+#	y = R_sqs[indexes]
+#	plot(x, y, col=cols[1], 
+#		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
+#		 cex = 0.5, xlab='Decay Slope (/min)', ylab='R Squared')
+#	
+#	for (i in 2:c_l) {
+#		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
+#		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
+#		x = slopes[indexes]
+#		y = R_sqs[indexes]
+#		points(x,y,col=cols[i], cex = 0.5)
+#	}
+#	
+#	x_range = c(max(all_x)*0.8,max(all_x)*0.85);
+#	y_range = c(0.1,0.6);
+#	
+#	for (i in 1:c_l) {
+#		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+#			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
+#			 col=cols[i], border = NA)
+#	}
+#	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
+#	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
     
 	#Plot 3
     errbar(seq(0,0.9,by=0.1), early_slope, early_slope - early_error, early_slope + early_error, xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
@@ -398,7 +404,6 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 		res = results[[i]];
 
 		early_slopes <- c(early_slopes, res$early_slope[res$early_R_sq > r_cutoff]);
-		print(early_slopes)
 		late_slopes  <- c(late_slopes, res$late_slope[res$late_R_sq > r_cutoff & res$exp_props$death_status]);
 	}
 	slopes <- list(early = mean(early_slopes),
@@ -421,34 +426,33 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 ################################################################################
 
 #Paxillin
-prefix = '../../results/focal_adhesions/';
-
-dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
-         'time_series_05/adhesion_props/lin_time_series/','time_series_06/adhesion_props/lin_time_series/',
-         'time_series_07/adhesion_props/lin_time_series/','time_series_08/adhesion_props/lin_time_series/',
-         'time_series_09/adhesion_props/lin_time_series/','time_series_10/adhesion_props/lin_time_series/',
-         'time_series_11/adhesion_props/lin_time_series/','time_series_12/adhesion_props/lin_time_series/',
-         'time_series_13/adhesion_props/lin_time_series/','time_series_14/adhesion_props/lin_time_series/',
-         'time_series_15/adhesion_props/lin_time_series/','time_series_16/adhesion_props/lin_time_series/',
-         'time_series_17/adhesion_props/lin_time_series/','time_series_18/adhesion_props/lin_time_series/',
-         'time_series_19/adhesion_props/lin_time_series/','time_series_20/adhesion_props/lin_time_series/',
-         'time_series_21/adhesion_props/lin_time_series/','time_series_22/adhesion_props/lin_time_series/',
-         'time_series_23/adhesion_props/lin_time_series/');
-
-pre_dirs <- c()
-for (i in 1:length(dirs)) {
-#for (i in 1:1) {
-	pre_dirs[i] = paste(prefix,dirs[i],sep='')
-}
-
-print('Norm')
-norm = gather_models_from_dirs(pre_dirs,boot.samp = 5000,model_file='lin_model.data')
-print('Norm Log lin')
-log = gather_models_from_dirs(pre_dirs,log_lin = 1,boot.samp = 5000,model_file='log_lin_model.data')
-
-temp = list(norm = norm, log = log)
-save(temp,file = 'latest.data')
-exit()
+#prefix = '../../results/focal_adhesions/';
+#
+#dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
+#         'time_series_05/adhesion_props/lin_time_series/','time_series_06/adhesion_props/lin_time_series/',
+#         'time_series_07/adhesion_props/lin_time_series/','time_series_08/adhesion_props/lin_time_series/',
+#         'time_series_09/adhesion_props/lin_time_series/','time_series_10/adhesion_props/lin_time_series/',
+#         'time_series_11/adhesion_props/lin_time_series/','time_series_12/adhesion_props/lin_time_series/',
+#         'time_series_13/adhesion_props/lin_time_series/','time_series_14/adhesion_props/lin_time_series/',
+#         'time_series_15/adhesion_props/lin_time_series/','time_series_16/adhesion_props/lin_time_series/',
+#         'time_series_17/adhesion_props/lin_time_series/','time_series_18/adhesion_props/lin_time_series/',
+#         'time_series_19/adhesion_props/lin_time_series/','time_series_20/adhesion_props/lin_time_series/',
+#         'time_series_21/adhesion_props/lin_time_series/','time_series_22/adhesion_props/lin_time_series/',
+#         'time_series_23/adhesion_props/lin_time_series/');
+#
+#pre_dirs <- c()
+#for (i in 1:length(dirs)) {
+##for (i in 1:1) {
+#	pre_dirs[i] = paste(prefix,dirs[i],sep='')
+#}
+#
+#print('Norm')
+#norm = gather_models_from_dirs(pre_dirs,boot.samp = 5000,model_file='lin_model.data')
+#print('Norm Log lin')
+#log = gather_models_from_dirs(pre_dirs,log_lin = 1,boot.samp = 5000,model_file='log_lin_model.data')
+#
+#temp = list(norm = norm, log = log)
+#save(temp,file = 'latest.data')
 #load('latest.data'); norm = temp$norm; log = temp$log; rm(temp);
 
 #for (i in 1:length(dirs)) {
@@ -459,34 +463,16 @@ exit()
 #	plot_lin_reg_set(norm[[i]],paste(pre_dirs[i],'../plots/',sep=''),hist_file='lin_hist.pdf')
 #}
 
-#boot.samp = 5000
-#sim_results <- list()
-#
-#for (j in 1:length(norm)) {
-#	all_ad_sig = c()
-#	all_length = c()
-#	for (i in 1:dim(norm[[j]]$exp_data)[[2]]) {
-#		temp = as.numeric(norm[[j]]$exp_data[i,])
-#		temp = temp[! is.nan(temp)]
-#		if (length(temp) >= 20) {
-#			all_length = c(all_length,length(temp))
-#		}	
-#		all_ad_sig = c(all_ad_sig,temp)
-#	}
-#	sim_ad_sig <- array(NaN, dim = c(boot.samp, max(all_length) + 2))
-#
-#	for (i in 1:boot.samp) {
-#		this_length = sample(all_length,1);
-#		data = sample(all_ad_sig, this_length, replace = TRUE);
-#		sim_ad_sig[i,] <- c(NaN, data, array(NaN, dim = c(max(all_length) - length(data) + 1))) 
-#	}
-#	
-#	sim_results[[j]] <- gather_linear_model_results(sim_ad_sig,list())
-#	print(j)
+#for (i in 1:length(dirs)) {
+#for (i in 1:1) {
+#	if (is.na(pre_dirs[i])) {
+#		next
+#	}	
+#	plot_lin_reg_set(norm[[i]],paste(pre_dirs[i],'../plots/',sep=''),hist_file='lin_hist.pdf')
 #}
 
 #for (j in 1:length(norm)) {
-#	pdf(paste(pre_dirs[[j]],'../plots/bootstrap.pdf',sep=''))
+#	 pdf(paste(pre_dirs[[j]],'../plots/bootstrap.pdf',sep=''))
 #    par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
 #    
 #    sim_early <- hist(sim_results[[j]]$early_R_sq,seq(0,1.0,by=.1),main="Sim Accumulation Rates",xlab ="Accumulation Rates")
@@ -502,27 +488,32 @@ exit()
 #	
 #}
 
-#
-##FAK
-#prefix = '../../results/FAK/';
-#
-#dirs = c('time_series_01/adhesion_props/lin_time_series/');
-#
-#pre_dirs <- c()
-#for (i in 1:length(dirs)) {
-##for (i in 2:2) {	
-#	pre_dirs[i] = paste(prefix,dirs[i],sep='')
-#}
 
-#pre_fak = gather_linear_regions(pre_dirs,col_lims = c(1,33))
-#post_fak = gather_linear_regions(pre_dirs,col_lims = c(34,90))
+#FAK
+prefix = '../../results/FAK/low/';
+
+dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_02/adhesion_props/lin_time_series/',
+		 'time_series_03/adhesion_props/lin_time_series/');
+
+prefix_dirs <- c()
+for (i in 1:length(dirs)) {
+#for (i in 2:2) {	
+	prefix_dirs[i] = paste(prefix,dirs[i],sep='')
+}
+
+pre_col_lims = matrix(c(1,1,1,33,29,29), ncol=2, nrow=length(prefix_dirs))
+post_col_lims = matrix(c(34,30,30), ncol=1, nrow=length(prefix_dirs))
+
+fak = list(pre = list(), post = list())
+
+fak$pre = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=pre_col_lims, model_file='lin_model.data', min_length = 5)
+fak$post = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=post_col_lims, model_file='lin_model.data', min_length = 5)
 
 #for (i in 1:length(dirs)) {
-#	if (is.na(pre_dirs[i])) {
+#	if (is.na(prefix_dirs[i])) {
 #		next
 #	}	
-#	plot_lin_reg_set(norm_all_data[[i]],paste(pre_dirs[i],'../plots/',sep=''))
+#	plot_lin_reg_set(fak$pre[[i]],paste(prefix_dirs[i],'../plots/',sep=''), file='pre_linear_regions.pdf')
+#	plot_lin_reg_set(fak$post[[i]],paste(prefix_dirs[i],'../plots/',sep=''), file='post_linear_regions.pdf')
 #}
 
-
-#rm(i)

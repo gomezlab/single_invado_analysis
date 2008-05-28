@@ -47,8 +47,8 @@ if (exists $opt{tracking_mat}) {
 print "Gathering/Converting Data Files\n" if $opt{debug};
 
 my @data_files;
-push @data_files, split(/\s+/, $cfg{general_data_files});
-push @data_files, split(/\s+/, $cfg{lineage_analysis_data_files});
+push @data_files, @{$cfg{general_data_files}};
+push @data_files, @{$cfg{lineage_analysis_data_files}};
 my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 %data_sets = &Image::Data::Collection::trim_data_sets(\%cfg, \%opt, \%data_sets);
 %data_sets = &convert_data_to_units(\%data_sets, \%cfg);

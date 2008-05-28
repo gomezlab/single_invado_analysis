@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
 
-
 ################################################################################
 # Global Variables and Modules
 ################################################################################
@@ -15,7 +14,7 @@ use Getopt::Long;
 use Data::Dumper;
 
 use lib "../lib";
-use Config::Adhesions;
+use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
 
@@ -29,8 +28,7 @@ GetOptions(\%opt, "cfg|c=s", "debug|d");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Gathering Config\n" if $opt{debug};
-my $ad_conf = new Config::Adhesions(\%opt);
-my %cfg     = $ad_conf->get_cfg_hash;
+my %cfg = ParseConfig(\%opt);
 
 my $matlab_wrapper;
 if (defined $cfg{matlab_executable}) {

@@ -1,6 +1,5 @@
 function make_movie_frames(cfg_file,varargin)
-%MAKE_MOVIE_FRAMES    
-%
+%MAKE_MOVIE_FRAMES
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -34,15 +33,6 @@ addpath(genpath(path_folders));
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tracking_seqs = load(tracking_seq_file) + 1;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Collect image numbers to exclude
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (exist(excluded_frames_file,'file') && not(exist(excluded_frames_file,'dir')))
-    excluded_frames = load(excluded_frames_file);
-else
-    excluded_frames = 0;
-end
 
 i_size = size(imread(fullfile(I_folder,sprintf(['%0',num2str(length(num2str(i_count))),'d'],1),focal_image)));
 
@@ -79,7 +69,7 @@ adhesion_time_to_cmap = zeros(size(tracking_seqs,1),1);
 i_seen = 0;
 
 for i = 1:i_count
-    if (find(i==excluded_frames))
+    if (find(i==excluded_image_nums))
         continue;
     end
     if (i_seen + 1 > size(tracking_seqs,2))

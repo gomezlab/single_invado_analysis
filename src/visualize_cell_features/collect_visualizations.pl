@@ -40,8 +40,6 @@ my %cfg = $ad_conf->get_cfg_hash;
 
 my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
 
-my @movie_folders = split(/\s/, $cfg{movie_output_folders});
-
 our @files;
 find(\&include_in_vis, (catdir($cfg{exp_results_folder}, $cfg{tracking_folder})));
 
@@ -92,6 +90,8 @@ sub build_matlab_visualization_config {
     if (not exists $params{'tracking_file'}) {
         $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
     }
+    
+    my $exclude_image_nums = "["  . join(",", @{$cfg{exclude_image_nums}}) . "]";
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
@@ -122,7 +122,7 @@ sub build_matlab_visualization_config {
         "out_path = fullfile(base_results_folder,'$params{movie_path}');\n",
         "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'};\n\n",
 
-        "excluded_frames_file = fullfile(base_data_folder,'$cfg{exclude_file}');\n",
+        "excluded_image_nums = $excluded_image_nums;\n",
         "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');\n",
         "path_folders = '$cfg{path_folders}';\n\n",
 

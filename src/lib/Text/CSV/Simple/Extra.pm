@@ -3,11 +3,12 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+{ 
+package Text::CSV::Simple::Extra;
 use strict;
 use warnings;
 use Text::CSV;
 
-package Text::CSV::Simple::Extra;
 
 our @EXPORT = qw( output_mat_csv );
 use Exporter;
@@ -29,5 +30,7 @@ sub output_mat_csv {
     }
 
     $out_hand->close;
+}
+
 }
 1;

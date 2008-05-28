@@ -3,6 +3,7 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+{
 package Config::Adhesions;
 use strict;
 use warnings;
@@ -10,11 +11,18 @@ use File::Spec;
 
 use base qw(Config::General);
 
+our @EXPORT = qw(ParseConfig);
+use Exporter;
+our @ISA = qw(Exporter);
+
 my %derived_vars = (
     individual_results_folder => [qw(results_folder exp_name single_image_folder)],
     exp_results_folder        => [qw(results_folder exp_name)],
     exp_data_folder           => [qw(data_folder exp_name)],
 );
+
+my @vars_to_split = qw(exclude_image_nums general_data_files tracking_files
+    lineage_analysis_data_files movie_output_prefix);
 
 ###############################################################################
 # Module Definition
@@ -36,33 +44,45 @@ sub new {
     bless $cfg_ref, $class;
 
     $cfg_ref->build_derived_parameters;
-    $cfg_ref->collect_cfg_info_from_files;
+    $cfg_ref->split_config_variables;
 
     return $cfg_ref;
 }
 
-sub collect_cfg_info_from_files {
+sub ParseConfig {
+    my %opt = %{ $_[0] };
+    
+    my %cfg = Config::General::ParseConfig(
+        -ConfigFile            => $opt{cfg},
+        -MergeDuplicateOptions => 1,
+        -IncludeRelative       => 1,
+    );
+    $cfg{opt} = \%opt;
+    
+    my $cfg_ref = \%cfg;
+
+    bless $cfg_ref, "Config::Adhesions";
+
+    $cfg_ref->build_derived_parameters;
+    $cfg_ref->split_config_variables;
+
+    return $cfg_ref->get_cfg_hash;
+}
+
+
+sub split_config_variables {
     my $cfg = shift;
-
-    #check to see if a file for the frames that should be excluded from the
-    #analysis is included, if it is, collect the data from it, otherwise, set
-    #exclude_image_nums to 0
-
-    if (defined $cfg->{exclude_file}) {
-        my $exclude_file = File::Spec->catfile($cfg->{data_folder}, $cfg->{exp_name}, $cfg->{exclude_file});
-        open EX_INPUT, $exclude_file or die "Can't open the specified exclude file: $exclude_file";
-        my $temp_line = <EX_INPUT>;
-        close EX_INPUT;
-
-        if (not($temp_line)) {
-            $cfg->{exclude_image_nums} = [0];
-        } else {
-            chomp($temp_line);
-            $cfg->{exclude_image_nums} = [split(",", $temp_line)];
+    
+    foreach (@vars_to_split) {
+        if (defined $cfg->{$_}) {
+            $cfg->{$_} = [split(/\s+/, $cfg->{$_})];
         }
-    } else {
-        $cfg->{exclude_image_nums} = [0];
     }
+
+    if (not defined $cfg->{exclude_image_nums}) {
+        $cfg->{exclude_image_nums} = [0];
+        $cfg->{exclude_image_nums} = [split(/\s+/, $cfg->{exclude_image_nums})];
+    } 
 }
 
 sub build_derived_parameters {
@@ -83,5 +103,5 @@ sub get_cfg_hash {
     my $self = shift;
     return map { $_ => ${$self}{$_} } keys %{$self};
 }
-
+}
 1;
