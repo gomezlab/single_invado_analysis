@@ -3,6 +3,7 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+package Config::Adhesions;
 use strict;
 use warnings;
 use File::Spec;
@@ -18,22 +19,17 @@ my %derived_vars = (
 ###############################################################################
 # Module Definition
 ###############################################################################
-package Config::Adhesions;
 
 sub new {
     my $class        = $_[0];
     my %opt          = %{ $_[1] };
-    my @needed_files = ();
-    @needed_files = @{ $_[2] } if (scalar(@_) > 2);
 
-    my $conf = new Config::General(
+    my %cfg = Config::General::ParseConfig(
         -ConfigFile            => $opt{cfg},
         -MergeDuplicateOptions => 1,
         -IncludeRelative       => 1,
     );
-    my %cfg = $conf->getall;
-    %{ $cfg{opt} }          = %opt;
-    @{ $cfg{needed_files} } = @needed_files;
+    $cfg{opt} = \%opt;
 
     my $cfg_ref = \%cfg;
 
@@ -59,13 +55,13 @@ sub collect_cfg_info_from_files {
         close EX_INPUT;
 
         if (not($temp_line)) {
-            @{ $cfg->{exclude_image_nums} } = (0);
+            $cfg->{exclude_image_nums} = [0];
         } else {
             chomp($temp_line);
-            @{ $cfg->{exclude_image_nums} } = split(",", $temp_line);
+            $cfg->{exclude_image_nums} = [split(",", $temp_line)];
         }
     } else {
-        @{ $cfg->{exclude_image_nums} } = (0);
+        $cfg->{exclude_image_nums} = [0];
     }
 }
 
