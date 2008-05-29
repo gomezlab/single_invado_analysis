@@ -68,7 +68,7 @@ plot_ad_seq <- function (results,index,dir,type='early') {
 
 gather_linear_regions <- function(data_set, props, 
 	min_length = 10, col_lims = NaN, normed = 1, 
-	log_lin = 0, boot.samp = NA) {
+	log_lin = 0, boot.samp = NA, save.exp_data = TRUE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
@@ -85,8 +85,11 @@ gather_linear_regions <- function(data_set, props,
 					  late_R_sq = array(0, dim = c(rows)),
 					  late_inter = array(NaN, dim = c(rows)), 
 					  late_slope = array(NaN, dim = c(rows)),
-					  exp_data = data_set,
 					  exp_props = props						 		);
+	
+	if (save.exp_data) {
+		m_results$exp_data = data_set;
+	}
 	
 	for (i in 1:rows) {
 		temp = data_set[i,];
@@ -169,7 +172,8 @@ gather_linear_regions <- function(data_set, props,
 	
 	if (is.numeric(boot.samp)) {
 	
-		m_results$sim_results <- gather_linear_regions.boot(m_results, min_length=min_length, col_lims=col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
+		m_results$sim_results <- gather_linear_regions.boot(m_results, min_length = min_length, 
+			col_lims = col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
 	
 	}
 	
@@ -202,7 +206,7 @@ gather_linear_regions.boot <- function(results,
 	}
 	
 	sim_results <- gather_linear_regions(sim_ad_sig, sim_props, 
-				       min_length = min_length, normed = normed, log_lin = log_lin)
+				       min_length = min_length, normed = normed, log_lin = log_lin, save.exp_data = FALSE)
 }	
 
 gather_models_from_dirs <- function (dirs, min_length=10, 
@@ -426,34 +430,41 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 ################################################################################
 
 #Paxillin
-#prefix = '../../results/focal_adhesions/';
-#
-#dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
-#         'time_series_05/adhesion_props/lin_time_series/','time_series_06/adhesion_props/lin_time_series/',
-#         'time_series_07/adhesion_props/lin_time_series/','time_series_08/adhesion_props/lin_time_series/',
-#         'time_series_09/adhesion_props/lin_time_series/','time_series_10/adhesion_props/lin_time_series/',
-#         'time_series_11/adhesion_props/lin_time_series/','time_series_12/adhesion_props/lin_time_series/',
-#         'time_series_13/adhesion_props/lin_time_series/','time_series_14/adhesion_props/lin_time_series/',
-#         'time_series_15/adhesion_props/lin_time_series/','time_series_16/adhesion_props/lin_time_series/',
-#         'time_series_17/adhesion_props/lin_time_series/','time_series_18/adhesion_props/lin_time_series/',
-#         'time_series_19/adhesion_props/lin_time_series/','time_series_20/adhesion_props/lin_time_series/',
-#         'time_series_21/adhesion_props/lin_time_series/','time_series_22/adhesion_props/lin_time_series/',
-#         'time_series_23/adhesion_props/lin_time_series/');
-#
-#pre_dirs <- c()
-#for (i in 1:length(dirs)) {
-##for (i in 1:1) {
-#	pre_dirs[i] = paste(prefix,dirs[i],sep='')
-#}
-#
-#print('Norm')
-#norm = gather_models_from_dirs(pre_dirs,boot.samp = 5000,model_file='lin_model.data')
-#print('Norm Log lin')
-#log = gather_models_from_dirs(pre_dirs,log_lin = 1,boot.samp = 5000,model_file='log_lin_model.data')
-#
-#temp = list(norm = norm, log = log)
-#save(temp,file = 'latest.data')
+prefix = '../../results/focal_adhesions/';
+
+dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
+         'time_series_05/adhesion_props/lin_time_series/','time_series_06/adhesion_props/lin_time_series/',
+         'time_series_07/adhesion_props/lin_time_series/','time_series_08/adhesion_props/lin_time_series/',
+         'time_series_09/adhesion_props/lin_time_series/','time_series_10/adhesion_props/lin_time_series/',
+         'time_series_11/adhesion_props/lin_time_series/','time_series_12/adhesion_props/lin_time_series/',
+         'time_series_13/adhesion_props/lin_time_series/','time_series_14/adhesion_props/lin_time_series/',
+         'time_series_15/adhesion_props/lin_time_series/','time_series_16/adhesion_props/lin_time_series/',
+         'time_series_17/adhesion_props/lin_time_series/','time_series_18/adhesion_props/lin_time_series/',
+         'time_series_19/adhesion_props/lin_time_series/','time_series_20/adhesion_props/lin_time_series/',
+         'time_series_21/adhesion_props/lin_time_series/','time_series_22/adhesion_props/lin_time_series/',
+         'time_series_23/adhesion_props/lin_time_series/');
+
+pre_dirs <- c()
+for (i in 1:length(dirs)) {
+#for (i in 1:1) {
+	pre_dirs[i] = paste(prefix,dirs[i],sep='')
+}
+
+print('Norm')
+norm = gather_models_from_dirs(pre_dirs,boot.samp = 1000,model_file='lin_model.data')
+print('Norm Log lin')
+log = gather_models_from_dirs(pre_dirs,log_lin = 1,boot.samp = 1000,model_file='log_lin_model.data')
+
+temp = list(norm = norm, log = log)
+save(temp,file = 'latest_noexp.data')
 #load('latest.data'); norm = temp$norm; log = temp$log; rm(temp);
+
+#hist_longev <- c()
+#for (i in 1:length(dirs)) {
+##	hist = paste(prefix,dirs[i],sep='')
+#	rm(norm[[i]]$sim_results$exp_data)
+#	rm(log[[i]]$sim_results$exp_data)
+#}
 
 #for (i in 1:length(dirs)) {
 #for (i in 1:1) {
@@ -490,24 +501,24 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 
 
 #FAK
-prefix = '../../results/FAK/low/';
-
-dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_02/adhesion_props/lin_time_series/',
-		 'time_series_03/adhesion_props/lin_time_series/');
-
-prefix_dirs <- c()
-for (i in 1:length(dirs)) {
-#for (i in 2:2) {	
-	prefix_dirs[i] = paste(prefix,dirs[i],sep='')
-}
-
-pre_col_lims = matrix(c(1,1,1,33,29,29), ncol=2, nrow=length(prefix_dirs))
-post_col_lims = matrix(c(34,30,30), ncol=1, nrow=length(prefix_dirs))
-
-fak = list(pre = list(), post = list())
-
-fak$pre = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=pre_col_lims, model_file='lin_model.data', min_length = 5)
-fak$post = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=post_col_lims, model_file='lin_model.data', min_length = 5)
+#prefix = '../../results/FAK/low/';
+#
+#dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_02/adhesion_props/lin_time_series/',
+#		 'time_series_03/adhesion_props/lin_time_series/');
+#
+#prefix_dirs <- c()
+#for (i in 1:length(dirs)) {
+##for (i in 2:2) {	
+#	prefix_dirs[i] = paste(prefix,dirs[i],sep='')
+#}
+#
+#pre_col_lims = matrix(c(1,1,1,33,29,29), ncol=2, nrow=length(prefix_dirs))
+#post_col_lims = matrix(c(34,30,30), ncol=1, nrow=length(prefix_dirs))
+#
+#fak = list(pre = list(), post = list())
+#
+#fak$pre = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=pre_col_lims, model_file='lin_model.data', min_length = 5)
+#fak$post = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=post_col_lims, model_file='lin_model.data', min_length = 5)
 
 #for (i in 1:length(dirs)) {
 #	if (is.na(prefix_dirs[i])) {
@@ -516,4 +527,3 @@ fak$post = gather_models_from_dirs(prefix_dirs, boot.samp = 1000, col_lims=post_
 #	plot_lin_reg_set(fak$pre[[i]],paste(prefix_dirs[i],'../plots/',sep=''), file='pre_linear_regions.pdf')
 #	plot_lin_reg_set(fak$post[[i]],paste(prefix_dirs[i],'../plots/',sep=''), file='post_linear_regions.pdf')
 #}
-

@@ -5,6 +5,7 @@
 ###############################################################################
 use strict;
 use File::Path;
+use File::Basename;
 use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
@@ -39,7 +40,7 @@ print "\n\nFiltering Tracking Matrix\n" if $opt{debug};
 my %filtered_matrix_set = &filter_tracking_matrix;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
-&output_trimmed_matrices;
+&output_trimmed_matrices(\%filtered_matrix_set,"");
 
 ###############################################################################
 # Functions
@@ -66,8 +67,7 @@ sub collect_ad_props {
 sub filter_tracking_matrix {
     my %matrix_set;
 
-    for (2 .. 5) {
-        my $required_longevity = $_;
+    for my $required_longevity (5) {
         for my $i (0 .. $#{ $lin_props{'longevity'} }) {
             my $this_longev = $lin_props{'longevity'}[$i];
             if (   $this_longev >= $required_longevity
@@ -82,10 +82,10 @@ sub filter_tracking_matrix {
         for my $j (0 .. $#{ $tracking_mat[$i] }) {
             $in_lin = 1 if ($tracking_mat[$i][$j] >= 0);
             if ($in_lin && $tracking_mat[$i][$j] <= -1) {
-                push @{ $matrix_set{'dead'}{'all'} }, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
+                push @{ $matrix_set{'no_movie'}{'dead'}{'all'} }, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
                 $in_lin = 0;
                 if ($lin_props{'longevity'}[$i] >= 10) {
-                    push @{ $matrix_set{'dead'}{'10'} }, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
+                    push @{ $matrix_set{'no_movie'}{'dead'}{'10'} }, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
                 }
             }
         }
@@ -98,14 +98,21 @@ sub filter_tracking_matrix {
 }
 
 sub output_trimmed_matrices {
+    my %mat_set = %{$_[0]};
+    my $prefix = $_[1];
+    
     my $base_folder = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, 'filtered');
-    mkpath($base_folder);
+    mkpath(catdir($base_folder,$prefix));
 
-    foreach my $type (keys %filtered_matrix_set) {
-        my $filtered_path = catdir($base_folder, $type);
-        mkpath($filtered_path);
-        foreach my $i (keys %{ $filtered_matrix_set{$type} }) {
-            output_mat_csv(\@{ $filtered_matrix_set{$type}{$i} }, catfile($filtered_path, $i . '.csv'));
+    foreach my $i (keys %mat_set) {
+        print $prefix," ";
+        if (ref($mat_set{$i}) eq "ARRAY") {
+            print $i,"\n";
+            output_mat_csv(\@{ $mat_set{$i} }, catfile($base_folder, $prefix , $i . '.csv'));
+        } elsif (ref($mat_set{$i}) eq "HASH") {
+            output_trimmed_matrices(\%{$mat_set{$i}},catdir($prefix,$i));
+        } else {
+            die "unexpected data type $prefix";
         }
     }
 }
