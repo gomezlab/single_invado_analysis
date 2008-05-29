@@ -69,7 +69,6 @@ sub ParseConfig {
     return $cfg_ref->get_cfg_hash;
 }
 
-
 sub split_config_variables {
     my $cfg = shift;
     
@@ -81,7 +80,6 @@ sub split_config_variables {
 
     if (not defined $cfg->{exclude_image_nums}) {
         $cfg->{exclude_image_nums} = [0];
-        $cfg->{exclude_image_nums} = [split(/\s+/, $cfg->{exclude_image_nums})];
     } 
 }
 
@@ -103,5 +101,6 @@ sub get_cfg_hash {
     my $self = shift;
     return map { $_ => ${$self}{$_} } keys %{$self};
 }
+
 }
 1;

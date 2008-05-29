@@ -29,7 +29,6 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
-
 my $matlab_wrapper;
 if (defined $cfg{matlab_executable}) {
     $matlab_wrapper = Math::Matlab::Local->new({ cmd => "$cfg{matlab_executable} -nodisplay -nojvm -nosplash", });
@@ -52,7 +51,7 @@ foreach (@image_sets) {
     my $out_file = $cfg{ $_->[1] };
     
     my @image_files = <$cfg{exp_data_folder}/$prefix*>;
-    $all_images_empty = 0 if (@image_files > 1);
+    $all_images_empty = 0 if (@image_files);
     
     if ($opt{debug}) {
         if (scalar(@image_files) > 1) {

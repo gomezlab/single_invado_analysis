@@ -16,7 +16,7 @@ use File::Spec::Functions;
 use Benchmark;
 
 use lib "../lib";
-use Config::Adhesions;
+use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
 use Image::Data::Collection;
@@ -31,8 +31,7 @@ GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-my $ad_conf = new Config::Adhesions(\%opt);
-my %cfg = $ad_conf->get_cfg_hash;
+my %cfg = ParseConfig(\%opt);
 
 ###############################################################################
 #Main Program
@@ -91,7 +90,7 @@ sub build_matlab_visualization_config {
         $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
     }
     
-    my $exclude_image_nums = "["  . join(",", @{$cfg{exclude_image_nums}}) . "]";
+    my $excluded_image_nums = "["  . join(",", @{$cfg{exclude_image_nums}}) . "]";
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";

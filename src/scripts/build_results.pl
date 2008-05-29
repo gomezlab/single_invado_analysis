@@ -22,7 +22,6 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg|config=s", "debug|d");
-
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Overall Configuration\n\n" if $opt{debug};
