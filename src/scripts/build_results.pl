@@ -111,6 +111,7 @@ foreach my $f1 (@movie_dirs) {
     foreach my $f2 (@{ $cfg{movie_output_prefix} }) {
         my $input_folder = catdir($f1,$f2);
         system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov 2>&1";
+        File::Path::rmtree($input_folder);
     }
 }
 $t2 = new Benchmark;

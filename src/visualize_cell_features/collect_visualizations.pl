@@ -119,7 +119,7 @@ sub build_matlab_visualization_config {
         "tracking_seq_file = '$params{tracking_file}';\n\n",
 
         "out_path = fullfile(base_results_folder,'$params{movie_path}');\n",
-        "out_prefix = {'", join("\',\'", split(/\s/, $cfg{movie_output_prefix})), "'};\n\n",
+        "out_prefix = {'", join("\',\'", @{$cfg{movie_output_prefix}}), "'};\n\n",
 
         "excluded_image_nums = $excluded_image_nums;\n",
         "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');\n",

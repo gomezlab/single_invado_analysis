@@ -10,7 +10,7 @@ use Cwd 'abs_path';
 use Getopt::Long;
 
 use lib "../lib";
-use Config::Adhesions;
+use Config::Adhesions qw(ParseConfig);
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -18,15 +18,14 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
+$opt{extra} = "";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug");
 
 die "Can't find cfg file ($opt{cfg}) specified on the command line" if not(exists $opt{cfg});
 die "Can't find program to execute on the command line" if not(exists $opt{program});
 
 print "Collecting Configuration\n" if $opt{debug};
-
-my $ad_conf = new Config::Adhesions(\%opt);
-my %cfg = $ad_conf->get_cfg_hash;
+my %cfg = ParseConfig(\%opt);
 
 ###############################################################################
 #Main Program
