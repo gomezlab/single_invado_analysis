@@ -582,3 +582,80 @@ sub output_merge_problems {
         }
     }
 }
+
+################################################################################
+#Documentation
+################################################################################
+
+=head1 NAME
+
+track_adhesions.pl - Track the focal adhesions identified in prior steps 
+
+=head1 SYNOPSIS
+
+track_adhesions.pl -cfg FA_config
+
+=head1 Description
+
+This program handles tracking the FA from birth until death. The process is
+split into four parts:
+
+=over 
+
+=item 1. Initialize the tracking sequence on the FA present in the first image
+
+=item 2. Find the best match for each FA in the next image
+
+=item 3. Resolve any conflicts where two FA are predicted to become the same FA,
+either by merging or death
+
+=item 4. Add any unassigned FA into the list of current FA and execute steps 2-4
+until all the image are cycled through
+
+=back
+
+The results of this algorithm is a matrix with assigns each adhesion number in
+each image to part of a sequence, which identifies the identified adhesions in
+each image that make up the entire adhesion life cycle. Functionally, the matrix
+is output as a csv file that is used by other programs to determine the
+properties of the adhesions and visualize them.
+
+Required parameter(s):
+
+=over 
+
+=item * cfg or c: the focal adhesion analysis config file
+
+=back
+
+Optional parameter(s):
+
+=over 
+
+=item * input or i: Look for files in each inidividual image directory with this
+file name, which should be a Storable object created by an earlier program
+execution 
+
+=item * output or o: Create files using the spectified file name in each
+individual directory with Storable containing FA information; can be loaded
+using the -i flag
+
+=item * debug or d: print debuging information during program execution
+
+=back
+
+=head1 EXAMPLES
+
+track_adhesions.pl -cfg FA_config
+
+OR
+
+track_adhesions.pl -cfg FA_config -i data.stor -o data.stor
+
+=head1 AUTHORS
+
+Matthew Berginski (mbergins@unc.edu)
+
+Documentation last updated: 6/6/2008 
+
+=cut

@@ -6,7 +6,7 @@ plot_ad_seq <- function (results,index,dir,type='early') {
 		dir.create(dir,recursive=TRUE)
 	}
 	
-	pdf(paste(dir,paste(index,'.pdf',sep=''),sep='/'),width=12);
+	pdf(file.path(dir,paste(index,'.pdf',sep='')),width=12);
 	par(mfrow=c(1,2),bty='n', mar=c(5,4,1,1))
 	
 	resid = c()
@@ -83,7 +83,7 @@ plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',
 	resid_win <- gather_exp_win_residuals(resid,window=window)
 	
 	library(Hmisc)
-	pdf(file = paste(dir,file,sep=''),width=12)
+	pdf(file = file.path(dir,file),width=12)
 	par(mfcol=c(1,2))
 	errbar(resid_win$x$early, resid_win$y$early, 
 		   resid_win$y$early - resid_win$err$early, resid_win$y$early + resid_win$err$early, 
@@ -155,8 +155,8 @@ gather_exp_win_residuals <- function(resid, window) {
 }
 
 gather_linear_regions <- function(data_set, props, 
-	min_length = 10, col_lims = NaN, normed = 1, 
-	log_lin = 0, boot.samp = NA, save.exp_data = TRUE) {
+	min_length = 10, col_lims = NA, normed = TRUE, 
+	log_lin = FALSE, boot.samp = NA, save.exp_data = TRUE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
@@ -202,6 +202,7 @@ gather_linear_regions <- function(data_set, props,
 		results$early$slope[i]  = temp_results$early$slope
 		results$early$fold_change[i]  = temp_results$early$fold_change
 		results$early$residual[i]  = temp_results$early$residual
+		results$early$r_diff[i] = temp_results$early$r_diff
 		
 		results$late$offset[i]  = temp_results$late$offset
 		results$late$R_sq[i]    = temp_results$late$r_sq
@@ -209,12 +210,13 @@ gather_linear_regions <- function(data_set, props,
 		results$late$slope[i]   = temp_results$late$slope
 		results$late$fold_change[i]  = temp_results$late$fold_change
 		results$late$residual[i]   = temp_results$late$residual
+		results$late$r_diff[i]  = temp_results$late$r_diff
 
 		results$stable_lifetime[i] = length(numeric_data_set) - (results$late_offset[i] + results$early_offset[i])
 	}
 		
 	if (is.numeric(boot.samp)) {
-		m_results$sim_results <- gather_linear_regions.boot(m_results, min_length = min_length, 
+		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
 			col_lims = col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
 	}
 	
@@ -252,6 +254,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			results$early$offset[j] = j
 			results$early$inter[j] = coef(model)[[1]]
 			results$early$slope[j] = coef(model)[[2]]
+			results$early$r_diff[j] = summary$r.squared - summary$adj.r.squared
 			if (log_lin) {
 				results$early$fold_change[j] = max(early_subset$y)
 			} else {				
@@ -265,7 +268,8 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		results$early$offset[1] = NA
 		results$early$inter[1] = NA
 		results$early$slope[1] = NA
-		results$early$fold_change = NA
+		results$early$fold_change[1] = NA
+		results$early$r_diff = NA
 		resid$early[[1]] = NA
 	}
 	
@@ -283,11 +287,12 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			model <- lm(y ~ x, data = late_subset)
 			summary <- summary(model);
 			
-			results$late$r_sq[j] <- summary$r.squared
+			results$late$r_sq[j] = summary$r.squared
 			results$late$length[j] = dim(late_subset)[[1]]
 			results$late$offset[j] = j
 			results$late$inter[j] = coef(model)[[1]]
 			results$late$slope[j] = coef(model)[[2]]
+			results$late$r_diff[j] = summary$r.squared - summary$adj.r.squared
 			if (log_lin) {
 				results$late$fold_change[j] = max(late_subset$y)
 			} else {						
@@ -301,8 +306,9 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		results$late$offset[1] = NA
 		results$late$inter[1] = NA
 		results$late$slope[1] = NA
-		results$late$fold_change = NA
-		resid$late[[1]] = NA		
+		results$late$fold_change[1] = NA
+		results$late$r_diff = NA
+		resid$late[[1]] = NA	
 	}
 	
 	#Build the matrix with the sum of the R squared values
@@ -395,9 +401,9 @@ gather_models_from_dirs <- function (dirs, min_length=10,
 		
 		print(dirs[[k]])
 		
-		ad_sig <- as.matrix(read.table(paste(dirs[[k]],data_file,sep=''),header = FALSE, sep  = ','));
+		ad_sig <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
 
-		ad_props <- read.table(paste(dirs[[k]],'../single_lin.csv',sep=''), header = TRUE, sep=',');
+		ad_props <- read.table(file.path(dirs[[k]],'../single_lin.csv'), header = TRUE, sep=',');
 		
 		this_col_lim = NA
 		if (! is.na(as.matrix(col_lims)[1,1])) {
@@ -415,7 +421,7 @@ gather_models_from_dirs <- function (dirs, min_length=10,
         
         if (! is.na(results_file)) {
             this_result = results[[k]]
-            save(this_result,file = paste(dirs[[k]],results_file,sep=''))
+            save(this_result,file = file.path(dirs[[k]],results_file))
         }
 	}
 	
@@ -440,7 +446,7 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
 	}
 	
 	library(Hmisc)
-    pdf(paste(dir,file,sep=''),width=8.5,height=8.5,pointsize=14);
+    pdf(file.path(dir,file),width=8.5,height=8.5,pointsize=14);
     par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
 	
 	#########################################################################
@@ -550,7 +556,7 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
     }
 	
 	if (! is.na(hist_file)) {
-	    pdf(paste(dir,hist_file,sep=''),width=8.5,height=8.5,pointsize=14);
+	    pdf(file.path(dir,hist_file),width=8.5,height=8.5,pointsize=14);
     	par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
         
 	    #Plot 1
@@ -601,122 +607,11 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 				  )
 }
 
-################################################################################
-# Main Program
-################################################################################
-
-#Paxillin
-prefix = '../../results/focal_adhesions/';
-
-dirs = c('time_series_01/adhesion_props/lin_time_series/','time_series_04/adhesion_props/lin_time_series/',
-         'time_series_05/adhesion_props/lin_time_series/','time_series_06/adhesion_props/lin_time_series/',
-         'time_series_07/adhesion_props/lin_time_series/','time_series_08/adhesion_props/lin_time_series/',
-         'time_series_09/adhesion_props/lin_time_series/','time_series_10/adhesion_props/lin_time_series/',
-         'time_series_11/adhesion_props/lin_time_series/','time_series_12/adhesion_props/lin_time_series/',
-         'time_series_13/adhesion_props/lin_time_series/','time_series_14/adhesion_props/lin_time_series/',
-         'time_series_15/adhesion_props/lin_time_series/','time_series_16/adhesion_props/lin_time_series/',
-         'time_series_17/adhesion_props/lin_time_series/','time_series_18/adhesion_props/lin_time_series/',
-         'time_series_19/adhesion_props/lin_time_series/','time_series_20/adhesion_props/lin_time_series/',
-         'time_series_21/adhesion_props/lin_time_series/','time_series_22/adhesion_props/lin_time_series/',
-         'time_series_23/adhesion_props/lin_time_series/');
-
-pre_dirs <- c()
-for (i in 1:length(dirs)) {
-#for (i in 1:1) {
-	pre_dirs[i] = paste(prefix,dirs[i],sep='')
+load_results <- function(dirs,file) {
+	results = list()
+	for (i in 1:length(dirs)) {
+		load(file.path(dirs[i],file))
+		results[[i]] = this_result
+	}
+	results
 }
-
-print('Norm')
-results = gather_models_from_dirs(pre_dirs)
-
-print('Norm Log lin')
-log = gather_models_from_dirs(pre_dirs,log_lin = 1)
-
-save.temp = list(results = results, log = log)
-save(save.temp,file = 'latest.data')
-
-prefix = '../../results/0.07/';
-
-pre_dirs <- c()
-for (i in 1:length(dirs)) {
-#for (i in 1:1) {
-	pre_dirs[i] = paste(prefix,dirs[i],sep='')
-}
-
-print('Norm')
-low_results = gather_models_from_dirs(pre_dirs)
-
-print('Norm Log lin')
-low_log = gather_models_from_dirs(pre_dirs,log_lin = 1)
-
-save.temp = list(low_results = low_results, low_log = low_log)
-save(save.temp,file = 'low.data')
-
-#load('latest.data'); results = save.temp$results; log = save.temp$log; rm(save.temp);
-#load('low.data'); low_results = save.temp$low_results; low_log = save.temp$low_log; rm(save.temp);
-
-#plot_overall_residuals(results,'./')
-#plot_overall_residuals(log,'./',file='log_resid.pdf')
-#plot_overall_residuals(low_results,'./',file='low_resid.pdf')
-#plot_overall_residuals(low_log,'./',file='low_log_resid.pdf')
-
-#all_resid = c()
-#these_results = log
-#for (i in 1:length(these_results)) {
-#	res = these_results[[i]]
-#	count = 0
-#	for (j in 1:length(res$late$residual)) {
-#		if (is.numeric(res$late$residual[j][[1]]) & res$late$R_sq[j] > 0.9) {
-#			all_resid = c(all_resid,res$late$residual[j][[1]])
-#			count = count + 1	
-#		}
-#	}
-#	print(i)
-#	print(count)
-#}
-#points <- qqnorm(all_resid)
-#qqline(all_resid)
-
-#these_results = results
-#points = list()
-#for (i in 1:length(these_results)) {
-#	res = these_results[[i]]
-#	early_filt = ! is.na(res$early$fold_change)
-#	late_filt = ! is.na(res$late$fold_change)
-#	
-#	val = mean(res$early$fold_change[early_filt])
-#	points$x = c(points$x,val)
-#	
-#	res = log[[i]]
-#	early_filt = ! is.na(res$early$fold_change)
-#	late_filt = ! is.na(res$late$fold_change)
-#	
-#	val = mean(res$early$fold_change[early_filt])
-#	points$y = c(points$y,val)
-#}
-
-#early_diff = c()
-#late_diff = c()
-#for (i in 1:length(norm)) {
-#	print(i)
-#	for (j in 1:length(norm[[i]]$early_R_sq)) {
-#		if (norm[[i]]$early_R_sq[j] == 0) {
-#			next
-#		}
-#		early_diff = c(early_diff, norm[[i]]$early_R_sq[j] - norm_opt[[i]]$early_R_sq[j])
-#	}
-#	for (j in 1:length(norm_opt[[i]]$late_R_sq)) {
-#		if (norm[[i]]$late_R_sq[j] == 0) {
-#			next
-#		}
-#		late_diff = c(late_diff, norm[[i]]$late_R_sq[j] - norm_opt[[i]]$late_R_sq[j])
-#	}
-#}
-
-#for (i in 1:length(dirs)) {
-#for (i in 1:1) {
-#	if (is.na(pre_dirs[i])) {
-#		next
-#	}	
-#	plot_lin_reg_set(norm[[i]],paste(pre_dirs[i],'../plots/',sep=''),hist_file='lin_hist.pdf')
-#}

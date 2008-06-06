@@ -12,7 +12,7 @@ use Data::Dumper;
 use Text::CSV::Simple;
 
 use lib "../lib";
-use Config::Adhesions;
+use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
 
@@ -24,12 +24,11 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
 
-my $ad_conf = new Config::Adhesions(\%opt);
-my %cfg     = $ad_conf->get_cfg_hash;
+my %cfg = ParseConfig(\%opt);
+
 ###############################################################################
 # Main Program
 ###############################################################################
-
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &read_in_tracking_mat(\%cfg, \%opt);
 
@@ -40,7 +39,7 @@ print "\n\nFiltering Tracking Matrix\n" if $opt{debug};
 my %filtered_matrix_set = &filter_tracking_matrix;
 
 print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
-&output_trimmed_matrices(\%filtered_matrix_set,"");
+&output_filtered_matrices(\%filtered_matrix_set,"");
 
 ###############################################################################
 # Functions
@@ -97,7 +96,7 @@ sub filter_tracking_matrix {
     return %matrix_set;
 }
 
-sub output_trimmed_matrices {
+sub output_filtered_matrices {
     my %mat_set = %{$_[0]};
     my $prefix = $_[1];
     
@@ -110,9 +109,57 @@ sub output_trimmed_matrices {
             print $i,"\n";
             output_mat_csv(\@{ $mat_set{$i} }, catfile($base_folder, $prefix , $i . '.csv'));
         } elsif (ref($mat_set{$i}) eq "HASH") {
-            output_trimmed_matrices(\%{$mat_set{$i}},catdir($prefix,$i));
+            output_filtered_matrices(\%{$mat_set{$i}},catdir($prefix,$i));
         } else {
             die "unexpected data type $prefix";
         }
     }
 }
+
+################################################################################
+#Documentation
+################################################################################
+
+=head1 NAME
+
+filter_tracking_matrix.pl - Filter and output the tracking matrix based on collected FA properties 
+
+=head1 SYNOPSIS
+
+filter_tracking_matrix.pl -cfg FA_config
+
+=head1 Description
+
+After collecting the properties of the FA, this program uses those collected properties to filter the tracking matrix to only those adhesions which meet certain criteria. The criteria can be any property collected in earlier stages.
+
+Required parameter(s):
+
+=over 
+
+=item * cfg or c: the focal adhesion analysis config file
+
+=back
+
+Optional parameter(s):
+
+=over 
+
+=item * debug or d: print debuging information during program execution
+
+=back
+
+=head1 EXAMPLES
+
+filter_tracking_matrix.pl -cfg FA_config
+
+OR
+
+filter_tracking_matrix.pl -cfg FA_config
+
+=head1 AUTHORS
+
+Matthew Berginski (mbergins@unc.edu)
+
+Documentation last updated: 6/6/2008 
+
+=cut
