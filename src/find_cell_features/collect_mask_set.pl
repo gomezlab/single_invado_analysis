@@ -1,58 +1,5 @@
 #!/usr/bin/env perl
 
-=head1 NAME
-
-collect_mask_set.pl - Executes the MATLAB programs designed collect the binary
-masks which define the intracellular region of a cell
-
-=head1 SYNOPSIS
-
-collect_mask_set.pl -cfg FA_config
-
-=head1 DESCRIPTION
-
-This program is used to create all the binary mask files which define the
-location of the intracellular space, which will be used in subsequent steps. The
-primary logic of the program is in a set of MATLAB scripts which do all the
-threshold selection and image creation/writing. This perl script is more or less
-an intelligent wrapper that sets up all the MATLAB commands.  
-
-Required parameter(s):
-
-=over 
-
-=item * cfg or c: the focal adhesion analysis config file
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: print debuging information during program execution
-
-=back
-
-=head1 EXAMPLES
-
-collect_mask_set.pl -cfg FA_config
-
-OR
-
-collect_mask_set.pl -cfg FA_config -d
-
-=head1 SEE ALSO
-
-collect_fa_image_set.pl: similar program designed to collect the binary mask
-that locates focal adhesions
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 4/10/2008
-
-=cut
 
 ###############################################################################
 # Global Variables and Modules
@@ -132,3 +79,61 @@ sub create_matlab_code {
 
     return @matlab_code;
 }
+
+###############################################################################
+#Documentation
+###############################################################################
+
+=head1 NAME
+
+collect_mask_set.pl - Executes the MATLAB programs designed collect the binary
+masks which define the intracellular region of a cell
+
+=head1 SYNOPSIS
+
+collect_mask_set.pl -cfg FA_config
+
+=head1 DESCRIPTION
+
+This program is used to create all the binary mask files which define the
+location of the intracellular space, which will be used in subsequent steps. The
+primary logic of the program is in a set of MATLAB scripts which do all the
+threshold selection and image creation/writing. This perl script is more or less
+an intelligent wrapper that sets up all the MATLAB commands.  
+
+Required parameter(s):
+
+=over 
+
+=item * cfg or c: the focal adhesion analysis config file
+
+=back
+
+Optional parameter(s):
+
+=over 
+
+=item * debug or d: print debuging information during program execution
+
+=back
+
+=head1 EXAMPLES
+
+collect_mask_set.pl -cfg FA_config
+
+OR
+
+collect_mask_set.pl -cfg FA_config -d
+
+=head1 SEE ALSO
+
+collect_fa_image_set.pl: similar program designed to collect the binary mask
+that locates focal adhesions
+
+=head1 AUTHORS
+
+Matthew Berginski (mbergins@unc.edu)
+
+Documentation last updated: 4/10/2008
+
+=cut
