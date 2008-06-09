@@ -74,12 +74,8 @@ my %ad_lineage_props = &gather_ad_lineage_properties;
 &output_adhesion_lineage_props;
 &build_lineage_plots;
 
-print "\n\nGathering Adhesion Property Sequences\n", if $opt{debug};
-my %ad_lineage_prop_seqs = &gather_property_sequences(\@tracking_mat, \%data_sets);
-&output_adhesion_prop_seqs;
-
-#print "\n\nCreating Vis Project Files\n", if $opt{debug};
-#create_vis_project_files;
+print "\n\nBuilding R Model Files\n", if $opt{debug};
+&run_R_linear_region_code;
 
 if (exists $cfg{treatment_time}) {
     print "\n\nGathering Treatment Results\n", if $opt{debug};
@@ -730,149 +726,8 @@ sub build_lineage_plots {
 }
 
 #######################################
-# Adhesion Lineage Property Sequence
-######################################
-sub gather_property_sequences {
-    my @tracking_mat = @{ $_[0] };
-    my %data_sets    = %{ $_[1] };
-
-    my %seqs;
-    $seqs{area}{increasing} = &gather_patterned_property_seqs("Area", \@tracking_mat, \%data_sets, \&greater_or_equal);
-    $seqs{area}{decreasing} = &gather_patterned_property_seqs("Area", \@tracking_mat, \%data_sets, \&less_or_equal);
-
-    $seqs{ad_sig}{increasing} =
-      &gather_patterned_property_seqs("Average_adhesion_signal", \@tracking_mat, \%data_sets, \&greater_or_equal);
-    $seqs{ad_sig}{decreasing} =
-      &gather_patterned_property_seqs("Average_adhesion_signal", \@tracking_mat, \%data_sets, \&less_or_equal);
-    return %seqs;
-}
-
-sub gather_patterned_property_seqs {
-    my $property     = $_[0];
-    my @tracking_mat = @{ $_[1] };
-    my %data_sets    = %{ $_[2] };
-    my $func_ref     = $_[3];
-
-    my @image_nums = sort keys %data_sets;
-
-    my @image_num_seqs;
-
-    for my $i (0 .. $#tracking_mat) {
-        my @data_seq;
-        my @i_num_seq;
-        for my $j (0 .. $#{ $tracking_mat[$i] }) {
-            next if ($tracking_mat[$i][$j] <= -1);
-            push @i_num_seq, $image_nums[$j];
-            push @data_seq,  $data_sets{ $image_nums[$j] }{$property}[ $tracking_mat[$i][$j] ];
-        }
-
-        my @indexes = &gather_indexes_seqs_by_func(\@data_seq, $func_ref);
-        for my $j (0 .. $#indexes) {
-            push @{ $image_num_seqs[$i] }, [ @i_num_seq[ @{ $indexes[$j] } ] ];
-        }
-        if (not(@indexes)) {
-            push @{ $image_num_seqs[$i] }, ();
-        }
-    }
-    return \@image_num_seqs;
-}
-
-sub gather_indexes_seqs_by_func {
-    my @set           = @{ $_[0] };
-    my $deciding_func = $_[1];
-
-    my @deciding_func_true = map { $deciding_func->($set[$_], $set[ $_ - 1 ]) } (1 .. $#set);
-    unshift @deciding_func_true, 0;
-
-    my @index_seqs;
-    @{ $index_seqs[0] } = ();
-
-    my $cur_index = 0;
-    while ($cur_index <= $#deciding_func_true) {
-        while ($cur_index <= $#deciding_func_true && $deciding_func_true[$cur_index]) {
-            push @{ $index_seqs[$#index_seqs] }, $cur_index;
-            $cur_index++;
-        }
-        while ($cur_index <= $#deciding_func_true && !$deciding_func_true[$cur_index]) {
-            if ($#{ $index_seqs[$#index_seqs] } > -1) {
-                push @index_seqs, [];
-            }
-            $cur_index++;
-        }
-    }
-
-    for (0 .. $#index_seqs) {
-        my @this_seq = @{ $index_seqs[$_] };
-        if ($#this_seq > -1) {
-            unshift @this_seq, $this_seq[0] - 1;
-            @{ $index_seqs[$_] } = @this_seq;
-        } else {
-            pop @index_seqs;
-        }
-    }
-
-    return @index_seqs;
-}
-
-sub greater_or_equal {
-    if ($_[0] >= $_[1]) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-sub less_or_equal {
-    if ($_[0] <= $_[1]) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-sub output_adhesion_prop_seqs {
-    if (not(-e catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}))) {
-        mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
-    }
-
-    &output_sequence_trimmed_mat(\@{ $ad_lineage_prop_seqs{area}{increasing} }, "_increasing_area");
-}
-
-sub output_sequence_trimmed_mat {
-    my @i_num_lists = @{ $_[0] };
-    my $file_suffix = $_[1];
-
-    my @i_nums = sort keys %data_sets;
-    my %i_num_to_index = map { $i_nums[$_] => $_ } (0 .. $#i_nums);
-
-    my @trimmed_tracking_mat;
-
-    for my $i (0 .. $#i_num_lists) {
-        for my $j (0 .. $#{ $i_num_lists[$i] }) {
-            my @indexes_to_include = map { $i_num_to_index{$_} } @{ $i_num_lists[$i][$j] };
-            next if (not(@indexes_to_include));
-            next if (scalar(@indexes_to_include) < 5);
-
-            push @trimmed_tracking_mat, [ map { -1 } (0 .. $#{ $tracking_mat[$i] }) ];
-            @{ $trimmed_tracking_mat[$#trimmed_tracking_mat] }[@indexes_to_include] =
-              @{ $tracking_mat[$i] }[@indexes_to_include];
-        }
-    }
-
-    my $output_filename;
-    if ($cfg{tracking_output_file} =~ m/(.*)(\..*)/) {
-        $output_filename = $1 . $file_suffix . $2;
-    } else {
-        $output_filename = "seq_prop.csv";
-    }
-
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $output_filename);
-    &output_mat_csv(\@trimmed_tracking_mat, $output_file);
-}
-
-#######################################
 # Treatment Analysis
-######################################
+#######################################
 sub gather_treatment_results {
     my %treat_ad;
 
@@ -1108,6 +963,16 @@ sub build_treatment_plots {
     &Math::R::execute_commands(\@r_code);
     system($png_convert_calls);
 }
+
+#######################################
+# Linear Region Finding Code
+#######################################
+sub run_R_linear_region_code {
+    my $data_dir = catdir($cfg{exp_results_folder},$cfg{adhesion_props_folder},$cfg{lineage_ts_folder});
+    my $R_cmd = "R CMD BATCH --vanilla --args -$data_dir linear_regions.R";
+    system($R_cmd);
+}
+
 
 ################################################################################
 #Documentation

@@ -615,3 +615,24 @@ load_results <- function(dirs,file) {
 	}
 	results
 }
+
+trim_args_list <- function(args) {
+	for (i in 1:length(args)) {
+		if (substr(args[i],0,1) == '-') {
+			args[i] = substring(args[i],2)
+		}
+	}
+	args
+}
+
+################################################################################
+# Main Program
+################################################################################
+
+args <- commandArgs(TRUE)
+
+if (length(args) != 0) {
+	args <- trim_args_list(args)
+	gather_models_from_dirs(args, results_file='../lin_model.Rdata')
+	gather_models_from_dirs(args, results_file='../log_model.Rdata', log_lin=TRUE)
+}
