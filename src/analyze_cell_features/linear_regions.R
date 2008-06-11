@@ -68,19 +68,9 @@ plot_ad_seq <- function (results,index,dir,type='early') {
 
 plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',window = 0.1) {
 	
-	resid = list()
-	#gather all the residual lists into the above data structures
-	for (i in 1:length(results)) {
-		res = results[[i]]
-		temp = gather_exp_residuals(res)
+	resid = gather_exp_residuals(results)
 	
-		resid$x$early = c(resid$x$early, temp$x$early)
-		resid$y$early = c(resid$y$early, temp$y$early)
-		resid$x$late  = c(resid$x$late, temp$x$late)
-		resid$y$late  = c(resid$y$late, temp$y$late)
-	}
-	
-	resid_win <- gather_exp_win_residuals(resid,window=window)
+	resid_win = gather_exp_win_residuals(resid,window=window)
 	
 	library(Hmisc)
 	pdf(file = file.path(dir,file),width=12)
@@ -97,27 +87,36 @@ plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',
 	dev.off()
 }
 
-gather_exp_residuals <- function(res) {
+gather_exp_residuals <- function(results, min_R_sq = NA) {
 	resid = list()
-	for (j in 1:length(res$early$R_sq)) {
-		if (is.na(res$early$R_sq[j])) {	
-			next
-		}
+	for (i in 1:length(results)) {
+		res = results[[i]]
+		for (j in 1:length(res$early$R_sq)) {
+			if (is.na(res$early$R_sq[j])) {	
+				next
+			}
+			if (is.numeric(min_R_sq) & (res$early$R_sq[j] < min_R_sq)) {
+				next
+			}
 
-		resid_list = res$early$residual[j][[1]]
-		x = list(seq(0,1,1/(length(resid_list)-1)))
-		resid$y$early = c(resid$y$early,resid_list)
-		resid$x$early = c(resid$x$early,x)
-	}
-	for (j in 1:length(res$late$R_sq)) {
-		if (is.na(res$late$R_sq[j])) {
-			next
+			resid_list = res$early$residual[j][[1]]
+			x = list(seq(0,1,1/(length(resid_list)-1)))
+			resid$y$early = c(resid$y$early,resid_list)
+			resid$x$early = c(resid$x$early,x)
 		}
+		for (j in 1:length(res$late$R_sq)) {
+			if (is.na(res$late$R_sq[j])) {
+				next
+			}
+			if (is.numeric(min_R_sq) & (res$late$R_sq[j] < min_R_sq)) {
+				next
+			}
 
-		resid_list = res$late$residual[j][[1]]
-		x = list(seq(0,1,1/(length(resid_list)-1)))
-		resid$y$late = c(resid$y$late,resid_list)
-		resid$x$late = c(resid$x$late,x)
+			resid_list = res$late$residual[j][[1]]
+			x = list(seq(0,1,1/(length(resid_list)-1)))
+			resid$y$late = c(resid$y$late,resid_list)
+			resid$x$late = c(resid$x$late,x)
+		}
 	}
 	resid
 }
@@ -214,12 +213,28 @@ gather_linear_regions <- function(data_set, props,
 
 		results$stable_lifetime[i] = length(numeric_data_set) - (results$late_offset[i] + results$early_offset[i])
 	}
+
+	results <- pad_results_to_row_length(results, rows)
 		
 	if (is.numeric(boot.samp)) {
 		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
 			col_lims = col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
 	}
 	
+	results
+}
+
+pad_results_to_row_length <- function(results, desired_length) {
+	for (i in 1:length(results$early)) {
+		for (j in (length(results$early[[i]]) + 1):desired_length) {
+			results$early[[i]][j] = NA
+		}
+	}
+	for (i in 1:length(results$late)) {
+		for (j in (length(results$late[[i]]) + 1):desired_length) {
+			results$early[[i]][j] = NA
+		}
+	}	
 	results
 }
 
@@ -254,7 +269,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			results$early$offset[j] = j
 			results$early$inter[j] = coef(model)[[1]]
 			results$early$slope[j] = coef(model)[[2]]
-			results$early$r_diff[j] = summary$r.squared - summary$adj.r.squared
+			results$early$r_sq.adj[j] = summary$adj.r.squared
 			if (log_lin) {
 				results$early$fold_change[j] = max(early_subset$y)
 			} else {				
@@ -269,7 +284,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		results$early$inter[1] = NA
 		results$early$slope[1] = NA
 		results$early$fold_change[1] = NA
-		results$early$r_diff = NA
+		results$early$r_sq.adj = NA
 		resid$early[[1]] = NA
 	}
 	
@@ -292,7 +307,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			results$late$offset[j] = j
 			results$late$inter[j] = coef(model)[[1]]
 			results$late$slope[j] = coef(model)[[2]]
-			results$late$r_diff[j] = summary$r.squared - summary$adj.r.squared
+			results$late$r_sq.adj[j] = summary$adj.r.squared
 			if (log_lin) {
 				results$late$fold_change[j] = max(late_subset$y)
 			} else {						
@@ -307,7 +322,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		results$late$inter[1] = NA
 		results$late$slope[1] = NA
 		results$late$fold_change[1] = NA
-		results$late$r_diff = NA
+		results$late$r_sq.adj = NA
 		resid$late[[1]] = NA	
 	}
 	
@@ -362,7 +377,8 @@ gather_linear_regions.boot <- function(results,
 	log_lin = 0, boot.samp = NA) {
 
 	sim_results <- list()
-
+	
+	#collect the entire set of adhesion signal values and lengths, excluding adhesions which don't live long enough
 	all_ad_sig = c()
 	all_length = c()
 	for (i in 1:dim(results$exp_data)[[2]]) {
@@ -373,9 +389,10 @@ gather_linear_regions.boot <- function(results,
 			all_ad_sig = c(all_ad_sig,temp)	
 		}
 	}
+	
+	#produce fake adhesion signal and props variables by sampling from the values collected above
 	sim_ad_sig <- array(NaN, dim = c(boot.samp, max(all_length) + 2))
 	sim_props = list()
-
 	for (i in 1:boot.samp) {
 		this_length = sample(all_length,1)
 		data = sample(all_ad_sig, this_length, replace = TRUE)
@@ -405,7 +422,8 @@ gather_models_from_dirs <- function (dirs, min_length=10,
 
 		ad_props <- read.table(file.path(dirs[[k]],'../single_lin.csv'), header = TRUE, sep=',');
 		
-		this_col_lim = NA
+		#process the col_lim parameter passed in if values were passed in
+		this_col_lim = NA 
 		if (! is.na(as.matrix(col_lims)[1,1])) {
 			if(dim(col_lims)[[2]] == 1) {
 				this_col_lim = c(col_lims[k],dim(ad_sig)[[2]])
@@ -610,8 +628,11 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 load_results <- function(dirs,file) {
 	results = list()
 	for (i in 1:length(dirs)) {
-		load(file.path(dirs[i],file))
-		results[[i]] = this_result
+		this_file = file.path(dirs[i],file)
+		if (file.exists(this_file)) {
+			load(file.path(dirs[i],file))
+			results[[i]] = this_result
+		}	
 	}
 	results
 }
@@ -625,6 +646,18 @@ trim_args_list <- function(args) {
 	args
 }
 
+write_high_r_sq <- function(result, dir, file='high_R_sq.csv', min_R_sq = 0.9) {
+	if (! file.exists(dir)) {
+		dir.create(dir,recursive=TRUE)
+	}
+	
+	included_rows = result$early$R_sq > min_R_sq & result$late$R_sq > min_R_sq
+	
+	high_rows = (0:(length(included_rows) - 1))[included_rows]
+	
+	write.table(high_rows,file=file.path(dir,file), row.names=FALSE, col.names=FALSE)
+}
+
 ################################################################################
 # Main Program
 ################################################################################
@@ -633,6 +666,8 @@ args <- commandArgs(TRUE)
 
 if (length(args) != 0) {
 	args <- trim_args_list(args)
-	gather_models_from_dirs(args, results_file='../lin_model.Rdata')
-	gather_models_from_dirs(args, results_file='../log_model.Rdata', log_lin=TRUE)
+	results = gather_models_from_dirs(args, results_file='../lin_model.Rdata')
+	log_res = gather_models_from_dirs(args, results_file='../log_model.Rdata', log_lin=TRUE)
+	
+	write_high_r_sq(results[[1]],file.path(args[1],'..'))
 }

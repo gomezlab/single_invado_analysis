@@ -46,6 +46,7 @@ foreach (@exp) {
     if ($opt{run_all_debug}) {
         print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
     } else {
+        print("$_\n");
         system("./$program_base -cfg $_ $debug_string $opt{extra}");
     }
 }

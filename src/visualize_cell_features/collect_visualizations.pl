@@ -27,7 +27,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug");
+GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -66,10 +66,12 @@ foreach (@movie_params) {
     my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
     my @matlab_code = "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
 
-    my $t1 = new Benchmark;
-    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
-    my $t2 = new Benchmark;
-    print "Movie: $params{movie_path}\n", timestr(timediff($t2, $t1), "nop"), "\n" if $opt{debug};
+    if (not $opt{config_only}) {
+        my $t1 = new Benchmark;
+        &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+        my $t2 = new Benchmark;
+        print "Movie: $params{movie_path}\n", timestr(timediff($t2, $t1), "nop"), "\n" if $opt{debug};
+    }
 }
 
 ###############################################################################
