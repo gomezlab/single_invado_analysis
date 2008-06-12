@@ -233,9 +233,13 @@ pad_results_to_row_length <- function(results, desired_length) {
 	}
 	for (i in 1:length(results$late)) {
 		for (j in (length(results$late[[i]]) + 1):desired_length) {
-			results$early[[i]][j] = NA
+			results$late[[i]][j] = NA
 		}
-	}	
+	}
+	for (i in (length(results$stable_lifetime) + 1):desired_length) {
+		results$stable_lifetime[i] = NA
+	}
+	
 	results
 }
 
@@ -277,7 +281,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			} else {				
 				results$early$fold_change[j] = max(early_subset$y)/min(early_subset$y)
 			}
-			resid$early[[j]] = resid(model)
+			resid$early[[j]] = as.numeric(resid(model))
 		}
 	} else {
 		results$early$R_sq[1] = 0
@@ -317,7 +321,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			} else {						
 				results$late$fold_change[j] = max(late_subset$y)/min(late_subset$y)
 			}
-			resid$late[[j]] = resid(model)
+			resid$late[[j]] = as.numeric(resid(model))
 		}
 	} else {
 		results$late$R_sq[1] = 0
@@ -659,11 +663,18 @@ write_high_r_sq <- function(result, dir, file='high_R_sq.csv', min_R_sq = 0.9) {
 		dir.create(dir,recursive=TRUE)
 	}
 	
-	included_rows = result$early$R_sq > min_R_sq & result$late$R_sq > min_R_sq
-	
-	high_rows = (0:(length(included_rows) - 1))[included_rows]
-	
-	write.table(high_rows,file=file.path(dir,file), row.names=FALSE, col.names=FALSE)
+	row_nums = c()
+	for (i in 1:length(result$early$R_sq)) {
+		if (is.na(result$early$R_sq[i]) | is.na(result$late$R_sq[i])) {
+			next
+		}
+		if (result$early$R_sq[i] > min_R_sq & result$late$R_sq[i] > min_R_sq) {
+			row_nums = c(row_nums, i - 1)
+		}
+	}
+	if (! is.null(row_nums)) {
+		write.table(row_nums,file=file.path(dir,file), row.names=FALSE, col.names=FALSE)
+	}
 }
 
 ################################################################################
