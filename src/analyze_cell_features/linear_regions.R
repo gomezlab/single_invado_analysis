@@ -196,26 +196,27 @@ gather_linear_regions <- function(data_set, props,
 			min_length = min_length, log_lin = log_lin)
 
 		results$early$offset[i] = temp_results$early$offset
-		results$early$R_sq[i]   = temp_results$early$r_sq
+		results$early$R_sq[i]   = temp_results$early$R_sq
+		results$early$R_sq.adj[i] = temp_results$early$R_sq.adj
 		results$early$inter[i]  = temp_results$early$inter
 		results$early$slope[i]  = temp_results$early$slope
 		results$early$fold_change[i]  = temp_results$early$fold_change
 		results$early$residual[i]  = temp_results$early$residual
-		results$early$r_diff[i] = temp_results$early$r_diff
 		
 		results$late$offset[i]  = temp_results$late$offset
-		results$late$R_sq[i]    = temp_results$late$r_sq
+		results$late$R_sq[i]    = temp_results$late$R_sq
+		results$late$R_sq.adj[i]    = temp_results$late$R_sq.adj
 		results$late$inter[i]   = temp_results$late$inter
 		results$late$slope[i]   = temp_results$late$slope
 		results$late$fold_change[i]  = temp_results$late$fold_change
 		results$late$residual[i]   = temp_results$late$residual
-		results$late$r_diff[i]  = temp_results$late$r_diff
 
-		results$stable_lifetime[i] = length(numeric_data_set) - (results$late_offset[i] + results$early_offset[i])
+		results$stable_lifetime[i] = length(numeric_data_set) - (results$late$offset[i] + results$early$offset[i])
+
 	}
 
 	results <- pad_results_to_row_length(results, rows)
-		
+
 	if (is.numeric(boot.samp)) {
 		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
 			col_lims = col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
@@ -264,12 +265,13 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			model <- lm(y ~ x, data = early_subset)
 			summary <- summary(model);
 			
-			results$early$r_sq[j] = summary$r.squared
+			results$early$R_sq[j] = summary$r.squared
+			results$early$R_sq.adj[j] = summary$adj.r.squared			
 			results$early$length[j] = dim(early_subset)[[1]]
 			results$early$offset[j] = j
 			results$early$inter[j] = coef(model)[[1]]
 			results$early$slope[j] = coef(model)[[2]]
-			results$early$r_sq.adj[j] = summary$adj.r.squared
+
 			if (log_lin) {
 				results$early$fold_change[j] = max(early_subset$y)
 			} else {				
@@ -278,13 +280,15 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			resid$early[[j]] = resid(model)
 		}
 	} else {
-		results$early$r_sq[1] = 0
+		results$early$R_sq[1] = 0
+		results$early$R_sq.adj = 0
+		
 		results$early$length[1] = NA
 		results$early$offset[1] = NA
 		results$early$inter[1] = NA
 		results$early$slope[1] = NA
 		results$early$fold_change[1] = NA
-		results$early$r_sq.adj = NA
+
 		resid$early[[1]] = NA
 	}
 	
@@ -302,12 +306,12 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			model <- lm(y ~ x, data = late_subset)
 			summary <- summary(model);
 			
-			results$late$r_sq[j] = summary$r.squared
+			results$late$R_sq[j] = summary$r.squared
 			results$late$length[j] = dim(late_subset)[[1]]
 			results$late$offset[j] = j
 			results$late$inter[j] = coef(model)[[1]]
 			results$late$slope[j] = coef(model)[[2]]
-			results$late$r_sq.adj[j] = summary$adj.r.squared
+			results$late$R_sq.adj[j] = summary$adj.r.squared
 			if (log_lin) {
 				results$late$fold_change[j] = max(late_subset$y)
 			} else {						
@@ -316,41 +320,45 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			resid$late[[j]] = resid(model)
 		}
 	} else {
-		results$late$r_sq[1] = 0
+		results$late$R_sq[1] = 0
+		results$late$R_sq.adj = 0
+				
 		results$late$length[1] = NA
 		results$late$offset[1] = NA
 		results$late$inter[1] = NA
 		results$late$slope[1] = NA
 		results$late$fold_change[1] = NA
-		results$late$r_sq.adj = NA
+
 		resid$late[[1]] = NA	
 	}
 	
 	#Build the matrix with the sum of the R squared values
-	R_sq_mat = array(NA, c(length(results$early$r_sq),length(results$late$r_sq)));
-	for (i in 1:length(results$early$r_sq)) {
-		if (is.na(results$early$r_sq[i])) {
+	R_sq_mat = array(NA, c(length(results$early$R_sq),length(results$late$R_sq)));
+	for (i in 1:length(results$early$R_sq)) {
+		if (is.na(results$early$R_sq[i])) {
 			next
 		}
-		for (j in 1:length(results$late$r_sq)) {
-			if (is.na(results$late$r_sq[j])) {
+		for (j in 1:length(results$late$R_sq)) {
+			if (is.na(results$late$R_sq[j])) {
 				next
 			}
 			if ((j+i) > length(filt_init)) {
 				next
 			}
 			
-			R_sq_mat[i,j] = results$early$r_sq[i]+results$late$r_sq[j]
+			R_sq_mat[i,j] = results$early$R_sq[i]+results$late$R_sq[j]
 		}
 	}
 	
 	#With the R squared matrix calculated reset the r_sq componenets to NA, since 
 	#there are no fits calculated for them
 	if (! is.nan(initial_data_set[1])) {
-		results$early$r_sq[1] = NA
+		results$early$R_sq[1] = NA
+		results$early$R_sq.adj[1] = NA		
 	}	
 	if (! is.nan(initial_data_set[length(initial_data_set)])) {
-		results$late$r_sq[1] = NA
+		results$late$R_sq[1] = NA
+		results$early$R_sq.adj[1] = NA		
 	}
 		
 	#locate positions of the highest R squared value
