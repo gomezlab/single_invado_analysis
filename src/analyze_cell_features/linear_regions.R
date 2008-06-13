@@ -155,7 +155,7 @@ gather_exp_win_residuals <- function(resid, window) {
 
 gather_linear_regions <- function(data_set, props, 
 	min_length = 10, col_lims = NA, normed = TRUE, 
-	log_lin = FALSE, boot.samp = NA, save.exp_data = TRUE) {
+	log_lin = TRUE, boot.samp = NA, save.exp_data = TRUE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
@@ -244,7 +244,7 @@ pad_results_to_row_length <- function(results, desired_length) {
 }
 
 
-find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log_lin = FALSE) {
+find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log_lin = TRUE) {
 	
 	filt_init = initial_data_set[! is.nan(initial_data_set)]
 	if (length(filt_init) == 0) {
@@ -386,7 +386,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 
 gather_linear_regions.boot <- function(results, 
 	min_length = 10, col_lims = NaN, normed = 1, 
-	log_lin = 0, boot.samp = NA) {
+	log_lin = TRUE, boot.samp = NA) {
 
 	sim_results <- list()
 	
@@ -418,7 +418,7 @@ gather_linear_regions.boot <- function(results,
 
 gather_models_from_dirs <- function (dirs, min_length=10, 
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
-	normed = TRUE, log_lin = FALSE, boot.samp = NA, results_file = NA,
+	normed = TRUE, log_lin = TRUE, boot.samp = NA, results_file = NA,
 	save.exp_data = TRUE) {
 	
 	results = list()
@@ -685,8 +685,10 @@ args <- commandArgs(TRUE)
 
 if (length(args) != 0) {
 	args <- trim_args_list(args)
-	results = gather_models_from_dirs(args, results_file='../lin_model.Rdata')
-	log_res = gather_models_from_dirs(args, results_file='../log_model.Rdata', log_lin=TRUE)
+	results = gather_models_from_dirs(args, results_file='../intensity_model.Rdata')
+	
+	gather_models_from_dirs(args,results='../log_area_model.Rdata',data_file='Area.csv')
+	gather_models_from_dirs(args,results='../lin_area_model.Rdata',data_file='Area.csv',log_lin = FALSE)
 	
 	write_high_r_sq(results[[1]],file.path(args[1],'..'))
 }
