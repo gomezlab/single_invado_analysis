@@ -170,8 +170,8 @@ gather_linear_regions <- function(data_set, props,
 	if (save.exp_data) {
 		results$exp_data = data_set;
 	}
-	
 	for (i in 1:rows) {
+#	for (i in 3321:3321) {
 		if (i > 500) {
 			#next
 		}
@@ -192,12 +192,11 @@ gather_linear_regions <- function(data_set, props,
 			next
 		}
 		
-		temp_results = find_optimum_fit(this_data_set, normed = normed, 
+		temp_results = find_optimum_bilinear_fit(this_data_set, normed = normed, 
 			min_length = min_length, log_lin = log_lin)
 
 		results$early$offset[i] = temp_results$early$offset
 		results$early$R_sq[i]   = temp_results$early$R_sq
-		results$early$R_sq.adj[i] = temp_results$early$R_sq.adj
 		results$early$inter[i]  = temp_results$early$inter
 		results$early$slope[i]  = temp_results$early$slope
 		results$early$fold_change[i]  = temp_results$early$fold_change
@@ -205,7 +204,6 @@ gather_linear_regions <- function(data_set, props,
 		
 		results$late$offset[i]  = temp_results$late$offset
 		results$late$R_sq[i]    = temp_results$late$R_sq
-		results$late$R_sq.adj[i]    = temp_results$late$R_sq.adj
 		results$late$inter[i]   = temp_results$late$inter
 		results$late$slope[i]   = temp_results$late$slope
 		results$late$fold_change[i]  = temp_results$late$fold_change
@@ -243,17 +241,15 @@ pad_results_to_row_length <- function(results, desired_length) {
 	results
 }
 
+find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log_lin = TRUE) {
 
-find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log_lin = TRUE) {
-	
-	filt_init = initial_data_set[! is.nan(initial_data_set)]
-	if (length(filt_init) == 0) {
+	results = list(initial_data_set = initial_data_set)
+	resid = list(early = list(), late = list())	
+	results$filt_init = initial_data_set[! is.nan(initial_data_set)]
+	if (length(results$filt_init) == 0) {
 		return(c(NA, NA))
 	}
-	this_data_set = data.frame(y = filt_init, x = 1:length(filt_init))
-
-	results = list()
-	resid = list(early = list(), late = list())
+	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
 
 	#Search the beginning of the sequence for a linear fit
 	if (is.nan(initial_data_set[1])) {
@@ -269,8 +265,15 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			model <- lm(y ~ x, data = early_subset)
 			summary <- summary(model);
 			
-			results$early$R_sq[j] = summary$r.squared
-			results$early$R_sq.adj[j] = summary$adj.r.squared			
+			results$early$R_sq[j] = summary$adj.r.squared
+			#dealing with a degerate case, where lm produce NaN for the R squared 
+			#value when the data set is a flat line, see:
+			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
+			#	>summary(lm(y ~ x, data=data))
+			if (is.nan(results$early$R_sq[j])) {
+				results$early$R_sq[j] = 1
+			}
+			
 			results$early$length[j] = dim(early_subset)[[1]]
 			results$early$offset[j] = j
 			results$early$inter[j] = coef(model)[[1]]
@@ -285,7 +288,6 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		}
 	} else {
 		results$early$R_sq[1] = 0
-		results$early$R_sq.adj = 0
 		
 		results$early$length[1] = NA
 		results$early$offset[1] = NA
@@ -301,7 +303,7 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			late_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
 			if (normed) {
-				late_subset$y = late_subset$y[[1]]/late_subset$y
+				late_subset$y = late_subset$y[1]/late_subset$y
 			}
 			if (log_lin) {
 				late_subset$y = log(late_subset$y)
@@ -310,12 +312,20 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 			model <- lm(y ~ x, data = late_subset)
 			summary <- summary(model);
 			
-			results$late$R_sq[j] = summary$r.squared
+			results$late$R_sq[j] = summary$adj.r.squared
+			#dealing with a degerate case, where lm produce NaN for the R squared 
+			#value when the data set is a flat line, see:
+			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
+			#	>summary(lm(y ~ x, data=data))
+			if (is.nan(results$late$R_sq[j])) {
+				results$late$R_sq[j] = 1
+			}
+			
 			results$late$length[j] = dim(late_subset)[[1]]
 			results$late$offset[j] = j
 			results$late$inter[j] = coef(model)[[1]]
 			results$late$slope[j] = coef(model)[[2]]
-			results$late$R_sq.adj[j] = summary$adj.r.squared
+
 			if (log_lin) {
 				results$late$fold_change[j] = max(late_subset$y)
 			} else {						
@@ -325,7 +335,6 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 		}
 	} else {
 		results$late$R_sq[1] = 0
-		results$late$R_sq.adj = 0
 				
 		results$late$length[1] = NA
 		results$late$offset[1] = NA
@@ -335,53 +344,81 @@ find_optimum_fit <- function(initial_data_set, normed = TRUE, min_length = 10, l
 
 		resid$late[[1]] = NA	
 	}
+
+	best_indexes = find_best_offset_combination(results,min_length = min_length)
 	
-	#Build the matrix with the sum of the R squared values
-	R_sq_mat = array(NA, c(length(results$early$R_sq),length(results$late$R_sq)));
+	best_results = list()
+				
+	best_results$early = as.data.frame(results$early)[best_indexes[1],]
+	best_results$early$residual = resid$early[best_indexes[1]]
+	best_results$late = as.data.frame(results$late)[best_indexes[2],]
+	best_results$late$residual = resid$late[best_indexes[2]]
+
+	best_results
+}
+
+find_best_offset_combination <- function(results, min_length = 10) {
+	
+	#Build an array with the sums of the collected R square values
+	R_sq_sums = array(NA, c(length(results$early$R_sq),length(results$late$R_sq)));
 	for (i in 1:length(results$early$R_sq)) {
-		if (is.na(results$early$R_sq[i])) {
+		if (is.na(results$early$R_sq[i]) | is.nan(results$early$R_sq[i])) {
 			next
 		}
 		for (j in 1:length(results$late$R_sq)) {
-			if (is.na(results$late$R_sq[j])) {
+			if (is.na(results$late$R_sq[j]) | is.nan(results$late$R_sq[j])) {
 				next
 			}
-			if ((j+i) > length(filt_init)) {
+			if ((j+i) > length(results$filt_init)) {
 				next
 			}
 			
-			R_sq_mat[i,j] = results$early$R_sq[i]+results$late$R_sq[j]
+			R_sq_sums[i,j] = results$early$R_sq[i]+results$late$R_sq[j]
 		}
 	}
 	
-	#With the R squared matrix calculated reset the r_sq componenets to NA, since 
-	#there are no fits calculated for them
-	if (! is.nan(initial_data_set[1])) {
+	#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
+	#there were no fits calculated for them
+	if (! is.nan(results$initial_data_set[1])) {
 		results$early$R_sq[1] = NA
-		results$early$R_sq.adj[1] = NA		
 	}	
-	if (! is.nan(initial_data_set[length(initial_data_set)])) {
+	if (! is.nan(results$initial_data_set[length(results$initial_data_set)])) {
 		results$late$R_sq[1] = NA
-		results$early$R_sq.adj[1] = NA		
 	}
 		
 	#locate positions of the highest R squared value
-	max_R_sq = max(R_sq_mat[! is.na(R_sq_mat)])
-	best_results = list();
-	for (i in 1:dim(R_sq_mat)[[1]]) {
-		for (j in 1:dim(R_sq_mat)[[2]]) {
-			if (is.na(R_sq_mat[i,j])) {
+	max_R_sq = max(R_sq_sums[! is.na(R_sq_sums)])
+	if (max_R_sq == -Inf) {
+		print(R_sq_sums)
+	}
+	
+	highest_square_priority = -Inf
+	
+	for (i in 1:dim(R_sq_sums)[[1]]) {
+		for (j in 1:dim(R_sq_sums)[[2]]) {
+			if (is.na(R_sq_sums[i,j]) | is.nan(R_sq_sums[i,j])) {
 				next
 			}
-			if (max_R_sq == R_sq_mat[i,j]) {
-				best_results$early = as.data.frame(results$early)[i,]
-				best_results$early$residual = resid$early[i]
-				best_results$late = as.data.frame(results$late)[j,]
-				best_results$late$residual = resid$late[j]
+			
+			i_priority = i - min_length + 1
+			if (i_priority <= 0) {
+				i_priority = 0
+			}
+			j_priority = j - min_length + 1
+			if (j_priority <= 0) {
+				j_priority = 0
+			}
+			this_priority = i_priority^2 + j_priority^2
+			
+			if (  max_R_sq == R_sq_sums[i,j]
+				& highest_square_priority < this_priority) {
+				
+				highest_square_priority = this_priority
+				best_indexes = c(i,j)
 			}
 		}
 	}
-	best_results
+	best_indexes	
 }
 
 gather_linear_regions.boot <- function(results, 
@@ -430,7 +467,7 @@ gather_models_from_dirs <- function (dirs, min_length=10,
 		
 		print(dirs[[k]])
 		
-		ad_sig <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
+		exp_data <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
 
 		ad_props <- read.table(file.path(dirs[[k]],'../single_lin.csv'), header = TRUE, sep=',');
 		
@@ -444,7 +481,7 @@ gather_models_from_dirs <- function (dirs, min_length=10,
 			}
 		}
 		
-		results[[k]] <- gather_linear_regions(ad_sig, ad_props, 
+		results[[k]] <- gather_linear_regions(exp_data, ad_props, 
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log_lin = log_lin, 
 							boot.samp = boot.samp, save.exp_data = save.exp_data)
@@ -685,6 +722,7 @@ args <- commandArgs(TRUE)
 
 if (length(args) != 0) {
 	args <- trim_args_list(args)
+	
 	results = gather_models_from_dirs(args, results_file='../intensity_model.Rdata')
 	
 	gather_models_from_dirs(args,results='../log_area_model.Rdata',data_file='Area.csv')

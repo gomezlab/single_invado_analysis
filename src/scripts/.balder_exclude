@@ -3,6 +3,7 @@ data/config*
 data/raw_data*
 data/excluded_experiments*
 results/archive*
+results/hold*
 doc*
 src*
 README.txt
