@@ -93,12 +93,16 @@ sub filter_tracking_matrix {
     #ad-hoc line to pick out specific lineages
     #@{$matrix_set{'special'}{'high_speed'}} = map $tracking_mat[$_], (146,262,516);
     
-    #Filter the tracking matrix if a high R squared value file is available
-    my $high_R_sq_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'high_R_sq.csv');
-    if (-f $high_R_sq_file) {
-        my $parser = Text::CSV::Simple->new;
-        my @data = $parser->read_file($high_R_sq_file);
-        @{$matrix_set{'high_R_sq'}} = map $tracking_mat[$_->[0] - 1], (@data);
+    #Filter the tracking matrix if a 'for_vis' folder is available
+    my $R_sq_folder = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'for_vis');
+    if (-d $R_sq_folder) {
+        for my $file_name (<$R_sq_folder/*.csv>) {
+            $file_name =~ /$R_sq_folder\/(.*).csv/;
+
+            my $parser = Text::CSV::Simple->new;
+            my @data = $parser->read_file($file_name);
+            @{$matrix_set{$1}} = map $tracking_mat[$_->[0] - 1], (@data);
+        }
     }
 
     return %matrix_set;

@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
 
-
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
@@ -35,7 +34,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 # Main Program
 ###############################################################################
 
-my @image_files = <$cfg{individual_results_folder}/*/$cfg{cell_mask_file}>;
+my @image_files = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
 
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
@@ -65,15 +64,13 @@ sub create_matlab_code {
         if ($file_name =~ /$cfg{individual_results_folder}\/(\d+)\//) {
             $i_num = $1;
         } else {
-            die "Skipping file: $file_name\n", "Unable to find image number.";
+            warn "Skipping file: $file_name\n", "Unable to find image number.";
             next;
         }
 
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
-        my $padded_num = sprintf("%0" . length(scalar(@image_files)) . "d", $i_num);
-
-        my $out_file = catfile(dirname($file_name), "cell_mask.png");
+        my $out_file = catfile(dirname($file_name), $cfg{cell_mask_file});
         $matlab_code[0] .= "find_cell_mask('$file_name','$out_file')\n";
     }
 

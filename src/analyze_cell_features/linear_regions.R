@@ -155,7 +155,7 @@ gather_exp_win_residuals <- function(resid, window) {
 
 gather_bilinear_models <- function(data_set, props, 
 	min_length = 10, col_lims = NA, normed = TRUE, 
-	log_lin = TRUE, boot.samp = NA, save.exp_data = TRUE) {
+	log.trans = TRUE, boot.samp = NA, save.exp_data = TRUE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
@@ -192,7 +192,7 @@ gather_bilinear_models <- function(data_set, props,
 		}
 		
 		temp_results = find_optimum_bilinear_fit(this_data_set, normed = normed, 
-			min_length = min_length, log_lin = log_lin)
+			min_length = min_length, log.trans = log.trans)
 
 		results$early$offset[i] = temp_results$early$offset
 		results$early$R_sq[i]   = temp_results$early$R_sq
@@ -216,7 +216,7 @@ gather_bilinear_models <- function(data_set, props,
 
 	if (is.numeric(boot.samp)) {
 		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
-			col_lims = col_lims, normed = normed, log_lin = log_lin, boot.samp = boot.samp)
+			col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp)
 	}
 	
 	results
@@ -239,7 +239,7 @@ pad_results_to_row_length <- function(results, desired_length) {
 	results
 }
 
-find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log_lin = TRUE) {
+find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log.trans = TRUE) {
 
 	results = list(initial_data_set = initial_data_set)
 	resid = list(early = list(), late = list())	
@@ -256,7 +256,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 			if (normed) {
 				early_subset$y = early_subset$y/early_subset$y[1]
 			}
-			if (log_lin) {
+			if (log.trans) {
 				early_subset$y = log(early_subset$y)
 			}
 				
@@ -277,7 +277,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 			results$early$inter[j] = coef(model)[[1]]
 			results$early$slope[j] = coef(model)[[2]]
 
-			if (log_lin) {
+			if (log.trans) {
 				results$early$fold_change[j] = max(early_subset$y)
 			} else {				
 				results$early$fold_change[j] = max(early_subset$y)/min(early_subset$y)
@@ -303,7 +303,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 			if (normed) {
 				late_subset$y = late_subset$y[1]/late_subset$y
 			}
-			if (log_lin) {
+			if (log.trans) {
 				late_subset$y = log(late_subset$y)
 			}
 	
@@ -324,7 +324,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 			results$late$inter[j] = coef(model)[[1]]
 			results$late$slope[j] = coef(model)[[2]]
 
-			if (log_lin) {
+			if (log.trans) {
 				results$late$fold_change[j] = max(late_subset$y)
 			} else {						
 				results$late$fold_change[j] = max(late_subset$y)/min(late_subset$y)
@@ -421,7 +421,7 @@ find_best_offset_combination <- function(results, min_length = 10) {
 
 gather_linear_regions.boot <- function(results, 
 	min_length = 10, col_lims = NaN, normed = 1, 
-	log_lin = TRUE, boot.samp = NA) {
+	log.trans = TRUE, boot.samp = NA) {
 
 	sim_results <- list()
 	
@@ -448,12 +448,12 @@ gather_linear_regions.boot <- function(results,
 	}
 	
 	sim_results <- gather_linear_regions(sim_ad_sig, sim_props, 
-				       min_length = min_length, normed = normed, log_lin = log_lin, save.exp_data = FALSE)
+				       min_length = min_length, normed = normed, log.trans = log.trans, save.exp_data = FALSE)
 }	
 
 gather_bilinear_models_from_dirs <- function (dirs, min_length=10, 
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
-	normed = TRUE, log_lin = TRUE, boot.samp = NA, results_file = NA,
+	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
 	save.exp_data = TRUE) {
 	
 	results = list()
@@ -481,12 +481,12 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 		
 		results[[k]] <- gather_bilinear_models(exp_data, ad_props, 
 							min_length = min_length, col_lims = this_col_lim, 
-							normed = normed, log_lin = log_lin, 
+							normed = normed, log.trans = log.trans, 
 							boot.samp = boot.samp, save.exp_data = save.exp_data)
         
-        if (! is.na(results_file)) {
+        if (! is.na(results.file)) {
             this_result = results[[k]]
-            save(this_result,file = file.path(dirs[[k]],results_file))
+            save(this_result,file = file.path(dirs[[k]],results.file))
         }
 	}
 	
@@ -494,7 +494,8 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 }
 
 gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
-	normed = TRUE, log_lin = TRUE, results_file = NA, save.exp_data = TRUE) {
+	result.normed = TRUE, exp.normed = TRUE, result.log.trans = TRUE, 
+	exp.log.trans = TRUE, results.file = NA, save.exp_data = TRUE) {
 	
 	corr_results = list()
 	
@@ -508,107 +509,105 @@ gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
 		exp_data <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
 		
 		corr_results[[k]] <- gather_correlations(results[[k]], exp_data, 
-							normed = normed, log_lin = log_lin, results_file = results_file, save.exp_data = save.exp_data);
-#        if (! is.na(results_file)) {
-#            this_result = results[[k]]
-#            save(this_result,file = file.path(dirs[[k]],results_file))
-#        }
+			result.normed = result.normed, exp.normed = exp.normed, 
+			result.log.trans = result.log.trans, exp.log.trans = exp.log.trans, 
+			results.file = results.file, save.exp_data = save.exp_data);
+			
+        if (! is.na(results.file)) {
+            this_result = corr_results[[k]]
+            save(this_result,file = file.path(dirs[[k]],results.file))
+        }
 	}
 	
 	corr_results
 }
 
-gather_correlations <- function(result, exp_data, normed = TRUE, log_lin = TRUE, results_file = NA, save.exp_data = TRUE) {
+gather_correlations <- function(result, exp_data, result.normed = TRUE, 
+	exp.normed = FALSE, result.log.trans = TRUE, exp.log.trans = FALSE, 
+	results.file = NA, save.exp_data = TRUE) {
 
 	corr_result = list()
 	
-	for (i in 1:length(result$early$R_sq)) {
-		if (is.na(result$early$R_sq[i])) {
-			next
-		}
-		
-		data_1 = as.numeric(result$exp_data[i,1:result$early$offset[i]])
-		data_1 = data_1[! is.nan(data_1)]
-		data_2 = as.numeric(exp_data[i,1:result$early$offset[i]])
-		data_2 = data_2[! is.nan(data_2)]
-		
-		if (normed) {
-			data_1 = data_1/data_1[1]
-			data_2 = data_2/data_2[1]
-		}
-		if (log_lin) {
-			data_1 = log(data_1)
-			data_2 = log(data_2)
-		}
-		
-		corr_result$early[i] = cor(data_1,data_2)
+	if (save.exp_data) {
+		corr_result$exp_data = exp_data
 	}
+	
+#	pdf('plot.pdf')
+#	par(bty = 'n',oma=c(0,0,0,2),mar=c(4,4,4,2))
+	count = 0
+	for (i in 1:length(result$early$R_sq)) {
+		data_1 = as.numeric(result$exp_data[i,])
+		data_1 = data_1[! is.nan(data_1)]
+		data_2 = as.numeric(exp_data[i,])
+		data_2 = data_2[! is.nan(data_2)]		
+		
+		corr_result$early[i] = NA
+		corr_result$late[i] = NA
 
-#			early_subset = this_data_set[1:j,]
-#			if (normed) {
-#				early_subset$y = early_subset$y/early_subset$y[1]
-#			}
-#			if (log_lin) {
-#				early_subset$y = log(early_subset$y)
-#			}
+		if (! is.na(result$early$R_sq[i])) {
+			this_data_1 = data_1[1:result$early$offset[i]]
+			this_data_2 = data_2[1:result$early$offset[i]]
+			
+			if (result.normed) {
+				this_data_1 = this_data_1/this_data_1[1]
+			}
+			if (exp.normed) {
+				this_data_2 = this_data_2/this_data_2[1]
+			}
+			
+			if (result.log.trans) {
+				this_data_1 = log(this_data_1)
+			}
+			if (exp.log.trans) {
+				this_data_2 = log(this_data_2)
+			}
+			
+			if (sd(this_data_1) != 0 & sd(this_data_2) != 0) {
+				corr_result$early[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
+				corr_result$conf$early_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
+				corr_result$conf$early_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
+				
+				
+			}
+			
+#			if (! is.na(corr_result$early[i]) & result$early$R_sq[i] > 0.95 & corr_result$early[i] > 0.95) {
+#				count = count + 1
 #				
-#			model <- lm(y ~ x, data = early_subset)
-#			summary <- summary(model);
-#			
-#			results$early$R_sq[j] = summary$adj.r.squared
-#			#dealing with a degerate case, where lm produce NaN for the R squared 
-#			#value when the data set is a flat line, see:
-#			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
-#			#	>summary(lm(y ~ x, data=data))
-#			if (is.nan(results$early$R_sq[j])) {
-#				results$early$R_sq[j] = 1
-#			}
-#			
-#			results$early$length[j] = dim(early_subset)[[1]]
-#			results$early$offset[j] = j
-#			results$early$inter[j] = coef(model)[[1]]
-#			results$early$slope[j] = coef(model)[[2]]
-#
-#			if (log_lin) {
-#				results$early$fold_change[j] = max(early_subset$y)
-#			} else {				
-#				results$early$fold_change[j] = max(early_subset$y)/min(early_subset$y)
-#			}
-#			resid$early[[j]] = as.numeric(resid(model))
-#	
-#		for (j in min_length:dim(this_data_set)[[1]]) {
-#			late_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
-#			if (normed) {
-#				late_subset$y = late_subset$y[1]/late_subset$y
-#			}
-#			if (log_lin) {
-#				late_subset$y = log(late_subset$y)
-#			}
-#	
-#			model <- lm(y ~ x, data = late_subset)
-#			summary <- summary(model);
-#			
-#			results$late$R_sq[j] = summary$adj.r.squared
-#			#dealing with a degerate case, where lm produce NaN for the R squared 
-#			#value when the data set is a flat line, see:
-#			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
-#			#	>summary(lm(y ~ x, data=data))
-#			if (is.nan(results$late$R_sq[j])) {
-#				results$late$R_sq[j] = 1
-#			}
-#			
-#			results$late$length[j] = dim(late_subset)[[1]]
-#			results$late$offset[j] = j
-#			results$late$inter[j] = coef(model)[[1]]
-#			results$late$slope[j] = coef(model)[[2]]
-#
-#			if (log_lin) {
-#				results$late$fold_change[j] = max(late_subset$y)
-#			} else {						
-#				results$late$fold_change[j] = max(late_subset$y)/min(late_subset$y)
-#			}
-#			resid$late[[j]] = as.numeric(resid(model))
-#		}
+#				plot(data_1,xlab='Time (minutes)',ylab=expression(paste('ln(l/',l[0],')',sep='')),main=paste(corr_result$early[i],result$early$R_sq[i]))
+#				
+#				par(new=TRUE)
+#				
+#				plot(data_2,col='red',pch=23,axes=FALSE,ann=FALSE)
+#				axis(4,col='red',col.lab='red',col.axis='red')
+#				mtext(expression(paste('Adhesion Size (', mu*m^2,')',sep='')),side=4,line=1,col='red',outer=TRUE)
+##			}
+		}
+		if (! is.na(result$late$R_sq[i])) {
+			this_data_1 = data_1[(length(data_1) - result$late$offset[i]):length(data_1)]
+			this_data_2 = data_2[(length(data_2) - result$late$offset[i]):length(data_2)]
+
+			if (result.normed) {
+				this_data_1 = this_data_1[1]/this_data_1
+			}
+			if (exp.normed) {
+				this_data_2 = this_data_2[1]/this_data_2
+			}
+			
+			if (result.log.trans) {
+				this_data_1 = log(this_data_1)
+			}
+			if (exp.log.trans) {
+				this_data_2 = log(this_data_2)
+			}
+				
+			if (sd(this_data_1) != 0 & sd(this_data_2) != 0) {
+				corr_result$late[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
+				corr_result$conf$late_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
+				corr_result$conf$late_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
+			}
+		}
+	}
+#	graphics.off()
 	corr_result
 }
 
@@ -812,22 +811,35 @@ trim_args_list <- function(args) {
 	args
 }
 
-write_high_r_sq <- function(result, dir, file='high_R_sq.csv', min_R_sq = 0.9) {
+write_high_r_rows <- function(result, dir, file=c('early_R_sq.csv','late_R_sq.csv'), min_R_sq = 0.9) {
 	if (! file.exists(dir)) {
 		dir.create(dir,recursive=TRUE)
 	}
 	
 	row_nums = c()
 	for (i in 1:length(result$early$R_sq)) {
-		if (is.na(result$early$R_sq[i]) | is.na(result$late$R_sq[i])) {
+		if (is.na(result$early$R_sq[i])) {
 			next
 		}
-		if (result$early$R_sq[i] > min_R_sq & result$late$R_sq[i] > min_R_sq) {
-			row_nums = c(row_nums, i - 1)
+		if (result$early$R_sq[i] > min_R_sq) {
+			row_nums = c(row_nums, i)
 		}
 	}
 	if (! is.null(row_nums)) {
-		write.table(row_nums,file=file.path(dir,file), row.names=FALSE, col.names=FALSE)
+		write.table(row_nums,file=file.path(dir,file[1]), row.names=FALSE, col.names=FALSE)
+	}
+	
+	row_nums = c()
+	for (i in 1:length(result$late$R_sq)) {
+		if (is.na(result$late$R_sq[i])) {
+			next
+		}
+		if (result$late$R_sq[i] > min_R_sq) {
+			row_nums = c(row_nums, i)
+		}
+	}
+	if (! is.null(row_nums)) {
+		write.table(row_nums,file=file.path(dir,file[2]), row.names=FALSE, col.names=FALSE)
 	}
 }
 
@@ -840,10 +852,8 @@ args <- commandArgs(TRUE)
 if (length(args) != 0) {
 	args <- trim_args_list(args)
 	
-	results = gather_bilinear_models_from_dirs(args, results_file='../intensity_model.Rdata')
+	results = gather_bilinear_models_from_dirs(args, results.file='../intensity_model.Rdata')
+	hold = gather_correlations_from_dirs(args, results, results.file='../corr_model.Rdata')
 	
-	gather_models_from_dirs(args,results='../log_area_model.Rdata',data_file='Area.csv')
-	gather_models_from_dirs(args,results='../lin_area_model.Rdata',data_file='Area.csv',log_lin = FALSE)
-	
-	write_high_r_sq(results[[1]],file.path(args[1],'..'))
+	write_high_r_rows(results[[1]],file.path(args[1],'..','for_vis'))
 }
