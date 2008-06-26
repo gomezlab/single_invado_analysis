@@ -42,7 +42,7 @@ if (defined $cfg{matlab_executable}) {
 
 mkpath($cfg{individual_results_folder});
 
-my @image_sets = ([qw(cell_mask_image_prefix cell_mask_file)], [qw(adhesion_image_prefix adhesion_image_file)]);
+my @image_sets = ([qw(cell_mask_image_prefix raw_mask_file)], [qw(adhesion_image_prefix adhesion_image_file)]);
 my @matlab_code;
 my $all_images_empty = 1;
 
