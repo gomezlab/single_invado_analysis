@@ -36,7 +36,8 @@ else
     cell_mask = i_p.Results.cell_mask;
 end
 
-labeled_adhesions = bwlabel(ad_I,4);
+%labeled_adhesions = bwlabel(ad_I,4);
+labeled_adhesions = ad_I;
 adhesion_props = regionprops(labeled_adhesions,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

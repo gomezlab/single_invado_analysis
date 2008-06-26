@@ -62,6 +62,8 @@ if (exist('cell_mask','var'))
     adhesions = find_in_cell_ads(adhesions,cell_mask);
 end
 
+ad_zamir = find_ad_zamir(high_passed_image,i_p);
+
 if (exist('cell_mask','var'))
     [B,F,T] = otsuThresholding(high_passed_image(cell_mask));
     adhesions_otsu = im2bw(high_passed_image,T);
@@ -70,9 +72,9 @@ if (exist('cell_mask','var'))
 end
 
 if (exist('cell_mask','var'))
-    adhesion_properties = collect_adhesion_properties(adhesions,focal_image,'cell_mask',cell_mask);
+    adhesion_properties = collect_adhesion_properties(ad_zamir,focal_image,'cell_mask',cell_mask);
 else
-    adhesion_properties = collect_adhesion_properties(adhesions,focal_image);
+    adhesion_properties = collect_adhesion_properties(ad_zamir,focal_image);
 end
 
 %write the results to files
@@ -80,7 +82,7 @@ imwrite(adhesions,fullfile(i_p.Results.output_dir, 'adhesions.png'));
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
 
 if (nargout > 0)
-    varargout{1} = adhesions;
+    varargout{1} = struct('adhesions',adhesions,'ad_zamir',ad_zamir);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

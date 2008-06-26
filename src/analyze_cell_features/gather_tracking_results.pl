@@ -27,7 +27,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_pix_props", "tracking_mat=s");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_pix_props", "tracking_mat=s", "skip_lin_regions");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -61,8 +61,8 @@ my @image_values;
 if (not($opt{skip_pix_props})) {
     @image_values = &gather_image_value_props(\%cfg, \%opt);
     &output_image_props;
+    &build_image_props_plots;
 }
-&build_image_props_plots;
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
@@ -75,7 +75,9 @@ my %ad_lineage_props = &gather_ad_lineage_properties;
 &build_lineage_plots;
 
 print "\n\nBuilding R Model Files\n", if $opt{debug};
-&run_R_linear_region_code;
+if (not($opt{skip_lin_regions})) {
+    &run_R_linear_region_code;
+}
 
 if (exists $cfg{treatment_time}) {
     print "\n\nGathering Treatment Results\n", if $opt{debug};
@@ -98,7 +100,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif ((grep $data_type eq $_, qw(Class))
+            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity))
                 || ($data_type =~ /adhesion_signal/)) {
 
                 #This is the arbitrary units place, don't do any unit
@@ -251,7 +253,7 @@ sub gather_single_ad_props {
     my @data;
 
     my @possible_data_types =
-      qw(Area Average_adhesion_signal Centroid_dist_from_edge Centroid_dist_from_center Variance_adhesion_signal);
+      qw(Area Average_adhesion_signal Eccentricity Solidity Centroid_dist_from_edge Centroid_dist_from_center Variance_adhesion_signal);
 
     my @single_ad_data_types = map {
         my $type = $_;
@@ -339,6 +341,15 @@ sub build_single_ad_plots {
             xlab      => "'Paxillin Concentration (AU)'",
             ylab      => "expression(paste('Distance from Edge (', mu, 'm)'))",
             file_name => "sig_vs_dist.pdf",
+            plot_para => $xy_default,
+            pdf_para  => $pdf_default,
+        },
+        {
+            xy        => "adhesions\$Centroid_dist_from_edge,adhesions\$Ecc",
+            main      => "",
+            xlab      => "expression(paste('Distance from Edge (', mu, 'm)'))",
+            ylab      => "Eccentricity",
+            file_name => "dist_vs_eccen.pdf",
             plot_para => $xy_default,
             pdf_para  => $pdf_default,
         },
@@ -1012,6 +1023,9 @@ Optional parameter(s):
 in the config file for the tracking matrix
 
 =item * skip_pix_props: debugging command that skips the time consuming
+production of the pixel properties results
+
+=item * skip_lin_regions: debugging command that skips the time consuming
 production of the pixel properties results
 
 =item * debug or d: print debuging information during program execution
