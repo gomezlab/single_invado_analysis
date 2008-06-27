@@ -1,9 +1,9 @@
 function ad_zamir = find_ad_zamir(high_passed_image,i_p)
 
-start_count = 1;
+start_count = 0;
 
-if (start_count > 1)
-    ad_zamir = imread(fullfile('temp',[num2str(start_count),'.png']));
+if (start_count > 0)
+    ad_zamir = imread(fullfile('ad_zamir_samples',[num2str(start_count),'.png']));
 else
     ad_zamir = zeros(size(high_passed_image));
 end
@@ -33,8 +33,8 @@ for i = (start_count + 1):length(sorted_pix_vals)
         ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),min_size);
     end
     
-    if (i_p.Results.debug) 
-        mkdir('ad_zamir_samples');
+    if (i_p.Results.debug)
+        if (not(exist('ad_zamir_samples','dir'))) mkdir('ad_zamir_samples'); end
         imwrite(double(ad_zamir)/2^16,fullfile('ad_zamir_samples',[num2str(count),'.png']),'bitdepth',16)
     end
     count = count + 1;    
@@ -103,11 +103,6 @@ assert(sum(connected_ad(:)) == (sum(old_ad(:)) + 1),'Error in connected ad findi
 if (sum(old_ad(:)) == 0)
     ad_zamir(connected_ad) = max(ad_zamir(:)) + 1;
 else
-    if (length(unique(bwlabel(old_ad,4))) ~= length(unique(ad_zamir(old_ad == 1))) + 1)
-        1;
-    end
-    %assert(length(unique(bwlabel(old_ad,4))) == length(unique(ad_zamir(old_ad == 1))) + 1,'Error in labeling of binary old adhesions %d %d',length(unique(bwlabel(old_ad,4))),length(unique(ad_zamir(old_ad == 1))) + 1)
-    %props = regionprops(bwlabel(old_ad,4),'Area','Centroid');
     props = regionprops(relabeled_old_ad,'Area','Centroid');
     
     %if there is only one set of props, we know there was only one adhesion
@@ -130,7 +125,7 @@ else
         if (all([props.Area] < min_size))
             ad_zamir(connected_ad) = min(ad_zamir(old_ad == 1));
         elseif (sum(meets_min) == 1)
-            large_area_ad = ismember(bwlabel(old_ad,4),find([props.Area] >= min_size));
+            large_area_ad = ismember(relabeled_old_ad,find([props.Area] >= min_size));
             
             ad_number = ad_zamir(find(large_area_ad == 1,1));
             assert(ad_number > 0, 'Error in large ad filtering: adhesion number less than 1');
@@ -142,7 +137,7 @@ else
             
             ad_number = ad_zamir(find(largest_area_ad == 1,1));
             assert(ad_number > 0, 'Error in large ad filtering: adhesion number less than 1');
-            assert(all(ad_number == ad_zamir(largest_area_ad == 1)),'Error in large ad filtering: single adhesion with different numbers');
+            assert(all(ad_number == ad_zamir(largest_area_ad == 1)),'Error in largest ad filtering: single adhesion with different numbers');
 
             ad_zamir(pix_pos) = ad_number;
         end
