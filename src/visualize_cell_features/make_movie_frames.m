@@ -1,4 +1,5 @@
 function make_movie_frames(cfg_file,varargin)
+profile on;
 %MAKE_MOVIE_FRAMES
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,7 +104,6 @@ for i = 1:i_count
     any_highlights = 0;
     
     for j = 1:size(tracking_seqs,1)
-        
         if (debug && j > 100); continue; end
         
         if (tracking_seqs(j,i_seen) <= 0)
@@ -169,7 +169,6 @@ for i = 1:i_count
 
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
-
         for j = 1:3
             edge_image_ad(find(cell_edge)+(j-1)*pix_count) = edge_c_map(i,j);
         end
@@ -209,4 +208,10 @@ for i = 1:i_count
             imwrite(frame{j},output_filename);
         end
     end
+end
+
+profile off
+
+if (debug)
+    profile viewer
 end

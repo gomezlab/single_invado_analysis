@@ -36,19 +36,18 @@ my %cfg = ParseConfig(\%opt);
 ###############################################################################
 #Main Program
 ###############################################################################
-
 my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
 
 our @files;
-find(\&include_in_vis, (catdir($cfg{exp_results_folder}, $cfg{tracking_folder})));
+find(\&include_in_vis, catdir($cfg{exp_results_folder}, $cfg{tracking_folder}));
 
-my @movie_params = map { 
+my @movie_params = map {
     my $base_dir = catdir($cfg{exp_results_folder}, $cfg{tracking_folder});
     my $movie_path = $_;
-    $movie_path =~ s/$base_dir(.*)\.csv/$1/;
+    $movie_path =~ s/(.*)\.csv/$1/;
     {
-        tracking_file => $_, 
-        movie_path => catdir($cfg{movie_output_folder},$movie_path),
+        tracking_file => $_,
+        movie_path    => catdir($cfg{movie_output_folder}, $movie_path),
     }
 } @files;
 
@@ -77,12 +76,24 @@ foreach (@movie_params) {
 ###############################################################################
 #Functions
 ###############################################################################
-
 sub include_in_vis {
-    if (   $File::Find::name =~ /.csv/ 
-        && not($File::Find::name =~ /no_movie/) ) {
-       push @files, $File::Find::name;
+    if ($File::Find::name =~ /.csv/
+        && not($File::Find::name =~ /no_movie/)) {
+        my $folder = catdir($cfg{exp_results_folder}, $cfg{tracking_folder});
+        if ($File::Find::name =~ /$folder\/(.*)/) {
+            push @files, $1;
+        }
     }
+}
+
+sub write_matlab_config {
+    my %params = @_;
+
+    my @config = &build_matlab_visualization_config(@_);
+    open VIS_CFG_OUT, ">" . $params{'config_file'}
+      or die "Unsuccessfully tried to open visualization config file: $params{config_file}";
+    print VIS_CFG_OUT @config;
+    close VIS_CFG_OUT;
 }
 
 sub build_matlab_visualization_config {
@@ -91,8 +102,8 @@ sub build_matlab_visualization_config {
     if (not exists $params{'tracking_file'}) {
         $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
     }
-    
-    my $excluded_image_nums = "["  . join(",", @{$cfg{exclude_image_nums}}) . "]";
+
+    my $excluded_image_nums = "[" . join(",", @{ $cfg{exclude_image_nums} }) . "]";
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
@@ -118,10 +129,10 @@ sub build_matlab_visualization_config {
         "adhesions_filename = 'adhesions.png';\n",
         "edge_filename = 'cell_mask.png';\n",
 
-        "tracking_seq_file = '$params{tracking_file}';\n\n",
+        "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n\n",
 
         "out_path = fullfile(base_results_folder,'$params{movie_path}');\n",
-        "out_prefix = {'", join("\',\'", @{$cfg{movie_output_prefix}}), "'};\n\n",
+        "out_prefix = {'", join("\',\'", @{ $cfg{movie_output_prefix} }), "'};\n\n",
 
         "excluded_image_nums = $excluded_image_nums;\n",
         "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');\n",
@@ -137,12 +148,57 @@ sub build_matlab_visualization_config {
     return @config_lines;
 }
 
-sub write_matlab_config {
-    my %params = @_;
+###############################################################################
+#Documentation
+###############################################################################
 
-    my @config = &build_matlab_visualization_config(@_);
-    open VIS_CFG_OUT, ">" . $params{'config_file'}
-      or die "Unsuccessfully tried to open visualization config file: $params{config_file}";
-    print VIS_CFG_OUT @config;
-    close VIS_CFG_OUT;
-}
+=head1 NAME
+
+collect_visualizations.pl - build the visualizations of the focal adhesion
+movies
+
+=head1 SYNOPSIS
+
+collect_mask_set.pl -cfg FA_config
+
+=head1 DESCRIPTION
+
+This program builds a series of movies based on files available in the tracking
+matrices folder. Each file in the tracking matrices folder which ends with
+'.csv' and does not contain 'no_movie' is used to build a visualization of the
+tracked focal adhesions.
+
+Required parameter(s):
+
+=over 
+
+=item * cfg or c: the focal adhesion analysis config file
+
+=back
+
+Optional parameter(s):
+
+=over 
+
+=item * debug or d: print debuging information during program execution
+
+=item * movie_debug: pass along the debug flag to the MATLAB visualization
+program, causing only a small subset of the tracked adhesions to be visualized
+in a single frame
+
+=item * config_only: only write the MATLAB config files out, do not execute the
+MATLAB program
+
+=back
+
+=head1 EXAMPLES
+
+collect_visualizations.pl -cfg FA_config
+
+=head1 AUTHORS
+
+Matthew Berginski (mbergins@unc.edu)
+
+Documentation last updated: 6/30/2008
+
+=cut

@@ -22,14 +22,17 @@ i_p.parse(input_edge_binary);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 connected_areas = bwlabel(input_edge_binary);
 region_sizes = regionprops(connected_areas, 'Area');
-max_region_size = max([region_sizes.Area]);
-edge_binary_image = ismember(connected_areas, find([region_sizes.Area] == max_region_size));
 
-edge_binary_image = imfill(edge_binary_image,'holes');
+edge_binary_image = ismember(connected_areas, find([region_sizes.Area] == max([region_sizes.Area])));
 
-edge_binary_image = bwperim(edge_binary_image);
+ad_nums = unique(edge_binary_image);
 
-edge_binary_image = imfill(edge_binary_image,'holes');
+assert(length(ad_nums) == 2, 'Error in cell mask cleaning: more than one labeled adhesion found in largest search');
+
+edge_binary_image(edge_binary_image == ad_nums(2)) = 1;
+
 edge_binary_image = imdilate(edge_binary_image,strel('diamond',1));
+
+edge_binary_image = imfill(edge_binary_image,'holes');
 
 end
