@@ -1,5 +1,5 @@
 function ad_zamir = find_ad_zamir(high_passed_image,i_p)
-
+if (i_p.Results.debug == 1) profile on; end
 start_count = 0;
 
 if (start_count > 0)
@@ -19,8 +19,8 @@ for i = (start_count + 1):length(sorted_pix_vals)
         continue
     end
 
-    if (count > 30)
-        %continue
+    if (count > 250 && i_p.Results.debug == 1)
+        continue
     end
 
     lin_ind = find(high_passed_image == sorted_pix_vals(i));
@@ -46,7 +46,10 @@ assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion lab
 for i = 2:length(ad_nums)
     ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
 end
-imwrite(ad_zamir,fullfile(i_p.Results.output_dir, 'ad_zamir.png'));
+imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, 'ad_zamir.png'),'bitdepth',16);
+
+profile off;
+if (i_p.Results.debug) profile viewer; end
 
 
 function ad_zamir = add_single_pixel(ad_zamir,pix_pos,min_size)
@@ -83,7 +86,7 @@ if (length(unique(ad_zamir(connected_ad == 1))) ~= length(ad_nums))
     1;
 end
 
-%build a binary image of the current adhesions
+%build a binary image of the current touching adhesions
 old_ad = zeros(size(ad_zamir));
 old_ad(and(ad_zamir > 0,connected_ad)) = 1;
 
