@@ -15,11 +15,11 @@ count = start_count;
 min_size = 40;
 
 for i = (start_count + 1):length(sorted_pix_vals)
-    if (sorted_pix_vals(i) < i_p.Results.filter_thresh)
+    if (sorted_pix_vals(i) <= i_p.Results.filter_thresh)
         continue
     end
 
-    if (count > 250 && i_p.Results.debug == 1)
+    if (count > numel(high_passed_image)*2 && i_p.Results.debug == 1)
         continue
     end
 
@@ -37,7 +37,7 @@ for i = (start_count + 1):length(sorted_pix_vals)
     end
 
     if (mod(count,100) == 0 && i_p.Results.debug)
-        disp(['Count: ',num2str(count),'/',num2str(sum(sorted_pix_vals>i_p.Results.filter_thresh))])
+        disp(['Count: ',num2str(count),'/',num2str(sum(sorted_pix_vals > i_p.Results.filter_thresh))])
     end
 end
 
