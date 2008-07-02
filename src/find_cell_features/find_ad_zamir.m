@@ -1,5 +1,5 @@
 function ad_zamir = find_ad_zamir(high_passed_image,i_p)
-if (i_p.Results.debug == 1) profile on; end
+if (i_p.Results.debug == 1), profile on; end
 start_count = 0;
 
 if (start_count > 0)
@@ -32,7 +32,7 @@ for i = (start_count + 1):length(sorted_pix_vals)
 
     count = count + 1;
     if (i_p.Results.debug)
-        if (not(exist('ad_zamir_samples','dir'))) mkdir('ad_zamir_samples'); end
+        if (not(exist('ad_zamir_samples','dir'))), mkdir('ad_zamir_samples'); end
         imwrite(double(ad_zamir)/2^16,fullfile('ad_zamir_samples',[num2str(count),'.png']),'bitdepth',16)
     end
 
@@ -49,7 +49,7 @@ end
 imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, 'ad_zamir.png'),'bitdepth',16);
 
 profile off;
-if (i_p.Results.debug) profile viewer; end
+if (i_p.Results.debug), profile viewer; end
 
 
 function ad_zamir = add_single_pixel(ad_zamir,pix_pos,min_size)
@@ -61,29 +61,20 @@ function ad_zamir = add_single_pixel(ad_zamir,pix_pos,min_size)
 %end of the function
 initial_size = sum(sum(im2bw(ad_zamir,0)));
 
-%first build the binary image of the current adhesions, with the newest
-%pixel added
-pix_matches = im2bw(ad_zamir,0);
-pix_matches(pix_pos) = 1;
-
 %now locate the adhesions in the current adhesions that touch the newest
 %selected pixel
-temp_connected_ad = bwselect(pix_matches,pix_pos_ind(2),pix_pos_ind(1),4);
-assert(sum(temp_connected_ad(:)) >= 1,'Error in identifying the connected adhesions with newest pixel added')
-ad_nums = unique(ad_zamir(temp_connected_ad == 1));
-connected_ad = zeros(size(ad_zamir));
-if (sum(sum(temp_connected_ad)) ~= 1)
-    for i = 1:length(ad_nums)
-        temp_ad_zamir = ad_zamir;
-        temp_ad_zamir(ad_zamir ~= ad_nums(i)) = 0;
-        temp_ad_zamir(pix_pos) = 1;
-        connected_ad = or(connected_ad, bwselect(temp_ad_zamir,pix_pos_ind(2),pix_pos_ind(1),4));
+connected_ad = false(size(ad_zamir));
+connected_ad(pix_pos) = 1;
+ad_nums = zeros(4);
+try ad_nums(1) = ad_zamir(pix_pos_ind(1) - 1,pix_pos_ind(2)); end
+try ad_nums(2) = ad_zamir(pix_pos_ind(1) + 1,pix_pos_ind(2)); end    
+try ad_nums(3) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) - 1); end
+try ad_nums(4) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) + 1); end
+
+for i = 1:length(ad_nums)
+    if (ad_nums(i) ~= 0)
+        connected_ad(ad_zamir == ad_nums(i)) = 1;
     end
-else
-    connected_ad = temp_connected_ad;
-end
-if (length(unique(ad_zamir(connected_ad == 1))) ~= length(ad_nums))
-    1;
 end
 
 %build a binary image of the current touching adhesions
@@ -93,10 +84,11 @@ old_ad(and(ad_zamir > 0,connected_ad)) = 1;
 relabeled_old_ad = ad_zamir;
 relabeled_old_ad(old_ad ~= 1) = 0;
 ad_nums = unique(relabeled_old_ad);
-for i = 1:length(ad_nums)
+assert(ad_nums(1) == 0, 'Error in collecting relabeled_old_ad unique ad numbers')
+for i = 2:length(ad_nums)
     relabeled_old_ad(relabeled_old_ad == ad_nums(i)) = i - 1;
 end
-assert(all([unique(relabeled_old_ad)]' == 0:(length(ad_nums) - 1)), 'Error in old ad relabeling')
+assert(all(unique(relabeled_old_ad)' == 0:(length(ad_nums) - 1)), 'Error in old ad relabeling')
 
 assert(sum(connected_ad(:)) == (sum(old_ad(:)) + 1),'Error in connected ad finding: %d, %d ',sum(connected_ad(:)),sum(old_ad(:)))
 
