@@ -19,7 +19,7 @@ for i = (start_count + 1):length(sorted_pix_vals)
         continue
     end
 
-    if (count > numel(high_passed_image)*2 && i_p.Results.debug == 1)
+    if (count > 400 && i_p.Results.debug == 1)
         continue
     end
 
@@ -46,7 +46,6 @@ assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion lab
 for i = 2:length(ad_nums)
     ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
 end
-imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, 'ad_zamir.png'),'bitdepth',16);
 
 profile off;
 if (i_p.Results.debug), profile viewer; end

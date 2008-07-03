@@ -30,6 +30,7 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.parse(I_file);
 
 i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
+i_p.addOptional('min_size',40,@(x)isnumeric(x) && x > 1);
 i_p.addOptional('filter_size',23,@(x)isnumeric(x) && x > 1);
 i_p.addOptional('filter_thresh', 0.1, @isnumeric);
 i_p.addOptional('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
@@ -59,16 +60,13 @@ adhesions = zeros(size(focal_image,1),size(focal_image,2));
 adhesions(high_passed_image > i_p.Results.filter_thresh) = 1;
 adhesions = imfill(adhesions,'holes');
 if (exist('cell_mask','var'))
-    adhesions = find_in_cell_ads(adhesions,cell_mask);
+    adhesions = find_in_cell_ads(bwlabel(adhesions,4),cell_mask);
+    adhesions = im2bw(adhesions,0);
 end
 
 ad_zamir = find_ad_zamir(high_passed_image,i_p);
-
 if (exist('cell_mask','var'))
-    [B,F,T] = otsuThresholding(high_passed_image(cell_mask));
-    adhesions_otsu = im2bw(high_passed_image,T);
-    adhesions_otsu = find_in_cell_ads(adhesions_otsu,cell_mask);
-    imwrite(adhesions_otsu,fullfile(i_p.Results.output_dir, 'adhesions_otsu.png'));
+    ad_zamir = find_in_cell_ads(ad_zamir,cell_mask);
 end
 
 if (exist('cell_mask','var'))
@@ -79,6 +77,7 @@ end
 
 %write the results to files
 imwrite(adhesions,fullfile(i_p.Results.output_dir, 'adhesions.png'));
+imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, 'ad_zamir.png'),'bitdepth',16);
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
 
 if (nargout > 0)
@@ -89,7 +88,7 @@ end
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function filtered_adhesions = find_in_cell_ads(ad,cm)
+function filtered_adhesions = find_in_cell_ads(ads,cm)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
@@ -107,20 +106,14 @@ function filtered_adhesions = find_in_cell_ads(ad,cm)
 %       -the average and variance of the normalized fluorescence signal
 %        within each adhesion
 
-labeled_ad = bwlabel(ad,4);
+filtered_adhesions = zeros(size(ads,1),size(ads,2));
 
-filtered_adhesions = zeros(size(ad,1),size(ad,2));
-
-for i = 1:max(labeled_ad(:))
-    this_adhesion = zeros(size(ad,1),size(ad,2));
-    this_adhesion(labeled_ad == i) = 1;
+for i = 1:max(ads(:))
+    this_adhesion = false(size(ads,1),size(ads,2));
+    this_adhesion(ads == i) = true;
     overlap = and(this_adhesion,cm);
 
-    if (sum(overlap(:)))
-        filtered_adhesions(overlap) = 1;
+    if (sum(overlap(:)) >= 1)
+        filtered_adhesions(this_adhesion) = i;
     end
-end
-
-end
-
 end
