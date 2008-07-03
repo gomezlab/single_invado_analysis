@@ -1,9 +1,11 @@
 #!/usr/bin/env perl
 
-
 ################################################################################
 # Global Variables and Modules
 ################################################################################
+
+use lib "../lib";
+use lib "../lib/perl";
 
 use strict;
 use File::Path;
@@ -13,9 +15,9 @@ use Image::ExifTool;
 use Getopt::Long;
 use Data::Dumper;
 
-use lib "../lib";
 use Config::Adhesions;
 use Math::Matlab::Extra;
+use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -23,7 +25,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "emerald");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
@@ -45,8 +47,15 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_matlab_code;
 
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{adhesion_errors_file});
-&Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'FA');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'FA', 'error.txt');
+mkpath($error_folder);
+if ($opt{emerald}) {
+    my %emerald_opt = ("folder" => $error_folder, "split_on_newlines" => 1);
+    &Emerald::send_emerald_commands(\@matlab_code,\%emerald_opt);
+} else {
+    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+}
 
 ################################################################################
 #Functions
@@ -119,6 +128,8 @@ Optional parameter(s):
 
 =item * debug or d: print debuging information during program execution
 
+=item * emerald: submit jobs through the emerald queuing system
+
 =item * fa_debug: only execute the focal adhesion finding MATLAB code for one of
 the images
 
@@ -145,6 +156,6 @@ locates the intracellular area
 
 Matthew Berginski (mbergins@unc.edu)
 
-Documentation last updated: 4/10/2008 
+Documentation last updated: 7/3/2008 
 
 =cut

@@ -4,6 +4,9 @@
 # Global Variables and Modules
 ################################################################################
 
+use lib "../lib";
+use lib "../lib/perl";
+
 use strict;
 use File::Path;
 use File::Spec::Functions;
@@ -13,10 +16,10 @@ use Math::Matlab::Local;
 use Getopt::Long;
 use Data::Dumper;
 
-use lib "../lib";
 use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
+use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -24,17 +27,11 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
-my $matlab_wrapper;
-if (defined $cfg{matlab_executable}) {
-    $matlab_wrapper = Math::Matlab::Local->new({ cmd => "$cfg{matlab_executable} -nodisplay -nojvm -nosplash", });
-} else {
-    $matlab_wrapper = Math::Matlab::Local->new();
-}
 
 ################################################################################
 # Main Program
@@ -71,8 +68,15 @@ foreach (@image_sets) {
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
-my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{setup_errors_file});
-&Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'setup');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'setup', 'error.txt');
+mkpath($error_folder);
+if ($opt{emerald}) {
+    my %emerald_opt = ("folder", $error_folder);
+    &Emerald::send_emerald_commands(\@matlab_code, \%emerald_opt);
+} else {
+    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+}
 
 ################################################################################
 #Functions
@@ -196,6 +200,8 @@ Optional parameter(s):
 =over 
 
 =item * debug or d: print debuging information during program execution
+
+=item * emerald: submit jobs through the emerald queuing system
 
 =back
 

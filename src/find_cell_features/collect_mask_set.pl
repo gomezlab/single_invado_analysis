@@ -4,6 +4,9 @@
 # Global Variables and Modules
 ###############################################################################
 
+use lib "../lib";
+use lib "../lib/perl";
+
 use strict;
 use File::Path;
 use File::Spec::Functions;
@@ -12,10 +15,10 @@ use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
 
-use lib "../lib";
 use Config::Adhesions;
 use Image::Stack;
 use Math::Matlab::Extra;
+use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -23,7 +26,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -50,7 +53,15 @@ my @matlab_code = &create_matlab_code;
 
 my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{cell_mask_errors_file});
 
-&Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'mask_set');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'mask_set', 'error.txt');
+mkpath($error_folder);
+if ($opt{emerald}) {
+    my %emerald_opt = ("folder", $error_folder);
+    &Emerald::send_emerald_commands(\@matlab_code, \%emerald_opt);
+} else {
+    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+}
 
 ###############################################################################
 #Functions
@@ -111,6 +122,8 @@ Optional parameter(s):
 =over 
 
 =item * debug or d: print debuging information during program execution
+
+=item * emerald: submit jobs through the emerald queuing system
 
 =back
 
