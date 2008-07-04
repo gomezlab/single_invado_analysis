@@ -67,6 +67,11 @@ end
 ad_zamir = find_ad_zamir(high_passed_image,i_p);
 if (exist('cell_mask','var'))
     ad_zamir = find_in_cell_ads(ad_zamir,cell_mask);
+    ad_nums = unique(ad_zamir);
+    assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
+    for i = 2:length(ad_nums)
+        ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
+    end
 end
 
 if (exist('cell_mask','var'))
