@@ -26,8 +26,13 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald");
+$opt{emerald} = 0;
+$opt{emerald_stdout} = 0;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald", "emerald_stdout");
 
+if ($opt{emerald} == 1 && $opt{emerald_stdout} == 1) {
+    die "Please specify only one of emerald or emerald_stdout"; 
+}
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
@@ -37,6 +42,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 # Main Program
 ###############################################################################
 
+my @image_folders = <$cfg{individual_results_folder}/*>;
 my @image_files = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
 
 if ($opt{debug}) {
@@ -45,20 +51,28 @@ if ($opt{debug}) {
     } elsif ( scalar(@image_files) == 0) {
         die "Couldn't find any cell mask files in $cfg{individual_results_folder} subfolders\n\n";
     } else {
-        print "Cell mask file found: $image_files[0]\n";
+        print "Cell mask file found: $image_folders[0]\n";
     }
 }
 
 my @matlab_code = &create_matlab_code;
 
-my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{cell_mask_errors_file});
-
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'mask_set');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'mask_set', 'error.txt');
+
 mkpath($error_folder);
+my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
-    my %emerald_opt = ("folder", $error_folder);
-    &Emerald::send_emerald_commands(\@matlab_code, \%emerald_opt);
+    my @matlab_code = sort @matlab_code;
+    my @commands = &Emerald::create_emerald_Matlab_commands(\@matlab_code,\%emerald_opt);
+    &Emerald::send_emerald_commands(\@commands);
+}
+elsif ($opt{emerald_stdout}) {
+    for (sort @image_folders) {
+        my @command = "./collect_mask_image.pl -cfg $opt{cfg} -folder $_\n";
+        @command = &Emerald::create_general_emerald_command(\@command);
+        print @command, "\n";
+    }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }

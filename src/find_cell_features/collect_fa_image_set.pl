@@ -25,7 +25,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "emerald");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "emerald", "emerald_stdout");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
@@ -35,6 +35,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 # Main Program
 ################################################################################
 
+my @image_folders = <$cfg{individual_results_folder}/*>;
 my @focal_image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
 
 if ($opt{debug}) {
@@ -47,12 +48,21 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_matlab_code;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'FA');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'FA', 'error.txt');
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
 mkpath($error_folder);
+
+my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
-    my %emerald_opt = ("folder" => $error_folder, "split_on_newlines" => 1);
-    &Emerald::send_emerald_commands(\@matlab_code,\%emerald_opt);
+    my @matlab_code = sort @matlab_code;
+    my @commands = &Emerald::create_emerald_Matlab_commands(\@matlab_code,\%emerald_opt);
+    &Emerald::send_emerald_commands(\@commands);
+} elsif ($opt{emerald_stdout}) {
+    for (sort @image_folders) {
+        my @command = "./collect_fa_image.pl -cfg $opt{cfg} -folder $_\n";
+        @command = &Emerald::create_general_emerald_command(\@command);
+        print @command, "\n";
+    }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }

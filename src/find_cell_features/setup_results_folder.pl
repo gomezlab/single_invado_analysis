@@ -27,7 +27,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald", "emerald_stdout");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Gathering Config\n" if $opt{debug};
@@ -39,7 +39,8 @@ my %cfg = ParseConfig(\%opt);
 
 mkpath($cfg{individual_results_folder});
 
-my @image_sets = ([qw(cell_mask_image_prefix raw_mask_file)], [qw(adhesion_image_prefix adhesion_image_file)]);
+my @image_sets = ([qw(cell_mask_image_prefix raw_mask_file)], 
+                  [qw(adhesion_image_prefix adhesion_image_file)]);
 my @matlab_code;
 my $all_images_empty = 1;
 
@@ -71,9 +72,13 @@ die "Unable to find any images to include in the new experiment" if $all_images_
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'setup');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'setup', 'error.txt');
 mkpath($error_folder);
+
+my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
-    my %emerald_opt = ("folder", $error_folder);
-    &Emerald::send_emerald_commands(\@matlab_code, \%emerald_opt);
+    &send_emerald_commands(\@matlab_code, \%emerald_opt);
+} elsif ($opt{emerald_stdout}) {
+    $emerald_opt{"stdout"} = 1;
+    &send_emerald_commands(\@matlab_code, \%emerald_opt);
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }
