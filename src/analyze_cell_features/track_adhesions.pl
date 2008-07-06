@@ -12,7 +12,6 @@ use Data::Dumper;
 use Storable;
 use Text::CSV;
 use IO::File;
-use Math::Matrix;
 
 use lib "../lib";
 use Config::Adhesions;

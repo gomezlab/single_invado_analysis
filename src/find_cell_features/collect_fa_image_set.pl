@@ -54,14 +54,10 @@ mkpath($error_folder);
 
 my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
-    my @matlab_code = sort @matlab_code;
-    my @commands = &Emerald::create_emerald_Matlab_commands(\@matlab_code,\%emerald_opt);
-    &Emerald::send_emerald_commands(\@commands);
-} elsif ($opt{emerald_stdout}) {
     for (sort @image_folders) {
         my @command = "./collect_fa_image.pl -cfg $opt{cfg} -folder $_\n";
-        @command = &Emerald::create_general_emerald_command(\@command);
-        print @command, "\n";
+        @command = &Emerald::create_general_LSF_commands(\@command);
+        &Emerald::send_LSF_commands(\@command);
     }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);

@@ -69,16 +69,14 @@ foreach (@image_sets) {
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'setup');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'setup', 'error.txt');
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup', 'error.txt');
 mkpath($error_folder);
 
 my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
-    &send_emerald_commands(\@matlab_code, \%emerald_opt);
-} elsif ($opt{emerald_stdout}) {
-    $emerald_opt{"stdout"} = 1;
-    &send_emerald_commands(\@matlab_code, \%emerald_opt);
+    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
+    &Emerald::send_LSF_commands(\@commands);
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }

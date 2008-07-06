@@ -57,17 +57,16 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_matlab_code;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'mask_set');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, 'mask_set', 'error.txt');
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set', 'error.txt');
 
 mkpath($error_folder);
 my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
     my @matlab_code = sort @matlab_code;
-    my @commands = &Emerald::create_emerald_Matlab_commands(\@matlab_code,\%emerald_opt);
-    &Emerald::send_emerald_commands(\@commands);
-}
-elsif ($opt{emerald_stdout}) {
+    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@commands);
+} elsif ($opt{emerald_stdout}) {
     for (sort @image_folders) {
         my @command = "./collect_mask_image.pl -cfg $opt{cfg} -folder $_\n";
         @command = &Emerald::create_general_emerald_command(\@command);

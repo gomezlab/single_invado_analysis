@@ -10,16 +10,11 @@ use warnings;
 use File::Spec;
 use Data::Dumper;
 
-our @EXPORT = qw(send_emerald_commands);
-use Exporter;
-our @ISA = qw(Exporter);
-
-
 ###############################################################################
 # Module Definition
 ###############################################################################
 
-sub send_emerald_commands {
+sub send_LSF_commands {
     my @commands = @{$_[0]};
     
     foreach (@commands) {
@@ -27,10 +22,10 @@ sub send_emerald_commands {
     }
 }
 
-sub create_emerald_Matlab_commands {
+sub create_LSF_Matlab_commands {
     my @commands = @{$_[0]};
     my %opt = ("queue" => "week", "output_file" => "out.txt", 
-               "error_file" => "error.txt", "folder" => "./", "stdout" => 0);
+               "error_file" => "error.txt", "folder" => "./");
     if (scalar(@_) > 1) {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
@@ -46,10 +41,10 @@ sub create_emerald_Matlab_commands {
     return @commands;   
 }
 
-sub create_general_emerald_command {
+sub create_general_LSF_commands {
     my @commands = @{$_[0]};
     my %opt = ("queue" => "week", "output_file" => "out.txt", 
-               "error_file" => "error.txt", "folder" => "./", "stdout" => 0);
+               "error_file" => "error.txt", "folder" => "./");
     if (scalar(@_) > 1) {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
