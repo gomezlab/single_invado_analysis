@@ -28,11 +28,8 @@ my %opt;
 $opt{debug} = 0;
 $opt{emerald} = 0;
 $opt{emerald_stdout} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald", "emerald_stdout");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald");
 
-if ($opt{emerald} == 1 && $opt{emerald_stdout} == 1) {
-    die "Please specify only one of emerald or emerald_stdout"; 
-}
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
@@ -63,14 +60,10 @@ my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_se
 mkpath($error_folder);
 my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
-    my @matlab_code = sort @matlab_code;
-    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
-    &Emerald::send_LSF_commands(\@commands);
-} elsif ($opt{emerald_stdout}) {
     for (sort @image_folders) {
         my @command = "./collect_mask_image.pl -cfg $opt{cfg} -folder $_\n";
-        @command = &Emerald::create_general_emerald_command(\@command);
-        print @command, "\n";
+        @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
+        &Emerald::send_LSF_commands(\@command);
     }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);

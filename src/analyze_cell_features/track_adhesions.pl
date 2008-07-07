@@ -3,6 +3,9 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+use lib "../lib";
+use lib "../lib/perl";
+
 use strict;
 use File::Path;
 use File::Basename;
@@ -13,10 +16,10 @@ use Storable;
 use Text::CSV;
 use IO::File;
 
-use lib "../lib";
 use Config::Adhesions;
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
+use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -24,7 +27,9 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s");
+$opt{input} = "data.stor";
+$opt{output} = "data.stor";
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -36,6 +41,16 @@ my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 #Main Program
 ###############################################################################
+
+if ($opt{emerald}) {
+    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking');
+    mkpath($error_folder);
+    
+    my %emerald_opt = ("folder" => $error_folder);
+    my @command = "$0 -cfg $opt{cfg} -input $opt{input}";
+    @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@command);
+}
 
 my %data_sets;
 if (not(defined $opt{input}) || defined $opt{output}) {

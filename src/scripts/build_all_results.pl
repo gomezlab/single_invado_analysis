@@ -3,6 +3,9 @@
 ################################################################################
 # Global Variables and Modules
 ################################################################################
+use lib "../lib";
+use lib "../lib/perl";
+
 use threads;
 use threads::shared;
 use File::Spec::Functions;
@@ -12,7 +15,7 @@ use Getopt::Long;
 use Cwd;
 use Data::Dumper;
 
-use lib "../lib";
+use Config::General;
 use Config::Adhesions qw(ParseConfig);
 
 my %opt;
@@ -43,6 +46,8 @@ if ($opt{emerald}) {
     my @command_seq = (["../find_cell_features", "./setup_results_folder.pl -emerald"],
                        ["../find_cell_features", "./collect_mask_set.pl -emerald"],
                        ["../find_cell_features", "./collect_fa_image_set.pl -emerald"],
+                       ["../analyze_cell_features", "./build_tracking_data.pl -emerald"],
+                       ["../analyze_cell_features", "./track_adhesions.pl -emerald"],
                       );
     foreach my $set (@command_seq) {
         my $dir = $set->[0];
