@@ -12,14 +12,12 @@ sorted_pix_vals = sort(unique(high_passed_image(:)),'descend');
 
 count = start_count;
 
-min_size = 40;
-
 for i = (start_count + 1):length(sorted_pix_vals)
     if (sorted_pix_vals(i) <= i_p.Results.filter_thresh)
         continue
     end
 
-    if (count > 400 && i_p.Results.debug == 1)
+    if (count > numel(high_passed_image) && i_p.Results.debug == 1)
         continue
     end
 
@@ -27,7 +25,7 @@ for i = (start_count + 1):length(sorted_pix_vals)
 
     for j = 1:length(lin_ind)
         assert(ad_zamir(lin_ind(j)) == 0, 'Error: Adhesion already assigned in this position %d',lin_ind(j))
-        ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),min_size);
+        ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),i_p.Results.min_size);
     end
 
     count = count + 1;
@@ -39,6 +37,13 @@ for i = (start_count + 1):length(sorted_pix_vals)
     if (mod(count,100) == 0 && i_p.Results.debug)
         disp(['Count: ',num2str(count),'/',num2str(sum(sorted_pix_vals > i_p.Results.filter_thresh))])
     end
+end
+
+
+filled_ad_zamir = imfill(ad_zamir);
+filled_pix = find(and(filled_ad_zamir > 0, ad_zamir == 0));
+for i = 1:length(filled_pix)
+    ad_zamir = add_single_pixel(ad_zamir,filled_pix(i),i_p);
 end
 
 ad_nums = unique(ad_zamir);
@@ -55,9 +60,8 @@ function ad_zamir = add_single_pixel(ad_zamir,pix_pos,min_size)
 
 [pix_pos_ind(1),pix_pos_ind(2)] = ind2sub(size(ad_zamir),pix_pos);
 
-%save the number of pixels in adhesion before process of adding a new
-%adhesion, will be used to check that pixel was added to adhesions at the
-%end of the function
+%save the number of pixels in currently in adhesions, this will be compared
+%at the end of processing to make sure another pixel has been added
 initial_size = sum(sum(im2bw(ad_zamir,0)));
 
 %now locate the adhesions in the current adhesions that touch the newest
@@ -65,6 +69,8 @@ initial_size = sum(sum(im2bw(ad_zamir,0)));
 connected_ad = false(size(ad_zamir));
 connected_ad(pix_pos) = 1;
 ad_nums = zeros(4);
+%wrap these calls in try, since they could attempt to access indexes
+%outside the accepted 1-size range
 try ad_nums(1) = ad_zamir(pix_pos_ind(1) - 1,pix_pos_ind(2)); end
 try ad_nums(2) = ad_zamir(pix_pos_ind(1) + 1,pix_pos_ind(2)); end    
 try ad_nums(3) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) - 1); end
@@ -77,7 +83,7 @@ for i = 1:length(ad_nums)
 end
 
 %build a binary image of the current touching adhesions
-old_ad = zeros(size(ad_zamir));
+old_ad = false(size(ad_zamir));
 old_ad(and(ad_zamir > 0,connected_ad)) = 1;
 
 relabeled_old_ad = ad_zamir;
@@ -92,7 +98,8 @@ assert(all(unique(relabeled_old_ad)' == 0:(length(ad_nums) - 1)), 'Error in old 
 assert(sum(connected_ad(:)) == (sum(old_ad(:)) + 1),'Error in connected ad finding: %d, %d ',sum(connected_ad(:)),sum(old_ad(:)))
 
 %if there aren't any pixels which were connected to newest pixel, add the
-%newest pixel as a new adhesion, otherwise, start a more complicated procedure
+%newest pixel as a new adhesion, otherwise, start a more complicated
+%procedure
 if (sum(old_ad(:)) == 0)
     ad_zamir(connected_ad) = max(ad_zamir(:)) + 1;
 else
@@ -104,7 +111,7 @@ else
     if (length(props) == 1)
         %pick out the adhesion number from the first entry in find, then
         %check that all other pixels have the same adhesion number and
-        %assign the newest pixel to the
+        %assign the newest pixel to the old adhesion
         ad_number = ad_zamir(find(relabeled_old_ad == 1,1));
         assert(ad_number > 0, 'Error in old ad filtering: adhesion number less than 1');
         assert(all(ad_number == ad_zamir(relabeled_old_ad >= 1)),'Error in old ad filtering: single adhesion with different numbers');
