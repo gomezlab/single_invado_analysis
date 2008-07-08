@@ -5,7 +5,7 @@
 
 %setup double spacing for editing
 \usepackage{setspace}
-\doublespacing
+%\doublespacing
 
 \usepackage{graphicx} %get graphics commands
 \usepackage{times}
@@ -28,20 +28,26 @@
 \maketitle
 
 \begin{abstract}
-text
+
 \end{abstract}
 
 \section*{Introduction}
 
 \section*{Methods}
 
-Several stages are needed to quantitatively examine the FA from a single experiment. Following data collection, the images must be analyzed to locate, track and quantify each focal adhesion.
+Several stages are needed to quantitatively examine the FA from a single experiment. Following data collection, the images must be analyzed to locate, track and quantify each FA. After identifying the FA in a single experiment, the dynamics of several FA properties were analyzed. 
 
 \subsection*{Image Processing}
 
-[[Image:Cell sample.png|thumb|Results of image processing steps which identify focal adhesions, here outlined in green.]]
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=0.5\textwidth]{figures/place_holder}
+\caption{Results of image processing steps which identify focal adhesions, here outlined in green.]}
+\label{cell_sample}
+\end{center}
+\end{figure}
 
-In order to first locate and track the FA, sets of images from single experiments were scaled so that the minimum and maximum pixel values in the entire image set were zero and one respectively. The high pass filtration method described previously was to used to find FA in other cell types and has been adapted \cite{Zamir1999}. Briefly, following scaling, each image was filtered with a 25 by 25 pixel averaging filter and the filtered pixel values subtracted from the original pixel values. These image transformations acted as a high pass filter and allowed a single threshold to be used to locate the FA (Figure \ref{cell_sample}). The threshold was determined empirically, but appears to be valid for all experimental data gathered. Between 200 and 400 adhesions were located in each image from the experimental data. With the focal adhesion locations identified in each cell, the properties of the FA were collected including: 
+Methods to identify the FA were adapted from a prior publication \cite{Zamir1999}, with some specific modification. Briefly, each image taken during an experiment was high pass filtered, using a round averaging filter with a radius of 11 pixels (4.7 $\mu$m diameter). To identify a threshold (thresh$_{fa}$) was determined empirically and set for all processed images (0.1 on images with pixels normalized to between 0 and 1). The \emph{water} segmentation method was used as described, but with the following modifications. When a pixel acts as bridge between to large adhesions, where large is defined as 40 or more pixels (1.85 $\mu$m$^2$), the bridge pixel is assigned to the adhesion whose centroid is closest to the bridge pixel. Also, following addition of all pixels whose high passed image value was above thres$_{fa}$, hole pixels were identified and added to adhesion map using the same \emph{water} algorithm. Between 200 and 600 adhesions were found in each image from the experimental data. With the focal adhesion locations identified in each cell, the properties of the FA were collected including: 
 
 \begin{itemize}
 \item size
@@ -53,18 +59,18 @@ In order to first locate and track the FA, sets of images from single experiment
 
 \subsection*{FA Tracking and Analysis}
 
-With the focal adhesions identified in each imsage of the experimental data set, another series of algorithms were designed to track the focal adhesions through each sequential image. The tracking algorithm is based on a birth-death model of a FA lifetime. At each time step a FA can either be born, continue into the next time step, merge or die. The birth-death-merge processes are detected by examining the properties extracted from the segmented adhesions. The results of this tracking algorithm are assignments of the individual FA in each image into lineages that track the development of each FA during the course of the experiment.
+With the focal adhesions identified in each image of the experimental data set, another series of algorithms were designed to track the focal adhesions through each sequential image. The tracking algorithm is based on a birth-death model of a FA lifetime. In each sequential image a FA can either be born, continue into the next time step, merge or die. The birth-death-merge processes are detected by examining the properties extracted from the segmented adhesions. The results of this tracking algorithm are assignments of the FA identified in each image into lineages that track the development of the FA during the course of the experiment.
 
 \begin{figure}[htbp]
 \begin{center}
-\includegraphics[width=0.5\textwidth]{figures/tracking_chart}
-\caption{default}
+\includegraphics[width=0.3\textwidth]{figures/tracking_chart}
+\caption{Workflow of adhesion tracking}
 \label{tracking_chart}
 \end{center}
 \end{figure}
 
-
-The tracking algorithm is initialized with all the adhesions detected in the first frame of the image sequence (Figure \ref{tracking_chart}). The first step of the tracking algorithm attempts to locate FA which correspond in the next time step of the experimental data. This first step assumes that if a focal adhesion overlaps with a focal adhesion in the following frame, that these overlapping adhesions correspond to one another. If a FA has no FA which overlap in the following image, the FA closest to that adhesion in terms of the euclidian distance between each adhesion's centroid is assigned as a match. All of the living focal adhesions are assigned a corresponding FA in the following image by these two rules.
+The tracking algorithm is initialized with all the adhesions detected in the first frame of the image sequence (Figure \ref{tracking_chart}). The first step of the tracking algorithm attempts to locate FA which correspond in the next time step of the experimental data. This first step assumes that if a focal adhesion overlaps with a focal adhesion in the following frame, that these overlapping adhesions correspond to one another. When an adhesion overlaps with more than one adhesion in the following frame, the adhesion with the greatest percentage of overlap is assigned as the match in the next frame. %Pick up here% 
+If a FA has no FA which overlap in the following image, the FA closest to that adhesion in terms of the euclidian distance between each adhesion's centroid is assigned as a match. All of the living focal adhesions are assigned a corresponding FA in the following image by these two rules.
 
 This process of assigning live adhesions to corresponding adhesions in the following frame produces sets of adhesions that are predicted to merge. Some of these merge events are true merge events where one adhesion has joined with another, while others are adhesions which die, but are erroneously assigned as merge events. When a FA does not overlap with the predicted merge FA, this FA is assumed to have died. For each of the remaining predicted merge events, one of the FA lineages predicted to merge is continued, while the other FA lineage is predicted to end. When the adhesions predicted to merge differ in size by at least 10\%, the larger adhesion's lineage is continued. If the merging FA's sizes do not differ by at least 10\%, the lineage whose current centroid is closer to the adhesion centroid in the following image is predicted to continue. In this way, each merge event is resolved so that corresponding focal adhesions are collected.
 
@@ -73,16 +79,40 @@ Following tracking live adhesions and resolving the merge and death events, ther
 With the FA lineages collected various properties of the FA lineage can be extracted. These include:
 
 \begin{itemize}
-\item average pixel value during lifetime
+\item average pixel intensity during lifetime
 \item average speed
 \item longevity
 \end{itemize}
 
 \subsection*{Accumulation and Decay Estimates}
 
-To estimate the rates of Paxillin accumulation and decay during the life cycle of a FA, an automated method to identify the slopes of Paxillin concentration versus time curves was developed. 
+To estimate the rates of Paxillin accumulation and decay during the life cycle of a FA, an automated method to identify the slopes of Paxillin intensity versus time curves was developed. 
 
 \section*{Results}
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figures/place_holder}
+\caption{Statics Plots}
+\label{statics_figure}
+\end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figures/place_holder}
+\caption{Dynamics Plots}
+\label{dynamics_figure}
+\end{center}
+\end{figure}
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=0.4\textwidth]{figures/place_holder}
+\caption{Accumulation + Decay plots}
+\label{accum_decay}
+\end{center}
+\end{figure}
 
 \section*{Conclusion}
 
