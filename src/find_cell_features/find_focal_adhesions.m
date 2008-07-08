@@ -31,7 +31,7 @@ i_p.parse(I_file);
 
 i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
 i_p.addOptional('min_size',40,@(x)isnumeric(x) && x > 1);
-i_p.addOptional('filter_size',23,@(x)isnumeric(x) && x > 1);
+i_p.addOptional('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addOptional('filter_thresh', 0.1, @isnumeric);
 i_p.addOptional('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
@@ -53,7 +53,7 @@ focal_image  = double(focal_image)/scale_factor;
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-I_filt = fspecial('average',i_p.Results.filter_size);
+I_filt = fspecial('disk',i_p.Results.filter_size);
 high_passed_image = focal_image - imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 
 adhesions = zeros(size(focal_image,1),size(focal_image,2));
