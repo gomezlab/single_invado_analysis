@@ -43,7 +43,7 @@ end
 filled_ad_zamir = imfill(ad_zamir);
 filled_pix = find(and(filled_ad_zamir > 0, ad_zamir == 0));
 for i = 1:length(filled_pix)
-    ad_zamir = add_single_pixel(ad_zamir,filled_pix(i),i_p);
+    ad_zamir = add_single_pixel(ad_zamir,filled_pix(i),i_p.Results.min_size);
 end
 
 ad_nums = unique(ad_zamir);
