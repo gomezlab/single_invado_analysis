@@ -3,6 +3,9 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+use lib "../lib";
+use lib "../lib/perl";
+
 use strict;
 use File::Path;
 use File::Basename;
@@ -11,10 +14,10 @@ use Getopt::Long;
 use Data::Dumper;
 use Text::CSV::Simple;
 
-use lib "../lib";
 use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
+use Emerald;
 
 my %opt;
 $opt{debug} = 0;
@@ -29,6 +32,18 @@ my %cfg = ParseConfig(\%opt);
 ###############################################################################
 # Main Program
 ###############################################################################
+if ($opt{emerald}) {
+    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_filter');
+    mkpath($error_folder);
+    
+    my %emerald_opt = ("folder" => $error_folder);
+    my @command = "$0 -cfg $opt{cfg}";
+
+    @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@command);
+    die;
+}
+
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &read_in_tracking_mat(\%cfg, \%opt);
 
@@ -155,6 +170,8 @@ Optional parameter(s):
 =over 
 
 =item * debug or d: print debuging information during program execution
+
+=item * emerald: setups and runs a job tailored for the LSF job system on emerald
 
 =back
 

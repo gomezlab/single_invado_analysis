@@ -3,6 +3,9 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+use lib "../lib";
+use lib "../lib/perl";
+
 use strict;
 use File::Temp qw/ tempfile tempdir /;
 use File::Spec::Functions;
@@ -14,12 +17,11 @@ use Imager;
 use Statistics::Descriptive;
 use Statistics::Distributions;
 
-#local libraries
-use lib "../lib";
 use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
 use Math::R;
+use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -27,15 +29,12 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_pix_props", "tracking_mat=s", "skip_lin_regions");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_pix_props", "tracking_mat=s", "skip_lin_regions", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my %cfg = ParseConfig(\%opt);
 
-if (exists $opt{tracking_mat}) {
-    $cfg{tracking_output_file} = $opt{tracking_mat};
-}
 if (exists $opt{tracking_mat}) {
     $cfg{adhesion_props_folder} = catdir($cfg{adhesion_props_folder}, dirname($opt{tracking_mat}));
 }
@@ -43,6 +42,22 @@ if (exists $opt{tracking_mat}) {
 ###############################################################################
 # Main Program
 ###############################################################################
+
+if ($opt{emerald}) {
+    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis');
+    mkpath($error_folder);
+    
+    my %emerald_opt = ("folder" => $error_folder);
+    my @command = "$0 -cfg $opt{cfg}";
+    $command[0] .= " -skip_pix_props" if ($opt{skip_pix_props});
+    $command[0] .= " -skip_lin_regions" if ($opt{skip_pix_props});
+    $command[0] .= " -tracking_mat $opt{tracking_mat}" if (exists $opt{tracking_mat});
+
+    @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@command);
+    die;
+}
+
 print "Gathering/Converting Data Files\n" if $opt{debug};
 
 my @data_files;
@@ -1029,6 +1044,8 @@ production of the pixel properties results
 production of the pixel properties results
 
 =item * debug or d: print debuging information during program execution
+
+=item * emerald: setups and runs a job tailored for the LSF job system on emerald
 
 =back
 

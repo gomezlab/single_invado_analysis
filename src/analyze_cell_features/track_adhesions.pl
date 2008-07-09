@@ -16,7 +16,7 @@ use Storable;
 use Text::CSV;
 use IO::File;
 
-use Config::Adhesions;
+use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
 use Emerald;
@@ -35,8 +35,7 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Collecting Configuration\n" if $opt{debug};
 
-my $ad_conf = new Config::Adhesions(\%opt);
-my %cfg = $ad_conf->get_cfg_hash;
+my %cfg = &ParseConfig(\%opt);
 
 ###############################################################################
 #Main Program
@@ -50,6 +49,7 @@ if ($opt{emerald}) {
     my @command = "$0 -cfg $opt{cfg} -input $opt{input}";
     @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
     &Emerald::send_LSF_commands(\@command);
+    die;
 }
 
 my %data_sets;
@@ -655,6 +655,8 @@ individual directory with Storable containing FA information; can be loaded
 using the -i flag
 
 =item * debug or d: print debuging information during program execution
+
+=item * emerald: setups and runs a job tailored for the LSF job system on emerald
 
 =back
 
