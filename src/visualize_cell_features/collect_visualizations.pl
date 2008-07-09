@@ -3,6 +3,8 @@
 ###############################################################################
 # Global Variables and Modules
 ###############################################################################
+use lib "../lib";
+use lib "../lib/perl";
 
 use strict;
 use File::Path;
@@ -15,7 +17,6 @@ use Data::Dumper;
 use File::Spec::Functions;
 use Benchmark;
 
-use lib "../lib";
 use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
@@ -62,10 +63,17 @@ foreach (@movie_params) {
     mkpath(dirname($params{'config_file'}));
 
     &write_matlab_config(%params);
-    my $error_file = catdir($cfg{exp_results_folder}, $cfg{matlab_errors_folder}, $cfg{vis_errors_file});
+    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
+    my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
+    mkpath($error_folder);
+    
     my @matlab_code = "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
-
-    if (not $opt{config_only}) {
+    
+    if ($opt{emerald}) {
+        my %emerald_opt = ("folder", $error_folder);
+        my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
+        &Emerald::send_LSF_commands(\@commands);
+    } elsif (not $opt{config_only}) {
         my $t1 = new Benchmark;
         &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
         my $t2 = new Benchmark;
