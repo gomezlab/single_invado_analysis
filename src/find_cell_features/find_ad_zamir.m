@@ -136,8 +136,9 @@ else
             large_area_ads = ismember(relabeled_old_ad,find([props.Area] >= min_size));
             large_area_nums = unique(relabeled_old_ad(large_area_ads));
 
+            small_area_ads = ismember(relabeled_old_ad, find([props.Area] < min_size));
+            
             closest_relabeled_info = [0,inf];
-
             for i = 1:length(large_area_nums)
                 dist = sqrt((pix_pos_ind(1) - props(i).Centroid(2))^2 + (pix_pos_ind(2) - props(i).Centroid(1))^2);
                 if (dist < closest_relabeled_info(2))
@@ -151,6 +152,7 @@ else
             assert(all(ad_number == ad_zamir(relabeled_old_ad == closest_relabeled_info(1))),'Error in largest ad filtering: single adhesion with different numbers');
 
             ad_zamir(pix_pos) = ad_number;
+            ad_zamir(small_area_ads) = ad_number;
         end
 
     end
