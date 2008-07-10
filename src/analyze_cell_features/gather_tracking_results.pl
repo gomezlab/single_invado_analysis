@@ -13,7 +13,6 @@ use File::Path;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
-use Imager;
 use Statistics::Descriptive;
 use Statistics::Distributions;
 
@@ -49,7 +48,6 @@ if ($opt{emerald}) {
     
     my %emerald_opt = ("folder" => $error_folder);
     my @command = "$0 -cfg $opt{cfg}";
-    $command[0] .= " -skip_pix_props" if ($opt{skip_pix_props});
     $command[0] .= " -skip_lin_regions" if ($opt{skip_pix_props});
     $command[0] .= " -tracking_mat $opt{tracking_mat}" if (exists $opt{tracking_mat});
 
@@ -70,14 +68,6 @@ my @available_data_types = &gather_data_types;
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
-
-print "\n\nCreating Pixel Properties Plots\n" if $opt{debug};
-my @image_values;
-if (not($opt{skip_pix_props})) {
-    @image_values = &gather_image_value_props(\%cfg, \%opt);
-    &output_image_props;
-    &build_image_props_plots;
-}
 
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
@@ -131,134 +121,6 @@ sub convert_data_to_units {
 sub gather_data_types {
     my $first_key = (keys %data_sets)[0];
     return (keys %{ $data_sets{$first_key} });
-}
-
-######################################
-#Pixel Value Props
-######################################
-sub gather_image_value_props {
-    my %cfg = %{ $_[0] };
-    my %opt = %{ $_[1] };
-
-    my @focal_image_files = sort <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
-    my @cell_mask_files   = sort <$cfg{individual_results_folder}/*/cell_mask.png>;
-
-    my @overall_stats = [qw(ImageNum CellSize AdhesionTotalSize Minimum Maximum Average)];
-
-    print "Working on image #: " if $opt{debug};
-
-    foreach my $i (0 .. $#focal_image_files) {
-        my $image_num;
-        if ($focal_image_files[$i] =~ /$cfg{individual_results_folder}\/(\d+)\/$cfg{adhesion_image_file}/) {
-            $image_num = $1;
-            next if grep $1 == $_, @{ $cfg{exclude_image_nums} };
-        }
-        print "$image_num " if $opt{debug};
-
-        my $focal_img = Imager->new;
-        $focal_img->read(file => "$focal_image_files[$i]") or die;
-
-        my $cell_mask_img = Imager->new;
-        if (scalar(@cell_mask_files) > 0) {
-            $cell_mask_img->read(file => "$cell_mask_files[$i]") or die;
-        }
-
-        my @vals;
-        my @intra_cellular;
-        for my $y (0 .. $focal_img->getheight - 1) {
-            my @gray = $focal_img->getsamples(y => $y, type => 'float');
-            push @vals, @gray;
-
-            my @in_cell_indexes;
-            if (scalar(@cell_mask_files) > 0) {
-                my @cell_mask = $cell_mask_img->getsamples(y => $y);
-                my @in_cell_indexes = grep $cell_mask[$_], (0 .. $#cell_mask);
-                push @intra_cellular, @gray[@in_cell_indexes];
-            } else {
-                push @intra_cellular, @gray;
-            }
-
-        }
-
-        my $total_stat = Statistics::Descriptive::Full->new();
-        $total_stat->add_data(@vals);
-
-        my $in_cell_stat = Statistics::Descriptive::Full->new();
-        $in_cell_stat->add_data(@intra_cellular);
-
-        my $all_ad_size = 0;
-        $all_ad_size += $_ foreach (@{ $data_sets{$image_num}{Area} });
-
-        push @overall_stats,
-          [
-            $image_num,       $data_sets{$image_num}{"Cell_size"}[0], $all_ad_size,
-            $total_stat->min, $total_stat->max,                       $in_cell_stat->mean
-          ];
-    }
-
-    return @overall_stats;
-}
-
-sub output_image_props {
-    mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
-
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{image_props_file});
-    &output_mat_csv(\@image_values, $output_file);
-}
-
-sub build_image_props_plots {
-    my $pdf_default = "width=12, height=12, pointsize=24";
-
-    my @plot_vars = (
-        {
-            pdf_para  => $pdf_default,
-            xy        => "image_values\$ImageNum,image_values\$Maximum",
-            file_name => "pix_max.pdf",
-            xlab      => "\"Image Number\"",
-            ylab      => "\"Maximum Normalized Fluorescence (AU)\"",
-            plot_opt  => "type=\"l\",ylim=c(0,1)",
-        },
-        {
-            pdf_para  => $pdf_default,
-            xy        => "image_values\$ImageNum,image_values\$Average",
-            file_name => "pix_average.pdf",
-            xlab      => "\"Image Number\"",
-            ylab      => "\"Average Normalized Fluorescence (AU)\"",
-            plot_opt  => "type=\"l\"",
-        },
-    );
-
-    my $png_convert_calls;
-
-    my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder});
-    my $plot_dir = catdir($data_dir, $cfg{plot_folder});
-
-    mkpath($plot_dir);
-    mkpath(catdir($plot_dir, 'png'));
-
-    my @r_code;
-
-    foreach (@plot_vars) {
-        my %para = %{$_};
-        my $output_file = catfile($plot_dir, $para{file_name});
-
-        my $png_file = $para{file_name};
-        $png_file =~ s/\.pdf/\.png/;
-        my $output_file_png = catfile($plot_dir, 'png', $png_file);
-
-        #Read in data
-        push @r_code, "image_values = read.table('$data_dir/$cfg{image_props_file}',header=T,sep=',');\n";
-
-        #Build the plots
-        push @r_code, "pdf('$output_file',$para{pdf_para})\n";
-        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-        push @r_code, "plot($para{xy},xlab=$para{xlab},ylab=$para{ylab},$para{plot_opt})\n";
-        push @r_code, "dev.off();\n";
-
-        $png_convert_calls .= "convert $output_file $output_file_png\n";
-    }
-    &Math::R::execute_commands(\@r_code);
-    system($png_convert_calls);
 }
 
 #######################################

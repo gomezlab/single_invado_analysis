@@ -21,7 +21,7 @@ use Emerald;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d");
+GetOptions(\%opt, "cfg=s", "debug|d", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
