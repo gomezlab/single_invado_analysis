@@ -90,7 +90,7 @@ for i = 1:i_count
     
     adhesions = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
 
-    ad_label = bwlabel(adhesions,4);
+    ad_label = adhesions;
 
     highlighted_all = cat(3,orig_i,orig_i,orig_i);
     

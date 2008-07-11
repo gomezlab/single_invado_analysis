@@ -34,6 +34,7 @@ i_p.addOptional('min_size',40,@(x)isnumeric(x) && x > 1);
 i_p.addOptional('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addOptional('filter_thresh', 0.1, @isnumeric);
 i_p.addOptional('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
+i_p.addOptional('output_file', 'adhesions.png', @ischar);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,varargin{:});
@@ -56,19 +57,11 @@ focal_image  = double(focal_image)/scale_factor;
 I_filt = fspecial('disk',i_p.Results.filter_size);
 high_passed_image = focal_image - imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 
-adhesions = zeros(size(focal_image,1),size(focal_image,2));
-adhesions(high_passed_image > i_p.Results.filter_thresh) = 1;
-adhesions = imfill(adhesions,'holes');
-if (exist('cell_mask','var'))
-    adhesions = find_in_cell_ads(bwlabel(adhesions,4),cell_mask);
-    adhesions = im2bw(adhesions,0);
-end
-
 ad_zamir = find_ad_zamir(high_passed_image,i_p);
 if (exist('cell_mask','var'))
     ad_zamir = find_in_cell_ads(ad_zamir,cell_mask);
     ad_nums = unique(ad_zamir);
-    assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
+    assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix');
     for i = 2:length(ad_nums)
         ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
     end
@@ -81,8 +74,8 @@ else
 end
 
 %write the results to files
-imwrite(adhesions,fullfile(i_p.Results.output_dir, 'adhesions.png'));
-imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, 'ad_zamir.png'),'bitdepth',16);
+imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file),'bitdepth',16);
+imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, 'adhesions_binary.png'));
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
 
 if (nargout > 0)
