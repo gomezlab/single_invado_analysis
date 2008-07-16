@@ -9,13 +9,13 @@ function high_image = create_highlighted_image(I,high,varargin)
 %   H_I = create_highlighted_image(I,HIGHLIGHTS) adds green highlights to
 %   image 'I', using the binary image 'HIGHLIGHTS' as the guide
 %
-%   H_I = create_highlighted_image(I,HIGHLIGHTS,'color',N) adds highlights of 
+%   H_I = create_highlighted_image(I,HIGHLIGHTS,'color',N) adds highlights of
 %   color 'N' to image 'I', using the binary image 'HIGHLIGHTS' as the
 %   guide
 %
 %   H_I = create_highlighted_image(I,HIGHLIGHTS,'color',[R,G,B]) adds
 %   highlights of color specified by the RGB sequence '[R,G,B]' to image
-%   'I', using the binary image 'HIGHLIGHTS' as the guide 
+%   'I', using the binary image 'HIGHLIGHTS' as the guide
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -26,21 +26,14 @@ i_p.FunctionName = 'CREATE_HIGHLIGHTED_IMAGE';
 i_p.addRequired('I',@(x)isnumeric(x) || islogical(x));
 i_p.addRequired('high',@(x)(isnumeric(x) || islogical(x)));
 
-i_p.addParamValue('color',2,@(x)(isnumeric(x) && (length(x) == 1 || length(x) == 3)));
+i_p.parse(I,high);
+
+i_p.addParamValue('color_map',[0,1,0],@(x)(isnumeric(x) && (size(x,1) == max(high(:)))));
+i_p.addParamValue('mix_percent',1,@(x)(isnumeric(x)));
 
 i_p.parse(I,high,varargin{:});
 
-if (length(i_p.Results.color) == 1)
-    if (i_p.Results.color == 1)
-        c_map = [1,0,0];
-    elseif (i_p.Results.color == 2)
-        c_map = [0,1,0];
-    elseif (i_p.Results.color == 3)
-        c_map = [0,0,1];
-    end
-else
-    c_map = i_p.Results.color;
-end
+assert(size(i_p.Results.color_map,1) == max(high(:)),'Error: the number of entries in the color map does not match the number of labels in the highlight matrix.');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -48,22 +41,22 @@ end
 image_size = size(I);
 
 if (size(image_size) < 3)
-    high_image = zeros(image_size(1),image_size(2),3);
-    high_image(:,:,1) = I;
-    high_image(:,:,2) = I;
-    high_image(:,:,3) = I;
+    high_image = cat(3,I,I,I);
 else
     high_image = I;
 end
 
-if(size(high) > 1)
-    high = high(:,:,1);
-end
+for j = 1:size(I,1)
+    for k = 1:size(I,2)
+        if (i_p.Results.high(j,k) == 0), continue; end
 
-pix_count = image_size(1)*image_size(2);
+        this_cmap = i_p.Results.color_map(i_p.Results.high(j,k),:);
 
-for i = 1:3
-    high_image(find(high)+(i-1)*pix_count) = c_map(i);
+        assert(length(this_cmap) == size(high_image,3),'Error: wrong number of entries in color map');
+        for l = 1:size(high_image,3)
+            high_image(j,k,l) = this_cmap(l)*i_p.Results.mix_percent + high_image(j,k,l)*(1-i_p.Results.mix_percent);
+        end
+    end
 end
 
 end
