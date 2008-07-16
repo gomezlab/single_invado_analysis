@@ -112,8 +112,6 @@ sub create_matlab_code_stack {
     my @matlab_code;
     my $min_max_file = catfile(dirname($image_files[0]), $cfg{min_max_file});
 
-    $matlab_code[0] .= &create_extr_val_code(\@image_files, $min_max_file);
-
     my $total_stack_images = Image::Stack::get_image_stack_number($image_files[0]);
     foreach my $i_num (1 .. $total_stack_images) {
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
@@ -124,7 +122,7 @@ sub create_matlab_code_stack {
         mkpath($output_path);
         my $final_out_file = catfile($output_path, $out_file);
         $matlab_code[0] .=
-          "write_normalized_image('$image_files[0]','$final_out_file','$min_max_file','I_num',$i_num);\n";
+          "write_normalized_image('$image_files[0]','$final_out_file','I_num',$i_num);\n";
     }
     return @matlab_code;
 }
@@ -136,8 +134,6 @@ sub create_matlab_code_single {
 
     my @matlab_code;
     my $min_max_file = catfile(dirname($image_files[0]), $cfg{min_max_file});
-
-    $matlab_code[0] .= &create_extr_val_code(\@image_files, $min_max_file);
 
     foreach my $file_name (@image_files) {
         my $i_num;
@@ -156,16 +152,9 @@ sub create_matlab_code_single {
         my $output_path = catdir($cfg{individual_results_folder}, $padded_num);
         mkpath($output_path);
         my $final_out_file = catfile($output_path, $out_file);
-        $matlab_code[0] .= "write_normalized_image('$file_name','$final_out_file','$min_max_file');\n";
+        $matlab_code[0] .= "write_normalized_image('$file_name','$final_out_file');\n";
     }
     return @matlab_code;
-}
-
-sub create_extr_val_code {
-    my @image_files  = @{ $_[0] };
-    my $min_max_file = $_[1];
-
-    return "find_extr_values('$min_max_file','" . join("','", @image_files) . "');\n";
 }
 
 ################################################################################
