@@ -19,7 +19,8 @@ function bbox = find_time_series_bbox(folder,varargin)
 
 i_p = inputParser;
 i_p.addRequired('folder',@(x)exist(x,'dir')==7);
-i_p.addParamValue('image_filename','adhesions.png',@ischar);
+i_p.addParamValue('image_filename','cell_mask.png',@ischar);
+i_p.addParamValue('backup_image_filename','adhesions.png',@ischar);
 
 i_p.parse(folder,varargin{:});
 
@@ -46,16 +47,24 @@ for i = 1:num_files
         continue;
     end
     
-    image_path = fullfile(full_folder_path,image_filename);
+    best_image_path = fullfile(full_folder_path,i_p.Results.image_filename);
     
-    if (not(exist(image_path,'file')))
-        continue;
+    if (not(exist(best_image_path,'file')))
+        best_image_path = fullfile(full_folder_path,i_p.Results.backup_image_filename);
+    
+        if (not(exist(image_path,'file')))
+            continue;
+        end
     end
     
-    this_bbox = find_binary_bounding_box(imread(image_path));
+    this_bbox = find_binary_bounding_box(imread(best_image_path));
     
     if (bbox(1) > this_bbox(1)), bbox(1) = this_bbox(1); end
     if (bbox(2) > this_bbox(2)), bbox(2) = this_bbox(2); end
     if (bbox(3) < this_bbox(3)), bbox(3) = this_bbox(3); end
     if (bbox(4) < this_bbox(4)), bbox(4) = this_bbox(4); end
+        
+    end
+    
+    
 end

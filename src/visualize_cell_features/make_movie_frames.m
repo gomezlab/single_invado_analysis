@@ -63,9 +63,9 @@ edge_image_ad = ones(i_size(1),i_size(2),3);
 max_live_adhesions = find_max_live_adhesions(tracking_seq);
 
 lineage_cmap = jet(max_live_adhesions);
-time_cmap = jet(size(tracking_seq,2));
-
 lineage_to_cmap = zeros(size(tracking_seq,1),1);
+
+time_cmap = jet(size(tracking_seq,2));
 birth_time_to_cmap = zeros(size(tracking_seq,1),1);
 
 i_seen = 0;
@@ -158,17 +158,6 @@ for i = 1:i_count
         label_frames{1} = ad_label_perim;
     end
 
-    all_cmap = lineage_cmap(lineage_to_cmap(tracking_seq(:,i_seen) > 0),:);
-    highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',all_cmap);
-
-    %Uncomment the following line to highlight all the focal adhesions
-    %with green before lineage colors are applied
-    %highlighted_all = create_highlighted_image(highlighted_all,bwperim(adhesions));
-
-    time_cmap = time_cmap(birth_time_to_cmap(tracking_seq(:,i_seen) > 0),:);
-
-    highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',time_cmap);
-
     if (i_seen > i_count*0.95)
         highlighted_ghost_all = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
@@ -188,6 +177,12 @@ for i = 1:i_count
     end
 
     if(i_p.Results.debug), disp(i_seen); end
+
+    all_cmap = lineage_cmap(lineage_to_cmap(tracking_seq(:,i_seen) > 0),:);
+    highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',all_cmap);
+
+    time_cmap = time_cmap(birth_time_to_cmap(tracking_seq(:,i_seen) > 0),:);
+    highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',time_cmap);
     
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
