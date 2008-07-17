@@ -29,7 +29,6 @@ sub gather_data_sets {
     my %data_sets;
 
     my @folders     = <$cfg{individual_results_folder}/*/$cfg{raw_data_folder}>;
-    my $image_count = 0;
 
     foreach my $this_folder (@folders) {
         my $i_num;
@@ -51,14 +50,14 @@ sub gather_data_sets {
         #Skip further processing on images in the excluded list
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
-        $image_count++;
-
         foreach my $file (@data_files) {
             my @file_matches = <$this_folder/$file.*>;
             
             if (scalar(@file_matches) > 1) {
                 warn(
-                    "Multiple data files for file name: $file\nFound in folder: $this_folder\nExtracting data from only the first file: $file_matches[0]\n\n"
+                    "Multiple data files for file name: $file\n",
+                    "Found in folder: $this_folder\n",
+                    "Extracting data from only the first file: $file_matches[0]\n\n"
                 );
             }
 
@@ -77,7 +76,6 @@ sub gather_data_sets {
             }
         }
     }
-    
 
     die "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
     
@@ -157,8 +155,6 @@ sub check_PixelIdxList_lengths {
 
     my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
     
-
-
     if (   not(exists $data_sets{$first_key}{"Area"})
         || not(exists $data_sets{$first_key}{"PixelIdxList"})) {
         return 1;

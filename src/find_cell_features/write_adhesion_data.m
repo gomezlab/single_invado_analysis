@@ -69,9 +69,9 @@ for i = 1:size(field_names,1)
             data = [S(j).PixelIdxList'];
             for k = 1:size(data,2)
                 if (k < size(data,2))
-                    fprintf(file_handle,'%f,',data(k));
+                    fprintf(file_handle,'%0.f,',data(k));
                 else
-                    fprintf(file_handle,'%f\n',data(k));
+                    fprintf(file_handle,'%0.f\n',data(k));
                 end
             end
         end

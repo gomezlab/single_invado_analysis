@@ -27,8 +27,6 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-$opt{input} = "data.stor";
-$opt{output} = "data.stor";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -46,7 +44,7 @@ if ($opt{emerald}) {
     mkpath($error_folder);
     
     my %emerald_opt = ("folder" => $error_folder);
-    my @command = "$0 -cfg $opt{cfg} -input $opt{input}";
+    my @command = "$0 -cfg $opt{cfg} -input data.stor";
     @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
     &Emerald::send_LSF_commands(\@command);
     die;
@@ -230,7 +228,7 @@ sub make_tracking_mat {
     for (0 .. $#data_keys - 1) {
         my $i_num      = $data_keys[$_];
         my $next_i_num = $data_keys[ $_ + 1 ];
-
+        
         #Collect data seta and comparison matrices if not present
         if (not(defined $data_sets{$i_num})) {
             if (defined $opt{input}) {
@@ -247,7 +245,7 @@ sub make_tracking_mat {
                 die "Unable to find the data sets and comparison matrices for image number \"$next_i_num\".";
             }
         }
-
+        
         #STEP 1
         #Start the tracking matrix, if this is the first time throught the loop
         &initialize_tracking_mat($data_keys[0]) if $_ == 0;

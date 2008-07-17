@@ -13,8 +13,6 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(cfg_file,varargin{:});
 
-debug = i_p.Results.debug;
-
 if (i_p.Results.debug == 1), profile off; profile on; end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,7 +53,7 @@ if (bounding_box(2) <= 0), bounding_box(2) = 1; end
 if (bounding_box(3) > i_size(2)), bounding_box(3) = i_size(2); end
 if (bounding_box(4) > i_size(1)), bounding_box(4) = i_size(1); end
 
-edge_cmap = jet(i_count);
+edge_cmap = jet(size(tracking_seq,2));
 %define the edge image here because the old status of the edge image should
 %be preserved
 edge_image_ad = ones(i_size(1),i_size(2),3);
@@ -93,10 +91,10 @@ for i = 1:i_count
 
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
     ad_label_perim = zeros(size(orig_i,1),size(orig_i,2));
-    for i=1:max(ad_label(:))
+    for j=1:max(ad_label(:))
         this_ad = zeros(size(orig_i,1),size(orig_i,2));
-        this_ad(ad_label == i) = 1;
-        ad_label_perim(bwperim(this_ad)) = i;
+        this_ad(ad_label == j) = 1;
+        ad_label_perim(bwperim(this_ad)) = j;
     end
 
     search_ascending = 1;
@@ -110,13 +108,11 @@ for i = 1:i_count
 
         %Add the current adhesion to the time dependent color map if no
         %number is currently defined
-        if (not(birth_time_to_cmap(j))), birth_time_to_cmap(j) = i_seen; end
+        if (birth_time_to_cmap(j) == 0), birth_time_to_cmap(j) = i_seen; end
 
         %Unique lineage colors
-        if (not(lineage_to_cmap(j)))
-
-            short_list = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
-            unique_used_colors = unique(short_list);
+        if (lineage_to_cmap(j) == 0)
+            unique_used_colors = unique(lineage_to_cmap(tracking_seq(:,i_seen) > 0));
 
             if (search_ascending)
                 search_seq = 1:max_live_adhesions;
