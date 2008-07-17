@@ -21,6 +21,7 @@ use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
 use Image::Data::Collection;
+use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -28,7 +29,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only");
+GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
