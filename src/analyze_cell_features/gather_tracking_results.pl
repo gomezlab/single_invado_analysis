@@ -281,6 +281,8 @@ sub gather_ad_lineage_properties {
     $props{merge_count}                   = &gather_merge_count;
     $props{death_status}                  = &gather_death_status;
     $props{Average_adhesion_signal}       = &gather_prop_seq("Average_adhesion_signal");
+    $props{Eccentricity}                  = &gather_prop_seq("Eccentricity");
+    $props{Solidity}                      = &gather_prop_seq("Solidity");
     $props{ad_sig}                        = &gather_average_ad_sig($props{Average_adhesion_signal});
     $props{Average_pixel_adhesion_signal} = &gather_prop_seq("Average_pixel_adhesion_signal");
     $props{Max_adhesion_signal}           = &gather_prop_seq("Max_adhesion_signal");
@@ -506,7 +508,7 @@ sub output_adhesion_lineage_props {
 
     my @ts_props = qw(All_speeds Area Centroid_dist_from_edge
       Centroid_dist_from_center Average_adhesion_signal Average_pixel_adhesion_signal
-      Max_adhesion_signal);
+      Max_adhesion_signal Eccentricity Solidity);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, keys %ad_lineage_props));

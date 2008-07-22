@@ -472,12 +472,14 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 		#process the col_lim parameter passed in if values were passed in
 		this_col_lim = NA 
 		if (! is.na(as.matrix(col_lims)[1,1])) {
-			if(dim(col_lims)[[2]] == 1) {
-				this_col_lim = c(col_lims[k],dim(ad_sig)[[2]])
+			if(dim(as.matrix(col_lims))[[2]] == 1) {
+				this_col_lim = c(col_lims[k],dim(exp_data)[[2]])
 			} else {
 				this_col_lim = col_lims[k,]
 			}
 		}
+		
+		print(this_col_lim);
 		
 		results[[k]] <- gather_bilinear_models(exp_data, ad_props, 
 							min_length = min_length, col_lims = this_col_lim, 
@@ -532,8 +534,6 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 		corr_result$exp_data = exp_data
 	}
 	
-#	pdf('plot.pdf')
-#	par(bty = 'n',oma=c(0,0,0,2),mar=c(4,4,4,2))
 	count = 0
 	for (i in 1:length(result$early$R_sq)) {
 		data_1 = as.numeric(result$exp_data[i,])
@@ -566,21 +566,7 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 				corr_result$early[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
 				corr_result$conf$early_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
 				corr_result$conf$early_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
-				
-				
 			}
-			
-#			if (! is.na(corr_result$early[i]) & result$early$R_sq[i] > 0.95 & corr_result$early[i] > 0.95) {
-#				count = count + 1
-#				
-#				plot(data_1,xlab='Time (minutes)',ylab=expression(paste('ln(l/',l[0],')',sep='')),main=paste(corr_result$early[i],result$early$R_sq[i]))
-#				
-#				par(new=TRUE)
-#				
-#				plot(data_2,col='red',pch=23,axes=FALSE,ann=FALSE)
-#				axis(4,col='red',col.lab='red',col.axis='red')
-#				mtext(expression(paste('Adhesion Size (', mu*m^2,')',sep='')),side=4,line=1,col='red',outer=TRUE)
-##			}
 		}
 		if (! is.na(result$late$R_sq[i])) {
 			this_data_1 = data_1[(length(data_1) - result$late$offset[i]):length(data_1)]
