@@ -39,23 +39,23 @@ my %cfg = ParseConfig(\%opt);
 
 mkpath($cfg{individual_results_folder});
 
-my @image_sets = ([qw(cell_mask_image_prefix raw_mask_file)], 
-                  [qw(adhesion_image_prefix adhesion_image_file)]);
+my @image_sets = ([qw(cell_mask_folder raw_mask_file)], 
+                  [qw(adhesion_image_folder adhesion_image_file)]);
 my @matlab_code;
 my $all_images_empty = 1;
 
 foreach (@image_sets) {
-    my $prefix   = $cfg{ $_->[0] };
+    my $folder   = $cfg{ $_->[0] };
     my $out_file = $cfg{ $_->[1] };
     
-    my @image_files = <$cfg{exp_data_folder}/$prefix*>;
+    my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     $all_images_empty = 0 if (@image_files);
     
     if ($opt{debug}) {
         if (scalar(@image_files) > 1) {
             print "Image files found: $image_files[0] - $image_files[$#image_files]\n";
         } elsif (scalar(@image_files) == 0) {
-            print "No image files found matching $cfg{exp_data_folder}/$prefix, moving onto next image set.\n";
+            print "No image files found matching $cfg{exp_data_folder}/$folder, moving onto next image set.\n";
             next;
         } else {
             print "Image file found: $image_files[0]\n";
@@ -65,7 +65,7 @@ foreach (@image_sets) {
         next if (not @image_files);
     }
 
-    push @matlab_code, &create_matlab_code(\@image_files, $prefix, $out_file);
+    push @matlab_code, &create_matlab_code(\@image_files, $folder, $out_file);
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
@@ -87,7 +87,7 @@ if ($opt{emerald}) {
 
 sub create_matlab_code {
     my @image_files = @{ $_[0] };
-    my $prefix      = $_[1];
+    my $folder      = $_[1];
     my $out_file    = $_[2];
 
     my @image_stack_count = map { Image::Stack::get_image_stack_number($_) } @image_files;
@@ -100,7 +100,7 @@ sub create_matlab_code {
         }
         @matlab_code = &create_matlab_code_stack(\@image_files, $out_file);
     } else {
-        @matlab_code = &create_matlab_code_single(\@image_files, $prefix, $out_file);
+        @matlab_code = &create_matlab_code_single(\@image_files, $folder, $out_file);
     }
     return @matlab_code;
 }
@@ -110,7 +110,6 @@ sub create_matlab_code_stack {
     my $out_file    = $_[1];
 
     my @matlab_code;
-    my $min_max_file = catfile(dirname($image_files[0]), $cfg{min_max_file});
 
     my $total_stack_images = Image::Stack::get_image_stack_number($image_files[0]);
     foreach my $i_num (1 .. $total_stack_images) {
@@ -129,23 +128,25 @@ sub create_matlab_code_stack {
 
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
-    my $prefix      = $_[1];
+    my $folder      = $_[1];
     my $out_file    = $_[2];
 
     my @matlab_code;
-    my $min_max_file = catfile(dirname($image_files[0]), $cfg{min_max_file});
 
     foreach my $file_name (@image_files) {
         my $i_num;
-        $prefix =~ s/\'//g;
-        if ($file_name =~ /$prefix(\d+)\./) {
-            $i_num = $1;
+        my $original_i_num;
+        $folder =~ s/\'//g;
+        if ($file_name =~ /$folder.*?(\d+)\./) {
+            $original_i_num = $1;
+            $i_num = (grep $file_name eq $image_files[$_ - 1], (1 .. $#image_files + 1))[0];
         } else {
             warn "Unable to find image number in: $file_name, skipping this image.";
             next;
         }
 
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
+        next if grep $original_i_num == $_, @{ $cfg{exclude_image_nums} };
 
         my $padded_num = sprintf("%0" . length(scalar(@image_files)) . "d", $i_num);
 

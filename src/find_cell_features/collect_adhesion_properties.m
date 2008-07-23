@@ -51,7 +51,7 @@ for i=1:max(labeled_adhesions(:))
     
     this_ad = labeled_adhesions;
     this_ad(labeled_adhesions ~= i) = 0;
-    background_region = imdilate(this_ad,strel('square',i_p.Results.background_border_size*2 + 1));
+    background_region = imdilate(this_ad,strel('disk',i_p.Results.background_border_size + 1,0));
     background_region = and(background_region,not(labeled_adhesions));
     if (exist('cell_mask','var'))
         background_region = and(background_region,cell_mask);
@@ -59,6 +59,8 @@ for i=1:max(labeled_adhesions(:))
     
     adhesion_props(i).Background_adhesion_signal = mean(orig_I(background_region));
     adhesion_props(i).Background_size = sum(background_region(:));
+    
+    adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
 end
 
 if (exist('cell_mask','var'))
