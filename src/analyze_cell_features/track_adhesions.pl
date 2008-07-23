@@ -47,7 +47,7 @@ if ($opt{emerald}) {
     my @command = "$0 -cfg $opt{cfg} -input data.stor";
     @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
     &Emerald::send_LSF_commands(\@command);
-    die;
+    exit;
 }
 
 my %data_sets;

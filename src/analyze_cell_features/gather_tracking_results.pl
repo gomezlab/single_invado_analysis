@@ -53,7 +53,7 @@ if ($opt{emerald}) {
 
     @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
     &Emerald::send_LSF_commands(\@command);
-    die;
+    exit;
 }
 
 print "Gathering/Converting Data Files\n" if $opt{debug};

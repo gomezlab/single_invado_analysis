@@ -45,15 +45,16 @@ my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_se
 my %emerald_opt = ("folder", $error_folder);
 mkpath($error_folder);
 
-my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
-&Emerald::send_LSF_commands(\@commands);
-
+if (scalar(@matlab_code) >= 1) {
+    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@commands);
+}
 ###############################################################################
 #Functions
 ###############################################################################
 
 sub create_matlab_command {
-    my $command;
+    my @command;
     
     my @image_files = <$opt{folder}/$cfg{raw_mask_file}>;
     
@@ -62,13 +63,12 @@ sub create_matlab_command {
        die "More than one image file found (". scalar(@image_files) . "), quiting";
     } else {
         my $out_file = catfile(dirname($image_files[0]), $cfg{cell_mask_file});
-        $command = "find_cell_mask('$image_files[0]','$out_file')";
+        push @command, "find_cell_mask('$image_files[0]','$out_file')";
     }
-    return $command;
+    return @command;
 }
 
 
 ###############################################################################
 #Documentation
 ###############################################################################
-

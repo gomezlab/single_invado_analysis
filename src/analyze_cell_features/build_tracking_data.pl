@@ -12,7 +12,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
-use Storable;
+use Storable qw(nstore);
 use Text::CSV;
 use IO::File;
 
@@ -53,7 +53,7 @@ if ($opt{emerald}) {
     my @commands = &create_data_building_commands;
     @commands = &Emerald::create_general_LSF_commands(\@commands,\%emerald_opt);
     &Emerald::send_LSF_commands(\@commands);
-    die;
+    exit;
 } else {
     print "\n\nGathering Data Files\n" if $opt{debug};
 
@@ -62,8 +62,8 @@ if ($opt{emerald}) {
     push @data_files, @{$cfg{tracking_files}};
 
     %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
+
     print "\n\nMaking Comparison Matrices\n" if $opt{debug};
-    
     &make_comp_matices;
 }
 
@@ -98,7 +98,7 @@ sub make_comp_matices {
         if ($_ == $#data_keys) {
             if (defined $opt{output}) {
                 my $key_1 = $data_keys[$_];
-                store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
+                nstore \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
                 delete $data_sets{$key_1};
             }
             next;
@@ -132,7 +132,7 @@ sub make_comp_matices {
         print "\r"                if $opt{debug};
 
         if (defined $opt{output}) {
-            store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
+            nstore \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
             delete $data_sets{$key_1};
         }
     }

@@ -48,6 +48,8 @@ foreach (@image_sets) {
     my $folder   = $cfg{ $_->[0] };
     my $out_file = $cfg{ $_->[1] };
     
+    next if (not(defined($folder)));
+
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     $all_images_empty = 0 if (@image_files);
     

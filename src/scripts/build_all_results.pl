@@ -31,7 +31,8 @@ my %cfg = ParseConfig(\%opt);
 $t1 = new Benchmark;
 $| = 1;
 
-my @config_files = <$cfg{data_folder}/time_series_*/*.cfg>;
+my @config_files = sort <$cfg{data_folder}/time_series_*/*.cfg>;
+@config_files = ($config_files[0]) if $opt{debug};
 my @data_folders = map catfile(dirname($_),"run.txt"), @config_files;
 my @time_series_list = map { /(time_series_\d*)/; $1; } @config_files;
 
@@ -43,7 +44,11 @@ if ($opt{emerald}) {
         ["../find_cell_features", "./setup_results_folder.pl"],
         ["../find_cell_features", "./collect_mask_set.pl"],
         ["../find_cell_features", "./collect_fa_image_set.pl"],
+       ],
+       [
         ["../analyze_cell_features", "./build_tracking_data.pl"],
+       ],
+       [
         ["../analyze_cell_features", "./track_adhesions.pl"],
        ],
        [
@@ -52,9 +57,9 @@ if ($opt{emerald}) {
        [
         ["../analyze_cell_features", "./filter_tracking_matrix.pl"],
        ],
-       #[
-       # ["../visualize_cell_features", "./collect_visualizations.pl"],
-       #],
+       [
+        ["../visualize_cell_features", "./collect_visualizations.pl"],
+       ],
       );
 
     
@@ -92,6 +97,10 @@ if ($opt{emerald}) {
 
 $t2 = new Benchmark;
 print "Runtime: ",timestr(timediff($t2,$t1)), "\n";
+
+open OUTPUT, ">most_recent_runtime.txt";
+print OUTPUT "Runtime: ",timestr(timediff($t2,$t1)), "\n";
+close OUTPUT;
 
 ################################################################################
 # Functions
