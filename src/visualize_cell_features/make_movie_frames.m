@@ -154,7 +154,7 @@ for i = 1:i_count
         label_frames{1} = ad_label_perim;
     end
 
-    if (i_seen > i_count*0.95)
+    if (i_seen == size(tracking_seq,2))
         highlighted_ghost_all = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
         for m=size(label_frames,2):-1:1

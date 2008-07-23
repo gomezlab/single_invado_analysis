@@ -19,7 +19,6 @@ function adhesion_props = collect_adhesion_properties(ad_I,orig_I,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 i_p = inputParser;
 i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
@@ -27,6 +26,7 @@ i_p.addRequired('ad_I',@(x)isnumeric(x) || islogical(x));
 i_p.addRequired('orig_I',@isnumeric);
 
 i_p.addParamValue('cell_mask',0,@(x)isnumeric(x) || islogical(x));
+i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
 
 i_p.parse(ad_I,orig_I,varargin{:});
 
@@ -43,58 +43,47 @@ adhesion_props = regionprops(labeled_adhesions,'all');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Average_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
-Variance_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
-Max_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
-Min_adhesion_signal = zeros(1,max(labeled_adhesions(:)));
-
 for i=1:max(labeled_adhesions(:))
-    Average_adhesion_signal(i) = mean(orig_I(labeled_adhesions == i));
-    Variance_adhesion_signal(i) = var(orig_I(labeled_adhesions == i));
-    Max_adhesion_signal(i) = max(orig_I(labeled_adhesions == i));
-    Min_adhesion_signal(i) = min(orig_I(labeled_adhesions == i));
+    adhesion_props(i).Average_adhesion_signal = mean(orig_I(labeled_adhesions == i));
+    adhesion_props(i).Variance_adhesion_signal = var(orig_I(labeled_adhesions == i));
+    adhesion_props(i).Max_adhesion_signal = max(orig_I(labeled_adhesions == i));
+    adhesion_props(i).Min_adhesion_signal = min(orig_I(labeled_adhesions == i));
+    
+    this_ad = labeled_adhesions;
+    this_ad(labeled_adhesions ~= i) = 0;
+    background_region = imdilate(this_ad,strel('square',i_p.Results.background_border_size*2 + 1));
+    background_region = and(background_region,not(labeled_adhesions));
+    if (exist('cell_mask','var'))
+        background_region = and(background_region,cell_mask);
+    end
+    
+    adhesion_props(i).Background_adhesion_signal = mean(orig_I(background_region));
+    adhesion_props(i).Background_size = sum(background_region(:));
 end
-
-adhesion_props(1).Average_adhesion_signal = Average_adhesion_signal;
-adhesion_props(1).Average_pixel_adhesion_signal = Average_adhesion_signal*(2^12 - 1);
-adhesion_props(1).Variance_adhesion_signal = Variance_adhesion_signal;
-adhesion_props(1).Max_adhesion_signal = Max_adhesion_signal;
-adhesion_props(1).Min_adhesion_signal = Min_adhesion_signal;
 
 if (exist('cell_mask','var'))
     dists = bwdist(~cell_mask);
     cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
     cell_centroid = cell_centroid.Centroid;
 
-    Centroid_dist_from_edge = zeros(1,max(labeled_adhesions(:)));
-    Centroid_dist_from_center = zeros(1,max(labeled_adhesions(:)));
-    Angle_to_center = zeros(1,max(labeled_adhesions(:)));
-
     for i=1:max(labeled_adhesions(:))
-        Average_adhesion_signal(i) = mean(orig_I(labeled_adhesions == i));
-        Variance_adhesion_signal(i) = var(orig_I(labeled_adhesions == i));
-
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid;
         if(size(centroid_pos,1) == 0)
             warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
             adhesion_props(i).Centroid_dist_from_edge = NaN;
         else
-            Centroid_dist_from_edge(i) = dists(centroid_pos(2),centroid_pos(1));
+            adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
 
-            Centroid_dist_from_center(i) = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
-            Angle_to_center(i) = acos((centroid_unrounded(2) - cell_centroid(2))/Centroid_dist_from_center(i));
+            adhesion_props(i).Centroid_dist_from_center = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
+            adhesion_props(i).Angle_to_center = acos((centroid_unrounded(2) - cell_centroid(2))/adhesion_props(i).Centroid_dist_from_center);
             if (centroid_pos(2) - cell_centroid(2) < 0)
-                Angle_to_center(i) = Angle_to_center(i) + pi;
+                adhesion_props(i).Angle_to_center = adhesion_props(i).Angle_to_center + pi;
             end
         end
 
     end
-
-    adhesion_props(1).Centroid_dist_from_edge = Centroid_dist_from_edge;
-    adhesion_props(1).Centroid_dist_from_center = Centroid_dist_from_center;
-    adhesion_props(1).Angle_to_center = Angle_to_center;
+    
     adhesion_props(1).Cell_size = sum(cell_mask(:));
 end
 
