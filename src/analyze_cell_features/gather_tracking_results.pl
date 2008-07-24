@@ -28,7 +28,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_pix_props", "tracking_mat=s", "skip_lin_regions", "emerald");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "tracking_mat=s", "skip_lin_regions", "emerald");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -48,7 +48,6 @@ if ($opt{emerald}) {
     
     my %emerald_opt = ("folder" => $error_folder);
     my @command = "$0 -cfg $opt{cfg}";
-    $command[0] .= " -skip_lin_regions" if ($opt{skip_pix_props});
     $command[0] .= " -tracking_mat $opt{tracking_mat}" if (exists $opt{tracking_mat});
 
     @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
@@ -82,11 +81,6 @@ my %ad_lineage_props = &gather_ad_lineage_properties;
 print "\n\nBuilding R Model Files\n", if $opt{debug};
 if (not($opt{skip_lin_regions})) {
     &run_R_linear_region_code;
-}
-
-if (exists $cfg{treatment_time}) {
-    print "\n\nGathering Treatment Results\n", if $opt{debug};
-    my %treatment_results = &gather_treatment_results;
 }
 
 ###############################################################################
@@ -339,8 +333,8 @@ sub gather_prop_seq {
 
             my $i_num = $data_keys[$j];
             if (not defined ${ $data_sets{$i_num}{$prop} }[$ad_num]) {
-                print "$i_num, $ad_num, $prop";
-                die;
+                die "Can't find value for property ($prop) in image number ($i_num), ad number ($ad_num)\n" . 
+                    "Data keys in this I number:\n" . join(" ",keys %{$data_sets{$i_num}});
             }
 
             push @{ $prop_vals[$i] }, ${ $data_sets{$i_num}{$prop} }[$ad_num];
@@ -615,245 +609,6 @@ sub build_lineage_plots {
 }
 
 #######################################
-# Treatment Analysis
-#######################################
-sub gather_treatment_results {
-    my %treat_ad;
-
-    #($treat_ad{'all_summary'}, $treat_ad{'all_error'}) = &gather_treatment_summary(\@tracking_mat,"Max_adhesion_signal");
-    #($treat_ad{'all_summary_aver'}, $treat_ad{'all_error_aver'}) = &gather_treatment_summary;
-    #($treat_ad{'across_summary'}, $treat_ad{'across_error'}) = &gather_across_treatment_summary("Max_adhesion_signal");
-    ($treat_ad{'across_summary_aver'}, $treat_ad{'across_error_aver'}) = &gather_across_treatment_summary;
-    my @output_mat = map [ $treat_ad{'all_summary'}[$_],
-        $treat_ad{'all_error'}[$_],      $treat_ad{'all_summary_aver'}[$_],
-        $treat_ad{'all_error_aver'}[$_], $treat_ad{'across_summary'}[$_],
-        $treat_ad{'across_error'}[$_],   $treat_ad{'across_summary_aver'}[$_],
-        $treat_ad{'across_error_aver'}[$_], ],
-      (0 .. $#{ $treat_ad{'all_summary'} });
-
-    &output_mat_csv(\@output_mat, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "treatment.csv"));
-
-    return %treat_ad;
-}
-
-sub gather_across_treatment_summary {
-    my @cross_indexes = &gather_cross_indexes;
-
-    my @treatment_ads = grep {
-        my @this_seq = @{$_};
-        if (   $this_seq[ $cross_indexes[0] ] >= 0
-            && $this_seq[ $cross_indexes[1] ] >= 0) {
-            1;
-        }
-    } @tracking_mat;
-
-    &output_mat_csv(\@treatment_ads, catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, "treatment.csv"));
-
-    return &gather_treatment_summary(\@treatment_ads, @_);
-}
-
-sub gather_cross_indexes {
-    my @mat_index_to_i_num = sort keys %data_sets;
-    @mat_index_to_i_num = map sprintf("%0" . length($mat_index_to_i_num[-1]) . "d", $_), @mat_index_to_i_num;
-
-    my @cross_indexes;
-
-    for my $i (reverse(0 .. $#mat_index_to_i_num)) {
-        if ($mat_index_to_i_num[$i] < $cfg{treatment_time}) {
-            $cross_indexes[0] = $i;
-            last;
-        }
-    }
-    for my $i (0 .. $#mat_index_to_i_num) {
-        if ($mat_index_to_i_num[$i] > $cfg{treatment_time}) {
-            $cross_indexes[1] = $i;
-            last;
-        }
-    }
-
-    return @cross_indexes;
-}
-
-sub gather_treatment_summary {
-    my @local_tracking_mat = @tracking_mat;
-    if (scalar(@_) > 0) {
-        @local_tracking_mat = @{ $_[0] };
-    }
-    my $property = "Average_adhesion_signal";
-    if (scalar(@_) > 1) {
-        $property = $_[1];
-    }
-
-    my @mat_index_to_i_num = sort keys %data_sets;
-    @mat_index_to_i_num = map sprintf("%0" . length($mat_index_to_i_num[-1]) . "d", $_), @mat_index_to_i_num;
-
-    my @cross_indexes = &gather_cross_indexes;
-
-    #Determine the properties before treatment
-    my $pix_count    = 0;
-    my $ad_sig_total = 0;
-    my $stat         = new Statistics::Descriptive::Full;
-    my @per_ad_sig;
-    for my $i (0 .. $cross_indexes[0]) {
-        for my $j (0 .. $#local_tracking_mat) {
-            my $ad_num = $local_tracking_mat[$j][$i];
-            next if ($ad_num < 0);
-
-            my $area   = $data_sets{ $mat_index_to_i_num[$i] }{Area}[$ad_num];
-            my $ad_sig = $data_sets{ $mat_index_to_i_num[$i] }{$property}[$ad_num];
-
-            $pix_count    += $area;
-            $ad_sig_total += $ad_sig;
-            $stat->add_data($ad_sig);
-
-            $per_ad_sig[$j][0] += 1;
-            $per_ad_sig[$j][1] += $ad_sig;
-        }
-    }
-    for (0 .. $#per_ad_sig) {
-        $per_ad_sig[$_] = $per_ad_sig[$_][1] / $per_ad_sig[$_][0];
-    }
-
-    my $base_concentration = ($ad_sig_total / $stat->count);
-
-    #print "Base Error: ", sqrt($stat->variance/$stat->count), "\n";
-
-    #Determine the properties after treatment
-    my @summary_ts;
-    my @error_ts;
-    my $per_ad  = 0;
-    my $base_ad = 0;
-    my @values;
-    mkpath(catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'raw_treatment'));
-    for my $i ($cross_indexes[1] .. $#{ $local_tracking_mat[0] }) {
-        my $pix_count         = 0;
-        my $ad_sig_fold_total = 0;
-
-        my $stat = new Statistics::Descriptive::Full;
-        for my $j (0 .. $#local_tracking_mat) {
-            my $ad_num = $local_tracking_mat[$j][$i];
-
-            push @{ $values[$i] }, 0 if ($ad_num < 0);
-            next if ($ad_num < 0);
-
-            my $area   = $data_sets{ $mat_index_to_i_num[$i] }{Area}[$ad_num];
-            my $ad_sig = $data_sets{ $mat_index_to_i_num[$i] }{$property}[$ad_num];
-
-            $pix_count += $area;
-
-            if (defined($per_ad_sig[$j])) {
-                $per_ad++;
-                $ad_sig_fold_total += $ad_sig / $per_ad_sig[$j];
-                push @{ $values[$i] }, $ad_sig / $per_ad_sig[$j];
-                $stat->add_data($ad_sig / $per_ad_sig[$j]);
-            } else {
-                $base_ad++;
-                $ad_sig_fold_total += $ad_sig / $base_concentration;
-                push @{ $values[$i] }, $ad_sig / $base_concentration;
-                $stat->add_data($ad_sig / $base_concentration);
-            }
-        }
-        &output_mat_csv([ $values[$i] ],
-            catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'raw_treatment', $i . '.csv'));
-        push @summary_ts, $ad_sig_fold_total / $stat->count;
-        push @error_ts,   sqrt($stat->variance / $stat->count);
-    }
-    &output_mat_csv(\@values,
-        catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'raw_treatment', 'all.csv'));
-
-    #print "Base Ad: $base_ad, Per: $per_ad\n\n";
-
-    return \@summary_ts, \@error_ts;
-}
-
-sub build_treatment_plots {
-    my @r_code;
-
-    my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder});
-    my $plot_dir = catdir($data_dir, $cfg{plot_folder});
-
-    my $xy_default = "pch=19,cex=0.4";
-
-    my $pdf_default       = "height=12, width=12, pointsize=24";
-    my @possible_xy_plots = (
-        {
-            xy        => "adhesions\$Area,adhesions\$Average_adhesion_signal",
-            main      => "",
-            xlab      => "expression(paste('Area (', mu, m^2, ')'))",
-            ylab      => "'Paxillin Concentration (AU)'",
-            file_name => "area_vs_pax.pdf",
-            plot_para => $xy_default,
-            pdf_para  => $pdf_default,
-        },
-        {
-            xy        => "adhesions\$Centroid_dist_from_edge,adhesions\$Centroid_dist_from_center",
-            main      => "",
-            xlab      => "expression(paste('Distance from Edge (', mu, 'm)'))",
-            ylab      => "expression(paste('Distance from Center (', mu, 'm)'))",
-            file_name => "center_dist_vs_edge_dist.pdf",
-            plot_para => $xy_default,
-            pdf_para  => $pdf_default,
-        },
-        {
-            xy        => "adhesions\$Area,adhesions\$Centroid_dist_from_edge",
-            main      => "",
-            xlab      => "expression(paste('Area (', mu, m^2, ')'))",
-            ylab      => "expression(paste('Distance from Edge (', mu, 'm)'))",
-            file_name => "area_vs_dist.pdf",
-            plot_para => $xy_default,
-            pdf_para  => $pdf_default,
-        },
-        {
-            xy        => "adhesions\$Average_adhesion_signal,adhesions\$Centroid_dist_from_edge",
-            main      => "",
-            xlab      => "'Paxillin Concentration (AU)'",
-            ylab      => "expression(paste('Distance from Edge (', mu, 'm)'))",
-            file_name => "sig_vs_dist.pdf",
-            plot_para => $xy_default,
-            pdf_para  => $pdf_default,
-        },
-    );
-
-    my @prop_types = @{ $single_ad_props[0] };
-
-    my @xy_plots;
-    for (@possible_xy_plots) {
-        my %para_set = %{$_};
-        $para_set{xy} =~ /\$(.*),.*\$(.*)/ or die $para_set{xy};
-
-        if ((grep $1 eq $_, @prop_types) && (grep $2 eq $_, @prop_types)) {
-            push @xy_plots, \%para_set;
-        }
-    }
-
-    mkpath($plot_dir);
-    mkpath(catdir($plot_dir, 'png'));
-
-    my $png_convert_calls;
-
-    #Read in data
-    push @r_code, "adhesions = read.table('$data_dir/$cfg{individual_adhesions_props_file}',header=T,sep=',');\n";
-
-    #Build the plots
-    foreach (@xy_plots) {
-        my %parameters = %{$_};
-        my $output_file = catfile($plot_dir, $parameters{file_name});
-
-        my $png_file = $parameters{file_name};
-        $png_file =~ s/\.pdf/\.png/;
-        my $output_file_png = catfile($plot_dir, 'png', $png_file);
-
-        push @r_code, "pdf('$output_file',$parameters{pdf_para})\n";
-        push @r_code, "par(mar=c(4,4,0.5,0.5),bty='n')\n";
-        push @r_code, "plot($parameters{xy},xlab=$parameters{xlab},ylab=$parameters{ylab},$parameters{plot_para})\n";
-        push @r_code, "dev.off();\n";
-        $png_convert_calls .= "convert $output_file $output_file_png\n";
-    }
-    &Math::R::execute_commands(\@r_code);
-    system($png_convert_calls);
-}
-
-#######################################
 # Linear Region Finding Code
 #######################################
 sub run_R_linear_region_code {
@@ -900,8 +655,6 @@ Optional parameter(s):
 =item * tracking_mat: specifies a file name to use instead of the file specified
 in the config file for the tracking matrix
 
-=item * skip_pix_props: debugging command that skips the time consuming
-production of the pixel properties results
 
 =item * skip_lin_regions: debugging command that skips the time consuming
 production of the pixel properties results
@@ -915,10 +668,6 @@ production of the pixel properties results
 =head1 EXAMPLES
 
 gather_tracking_results.pl -cfg FA_config
-
-OR
-
-gather_tracking_results.pl -cfg FA_config -d -skip_pix_props
 
 =head1 AUTHORS
 
