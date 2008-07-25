@@ -143,6 +143,7 @@ for i = 1:i_count
     %lineage
     assert(all(lineage_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
 
+    
     if (exist('label_frames','var'))
         frame_size_count = size(label_frames,2);
         if (frame_size_count > old_frames_count), frame_size_count = old_frames_count; end
@@ -154,6 +155,10 @@ for i = 1:i_count
         label_frames{1} = ad_label_perim;
     end
 
+    ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
+    assert(all((1:max(ad_nums))' == unique(ad_nums)),'Error: problem with the set of ad numbers in image %d',i);
+    
+    %Draw the adhesion ghost image
     if (i_seen == size(tracking_seq,2))
         highlighted_ghost_all = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
@@ -162,22 +167,44 @@ for i = 1:i_count
 
             mix_percent = (size(label_frames,2) - m + 1)/size(label_frames,2);
 
-            set_cmap = lineage_cmap(lineage_to_cmap(tracking_seq(:,(i_seen - m + 1)) > 0),:);
-            highlighted_ghost_all = create_highlighted_image(highlighted_ghost_all,labels,'color_map',set_cmap,'mix_percent',mix_percent);
+            cmap_nums = lineage_to_cmap(tracking_seq(:,(i_seen - m + 1)) > 0);
+            assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
+            all_cmap = zeros(length(cmap_nums),3);
+            for j=1:length(cmap_nums) 
+                all_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
+            end
+            highlighted_ghost_all = create_highlighted_image(highlighted_ghost_all,labels,'color_map',all_cmap,'mix_percent',mix_percent);
         
-            set_cmap = time_cmap(birth_time_to_cmap(tracking_seq(:,(i_seen - m + 1)) > 0),:);
-            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',set_cmap,'mix_percent',mix_percent);
+            cmap_nums = birth_time_to_cmap(tracking_seq(:,(i_seen - m + 1)) > 0);
+            assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
+            time_cmap = zeros(length(cmap_nums),3);
+            for j=1:length(cmap_nums) 
+                time_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
+            end
+            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',time_cmap,'mix_percent',mix_percent);
         end
         imwrite(highlighted_ghost_all,fullfile(out_path,[num2str(i_seen),'_all','.png']));
         imwrite(highlighted_ghost_time,fullfile(out_path,[num2str(i_seen),'_time','.png']));        
     end
 
-    if(i_p.Results.debug), disp(i_seen); end
+    %Build the unique lineage highlighted image
+    cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
 
-    all_cmap = lineage_cmap(lineage_to_cmap(tracking_seq(:,i_seen) > 0),:);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
+
+    all_cmap = zeros(length(cmap_nums),3);
+    for j=1:length(cmap_nums)
+        all_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
+    end
     highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',all_cmap);
-
-    time_cmap = time_cmap(birth_time_to_cmap(tracking_seq(:,i_seen) > 0),:);
+    
+    %Build the birth time highlighted image
+    cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time image %d',i);
+    time_cmap = zeros(length(cmap_nums),3);
+    for j=1:length(cmap_nums)
+        time_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
+    end
     highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',time_cmap);
     
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
@@ -214,6 +241,8 @@ for i = 1:i_count
             imwrite(frame{j},output_filename);
         end
     end
+    
+    if(i_p.Results.debug), disp(i_seen); end
 end
 
 profile off;

@@ -34,14 +34,14 @@ sub gather_data_sets {
         my $i_num;
         if ($this_folder =~ /$cfg{individual_results_folder}\/(.*)\/$cfg{raw_data_folder}/) {
             $i_num = $1;
-            if (not($i_num =~ /^\d*$/)) {
-                print "ERROR: Problem finding image number in folder: $this_folder, ",
+            if (not($i_num =~ /^\d+$/)) {
+                warn "ERROR: Problem finding image number in folder: $this_folder, ",
                   "skipping folder in further computation.\n"
                   if $opt{debug};
                 next;
             }
         } else {
-            print "ERROR: Problem finding image number in folder name: $this_folder, ",
+            warn "ERROR: Problem finding image number in folder name: $this_folder, ",
               "skipping folder in further computation.\n"
               if $opt{debug};
             next;
@@ -90,7 +90,7 @@ sub gather_data_from_matlab_file {
 
     my $parser = Text::CSV::Simple->new;
     my @data   = $parser->read_file($file);
-
+    
     if (scalar(@data) == 1) {
         @data = @{ $data[0] };
     }
