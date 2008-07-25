@@ -11,6 +11,7 @@ use strict;
 use File::Path;
 use File::Spec::Functions;
 use File::Basename;
+use File::Copy;
 use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
@@ -49,8 +50,16 @@ foreach (@image_sets) {
     my $out_file = $cfg{ $_->[1] };
     
     next if (not(defined($folder)));
+    
+    #Remove an ' marks used in config file to keep the folder name together
+    $folder =~ s/\'//g;
 
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
+    my @image_files = map { $_=~s/\'//g; $_; } @image_files;
+
+    #Move all the files with spaces in their names, MATLAB on emerald doesn't
+    #like them
+    @image_files = &remove_file_name_spaces(@image_files);
     $all_images_empty = 0 if (@image_files);
     
     if ($opt{debug}) {
@@ -102,7 +111,7 @@ sub create_matlab_code {
         }
         @matlab_code = &create_matlab_code_stack(\@image_files, $out_file);
     } else {
-        @matlab_code = &create_matlab_code_single(\@image_files, $folder, $out_file);
+        @matlab_code = &create_matlab_code_single(\@image_files, $out_file);
     }
     return @matlab_code;
 }
@@ -130,16 +139,15 @@ sub create_matlab_code_stack {
 
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
-    my $folder      = $_[1];
-    my $out_file    = $_[2];
+    my $out_file    = $_[1];
 
     my @matlab_code;
+    
 
     foreach my $file_name (@image_files) {
         my $i_num;
         my $original_i_num;
-        $folder =~ s/\'//g;
-        if ($file_name =~ /$folder.*?(\d+)\./) {
+        if ($file_name =~ /.*?(\d+)\./) {
             $original_i_num = $1;
             $i_num = (grep $file_name eq $image_files[$_ - 1], (1 .. $#image_files + 1))[0];
         } else {
@@ -158,6 +166,28 @@ sub create_matlab_code_single {
         $matlab_code[0] .= "write_normalized_image('$file_name','$final_out_file');\n";
     }
     return @matlab_code;
+}
+
+sub remove_file_name_spaces {
+    my @new_files;
+    for (@_) {
+        my $dir = dirname($_);
+        my $file_name = basename($_);
+        
+        if ($file_name =~ /\s/) {
+            if ($file_name =~ /(\d+\..*)/) {
+                if( move($_,catfile($dir,$1)) ) {
+                    push @new_files, catfile($dir,$1);
+                }
+            } else {
+                warn "Unable to determine image number for file: $_";
+            }
+        } else {
+            push @new_files, $_;
+        }
+
+    }
+    return @new_files;
 }
 
 ################################################################################

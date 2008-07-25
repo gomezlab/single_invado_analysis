@@ -52,7 +52,7 @@ my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt)
 sub create_matlab_code {
     my $command;
 
-    my @image_files = <$opt{folder}/$cfg{adhesion_image_file}>;
+    my @image_files = grep -e $_, <$opt{folder}/$cfg{adhesion_image_file}>;
     
     if (scalar(@image_files) == 0) {
     } elsif (scalar(@image_files) > 1) {

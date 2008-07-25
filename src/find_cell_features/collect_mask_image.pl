@@ -56,8 +56,8 @@ if (scalar(@matlab_code) >= 1) {
 sub create_matlab_command {
     my @command;
     
-    my @image_files = <$opt{folder}/$cfg{raw_mask_file}>;
-    
+    my @image_files = grep -e $_, <$opt{folder}/$cfg{raw_mask_file}>;
+
     if (scalar(@image_files) == 0) {
     } elsif (scalar(@image_files) > 1) {
        die "More than one image file found (". scalar(@image_files) . "), quiting";

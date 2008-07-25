@@ -42,7 +42,11 @@ if ($opt{emerald}) {
       (
        [
         ["../find_cell_features", "./setup_results_folder.pl"],
+       ],
+       [
         ["../find_cell_features", "./collect_mask_set.pl"],
+       ],
+       [
         ["../find_cell_features", "./collect_fa_image_set.pl"],
        ],
        [
@@ -113,10 +117,10 @@ close OUTPUT;
 sub wait_till_LSF_jobs_finish {
     for (1..6) {    
         my $sleep_time = 10;
-        while (&running_LSF_jobs) {
+        do {
             sleep($sleep_time);
             $sleep_time++;
-        }
+        } while (&running_LSF_jobs)
     }
 }
 

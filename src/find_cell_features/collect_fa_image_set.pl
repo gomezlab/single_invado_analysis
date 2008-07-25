@@ -56,7 +56,7 @@ my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
     for (sort @image_folders) {
         my @command = "./collect_fa_image.pl -cfg $opt{cfg} -folder $_\n";
-        @command = &Emerald::create_general_LSF_commands(\@command);
+        @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
         &Emerald::send_LSF_commands(\@command);
     }
 } else {
