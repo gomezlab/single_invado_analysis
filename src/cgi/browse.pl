@@ -171,22 +171,23 @@ sub browse_exp {
     my $movies_base = catdir($base_dir,'movies');
     my $movies_base_no_pre = rm_prefix(catdir($base_dir,'movies'));
 
-    my @movie_rows = "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'all','edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
-                     "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'all','time_track.mov') . "\">Time Tracking</A></h3></td>";
+    my @movie_rows = "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'tracking_seq','edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
+                     "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'tracking_seq','time_track.mov') . "\">Time Tracking</A></h3></td>";
     
-    my $edge_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'all')));
-    my $time_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'all'),'time_track'));
+    my $edge_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'tracking_seq')));
+    my $time_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'tracking_seq'),'time_track'));
     push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "80%"}) . "</td>" . 
                       "<td>" . $q->img({src => $time_file, width => "80%"}) . "</td>";
     
     print $q->table(Tr(\@movie_rows));
     
     print $q->h3('Lineage Longevity Filtered (alive for 5 minutes)');
-    my @movie_rows = "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'longev_filtered','edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
-                     "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,'longev_filtered','time_track.mov') . "\">Time Tracking</A></h3></td>";
+    my $longev_base = catdir('filtered','longevity','5');
+    my @movie_rows = "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,$longev_base,'edge_track.mov') . "\">Edge Tracking</A></h3></td>\n" . 
+                     "<td><h3><A HREF=\"" . catdir($movies_base_no_pre,$longev_base,'time_track.mov') . "\">Time Tracking</A></h3></td>";
     
-    $edge_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'longev_filtered')));
-    $time_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,'longev_filtered'),'time_track'));
+    $edge_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,$longev_base)));
+    $time_file = &rm_prefix(&get_last_movie_frame(catdir($movies_base,$longev_base),'time_track'));
     
     push @movie_rows, "<td>" . $q->img({src => $edge_file, width => "80%"}) . "</td>" . 
                       "<td>" . $q->img({src => $time_file, width => "80%"}) . "</td>";
