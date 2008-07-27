@@ -99,7 +99,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity))
+            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity Background_corrected_signal))
                 || ($data_type =~ /adhesion_signal/)) {
 
                 #This is the arbitrary units place, don't do any unit
@@ -275,6 +275,7 @@ sub gather_ad_lineage_properties {
     $props{merge_count}                   = &gather_merge_count;
     $props{death_status}                  = &gather_death_status;
     $props{Average_adhesion_signal}       = &gather_prop_seq("Average_adhesion_signal");
+    $props{Background_corrected_signal}       = &gather_prop_seq("Background_corrected_signal");
     $props{Eccentricity}                  = &gather_prop_seq("Eccentricity");
     $props{Solidity}                      = &gather_prop_seq("Solidity");
     $props{ad_sig}                        = &gather_average_ad_sig($props{Average_adhesion_signal});
@@ -501,7 +502,7 @@ sub output_adhesion_lineage_props {
 
     my @ts_props = qw(All_speeds Area Centroid_dist_from_edge
       Centroid_dist_from_center Average_adhesion_signal 
-      Max_adhesion_signal Eccentricity Solidity);
+      Max_adhesion_signal Eccentricity Solidity Background_corrected_signal);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, keys %ad_lineage_props));

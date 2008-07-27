@@ -159,29 +159,36 @@ for i = 1:i_count
     assert(all((1:max(ad_nums))' == unique(ad_nums)),'Error: problem with the set of ad numbers in image %d',i);
     
     %Draw the adhesion ghost image
-    if (i_seen == size(tracking_seq,2))
+%     if (i_seen == size(tracking_seq,2))
+     if (i_seen > -1*size(tracking_seq,2))
         highlighted_ghost_all = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
         for m=size(label_frames,2):-1:1
+            
+            this_i_num = i_seen - m + 1;
+            
+            these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
+            assert(all((1:max(these_ad_nums))' == unique(these_ad_nums)),'Error: problem with the set of ad numbers in image %d',i);    
+            
             labels = label_frames{m};
 
             mix_percent = (size(label_frames,2) - m + 1)/size(label_frames,2);
 
-            cmap_nums = lineage_to_cmap(tracking_seq(:,(i_seen - m + 1)) > 0);
-            assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
-            all_cmap = zeros(length(cmap_nums),3);
+            cmap_nums = lineage_to_cmap(tracking_seq(:,this_i_num) > 0);
+            assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
+            this_cmap = zeros(length(cmap_nums),3);
             for j=1:length(cmap_nums) 
-                all_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
+                this_cmap(these_ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_all = create_highlighted_image(highlighted_ghost_all,labels,'color_map',all_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_all = create_highlighted_image(highlighted_ghost_all,labels,'color_map',this_cmap,'mix_percent',mix_percent);
         
-            cmap_nums = birth_time_to_cmap(tracking_seq(:,(i_seen - m + 1)) > 0);
-            assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
-            time_cmap = zeros(length(cmap_nums),3);
+            cmap_nums = birth_time_to_cmap(tracking_seq(:,this_i_num) > 0);
+            assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
+            this_cmap = zeros(length(cmap_nums),3);
             for j=1:length(cmap_nums) 
-                time_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
+                this_cmap(these_ad_nums(j),:) = time_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',time_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',this_cmap,'mix_percent',mix_percent);
         end
         imwrite(highlighted_ghost_all,fullfile(out_path,[num2str(i_seen),'_all','.png']));
         imwrite(highlighted_ghost_time,fullfile(out_path,[num2str(i_seen),'_time','.png']));        
