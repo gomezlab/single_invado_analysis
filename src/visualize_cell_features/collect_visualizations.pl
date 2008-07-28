@@ -63,22 +63,23 @@ foreach (@movie_params) {
     mkpath(dirname($params{'config_file'}));
 
     &write_matlab_config(%params);
-    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
-    my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
-    mkpath($error_folder);
     
-    my @matlab_code = "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
-    
-    if ($opt{emerald}) {
-        my %emerald_opt = ("folder", $error_folder);
-        my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-        &Emerald::send_LSF_commands(\@commands);
-    } elsif (not $opt{config_only}) {
-        my $t1 = new Benchmark;
-        &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
-        my $t2 = new Benchmark;
-        print "Movie: $params{movie_path}\n", timestr(timediff($t2, $t1), "nop"), "\n" if $opt{debug};
-    }
+    push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+}
+
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
+mkpath($error_folder);
+
+if ($opt{emerald}) {
+    my %emerald_opt = ("folder", $error_folder);
+    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
+    &Emerald::send_LSF_commands(\@commands);
+} elsif (not $opt{config_only}) {
+    my $t1 = new Benchmark;
+    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+    my $t2 = new Benchmark;
+    print timestr(timediff($t2, $t1), "nop"), "\n" if $opt{debug};
 }
 
 ###############################################################################
