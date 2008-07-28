@@ -32,9 +32,25 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tracking_seq = load(tracking_seq_file) + 1;
+I_folder_dir = dir(I_folder);
+max_image_num = -Inf;
+folder_char_length = 0;
+i_size = 0;
+for i = 1:size(I_folder_dir)
+    if (strcmp(I_folder_dir(i).name,'.') || strcmp(I_folder_dir(i).name,'..') || not(I_folder_dir(i).isdir)), continue; end
+    
+    if (str2num(I_folder_dir(i).name) > max_image_num), max_image_num = str2num(I_folder_dir(i).name); end
+    
+    folder_char_length = length(I_folder_dir(i).name);
+    
+    poss_sample_image =fullfile(I_folder,sprintf(['%0',num2str(folder_char_length),'d'],i),focal_image);
+    if (exist(poss_sample_image,'file') && length(i_size) == 1)
+        i_size = size(imread(poss_sample_image));
+    end
+        
+end
 
-i_size = size(imread(fullfile(I_folder,sprintf(['%0',num2str(length(num2str(i_count))),'d'],1),focal_image)));
+tracking_seq = load(tracking_seq_file) + 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find edges of image data in adhesion images
@@ -70,10 +86,7 @@ i_seen = 0;
 
 old_frames_count = 1000;
 
-for i = 1:i_count
-    if (find(i==excluded_image_nums))
-        continue;
-    end
+for i = 1:max_image_num
     if (i_seen + 1 > size(tracking_seq,2))
         continue;
     end
@@ -82,9 +95,11 @@ for i = 1:i_count
 
     if (i_p.Results.debug && i_seen > 1000); continue; end
 
-    padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
-    padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
+    padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
+    padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
 
+    if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input adhesion image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,8 +119,8 @@ for i = 1:i_count
     %numbers are missing in the tracking matrix column
     if (length(ad_nums) ~= length(unique(ad_label)))
         ad_label_temp = zeros(size(ad_label));
-        for i=1:length(ad_nums)
-            ad_label_temp(ad_label == ad_nums(i)) = i;
+        for j=1:length(ad_nums)
+            ad_label_temp(ad_label == ad_nums(j)) = j;
         end
         ad_label = ad_label_temp;
         ad_nums = unique(ad_label);
@@ -216,6 +231,10 @@ for i = 1:i_count
         imwrite(highlighted_ghost_time,fullfile(out_path,[num2str(i_seen),'_time','.png']));        
     end
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Adhesion Ghost Image
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
 

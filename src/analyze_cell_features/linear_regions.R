@@ -524,6 +524,14 @@ gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
 	corr_results
 }
 
+gather_datafile_from_dirs <- function (dirs, data_file='Average_adhesion_signal.csv') {
+	exp_data = list()
+	for (k in 1:length(dirs)) {
+		exp_data[[k]] <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
+	}
+	exp_data
+}
+
 gather_correlations <- function(result, exp_data, result.normed = TRUE, 
 	exp.normed = FALSE, result.log.trans = TRUE, exp.log.trans = FALSE, 
 	results.file = NA, save.exp_data = TRUE) {
@@ -627,44 +635,6 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
          ylim = c(0,1)
         );
 
-#	slopes = results$early_slope 
-#	R_sqs = results$early_R_sq
-#	init_filter = R_sqs != 0;
-#	all_x = slopes[init_filter]
-#	all_y = R_sqs[init_filter]
-#	cols = rainbow(10);
-#	c_l = length(cols);
-#
-#	dist_list = results$exp_props$starting_edge_dist
-#	print(length(dist_list))
-#	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));
-#	
-#	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
-#	x = slopes[indexes]
-#	y = R_sqs[indexes]
-#	plot(x, y, col=cols[1], 
-#		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
-#		 cex = 0.5, xlab='Formation Slope (/min)', ylab='R Squared')
-#	
-#	for (i in 2:c_l) {
-#		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
-#		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
-#		x = slopes[indexes]
-#		y = R_sqs[indexes]
-#		points(x,y,col=cols[i], cex = 0.5)
-#	}
-#	
-#	x_range = c(0.14,0.15);
-#	y_range = c(0.1,0.6);
-#	
-#	for (i in 1:c_l) {
-#		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-#			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-#			 col=cols[i], border = NA)
-#	}
-#	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
-#	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
-
 	#########################################################################
 	#Plot 2 - R squared versus Slope (late)
 	#########################################################################	
@@ -673,42 +643,6 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
          xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5,
          ylim = c(0,1)
         )
-
-#	slopes = results$late_slope
-#	R_sqs = results$late_R_sq
-#	init_filter = R_sqs != 0  & results$exp_props$death_status
-#	all_x = slopes[init_filter]
-#	all_y = R_sqs[init_filter]
-#	cols = rainbow(10);
-#	c_l = length(cols);
-#
-#	dist_list = results$exp_props$starting_edge_dist
-#	dist_range = c(min(dist_list[init_filter]),max(dist_list[init_filter]));	
-#	indexes = init_filter & dist_list <= (1/c_l)*(dist_range[2]-dist_range[1])
-#	x = slopes[indexes]
-#	y = R_sqs[indexes]
-#	plot(x, y, col=cols[1], 
-#		 xlim=c(min(all_x),max(all_x)), ylim=c(min(all_y),max(all_y)), 
-#		 cex = 0.5, xlab='Decay Slope (/min)', ylab='R Squared')
-#	
-#	for (i in 2:c_l) {
-#		indexes = init_filter & dist_list <= (i/c_l)*(dist_range[2]-dist_range[1])
-#		indexes = indexes & dist_list > ((i-1)/c_l)*(dist_range[2]-dist_range[1])
-#		x = slopes[indexes]
-#		y = R_sqs[indexes]
-#		points(x,y,col=cols[i], cex = 0.5)
-#	}
-#	
-#	x_range = c(max(all_x)*0.8,max(all_x)*0.85);
-#	y_range = c(0.1,0.6);
-#	
-#	for (i in 1:c_l) {
-#		rect(x_range[1], ((i-1)/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-#			 x_range[2], (i/c_l)*(y_range[2] - y_range[1]) + y_range[1],
-#			 col=cols[i], border = NA)
-#	}
-#	text(x_range[2],y_range[1],sprintf('%.1f',dist_range[1]),pos=4)
-#	text(x_range[2],y_range[2],sprintf('%.1f',dist_range[2]),pos=4)
     
 	#Plot 3
     errbar(seq(0,0.9,by=0.1), early_slope, early_slope - early_error, early_slope + early_error, xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')

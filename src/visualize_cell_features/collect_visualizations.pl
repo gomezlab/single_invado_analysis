@@ -20,7 +20,6 @@ use Benchmark;
 use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
-use Image::Data::Collection;
 use Emerald;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
@@ -117,9 +116,6 @@ sub build_matlab_visualization_config {
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
 
-    my @temp  = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
-    my $i_num = scalar(@temp);
-
     my @config_lines = (
         "%Config file produced by collect_visualizations.pl\n",
         "%@timestamp\n\n",
@@ -130,13 +126,11 @@ sub build_matlab_visualization_config {
         "base_data_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{data_folder})),
         "', exp_name);\n\n",
 
-        "i_count = $i_num;\n\n",
-
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n\n",
 
-        "focal_image = 'focal_image.png';\n",
+        "focal_image = '$cfg{adhesion_image_file}';\n",
         "adhesions_filename = 'adhesions.png';\n",
-        "edge_filename = 'cell_mask.png';\n",
+        "edge_filename = '$cfg{cell_mask_file}';\n",
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n\n",
 
