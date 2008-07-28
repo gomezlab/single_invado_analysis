@@ -85,21 +85,44 @@ for i = 1:i_count
     padded_i_num = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(length(num2str(i_count))),'d'],i_seen);
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Gather and scale the input adhesion image
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
     scale_factor = double(intmax(class(orig_i)));
     orig_i = double(orig_i)/scale_factor;
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Gather the adhesion label image and perimeters
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
+    ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
+    
+    %some tracking matrices do not include all the adhesions, but much
+    %of the subsequent code assumes that all ad numbers between 1 and the
+    %number of adhesions are present, so relabel the adhesions where
+    %numbers are missing in the tracking matrix column
+    if (length(ad_nums) ~= length(unique(ad_label)))
+        ad_label_temp = zeros(size(ad_label));
+        for i=1:length(ad_nums)
+            ad_label_temp(ad_label == ad_nums(i)) = i;
+        end
+        ad_label = ad_label_temp;
+        ad_nums = unique(ad_label);
+        if (ad_nums(1) == 0), ad_nums = ad_nums(2:end); end
+    end
+    
     ad_label_perim = zeros(size(orig_i,1),size(orig_i,2));
     for j=1:max(ad_label(:))
         this_ad = zeros(size(orig_i,1),size(orig_i,2));
         this_ad(ad_label == j) = 1;
         ad_label_perim(bwperim(this_ad)) = j;
     end
-
-    search_ascending = 1;
-
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Build the color map
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    search_ascending = 1;
     for j = 1:size(tracking_seq,1)
 
         %if the adhesion idenfied by the current lineage is not alive, skip
@@ -143,7 +166,11 @@ for i = 1:i_count
     %lineage
     assert(all(lineage_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Adhesion Ghost Image
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+    %Save the label matrix
     if (exist('label_frames','var'))
         frame_size_count = size(label_frames,2);
         if (frame_size_count > old_frames_count), frame_size_count = old_frames_count; end
@@ -154,11 +181,8 @@ for i = 1:i_count
     else
         label_frames{1} = ad_label_perim;
     end
-
-    ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
-    assert(all(size((1:max(ad_nums))') == size(unique(ad_nums))) && all((1:max(ad_nums))' == unique(ad_nums)),'Error: problem with the set of ad numbers in image %d',i);
     
-    %Draw the adhesion ghost image
+    %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
         highlighted_ghost_all = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
@@ -167,7 +191,6 @@ for i = 1:i_count
             this_i_num = i_seen - m + 1;
             
             these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
-            assert(all(size((1:max(ad_nums))') == size(unique(ad_nums))) && all((1:max(these_ad_nums))' == unique(these_ad_nums)),'Error: problem with the set of ad numbers in image %d',i);    
             
             labels = label_frames{m};
 

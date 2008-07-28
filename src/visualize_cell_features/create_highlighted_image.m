@@ -28,7 +28,7 @@ i_p.addRequired('high',@(x)(isnumeric(x) || islogical(x)));
 
 i_p.parse(I,high);
 
-i_p.addParamValue('color_map',[0,1,0],@(x)(isnumeric(x) && (size(x,1) == max(high(:)))));
+i_p.addParamValue('color_map',[0,1,0],@(x)(isnumeric(x) && (size(x,1) == size(unique(high),1) - 1)));
 i_p.addParamValue('mix_percent',1,@(x)(isnumeric(x)));
 
 i_p.parse(I,high,varargin{:});
