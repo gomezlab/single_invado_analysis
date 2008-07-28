@@ -40,7 +40,7 @@ my %cfg = ParseConfig(\%opt);
 
 mkpath($cfg{individual_results_folder});
 
-my @image_sets = ([qw(cell_mask_folder raw_mask_file)], 
+my @image_sets = ([qw(raw_mask_folder raw_mask_file)], 
                   [qw(adhesion_image_folder adhesion_image_file)]);
 my @matlab_code;
 my $all_images_empty = 1;
@@ -53,7 +53,7 @@ foreach (@image_sets) {
     
     #Remove an ' marks used in config file to keep the folder name together
     $folder =~ s/\'//g;
-
+    
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     my @image_files = map { $_=~s/\'//g; $_; } @image_files;
 
@@ -87,6 +87,7 @@ mkpath($error_folder);
 my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
     my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
+    die; #join("\n", @commands);
     &Emerald::send_LSF_commands(\@commands);
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
