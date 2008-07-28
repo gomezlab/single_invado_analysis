@@ -19,12 +19,12 @@ package Math::R;
 sub execute_commands {
     my @r_code = @{$_[0]};
     
-    my $r_command = "R --no-save --no-restore -q";
+    my $r_command = "R --slave";
     
     my $tmp = File::Temp->new(); 
     my $r_code_filename = $tmp->filename;
     open R_CODE, ">$r_code_filename";
-    print R_CODE @r_code;
+    print R_CODE join("\n",@r_code);
     close R_CODE;
     
     my $r_out = `$r_command <$r_code_filename`;

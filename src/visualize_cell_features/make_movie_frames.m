@@ -156,11 +156,10 @@ for i = 1:i_count
     end
 
     ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
-    assert(all((1:max(ad_nums))' == unique(ad_nums)),'Error: problem with the set of ad numbers in image %d',i);
+    assert(all(size((1:max(ad_nums))') == size(unique(ad_nums))) && all((1:max(ad_nums))' == unique(ad_nums)),'Error: problem with the set of ad numbers in image %d',i);
     
     %Draw the adhesion ghost image
-%     if (i_seen == size(tracking_seq,2))
-     if (i_seen > -1*size(tracking_seq,2))
+    if (i_seen == size(tracking_seq,2))
         highlighted_ghost_all = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
         for m=size(label_frames,2):-1:1
@@ -168,7 +167,7 @@ for i = 1:i_count
             this_i_num = i_seen - m + 1;
             
             these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
-            assert(all((1:max(these_ad_nums))' == unique(these_ad_nums)),'Error: problem with the set of ad numbers in image %d',i);    
+            assert(all(size((1:max(ad_nums))') == size(unique(ad_nums))) && all((1:max(these_ad_nums))' == unique(these_ad_nums)),'Error: problem with the set of ad numbers in image %d',i);    
             
             labels = label_frames{m};
 
