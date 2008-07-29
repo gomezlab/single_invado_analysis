@@ -28,12 +28,10 @@ i_p.addRequired('high',@(x)(isnumeric(x) || islogical(x)));
 
 i_p.parse(I,high);
 
-i_p.addParamValue('color_map',[0,1,0],@(x)(isnumeric(x) && (size(x,1) == size(unique(high),1) - 1)));
+i_p.addParamValue('color_map',[0,1,0],@(x)(all(high(:) == 0) || (isnumeric(x) && (size(x,1) == size(unique(high),1) - 1))));
 i_p.addParamValue('mix_percent',1,@(x)(isnumeric(x)));
 
 i_p.parse(I,high,varargin{:});
-
-assert(size(i_p.Results.color_map,1) == max(high(:)),'Error: the number of entries in the color map does not match the number of labels in the highlight matrix.');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program

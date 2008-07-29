@@ -70,8 +70,8 @@ if (bounding_box(3) > i_size(2)), bounding_box(3) = i_size(2); end
 if (bounding_box(4) > i_size(1)), bounding_box(4) = i_size(1); end
 
 edge_cmap = jet(size(tracking_seq,2));
-%define the edge image here because the old status of the edge image should
-%be preserved
+%define the edge image here because the edge image will be added to with
+%each image loop, so the image should be global
 edge_image_ad = ones(i_size(1),i_size(2),3);
 
 max_live_adhesions = find_max_live_adhesions(tracking_seq);
@@ -90,7 +90,7 @@ for i = 1:max_image_num
     if (i_seen + 1 > size(tracking_seq,2))
         continue;
     end
-
+    
     i_seen = i_seen + 1;
 
     if (i_p.Results.debug && i_seen > 1000); continue; end
@@ -237,9 +237,7 @@ for i = 1:max_image_num
     
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
-
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
-
     all_cmap = zeros(length(cmap_nums),3);
     for j=1:length(cmap_nums)
         all_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
@@ -251,7 +249,7 @@ for i = 1:max_image_num
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time image %d',i);
     time_cmap = zeros(length(cmap_nums),3);
     for j=1:length(cmap_nums)
-        time_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
+        time_cmap(ad_nums(j),:) = birth_time_to_cmap(cmap_nums(j),:);
     end
     highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',time_cmap);
     
@@ -259,7 +257,7 @@ for i = 1:max_image_num
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
         edge_image_ad = create_highlighted_image(edge_image_ad,cell_edge,'color_map',edge_cmap(i_seen,:));
     end
-    edge_image_ad = create_highlighted_image(edge_image_ad,bwperim(im2bw(ad_label,0)),'color_map',edge_cmap(i_seen,:));
+    edge_image_ad = create_highlighted_image(edge_image_ad,im2bw(ad_label_perim,0),'color_map',edge_cmap(i_seen,:));
 
     orig_i = orig_i(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3));
     highlighted_all = highlighted_all(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
