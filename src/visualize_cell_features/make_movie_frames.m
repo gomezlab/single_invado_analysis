@@ -84,7 +84,7 @@ birth_time_to_cmap = zeros(size(tracking_seq,1),1);
 
 i_seen = 0;
 
-old_frames_count = 1000;
+old_frames_count = 5;
 
 for i = 1:max_image_num
     if (i_seen + 1 > size(tracking_seq,2))
@@ -198,16 +198,18 @@ for i = 1:max_image_num
     end
 
     %Draw the ghost images
-    if (i_seen == size(tracking_seq,2))
-        highlighted_ghost_all = zeros(size(orig_i));
+%     if (i_seen == size(tracking_seq,2))
+%       if(i_p.Results.debug), disp('Ghost Images'); end
+        highlighted_ghost_unique = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
+
         for m=size(label_frames,2):-1:1
-
+            if(i_p.Results.debug), disp(m); end
             this_i_num = i_seen - m + 1;
-
-            these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
-
             labels = label_frames{m};
+            
+            these_ad_nums = unique(labels);
+            if (these_ad_nums(1) == 0), these_ad_nums = these_ad_nums(2:end); end
 
             mix_percent = (size(label_frames,2) - m + 1)/size(label_frames,2);
 
@@ -217,7 +219,7 @@ for i = 1:max_image_num
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_all = create_highlighted_image(highlighted_ghost_all,labels,'color_map',this_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,labels,'color_map',this_cmap,'mix_percent',mix_percent);
 
             cmap_nums = birth_time_to_cmap(tracking_seq(:,this_i_num) > 0);
             assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
@@ -227,14 +229,15 @@ for i = 1:max_image_num
             end
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',this_cmap,'mix_percent',mix_percent);
         end
-        imwrite(highlighted_ghost_all,fullfile(out_path,[num2str(i_seen),'_all','.png']));
-        imwrite(highlighted_ghost_time,fullfile(out_path,[num2str(i_seen),'_time','.png']));
-    end
+        if (not(exist(fullfile(out_path,'ghost_uni')))), mkdir(fullfile(out_path,'ghost_uni')); end
+        if (not(exist(fullfile(out_path,'ghost_time')))), mkdir(fullfile(out_path,'ghost_time')); end        
+        imwrite(highlighted_ghost_unique,fullfile(out_path,'ghost_time',[num2str(i_seen),'.png']));
+        imwrite(highlighted_ghost_time,fullfile(out_path,'ghost_uni',[num2str(i_seen),'.png']));
+%     end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Adhesion Ghost Image
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     %Other images
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);

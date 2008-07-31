@@ -124,8 +124,6 @@ sub build_matlab_visualization_config {
         "exp_name = '$cfg{exp_name}';\n",
         "base_results_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})),
         "', exp_name);\n\n",
-        "base_data_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{data_folder})),
-        "', exp_name);\n\n",
 
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n\n",
 
