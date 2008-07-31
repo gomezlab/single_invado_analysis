@@ -28,7 +28,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald", "emerald_stdout");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_stdout");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 print "Gathering Config\n" if $opt{debug};
@@ -87,7 +87,6 @@ mkpath($error_folder);
 my %emerald_opt = ("folder", $error_folder);
 if ($opt{emerald}) {
     my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-    die; #join("\n", @commands);
     &Emerald::send_LSF_commands(\@commands);
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);

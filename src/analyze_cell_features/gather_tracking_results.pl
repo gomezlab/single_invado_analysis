@@ -28,7 +28,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "tracking_mat=s", "skip_lin_regions", "emerald");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "tracking_mat=s", "skip_lin_regions", "emerald|e");
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 

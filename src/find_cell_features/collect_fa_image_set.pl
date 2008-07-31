@@ -25,7 +25,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "emerald", "emerald_stdout");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "emerald|e", "emerald_stdout");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
