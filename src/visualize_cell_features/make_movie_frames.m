@@ -204,7 +204,6 @@ for i = 1:max_image_num
     highlighted_ghost_time = zeros(size(orig_i));
 
     for m=size(label_frames,2):-1:1
-        if(i_p.Results.debug), disp(m); end
         this_i_num = i_seen - m + 1;
         labels = label_frames{m};
 
@@ -231,8 +230,8 @@ for i = 1:max_image_num
     end
     if (not(exist(fullfile(out_path,'ghost_uni')))), mkdir(fullfile(out_path,'ghost_uni')); end
     if (not(exist(fullfile(out_path,'ghost_time')))), mkdir(fullfile(out_path,'ghost_time')); end
-    imwrite(highlighted_ghost_unique,fullfile(out_path,'ghost_time',[padded_i_seen,'.png']));
-    imwrite(highlighted_ghost_time,fullfile(out_path,'ghost_uni',[padded_i_seen,'.png']));
+    imwrite(highlighted_ghost_unique,fullfile(out_path,'ghost_uni',[padded_i_seen,'.png']));
+    imwrite(highlighted_ghost_time,fullfile(out_path,'ghost_time',[padded_i_seen,'.png']));
     %     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
