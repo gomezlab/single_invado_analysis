@@ -179,10 +179,6 @@ Optional parameter(s):
 
 filter_tracking_matrix.pl -cfg FA_config
 
-OR
-
-filter_tracking_matrix.pl -cfg FA_config
-
 =head1 AUTHORS
 
 Matthew Berginski (mbergins@unc.edu)

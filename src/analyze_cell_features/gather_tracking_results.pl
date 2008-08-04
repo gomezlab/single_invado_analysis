@@ -71,12 +71,12 @@ my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 print "\n\nCreating Individual Adhesion Properties Plots\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 &output_single_adhesion_props;
-&build_single_ad_plots;
+#&build_single_ad_plots;
 
 print "\n\nCreating Adhesion Lineage Property Plots\n", if $opt{debug};
 my %ad_lineage_props = &gather_ad_lineage_properties;
 &output_adhesion_lineage_props;
-&build_lineage_plots;
+#&build_lineage_plots;
 
 print "\n\nBuilding R Model Files\n", if $opt{debug};
 if (not($opt{skip_lin_regions})) {

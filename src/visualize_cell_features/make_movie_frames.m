@@ -56,22 +56,22 @@ tracking_seq = load(tracking_seq_file) + 1;
 % Find edges of image data in adhesion images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (exist(bounding_box_file,'file'))
-    bounding_box = load(bounding_box_file);
+    b_box = load(bounding_box_file);
 else
-    bounding_box = find_time_series_bbox(I_folder);
-    csvwrite(bounding_box_file,bounding_box);
+    b_box = find_time_series_bbox(I_folder);
+    csvwrite(b_box_file,b_box);
 end
 
-bounding_box(1:2) = bounding_box(1:2) - image_padding_min;
-bounding_box(3:4) = bounding_box(3:4) + image_padding_min;
-if (bounding_box(1) <= 0), bounding_box(1) = 1; end
-if (bounding_box(2) <= 0), bounding_box(2) = 1; end
-if (bounding_box(3) > i_size(2)), bounding_box(3) = i_size(2); end
-if (bounding_box(4) > i_size(1)), bounding_box(4) = i_size(1); end
+b_box(1:2) = b_box(1:2) - image_padding_min;
+b_box(3:4) = b_box(3:4) + image_padding_min;
+if (b_box(1) <= 0), b_box(1) = 1; end
+if (b_box(2) <= 0), b_box(2) = 1; end
+if (b_box(3) > i_size(2)), b_box(3) = i_size(2); end
+if (b_box(4) > i_size(1)), b_box(4) = i_size(1); end
 
 edge_cmap = jet(size(tracking_seq,2));
-%define the edge image here because the edge image will be added to with
-%each image loop, so the image should be global
+%define the edge image here because the edge image will be added to each
+%image loop, so the image should be global
 edge_image_ad = ones(i_size(1),i_size(2),3);
 
 max_live_adhesions = find_max_live_adhesions(tracking_seq);
@@ -182,10 +182,10 @@ for i = 1:max_image_num
     assert(all(lineage_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Adhesion Ghost Image
+    %Adhesion Ghost Images
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    %Save the label matrix
+    %Save the label matrices
     if (exist('label_frames','var'))
         frame_size_count = size(label_frames,2);
         if (frame_size_count > old_frames_count), frame_size_count = old_frames_count; end
@@ -198,11 +198,8 @@ for i = 1:max_image_num
     end
 
     %Draw the ghost images
-    %     if (i_seen == size(tracking_seq,2))
-    %       if(i_p.Results.debug), disp('Ghost Images'); end
     highlighted_ghost_unique = zeros(size(orig_i));
     highlighted_ghost_time = zeros(size(orig_i));
-
     for m=size(label_frames,2):-1:1
         this_i_num = i_seen - m + 1;
         labels = label_frames{m};
@@ -228,11 +225,17 @@ for i = 1:max_image_num
         end
         highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',this_cmap,'mix_percent',mix_percent);
     end
+    highlighted_ghost_unique = highlighted_ghost_unique(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+    highlighted_ghost_time = highlighted_ghost_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+    if (exist('pixel_size','var'))
+        highlighted_ghost_unique = draw_scale_bar(highlighted_ghost_unique,pixel_size);
+        highlighted_ghost_time = draw_scale_bar(highlighted_ghost_time,pixel_size);
+    end
+    
     if (not(exist(fullfile(out_path,'ghost_uni')))), mkdir(fullfile(out_path,'ghost_uni')); end
     if (not(exist(fullfile(out_path,'ghost_time')))), mkdir(fullfile(out_path,'ghost_time')); end
     imwrite(highlighted_ghost_unique,fullfile(out_path,'ghost_uni',[padded_i_seen,'.png']));
     imwrite(highlighted_ghost_time,fullfile(out_path,'ghost_time',[padded_i_seen,'.png']));
-    %     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Other images
@@ -261,10 +264,10 @@ for i = 1:max_image_num
     end
     edge_image_ad = create_highlighted_image(edge_image_ad,im2bw(ad_label_perim,0),'color_map',edge_cmap(i_seen,:));
 
-    orig_i = orig_i(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3));
-    highlighted_all = highlighted_all(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-    highlighted_time = highlighted_time(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
-    edge_image_ad_bounded = edge_image_ad(bounding_box(2):bounding_box(4), bounding_box(1):bounding_box(3),1:3);
+    orig_i = orig_i(b_box(2):b_box(4), b_box(1):b_box(3));
+    highlighted_all = highlighted_all(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+    highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+    edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
 
     spacer = 0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3);
 

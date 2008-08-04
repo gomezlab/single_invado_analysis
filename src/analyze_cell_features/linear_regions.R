@@ -1,157 +1,11 @@
-plot_ad_seq <- function (results,index,dir,type='early') {
-	
-	ad_seq = results$exp_data[index,]
-	ad_seq = t(ad_seq[!(is.nan(ad_seq))]);
-	if (! file.exists(dir)) {
-		dir.create(dir,recursive=TRUE)
-	}
-	
-	pdf(file.path(dir,paste(index,'.pdf',sep='')),width=12);
-	par(mfrow=c(1,2),bty='n', mar=c(5,4,1,1))
-	
-	resid = c()
-	
-	if (type ==  'early') {
-		this_ad_seq = ad_seq[1:results$early_offset[index]];
-		this_ad_seq = this_ad_seq/this_ad_seq[1];
+################################################################################
+#linear_regions.R: various functions used to find and plot the linear regions
+#  and associated data from the focal adhesion identification/analysis programs
+################################################################################
 
-		x = c(0,results$early_offset[index]);
-		y = c(results$early_slope[index]*x[1] + results$early_inter[index],
-		   	  results$early_slope[index]*x[2] + results$early_inter[index])
-		
-		plot(1:results$early_offset[index],this_ad_seq,xlab='Time (minutes)',ylab='Normalized Paxillin Signal',
-				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
-		
-		lines(x,y,col='red',lwd=2)
-	
-		x = 1:length(this_ad_seq)
-		y = c()
-	
-		for (i in 1:length(this_ad_seq)) {
-			y[i] = this_ad_seq[i] - (results$early_slope[index]*x[i] + results$early_inter[index])
-		}
-	
-		plot(x,y,ylab='Residual Value')
-		
-		resid = c(resid,y)
-	}
-	
-	if (type == 'late') {
-		this_ad_seq = ad_seq[(length(ad_seq) - results$late_offset[index]) : length(ad_seq)];
-		this_ad_seq = this_ad_seq[1]/this_ad_seq;
-
-		x = c(length(ad_seq) - results$late_offset[index],length(ad_seq));
-		y = c(results$late_slope[index]*x[1] + results$late_inter[index],
-		   	  results$late_slope[index]*x[2] + results$late_inter[index])
-		
-		plot((length(ad_seq) - results$late_offset[index]) : length(ad_seq),
-			 this_ad_seq, xlab='Time (minutes)', ylab='Normalized Paxillin Signal',
-			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
-		
-		lines(x,y,col='red',lwd=2)
-		
-		x = (length(ad_seq) - results$late_offset[index]) : length(ad_seq)
-		y = c()
-	
-		for (i in 1:length(this_ad_seq)) {
-			y[i] = this_ad_seq[i] - (results$late_slope[index]*x[i] + results$late_inter[index])
-		}
-	
-		plot(x,y,ylab='Residual Value')
-		resid = c(resid,y)
-	}
-	
-	dev.off();
-	
-	resid
-}
-
-plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',window = 0.1) {
-	
-	resid = gather_exp_residuals(results)
-	
-	resid_win = gather_exp_win_residuals(resid,window=window)
-	
-	library(Hmisc)
-	pdf(file = file.path(dir,file),width=12)
-	par(mfcol=c(1,2))
-	errbar(resid_win$x$early, resid_win$y$early, 
-		   resid_win$y$early - resid_win$err$early, resid_win$y$early + resid_win$err$early, 
-		   xlab='Scaled Linear Fit Position',ylab='Residuals')
-	lines(c(0,1),c(0,0))
-	
-	errbar(resid_win$x$late, resid_win$y$late, 
-		   resid_win$y$late - resid_win$err$late, resid_win$y$late + resid_win$err$late, 
-		   xlab='Scaled Linear Fit Position',ylab='Residuals')
-	lines(c(0,1),c(0,0))
-	dev.off()
-}
-
-gather_exp_residuals <- function(results, min_R_sq = NA) {
-	resid = list()
-	for (i in 1:length(results)) {
-		res = results[[i]]
-		for (j in 1:length(res$early$R_sq)) {
-			if (is.na(res$early$R_sq[j])) {	
-				next
-			}
-			if (is.numeric(min_R_sq) & (res$early$R_sq[j] < min_R_sq)) {
-				next
-			}
-
-			resid_list = res$early$residual[j][[1]]
-			x = list(seq(0,1,1/(length(resid_list)-1)))
-			resid$y$early = c(resid$y$early,resid_list)
-			resid$x$early = c(resid$x$early,x)
-		}
-		for (j in 1:length(res$late$R_sq)) {
-			if (is.na(res$late$R_sq[j])) {
-				next
-			}
-			if (is.numeric(min_R_sq) & (res$late$R_sq[j] < min_R_sq)) {
-				next
-			}
-
-			resid_list = res$late$residual[j][[1]]
-			x = list(seq(0,1,1/(length(resid_list)-1)))
-			resid$y$late = c(resid$y$late,resid_list)
-			resid$x$late = c(resid$x$late,x)
-		}
-	}
-	resid
-}
-
-gather_exp_win_residuals <- function(resid, window) {
-	resid_win = list()
-	for (i in seq(window,1,by=window)) {
-		temp = c()
-		for (j in 1:length(resid$x$early)) {
-			this_resid_x = resid$x$early[[j]]
-			for (k in 1:length(this_resid_x)) {
-				if (this_resid_x[[k]] <= i & this_resid_x[[k]] >= i - window) {
-					temp = c(temp,resid$y$early[[j]])
-				}
-			}
-		}
-		resid_win$x$early   = c(resid_win$x$early,i-(window/2))
-		resid_win$y$early   = c(resid_win$y$early,mean(temp))
-		resid_win$err$early = c(resid_win$err$early,sd(temp))
-		
-		temp = c()
-		for (j in 1:length(resid$x$late)) {
-			this_resid_x = resid$x$late[[j]]
-			for (k in 1:length(this_resid_x)) {
-				if (this_resid_x[[k]] <= i & this_resid_x[[k]] >= i - window) {
-					temp = c(temp,resid$y$late[[j]])
-				}
-			}
-		}
-		resid_win$x$late   = c(resid_win$x$late,i-(window/2))
-		resid_win$y$late   = c(resid_win$y$late,mean(temp))
-		resid_win$err$late = c(resid_win$err$late,sd(temp))
-	}
-	resid_win
-}
+########################################
+#Data fitting functions
+########################################
 
 gather_bilinear_models <- function(data_set, props, 
 	min_length = 10, col_lims = NA, normed = TRUE, 
@@ -479,8 +333,6 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 			}
 		}
 		
-		print(this_col_lim);
-		
 		results[[k]] <- gather_bilinear_models(exp_data, ad_props, 
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log.trans = log.trans, 
@@ -522,14 +374,6 @@ gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
 	}
 	
 	corr_results
-}
-
-gather_datafile_from_dirs <- function (dirs, data_file='Average_adhesion_signal.csv') {
-	exp_data = list()
-	for (k in 1:length(dirs)) {
-		exp_data[[k]] <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
-	}
-	exp_data
 }
 
 gather_correlations <- function(result, exp_data, result.normed = TRUE, 
@@ -601,9 +445,12 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 			}
 		}
 	}
-#	graphics.off()
 	corr_result
 }
+
+########################################
+#Plotting Functions
+########################################
 
 plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA) {
 	early_slope = c()
@@ -710,6 +557,177 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 				  )
 }
 
+plot_ad_seq <- function (results,index,dir,type='early') {
+	
+	ad_seq = results$exp_data[index,]
+	ad_seq = t(ad_seq[!(is.nan(ad_seq))]);
+	if (! file.exists(dir)) {
+		dir.create(dir,recursive=TRUE)
+	}
+	
+	pdf(file.path(dir,paste(index,'.pdf',sep='')),width=12);
+	par(mfrow=c(1,2),bty='n', mar=c(5,4,1,1))
+	
+	resid = c()
+	
+	if (type ==  'early') {
+		this_ad_seq = ad_seq[1:results$early_offset[index]];
+		this_ad_seq = this_ad_seq/this_ad_seq[1];
+
+		x = c(0,results$early_offset[index]);
+		y = c(results$early_slope[index]*x[1] + results$early_inter[index],
+		   	  results$early_slope[index]*x[2] + results$early_inter[index])
+		
+		plot(1:results$early_offset[index],this_ad_seq,xlab='Time (minutes)',ylab='Normalized Paxillin Signal',
+				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		
+		lines(x,y,col='red',lwd=2)
+	
+		x = 1:length(this_ad_seq)
+		y = c()
+	
+		for (i in 1:length(this_ad_seq)) {
+			y[i] = this_ad_seq[i] - (results$early_slope[index]*x[i] + results$early_inter[index])
+		}
+	
+		plot(x,y,ylab='Residual Value')
+		
+		resid = c(resid,y)
+	}
+	
+	if (type == 'late') {
+		this_ad_seq = ad_seq[(length(ad_seq) - results$late_offset[index]) : length(ad_seq)];
+		this_ad_seq = this_ad_seq[1]/this_ad_seq;
+
+		x = c(length(ad_seq) - results$late_offset[index],length(ad_seq));
+		y = c(results$late_slope[index]*x[1] + results$late_inter[index],
+		   	  results$late_slope[index]*x[2] + results$late_inter[index])
+		
+		plot((length(ad_seq) - results$late_offset[index]) : length(ad_seq),
+			 this_ad_seq, xlab='Time (minutes)', ylab='Normalized Paxillin Signal',
+			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		
+		lines(x,y,col='red',lwd=2)
+		
+		x = (length(ad_seq) - results$late_offset[index]) : length(ad_seq)
+		y = c()
+	
+		for (i in 1:length(this_ad_seq)) {
+			y[i] = this_ad_seq[i] - (results$late_slope[index]*x[i] + results$late_inter[index])
+		}
+	
+		plot(x,y,ylab='Residual Value')
+		resid = c(resid,y)
+	}
+	
+	dev.off();
+	
+	resid
+}
+
+plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',window = 0.1) {
+	
+	resid = gather_exp_residuals(results)
+	
+	resid_win = gather_exp_win_residuals(resid,window=window)
+	
+	library(Hmisc)
+	pdf(file = file.path(dir,file),width=12)
+	par(mfcol=c(1,2))
+	errbar(resid_win$x$early, resid_win$y$early, 
+		   resid_win$y$early - resid_win$err$early, resid_win$y$early + resid_win$err$early, 
+		   xlab='Scaled Linear Fit Position',ylab='Residuals')
+	lines(c(0,1),c(0,0))
+	
+	errbar(resid_win$x$late, resid_win$y$late, 
+		   resid_win$y$late - resid_win$err$late, resid_win$y$late + resid_win$err$late, 
+		   xlab='Scaled Linear Fit Position',ylab='Residuals')
+	lines(c(0,1),c(0,0))
+	dev.off()
+}
+
+gather_exp_residuals <- function(results, min_R_sq = NA) {
+	resid = list()
+	for (i in 1:length(results)) {
+		res = results[[i]]
+		for (j in 1:length(res$early$R_sq)) {
+			if (is.na(res$early$R_sq[j])) {	
+				next
+			}
+			if (is.numeric(min_R_sq) & (res$early$R_sq[j] < min_R_sq)) {
+				next
+			}
+
+			resid_list = res$early$residual[j][[1]]
+			x = list(seq(0,1,1/(length(resid_list)-1)))
+			resid$y$early = c(resid$y$early,resid_list)
+			resid$x$early = c(resid$x$early,x)
+		}
+		for (j in 1:length(res$late$R_sq)) {
+			if (is.na(res$late$R_sq[j])) {
+				next
+			}
+			if (is.numeric(min_R_sq) & (res$late$R_sq[j] < min_R_sq)) {
+				next
+			}
+
+			resid_list = res$late$residual[j][[1]]
+			x = list(seq(0,1,1/(length(resid_list)-1)))
+			resid$y$late = c(resid$y$late,resid_list)
+			resid$x$late = c(resid$x$late,x)
+		}
+	}
+	resid
+}
+
+gather_exp_win_residuals <- function(resid, window) {
+	resid_win = list()
+	for (i in seq(window,1,by=window)) {
+		temp = c()
+		for (j in 1:length(resid$x$early)) {
+			this_resid_x = resid$x$early[[j]]
+			for (k in 1:length(this_resid_x)) {
+				if (this_resid_x[[k]] <= i & this_resid_x[[k]] >= i - window) {
+					temp = c(temp,resid$y$early[[j]])
+				}
+			}
+		}
+		resid_win$x$early   = c(resid_win$x$early,i-(window/2))
+		resid_win$y$early   = c(resid_win$y$early,mean(temp))
+		resid_win$err$early = c(resid_win$err$early,sd(temp))
+		
+		temp = c()
+		for (j in 1:length(resid$x$late)) {
+			this_resid_x = resid$x$late[[j]]
+			for (k in 1:length(this_resid_x)) {
+				if (this_resid_x[[k]] <= i & this_resid_x[[k]] >= i - window) {
+					temp = c(temp,resid$y$late[[j]])
+				}
+			}
+		}
+		resid_win$x$late   = c(resid_win$x$late,i-(window/2))
+		resid_win$y$late   = c(resid_win$y$late,mean(temp))
+		resid_win$err$late = c(resid_win$err$late,sd(temp))
+	}
+	resid_win
+}
+
+boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), notch=T, names, range=1.5) {
+	
+	par(bty='n')
+	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range)
+	print(box.data)
+	for (i in 1:length(data)) {
+		this_data = data[[i]]
+		temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
+		points(jitter(array(0,dim=c(1,length(temp_data))),18)+i,temp_data,col=colors[[i]])
+	}
+}
+
+########################################
+#Misc functions
+########################################
+
 load_results <- function(dirs,file) {
 	results = list()
 	for (i in 1:length(dirs)) {
@@ -731,36 +749,56 @@ trim_args_list <- function(args) {
 	args
 }
 
-write_high_r_rows <- function(result, dir, file=c('early_R_sq.csv','late_R_sq.csv'), min_R_sq = 0.9) {
+write_high_r_rows <- function(result, dir, file=c('early_R_sq.csv','late_R_sq.csv','neg_slope_R_sq.csv'), min_R_sq = 0.9) {
 	if (! file.exists(dir)) {
 		dir.create(dir,recursive=TRUE)
 	}
 	
-	row_nums = c()
-	for (i in 1:length(result$early$R_sq)) {
-		if (is.na(result$early$R_sq[i])) {
-			next
-		}
-		if (result$early$R_sq[i] > min_R_sq) {
-			row_nums = c(row_nums, i)
-		}
-	}
+	row_nums = which(is.finite(result$early$R_sq) & result$early$R_sq > min_R_sq)
 	if (! is.null(row_nums)) {
 		write.table(row_nums,file=file.path(dir,file[1]), row.names=FALSE, col.names=FALSE)
 	}
 	
-	row_nums = c()
-	for (i in 1:length(result$late$R_sq)) {
-		if (is.na(result$late$R_sq[i])) {
-			next
-		}
-		if (result$late$R_sq[i] > min_R_sq) {
-			row_nums = c(row_nums, i)
-		}
-	}
+	row_nums = which(is.finite(result$early$R_sq) & result$late$R_sq > min_R_sq)
 	if (! is.null(row_nums)) {
 		write.table(row_nums,file=file.path(dir,file[2]), row.names=FALSE, col.names=FALSE)
 	}
+	
+	row_nums = which(is.finite(result$early$R_sq) & result$early$R_sq > min_R_sq & result$early$slope < 0)
+	if (! is.null(row_nums)) {
+		write.table(row_nums,file=file.path(dir,file[3]), row.names=FALSE, col.names=FALSE)
+	}
+}
+
+find_mean_change_location_probs <- function(ts) {
+	mean_diffs = array(0,length(ts));
+	for (i in 5:(length(ts)-4)) {
+		if (is.finite(ts[i - 1]) & is.finite(ts[i + 1])) {
+			early = ts[1:i]
+			late = ts[i+1:length(ts)]
+			early = early[is.finite(early)]
+			late = late[is.finite(late)]
+			
+			mean_diffs[i] = mean(late) - mean(early)
+		}
+	}
+	mean_diffs = mean_diffs + min(mean_diffs)
+	prob_seq = mean_diffs/sum(mean_diffs)
+	
+	if (sum(prob_seq) <= 0.99 || sum(prob_seq) >= 1.01) {
+		print(prob_seq)
+		stop("Problem with sum of prob_seq")
+	}
+	
+	prob_seq
+}
+
+gather_datafile_from_dirs <- function (dirs, data_file='Average_adhesion_signal.csv') {
+	exp_data = list()
+	for (k in 1:length(dirs)) {
+		exp_data[[k]] <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
+	}
+	exp_data
 }
 
 ################################################################################
@@ -772,7 +810,13 @@ args <- commandArgs(TRUE)
 if (length(args) != 0) {
 	args <- trim_args_list(args)
 	
-	results = gather_bilinear_models_from_dirs(args, results.file='../intensity_model.Rdata')
+	results = gather_bilinear_models_from_dirs(args, 
+		results.file=file.path('..','intensity_model.Rdata'))
+		
+	results = gather_bilinear_models_from_dirs(args, 
+		data_file='Background_corrected_signal.csv', 
+		results.file=file.path('..','corrected_intensity_model.Rdata'))
+	
 	hold = gather_correlations_from_dirs(args, results, results.file='../corr_model.Rdata')
 	
 	write_high_r_rows(results[[1]],file.path(args[1],'..','for_vis'))
