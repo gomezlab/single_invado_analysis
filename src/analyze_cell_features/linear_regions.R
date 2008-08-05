@@ -716,7 +716,6 @@ boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pi
 	
 	par(bty='n')
 	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range)
-	print(box.data)
 	for (i in 1:length(data)) {
 		this_data = data[[i]]
 		temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
@@ -800,6 +799,19 @@ gather_datafile_from_dirs <- function (dirs, data_file='Average_adhesion_signal.
 	}
 	exp_data
 }
+
+get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
+	left_x_seq = array(left_x,box_num)
+	right_x_seq = array(right_x,box_num)
+	bottom_y_seq = c()
+	top_y_seq = c()
+	
+	for (i in 1:box_num) {
+		bottom_y_seq = c(bottom_y_seq, (top_y - bottom_y)*((i-1)/11)+bottom_y)
+		top_y_seq = c(top_y_seq,(top_y - bottom_y)*(i/11)+bottom_y)
+	}
+	rbind(left_x_seq,bottom_y_seq,right_x_seq,top_y_seq)
+}	
 
 ################################################################################
 # Main Program

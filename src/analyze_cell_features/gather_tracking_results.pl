@@ -286,19 +286,19 @@ sub gather_ad_lineage_properties {
 
     if (grep "Area" eq $_, @available_data_types) {
         $props{Area}         = &gather_prop_seq("Area");
-        $props{largest_area} = &gather_largest_areas($props{Area});
+        $props{largest_area} = &gather_largest_entry($props{Area});
     }
 
     if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
         $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
-        $props{starting_center_dist}      = &gather_first_dist($props{Centroid_dist_from_center});
-        $props{ending_center_dist}        = &gather_last_dist($props{Centroid_dist_from_center});
+        $props{starting_center_dist}      = &gather_first_entry($props{Centroid_dist_from_center});
+        $props{ending_center_dist}        = &gather_last_entry($props{Centroid_dist_from_center});
     }
 
     if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
         $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
-        $props{starting_edge_dist}      = &gather_first_dist($props{Centroid_dist_from_edge});
-        $props{ending_edge_dist}        = &gather_last_dist($props{Centroid_dist_from_edge});
+        $props{starting_edge_dist}      = &gather_first_entry($props{Centroid_dist_from_edge});
+        $props{ending_edge_dist}        = &gather_last_entry($props{Centroid_dist_from_edge});
     }
 
     return %props;
@@ -344,41 +344,41 @@ sub gather_prop_seq {
     return \@prop_vals;
 }
 
-sub gather_largest_areas {
-    my @areas = @{ $_[0] };
+sub gather_largest_entry {
+    my @data = @{ $_[0] };
 
-    my @largest_areas;
-    for my $i (0 .. $#areas) {
+    my @largest_data;
+    for my $i (0 .. $#data) {
         my $largest = 0;
-        for my $j (0 .. $#{ $areas[$i] }) {
-            next if ($areas[$i][$j] eq "NaN");
-            $largest = $areas[$i][$j] if ($largest < $areas[$i][$j]);
+        for my $j (0 .. $#{ $data[$i] }) {
+            next if ($data[$i][$j] eq "NaN");
+            $largest = $data[$i][$j] if ($largest < $data[$i][$j]);
         }
-        push @largest_areas, $largest;
+        push @largest_data, $largest;
     }
-    return \@largest_areas;
+    return \@largest_data;
 }
 
-sub gather_first_dist {
-    my @dists = @{ $_[0] };
+sub gather_first_entry {
+    my @data = @{ $_[0] };
 
-    my @starting_dists;
-    for my $i (0 .. $#dists) {
-        my $first_data_index = (grep $dists[$i][$_] ne "NaN", (0 .. $#{ $dists[$i] }))[0];
-        $starting_dists[$i] = $dists[$i][$first_data_index];
+    my @starting_data;
+    for my $i (0 .. $#data) {
+        my $first_data_index = (grep $data[$i][$_] ne "NaN", (0 .. $#{ $data[$i] }))[0];
+        $starting_data[$i] = $data[$i][$first_data_index];
     }
-    return \@starting_dists;
+    return \@starting_data;
 }
 
-sub gather_last_dist {
-    my @dists = @{ $_[0] };
+sub gather_last_entry {
+    my @data = @{ $_[0] };
 
-    my @res_dists;
-    for my $i (0 .. $#dists) {
-        my $last_data_index = (grep $dists[$i][$_] ne "NaN", (0 .. $#{ $dists[$i] }))[-1];
-        $res_dists[$i] = $dists[$i][$last_data_index];
+    my @last_data;
+    for my $i (0 .. $#data) {
+        my $last_data_index = (grep $data[$i][$_] ne "NaN", (0 .. $#{ $data[$i] }))[-1];
+        $last_data[$i] = $data[$i][$last_data_index];
     }
-    return \@res_dists;
+    return \@last_data;
 }
 
 sub gather_average_ad_sig {
