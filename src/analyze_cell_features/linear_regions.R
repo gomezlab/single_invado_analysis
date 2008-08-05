@@ -9,7 +9,7 @@
 
 gather_bilinear_models <- function(data_set, props, 
 	min_length = 10, col_lims = NA, normed = TRUE, 
-	log.trans = TRUE, boot.samp = NA, save.exp_data = TRUE) {
+	log.trans = TRUE, boot.samp = NA, save.exp_data = TRUE, debug = FALSE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
@@ -36,7 +36,7 @@ gather_bilinear_models <- function(data_set, props,
 		}
 		data_set_frame = data.frame(y = numeric_data_set, x = 1:length(numeric_data_set))
 		
-		if (i %% 100 == 0) {
+		if (i %% 100 == 0 & debug) {
 			print(i)
 		}
 		
@@ -308,7 +308,7 @@ gather_linear_regions.boot <- function(results,
 gather_bilinear_models_from_dirs <- function (dirs, min_length=10, 
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
 	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
-	save.exp_data = TRUE) {
+	save.exp_data = TRUE, debug = FALSE) {
 	
 	results = list()
 	
@@ -317,11 +317,13 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 			next
 		}
 		
-		print(dirs[[k]])
-		
+		if (debug) {
+			print(dirs[[k]])
+		}
+			
 		exp_data <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
 
-		ad_props <- read.table(file.path(dirs[[k]],'../single_lin.csv'), header = TRUE, sep=',');
+		exp_props <- read.table(file.path(dirs[[k]],'../single_lin.csv'), header = TRUE, sep=',');
 		
 		#process the col_lim parameter passed in if values were passed in
 		this_col_lim = NA 
@@ -333,7 +335,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 			}
 		}
 		
-		results[[k]] <- gather_bilinear_models(exp_data, ad_props, 
+		results[[k]] <- gather_bilinear_models(exp_data, exp_props, 
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log.trans = log.trans, 
 							boot.samp = boot.samp, save.exp_data = save.exp_data)
@@ -713,7 +715,6 @@ gather_exp_win_residuals <- function(resid, window) {
 }
 
 boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), notch=T, names, range=1.5) {
-	
 	par(bty='n')
 	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range)
 	for (i in 1:length(data)) {
@@ -734,7 +735,7 @@ load_results <- function(dirs,file) {
 		if (file.exists(this_file)) {
 			load(file.path(dirs[i],file))
 			results[[i]] = this_result
-		}	
+		}
 	}
 	results
 }
@@ -822,14 +823,14 @@ args <- commandArgs(TRUE)
 if (length(args) != 0) {
 	args <- trim_args_list(args)
 	
-	results = gather_bilinear_models_from_dirs(args, 
+	ave_results = gather_bilinear_models_from_dirs(args, 
 		results.file=file.path('..','intensity_model.Rdata'))
 		
-	results = gather_bilinear_models_from_dirs(args, 
+	corr_results = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
 		results.file=file.path('..','corrected_intensity_model.Rdata'))
 	
-	hold = gather_correlations_from_dirs(args, results, results.file='../corr_model.Rdata')
+	hold = gather_correlations_from_dirs(args, ave_results, results.file='../corr_model.Rdata')
 	
-	write_high_r_rows(results[[1]],file.path(args[1],'..','for_vis'))
+	write_high_r_rows(ave_results[[1]],file.path(args[1],'..','for_vis'))
 }
