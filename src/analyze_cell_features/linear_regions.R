@@ -714,19 +714,36 @@ gather_exp_win_residuals <- function(resid, window) {
 	resid_win
 }
 
-boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), notch=T, names, range=1.5) {
+boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), notch=T, names, range=1.5,...) {
 	par(bty='n')
-	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range)
+	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range,...)
 	for (i in 1:length(data)) {
 		this_data = data[[i]]
 		temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
-		points(jitter(array(0,dim=c(1,length(temp_data))),18)+i,temp_data,col=colors[[i]])
+		points(jitter(array(0,dim=c(1,length(temp_data))),10)+i,temp_data,col=colors[[i]])
 	}
 }
 
 ########################################
 #Misc functions
 ########################################
+
+filter_results <- function(results,needed_R_sq=0.9) {
+	for (i in 1:length(results)) {
+		res = results[[i]]
+		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq
+		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status
+	
+		points$early_slope = c(points$early_slope,res$early$slope[early_filt])
+		points$late_slope = c(points$late_slope,res$late$slope[late_filt])		
+		points$starting_dist = c(points$starting_dist,res$exp_props$starting_edge_dist[early_filt])
+		points$starting_center_dist = c(points$starting_center_dist,res$exp_props$starting_center_dist[early_filt])
+
+		points$ending_dist = c(points$ending_dist,res$exp_props$ending_edge_dist[late_filt])
+		points$ending_center_dist = c(points$ending_dist,res$exp_props$ending_center_dist[late_filt])
+	}
+	points
+}
 
 load_results <- function(dirs,file) {
 	results = list()
