@@ -81,7 +81,7 @@ sub collect_ad_props {
 sub filter_tracking_matrix {
     my %matrix_set;
 
-    for my $required_longevity (5) {
+    for my $required_longevity (5,20) {
         for my $i (0 .. $#{ $lin_props{'longevity'} }) {
             my $this_longev = $lin_props{'longevity'}[$i];
             if (   $this_longev >= $required_longevity
@@ -115,8 +115,10 @@ sub filter_tracking_matrix {
             $file_name =~ /$R_sq_folder\/(.*).csv/;
 
             my $parser = Text::CSV::Simple->new;
-            my @data = $parser->read_file($file_name);
-            @{$matrix_set{$1}} = map $tracking_mat[$_->[0] - 1], (@data);
+            eval {
+                my @data = $parser->read_file($file_name);
+                @{$matrix_set{$1}} = map $tracking_mat[$_->[0] - 1], (@data);
+            };
         }
     }
 

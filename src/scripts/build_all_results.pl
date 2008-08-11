@@ -19,8 +19,14 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", 
+                  "skip_vis|skip_visualization",
+                  "only_vis|only_visualization");
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
+die "The skip visualization option (skip_vis) can't be specified without the " .
+  "emerald option (emerald)" if $opt{skip_vis} && not($opt{emerald});
+die "Only one of the options skip_vis or only_vis can be selected." 
+  if $opt{skip_vis} && $opt{only_vis};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
@@ -31,7 +37,7 @@ my %cfg = ParseConfig(\%opt);
 $t1 = new Benchmark;
 $| = 1;
 
-my @config_files = sort <$cfg{data_folder}/time_series_*/*.cfg>;
+my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
 @config_files = ($config_files[0]) if $opt{debug};
 my @data_folders = map catfile(dirname($_),"run.txt"), @config_files;
 my @time_series_list = map { /(time_series_\d*)/; $1; } @config_files;
@@ -61,11 +67,16 @@ if ($opt{emerald}) {
        [
         ["../analyze_cell_features", "./filter_tracking_matrix.pl"],
        ],
-       [
-        ["../visualize_cell_features", "./collect_visualizations.pl"],
-       ],
       );
-
+    if (not($opt{skip_vis}) || $opt{only_vis}) {
+        push @overall_command_seq, 
+          [
+           ["../visualize_cell_features", "./collect_visualizations.pl"],
+          ];
+        if ($opt{only_vis}) {
+           @overall_command_seq = @overall_command_seq[-1]; 
+        }
+    } 
     
     for (@overall_command_seq) {
         my @command_seq = @{$_};

@@ -191,6 +191,8 @@ in a single frame
 =item * config_only: only write the MATLAB config files out, do not execute the
 MATLAB program
 
+=item * emerald: build and execute long commands throught the LSF job system
+
 =back
 
 =head1 EXAMPLES

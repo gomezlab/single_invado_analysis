@@ -59,7 +59,7 @@ if (exist(bounding_box_file,'file'))
     b_box = load(bounding_box_file);
 else
     b_box = find_time_series_bbox(I_folder);
-    csvwrite(b_box_file,b_box);
+    csvwrite(bounding_box_file,b_box);
 end
 
 b_box(1:2) = b_box(1:2) - image_padding_min;
