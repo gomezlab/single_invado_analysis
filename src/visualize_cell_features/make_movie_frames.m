@@ -91,14 +91,12 @@ for i = 1:max_image_num
         continue;
     end
 
-    i_seen = i_seen + 1;
-
-    if (i_p.Results.debug && i_seen > 1000); continue; end
-
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
     padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
-
+    
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
+    
+    i_seen = i_seen + 1; 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input adhesion image
@@ -119,7 +117,8 @@ for i = 1:max_image_num
     %numbers are missing in the tracking matrix column
     if (length(ad_nums) ~= length(unique(ad_label)))
         ad_label_temp = zeros(size(ad_label));
-        for j=1:length(ad_nums)
+        for j=1:length(ad_nums)            
+            assert(any(any(ad_label == ad_nums(j))), 'Error: can''t find ad num %d in image number %d.',ad_nums(j),padded_i_num)
             ad_label_temp(ad_label == ad_nums(j)) = j;
         end
         ad_label = ad_label_temp;
@@ -196,7 +195,7 @@ for i = 1:max_image_num
     else
         label_frames{1} = ad_label_perim;
     end
-
+    
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
         highlighted_ghost_unique = zeros(size(orig_i));
@@ -241,7 +240,7 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
-    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',padded_i_num);
     this_cmap = zeros(length(cmap_nums),3);
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
@@ -250,7 +249,7 @@ for i = 1:max_image_num
 
     %Build the birth time highlighted image
     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
-    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time image %d',i);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time image %d',padded_i_num);
     this_cmap = zeros(length(cmap_nums),3);
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
