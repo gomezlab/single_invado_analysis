@@ -714,7 +714,10 @@ gather_exp_win_residuals <- function(resid, window) {
 	resid_win
 }
 
-boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), notch=T, names, range=1.5,...) {
+boxplot_with_points <- function(data, 
+	colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), 
+	notch=F, names, range=1.5, ...) {
+		
 	par(bty='n')
 	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range,...)
 	for (i in 1:length(data)) {
@@ -729,18 +732,31 @@ boxplot_with_points <- function(data, colors=c('red','green','yellow','blue','pi
 ########################################
 
 filter_results <- function(results,needed_R_sq=0.9) {
+	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
 		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq
 		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status
 	
 		points$early_slope = c(points$early_slope,res$early$slope[early_filt])
-		points$late_slope = c(points$late_slope,res$late$slope[late_filt])		
-		points$starting_dist = c(points$starting_dist,res$exp_props$starting_edge_dist[early_filt])
-		points$starting_center_dist = c(points$starting_center_dist,res$exp_props$starting_center_dist[early_filt])
-
-		points$ending_dist = c(points$ending_dist,res$exp_props$ending_edge_dist[late_filt])
-		points$ending_center_dist = c(points$ending_dist,res$exp_props$ending_center_dist[late_filt])
+		points$late_slope = c(points$late_slope,res$late$slope[late_filt])
+		
+		points$ind_exp[[i]] = list(early_slope = res$early$slope[early_filt],
+								   late_slope = res$late$slope[late_filt])
+		
+		if (any(names(res$exp_props) == 'starting_edge_dist')) {
+			points$starting_edge_dist = c(points$starting_edge_dist,res$exp_props$starting_edge_dist[early_filt])
+		}
+		if (any(names(res$exp_props) == 'starting_center_dist')) {
+			points$starting_center_dist = c(points$starting_center_dist,res$exp_props$starting_center_dist[early_filt])
+		}
+		
+		if (any(names(res$exp_props) == 'ending_edge_dist')) {
+			points$ending_edge_dist = c(points$ending_edge_dist,res$exp_props$ending_edge_dist[late_filt])
+		}
+		if (any(names(res$exp_props) == 'ending_center_dist')) {
+			points$ending_center_dist = c(points$ending_center_dist,res$exp_props$ending_center_dist[late_filt])
+		}
 	}
 	points
 }

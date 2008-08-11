@@ -81,7 +81,7 @@ sub collect_ad_props {
 sub filter_tracking_matrix {
     my %matrix_set;
 
-    for my $required_longevity (5,20) {
+    for my $required_longevity (split(/\s+/,$cfg{required_longevity_filter})) {
         for my $i (0 .. $#{ $lin_props{'longevity'} }) {
             my $this_longev = $lin_props{'longevity'}[$i];
             if (   $this_longev >= $required_longevity

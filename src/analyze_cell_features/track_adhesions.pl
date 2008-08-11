@@ -249,6 +249,7 @@ sub make_tracking_mat {
         #STEP 1
         #Start the tracking matrix, if this is the first time throught the loop
         &initialize_tracking_mat($data_keys[0]) if $_ == 0;
+        &check_tracking_mat_integrity if $_ == 0;
 
         #Begin tracking
         print "Image #: $i_num - " if $opt{debug};
@@ -347,7 +348,6 @@ sub track_live_adhesions {
         }
 
         my $tracking_guess;
-
         #Case 1 and 2
         if ($high_p_sim > 0) {
             my @p_sim_close_ad_nums = grep {
@@ -357,19 +357,20 @@ sub track_live_adhesions {
                     0;
                 }
             } (0 .. $#p_sim_to_next_ads);
-
-            my @sorted_by_dist = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
+            
+            my @close_p_sim_by_dist_indexes = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
 
             if (scalar(@p_sim_close_ad_nums) > 1) {
+                foreach my $ad_num (@close_p_sim_by_dist_indexes[1..(scalar(@close_p_sim_by_dist_indexes) - 1)]) {
+                    $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
+                }
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
-                if ($p_sim_to_next_ads[ $sorted_p_sim_indexes[0] ] != $p_sim_to_next_ads[ $sorted_p_sim_indexes[1] ]) {
-                    if ($sorted_by_dist[0] != $sorted_p_sim_indexes[0]) {
-                        $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
-                    }
+                if ($close_p_sim_by_dist_indexes[0] != $sorted_p_sim_indexes[0]) {
+                    $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
                 }
             }
 
-            $tracking_guess = $sorted_by_dist[0];
+            $tracking_guess = $close_p_sim_by_dist_indexes[0];
         } else {
 
             #Case 3
@@ -503,7 +504,7 @@ sub detect_new_adhesions {
     my $lineage_length    = $#{ $tracking_mat[0] };
 
     for my $i (0 .. $#tracking_mat) {
-        next if ($tracking_mat[$i][$lineage_length] == -1);
+        next if ($tracking_mat[$i][$lineage_length] <= -1);
         $expected_ad_nums{ $tracking_mat[$i][$lineage_length] } = 1;
     }
 
@@ -518,6 +519,12 @@ sub detect_new_adhesions {
             for (0 .. $lineage_length - 1) {
                 push @temp, -1;
             }
+            #Check to see if this unassigned adhesion was part of a split birth,
+            #if so replace the last entry in the tracking matrix with the
+            #adhesion number that it merged from + 1 times -1
+            if (defined $tracking_facts{$i_num}{split_birth}[$i] && $tracking_facts{$i_num}{split_birth}[$i] >= 0) {
+                $temp[$#temp] = -1*($tracking_facts{$i_num}{split_birth}[$i] + 2);
+            }
             push @temp,         $i;
             push @tracking_mat, \@temp;
         }
@@ -525,21 +532,26 @@ sub detect_new_adhesions {
 }
 
 sub check_tracking_mat_integrity {
-    my $num_ad_lineages = $#tracking_mat;
-    my $max_size        = $#{ $tracking_mat[0] };
+    if (grep $#{$tracking_mat[$_]} != $#{$tracking_mat[0]}, (0 .. $#tracking_mat)) {
+        die "Tracking matrix entries not at same length on cycle ", $#{$tracking_mat[0]};
+    }
 
-    for my $i (0 .. $num_ad_lineages) {
-        if ($#{ $tracking_mat[$i] } > $max_size) {
-            $max_size = $#{ $tracking_mat[$i] };
+    my @assigned_ad_nums = map {
+        if ($tracking_mat[$_][-1] >= 0) {
+            $tracking_mat[$_][-1];
+        } else {
+            ();
+        }
+    } (0 .. $#tracking_mat);
+    @assigned_ad_nums = sort {$a <=> $b} @assigned_ad_nums;
+    
+    for (0 .. $#assigned_ad_nums) {
+        if ($_ != $assigned_ad_nums[$_]) {
+            print Dumper(@assigned_ad_nums);
+            print "$_ => $assigned_ad_nums[$_]\n";
+            die "Not all ad numbers filled in on cycle ",  $#{$tracking_mat[0]} + 1;
         }
     }
-
-    my $prob = 0;
-    for my $i (0 .. $num_ad_lineages) {
-        $prob = 1 if $#{ $tracking_mat[$i] } != $max_size;
-    }
-
-    warn "Problem with tracking matrix." if $prob;
 }
 
 #######################################
