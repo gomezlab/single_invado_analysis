@@ -25,7 +25,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "emerald|e", "emerald_stdout");
+GetOptions(\%opt, "cfg|c=s", "debug|d", "fa_debug", "folder=s", "emerald|e");
+
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my $ad_conf = new Config::Adhesions(\%opt);
@@ -36,29 +37,41 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
-my @focal_image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+my @image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
 
 if ($opt{debug}) {
-    if (scalar(@focal_image_files) > 1) {
-        print "Adhesion files found: $focal_image_files[0] - $focal_image_files[$#focal_image_files]\n";
+    if (scalar(@image_files) > 1) {
+        print "Focal image files found: $image_files[0] - $image_files[$#image_files]\n";
+    } elsif ( scalar(@image_files) == 0 ) {
+        warn "Couldn't find any focal image files in $cfg{individual_results_folder} subfolders\n\n";
     } else {
-        print "Adhesion file found: $focal_image_files[0]\n";
+        print "Focal image file found: $image_folders[0]\n";
     }
 }
 
-my @matlab_code = &create_matlab_code;
+my @matlab_code;
+if (exists($opt{folder})) {
+    @matlab_code = &create_single_matlab_command;
+} elsif ($opt{emerald}) {
+} else {
+    @matlab_code = &create_all_matlab_commands;
+}
 
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
-mkpath($error_folder);
 
+mkpath($error_folder);
 my %emerald_opt = ("folder", $error_folder);
-if ($opt{emerald}) {
+if (exists($opt{folder})) {
+    my @command = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@command);
+} elsif ($opt{emerald}) {
+    my @command;
     for (sort @image_folders) {
-        my @command = "./collect_fa_image.pl -cfg $opt{cfg} -folder $_\n";
-        @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
-        &Emerald::send_LSF_commands(\@command);
+        push @command, "$0 -cfg $opt{cfg} -folder $_\n";
     }
+    @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
+    &Emerald::send_LSF_commands(\@command);
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }
@@ -67,10 +80,10 @@ if ($opt{emerald}) {
 #Functions
 ################################################################################
 
-sub create_matlab_code {
+sub create_all_matlab_commands {
     my @matlab_code;
 
-    foreach my $file_name (@focal_image_files) {
+    foreach my $file_name (@image_files) {
         my $i_num;
         if ($file_name =~ /$cfg{individual_results_folder}\/(\d+)\//) {
             $i_num = $1;
@@ -78,8 +91,6 @@ sub create_matlab_code {
             die "Skipping file: $file_name\n", "Unable to find image number.";
             next;
         }
-        next if ($i_num > 1 && $opt{fa_debug});
-
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
         my $cell_mask = catfile(dirname($file_name), "cell_mask.png");
@@ -97,6 +108,31 @@ sub create_matlab_code {
     }
 
     return @matlab_code;
+}
+
+sub create_single_matlab_command {
+    my $command;
+
+    my @image_files = grep -e $_, <$opt{folder}/$cfg{adhesion_image_file}>;
+    
+    if (scalar(@image_files) == 0) {
+    } elsif (scalar(@image_files) > 1) {
+       die "More than one image file found (". scalar(@image_files) . "), quiting";
+    } else {
+        my $cell_mask = catfile(dirname($image_files[0]), $cfg{cell_mask_file});
+        
+        my $extra_opt = "";
+        if (defined $cfg{filter_thresh}) {
+            $extra_opt .= ",'filter_thresh',$cfg{filter_thresh}";
+        }
+
+        if (-e $cell_mask) {
+            $command = "find_focal_adhesions('$image_files[0]','cell_mask','$cell_mask'$extra_opt)\n";
+        } else {
+            $command = "find_focal_adhesions('$image_files[0]'$extra_opt)\n";
+        }
+    }
+    return $command;
 }
 
 ################################################################################
@@ -136,9 +172,6 @@ Optional parameter(s):
 
 =item * emerald: submit jobs through the emerald queuing system
 
-=item * fa_debug: only execute the focal adhesion finding MATLAB code for one of
-the images
-
 =back
 
 =head1 EXAMPLES
@@ -148,10 +181,6 @@ collect_fa_image_set.pl -cfg FA_config
 OR
 
 collect_fa_image_set.pl -cfg FA_config -d
-
-OR
-
-collect_fa_image_set.pl -c FA_config -debug -fa_debug
 
 =head1 SEE ALSO
 
