@@ -10,6 +10,7 @@ use threads;
 use threads::shared;
 use File::Spec::Functions;
 use File::Basename;
+use File::Find;
 use Benchmark;
 use Getopt::Long;
 use Cwd;
@@ -22,9 +23,12 @@ $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", 
                   "skip_vis|skip_visualization",
                   "only_vis|only_visualization") or die;
+
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
+
 die "The skip visualization option (skip_vis) can't be specified without the " .
   "emerald option (emerald)" if $opt{skip_vis} && not($opt{emerald});
+
 die "Only one of the options skip_vis or only_vis can be selected." 
   if $opt{skip_vis} && $opt{only_vis};
 
@@ -39,8 +43,7 @@ $| = 1;
 
 my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
 @config_files = ($config_files[0]) if $opt{debug};
-my @data_folders = map catfile(dirname($_),"run.txt"), @config_files;
-my @time_series_list = map { /(time_series_\d*)/; $1; } @config_files;
+my @runtime_files = map catfile(dirname($_),"run.txt"), @config_files;
 
 if ($opt{emerald}) {
     my $starting_dir = getcwd;
@@ -50,7 +53,7 @@ if ($opt{emerald}) {
         ["../find_cell_features", "./setup_results_folder.pl"],
        ],
        [
-        ["../find_cell_features", "./collect_mask_set.pl"],
+        ["../find_cell_features", "./collect_mask_image_set.pl"],
        ],
        [
         ["../find_cell_features", "./collect_fa_image_set.pl"],
@@ -84,6 +87,7 @@ if ($opt{emerald}) {
         &execute_command_seq(\@command_seq, $starting_dir);
         &wait_till_LSF_jobs_finish;  
     }
+    find(\&remove_unimportant_errors, ($cfg{results_folder}));
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
@@ -91,7 +95,7 @@ if ($opt{emerald}) {
     
     my @processes :shared;
 
-    @processes = map { "nice -20 ./build_results.pl -cfg $config_files[$_] -d > $data_folders[$_]" } (0..$#config_files);
+    @processes = map { "nice -20 ./build_results.pl -cfg $config_files[$_] -d > $runtime_files[$_]" } (0..$#config_files);
 
     my @started;
     while (@processes) {
@@ -156,6 +160,28 @@ sub execute_command_seq {
             system $config_command;
             chdir $starting_dir;
         }
+    }
+}
+
+sub remove_unimportant_errors {
+    if ($File::Find::name =~ /error.txt/) {
+        open INPUT, "$_" or die "$!";
+        my @errors = <INPUT>;
+        close INPUT;
+
+        my @cleaned_errors;
+        foreach my $line (@errors) {
+            if ($line =~ /Pending job threshold reached./) {
+                next;
+            }
+            push @cleaned_errors, $line;
+        }
+        
+        unlink $_;
+        
+        open OUTPUT, ">$_";
+        print OUTPUT @cleaned_errors;
+        close OUTPUT;
     }
 }
 
