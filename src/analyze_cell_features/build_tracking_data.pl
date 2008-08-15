@@ -28,7 +28,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{output} = "data.stor";
-GetOptions(\%opt, "cfg|config=s", "debug|d", "output|o=s", "image_num=s", "emerald|e");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "output|o=s", "image_num=s", "emerald|e") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 

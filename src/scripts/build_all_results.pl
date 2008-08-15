@@ -21,7 +21,7 @@ my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", 
                   "skip_vis|skip_visualization",
-                  "only_vis|only_visualization");
+                  "only_vis|only_visualization") or die;
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 die "The skip visualization option (skip_vis) can't be specified without the " .
   "emerald option (emerald)" if $opt{skip_vis} && not($opt{emerald});

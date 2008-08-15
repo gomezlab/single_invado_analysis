@@ -27,7 +27,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "emerald|e");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "emerald|e") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 

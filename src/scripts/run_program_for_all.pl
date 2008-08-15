@@ -19,7 +19,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{extra} = "";
-GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug");
+GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug") or die;
 
 die "Can't find cfg file ($opt{cfg}) specified on the command line" if not(exists $opt{cfg});
 die "Can't find program to execute on the command line" if not(exists $opt{program});
