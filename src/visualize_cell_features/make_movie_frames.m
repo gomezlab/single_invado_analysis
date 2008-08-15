@@ -47,7 +47,6 @@ for i = 1:size(I_folder_dir)
     if (exist(poss_sample_image,'file') && length(i_size) == 1)
         i_size = size(imread(poss_sample_image));
     end
-
 end
 
 tracking_seq = load(tracking_seq_file) + 1;
@@ -96,7 +95,7 @@ for i = 1:max_image_num
     
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
     
-    i_seen = i_seen + 1; 
+    i_seen = i_seen + 1;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input adhesion image
@@ -134,7 +133,7 @@ for i = 1:max_image_num
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Build the color map
+    %Build the matrices translating number to colormap
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     search_ascending = 1;
     for j = 1:size(tracking_seq,1)
@@ -238,9 +237,10 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Other images
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
-    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',padded_i_num);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',padded_i_num);
     this_cmap = zeros(length(cmap_nums),3);
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
@@ -249,7 +249,7 @@ for i = 1:max_image_num
 
     %Build the birth time highlighted image
     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
-    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time image %d',padded_i_num);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in birth time image %d',padded_i_num);
     this_cmap = zeros(length(cmap_nums),3);
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
