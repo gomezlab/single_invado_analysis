@@ -91,10 +91,11 @@ for i = 1:max_image_num
     end
 
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
-    padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
-    
+
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
-    
+
+    padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
+
     i_seen = i_seen + 1;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,24 +110,13 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
     ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
-
-    %some tracking matrices do not include all the adhesions, but much
-    %of the subsequent code assumes that all ad numbers between 1 and the
-    %number of adhesions are present, so relabel the adhesions where
-    %numbers are missing in the tracking matrix column
-    if (length(ad_nums) ~= length(unique(ad_label)))
-        ad_label_temp = zeros(size(ad_label));
-        for j=1:length(ad_nums)            
-            assert(any(any(ad_label == ad_nums(j))), 'Error: can''t find ad num %d in image number %d.',ad_nums(j),padded_i_num)
-            ad_label_temp(ad_label == ad_nums(j)) = j;
-        end
-        ad_label = ad_label_temp;
-        ad_nums = unique(ad_label);
-        if (ad_nums(1) == 0), ad_nums = ad_nums(2:end); end
+    for j = 1:length(ad_nums)
+        this_num = ad_nums(j);
+        assert(any(any(ad_label == this_num)), 'Error: can''t find ad num %d in image number %d.',this_num,padded_i_num)
     end
 
     ad_label_perim = zeros(size(orig_i,1),size(orig_i,2));
-    for j=1:max(ad_label(:))
+    for j = 1:max(ad_label(:))
         this_ad = zeros(size(orig_i,1),size(orig_i,2));
         this_ad(ad_label == j) = 1;
         ad_label_perim(bwperim(this_ad)) = j;
@@ -135,7 +125,6 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Build the matrices translating number to colormap
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    search_ascending = 1;
     for j = 1:size(tracking_seq,1)
 
         %if the adhesion idenfied by the current lineage is not alive, skip
@@ -148,29 +137,17 @@ for i = 1:max_image_num
 
         %Unique lineage colors
         if (lineage_to_cmap(j) == 0)
-            unique_used_colors = unique(lineage_to_cmap(tracking_seq(:,i_seen) > 0));
+            used_c_nums = sort(lineage_to_cmap(tracking_seq(:,i_seen) > 0));
+            used_c_nums = used_c_nums(used_c_nums ~= 0);
 
-            if (search_ascending)
-                search_seq = 1:max_live_adhesions;
-                search_ascending = 0;
-            else
-                search_seq = max_live_adhesions:-1:1;
-                search_ascending = 1;
-            end
+            taken_nums = zeros(1,max_live_adhesions);
+            taken_nums(used_c_nums) = 1;
+            taken_dists = bwdist(taken_nums);
 
-            poss_color = 0;
-            for k = search_seq
-                if (not(any(find(unique_used_colors == k))))
-                    poss_color = k;
-                    break;
-                end
-            end
-
-            if (not(poss_color))
-                warning('Matlab:adColor',['Could not find a unique color for adhesion lineage #: ', num2str(j)])
-                lineage_to_cmap(j) = 1;
-            else
-                lineage_to_cmap(j) = poss_color;
+            try
+                lineage_to_cmap(j) = find(taken_dists == max(taken_dists),1,'first');
+            catch
+                assert(isempty(find(taken_dists == max(taken_dists),1,'first')), 'Error: could not find a possible color number in image number %d',padded_i_num);
             end
         end
     end
@@ -178,6 +155,7 @@ for i = 1:max_image_num
     %Make sure all the live adhesions have had a number assigned to their
     %lineage
     assert(all(lineage_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
+    assert(all(birth_time_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Adhesion Ghost Images
@@ -189,59 +167,74 @@ for i = 1:max_image_num
         if (frame_size_count > old_frames_count), frame_size_count = old_frames_count; end
         for j = frame_size_count:-1:1
             label_frames{j + 1} = label_frames{j};
+            label_frames_filled{j + 1} = label_frames_filled{j};
         end
         label_frames{1} = ad_label_perim;
+        label_frames_filled{1} = ad_label;
     else
         label_frames{1} = ad_label_perim;
+        label_frames_filled{1} = ad_label;
     end
-    
+
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
         highlighted_ghost_unique = zeros(size(orig_i));
         highlighted_ghost_time = zeros(size(orig_i));
+
+        highlighted_ghost_unique_filled = zeros(size(orig_i));
+        highlighted_ghost_time_filled = zeros(size(orig_i));
         for m=size(label_frames,2):-1:1
             this_i_num = i_seen - m + 1;
             labels = label_frames{m};
+            labels_filled = label_frames_filled{m};
 
-            these_ad_nums = unique(labels);
+            these_ad_nums = sort(tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num));
             if (these_ad_nums(1) == 0), these_ad_nums = these_ad_nums(2:end); end
 
             mix_percent = (size(label_frames,2) - m + 1)/size(label_frames,2);
 
             cmap_nums = lineage_to_cmap(tracking_seq(:,this_i_num) > 0);
-            assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
-            this_cmap = zeros(length(cmap_nums),3);
+            assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique color ghost image creation %d',this_i_num);
+            this_cmap = zeros(max(labels(:)),3);
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
             end
             highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,labels,'color_map',this_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,labels_filled,'color_map',this_cmap,'mix_percent',mix_percent);
 
             cmap_nums = birth_time_to_cmap(tracking_seq(:,this_i_num) > 0);
-            assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique lineage numbers image %d',i);
-            this_cmap = zeros(length(cmap_nums),3);
+            assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time color ghost image creation %d',this_i_num);
+            this_cmap = zeros(max(labels(:)),3);
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = time_cmap(cmap_nums(j),:);
             end
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',this_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,labels_filled,'color_map',this_cmap,'mix_percent',mix_percent);
         end
         highlighted_ghost_unique = highlighted_ghost_unique(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         highlighted_ghost_time = highlighted_ghost_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+        highlighted_ghost_unique_filled = highlighted_ghost_unique_filled(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+        highlighted_ghost_time_filled = highlighted_ghost_time_filled(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         if (exist('pixel_size','var'))
             highlighted_ghost_unique = draw_scale_bar(highlighted_ghost_unique,pixel_size);
             highlighted_ghost_time = draw_scale_bar(highlighted_ghost_time,pixel_size);
+            highlighted_ghost_unique_filled = draw_scale_bar(highlighted_ghost_unique_filled,pixel_size);
+            highlighted_ghost_time_filled = draw_scale_bar(highlighted_ghost_time_filled,pixel_size);
         end
         imwrite(highlighted_ghost_unique,fullfile(out_path,'ghost_uni.png'));
         imwrite(highlighted_ghost_time,fullfile(out_path,'ghost_time.png'));
+        imwrite(highlighted_ghost_unique_filled,fullfile(out_path,'ghost_uni_filled.png'));
+        imwrite(highlighted_ghost_time_filled,fullfile(out_path,'ghost_time_filled.png'));
     end
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Other images
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',padded_i_num);
-    this_cmap = zeros(length(cmap_nums),3);
+    this_cmap = zeros(max(ad_label(:)),3);
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
     end
@@ -250,7 +243,7 @@ for i = 1:max_image_num
     %Build the birth time highlighted image
     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in birth time image %d',padded_i_num);
-    this_cmap = zeros(length(cmap_nums),3);
+    this_cmap = zeros(max(ad_label(:)),3);
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
     end
