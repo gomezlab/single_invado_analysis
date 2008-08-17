@@ -155,7 +155,7 @@ for i = 1:max_image_num
     %Make sure all the live adhesions have had a number assigned to their
     %lineage
     assert(all(lineage_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
-    assert(all(birth_time_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning unique color codes');
+    assert(all(birth_time_to_cmap(tracking_seq(:,i_seen) > 0) > 0), 'Error in assigning birth time color codes');
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Adhesion Ghost Images
@@ -188,8 +188,7 @@ for i = 1:max_image_num
             labels = label_frames{m};
             labels_filled = label_frames_filled{m};
 
-            these_ad_nums = sort(tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num));
-            if (these_ad_nums(1) == 0), these_ad_nums = these_ad_nums(2:end); end
+            these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
 
             mix_percent = (size(label_frames,2) - m + 1)/size(label_frames,2);
 
@@ -238,6 +237,11 @@ for i = 1:max_image_num
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
     end
+    test_cmap = zeros(max(ad_label(:)),3);
+    test_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
+    
+    assert(all(all(this_cmap == test_cmap)), 'Error: testing unique color cmap broken, image %d',padded_i_num);
+    
     highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     %Build the birth time highlighted image
@@ -247,6 +251,11 @@ for i = 1:max_image_num
     for j=1:length(cmap_nums)
         this_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
     end
+    test_cmap = zeros(max(ad_label(:)),3);
+    test_cmap(ad_nums,:) = time_cmap(cmap_nums,:);
+
+    assert(all(all(this_cmap == test_cmap)), 'Error: testing unique color cmap broken, image %d',padded_i_num);
+    
     highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
