@@ -51,6 +51,8 @@ end
 
 tracking_seq = load(tracking_seq_file) + 1;
 
+ghost_frames_count = 1000;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find edges of image data in adhesion images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,8 +84,6 @@ time_cmap = jet(size(tracking_seq,2));
 birth_time_to_cmap = zeros(size(tracking_seq,1),1);
 
 i_seen = 0;
-
-old_frames_count = 1000;
 
 for i = 1:max_image_num
     if (i_seen + 1 > size(tracking_seq,2))
@@ -120,6 +120,10 @@ for i = 1:max_image_num
         this_ad = zeros(size(orig_i,1),size(orig_i,2));
         this_ad(ad_label == j) = 1;
         ad_label_perim(bwperim(this_ad)) = j;
+    end
+
+    if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
+        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,19 +166,23 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %Save the label matrices
-    if (exist('label_frames','var'))
-        frame_size_count = size(label_frames,2);
-        if (frame_size_count > old_frames_count), frame_size_count = old_frames_count; end
+    if (exist('labels','var'))
+        frame_size_count = size(labels,2);
+        if (frame_size_count >= ghost_frames_count), frame_size_count = ghost_frames_count - 1; end
         for j = frame_size_count:-1:1
-            label_frames{j + 1} = label_frames{j};
-            label_frames_filled{j + 1} = label_frames_filled{j};
+            labels(j+1).ad_perim = labels(j).ad_perim;
+            labels(j+1).ad_filled = labels(j).ad_filled;
+            labels(j+1).edge = labels(j).edge;
         end
-        label_frames{1} = ad_label_perim;
-        label_frames_filled{1} = ad_label;
+        labels(1).ad_perim = ad_label_perim;
+        labels(1).ad_filled = ad_label;
+        labels(1).edge = cell_edge;
     else
-        label_frames{1} = ad_label_perim;
-        label_frames_filled{1} = ad_label;
+        labels(1).ad_perim = ad_label_perim;
+        labels(1).ad_filled = ad_label;
+        labels(1).edge = cell_edge;
     end
+    size(labels)
 
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
@@ -183,32 +191,42 @@ for i = 1:max_image_num
 
         highlighted_ghost_unique_filled = zeros(size(orig_i));
         highlighted_ghost_time_filled = zeros(size(orig_i));
-        for m=size(label_frames,2):-1:1
+        for m=size(labels,2):-1:1
             this_i_num = i_seen - m + 1;
-            labels = label_frames{m};
-            labels_filled = label_frames_filled{m};
+            this_ad_perim = labels(m).ad_perim;
+            this_ad_filled = labels(m).ad_filled;
+            this_edge = labels(m).edge;
 
             these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
 
-            mix_percent = (size(label_frames,2) - m + 1)/size(label_frames,2);
+            mix_percent = (size(labels,2) - m + 1)/size(labels,2);
 
+            %Unique colored adhesion lineage image drawing
             cmap_nums = lineage_to_cmap(tracking_seq(:,this_i_num) > 0);
             assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique color ghost image creation %d',this_i_num);
-            this_cmap = zeros(max(labels(:)),3);
+            this_cmap = zeros(max(this_ad_perim(:)),3);
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,labels,'color_map',this_cmap,'mix_percent',mix_percent);
-            highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,labels_filled,'color_map',this_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
+            highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
 
+            highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
+            highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
+
+            %Birth time colored adhesion lineage image drawing
             cmap_nums = birth_time_to_cmap(tracking_seq(:,this_i_num) > 0);
             assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time color ghost image creation %d',this_i_num);
-            this_cmap = zeros(max(labels(:)),3);
+            this_cmap = zeros(max(this_ad_perim(:)),3);
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = time_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,labels,'color_map',this_cmap,'mix_percent',mix_percent);
-            highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,labels_filled,'color_map',this_cmap,'mix_percent',mix_percent);
+            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
+            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
+
+            highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
+            highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
+
         end
         highlighted_ghost_unique = highlighted_ghost_unique(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         highlighted_ghost_time = highlighted_ghost_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
@@ -239,9 +257,9 @@ for i = 1:max_image_num
     end
     test_cmap = zeros(max(ad_label(:)),3);
     test_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
-    
+
     assert(all(all(this_cmap == test_cmap)), 'Error: testing unique color cmap broken, image %d',padded_i_num);
-    
+
     highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     %Build the birth time highlighted image
@@ -255,7 +273,7 @@ for i = 1:max_image_num
     test_cmap(ad_nums,:) = time_cmap(cmap_nums,:);
 
     assert(all(all(this_cmap == test_cmap)), 'Error: testing unique color cmap broken, image %d',padded_i_num);
-    
+
     highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))

@@ -54,7 +54,7 @@ for j = 1:size(I,1)
         
         assert(length(this_cmap) == size(high_image,3),'Error: wrong number of entries in color map');
         for l = 1:size(high_image,3)
-            high_image(j,k,l) = this_cmap(l)*i_p.Results.mix_percent;% + high_image(j,k,l)*(1-i_p.Results.mix_percent);
+            high_image(j,k,l) = this_cmap(l)*i_p.Results.mix_percent + high_image(j,k,l)*(1-i_p.Results.mix_percent);
         end
     end
 end
