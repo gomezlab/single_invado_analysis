@@ -34,19 +34,21 @@ die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my %cfg = ParseConfig(\%opt);
 
-if (exists $opt{tracking_mat} && not -e catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $opt{tracking_mat})) {
-    die "Could not find the tracking mat specified on the command line, looked in: "
-      ,catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $opt{tracking_mat});
-} else {
-    my $all_but_type_tracking = '';
-    if ($opt{tracking_mat} =~ m/(.*)\.(.*?)/) {
-        $all_but_type_tracking = $1;
+if (exists $opt{tracking_mat}) { 
+    if (not -e catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $opt{tracking_mat})) {
+        die "Could not find the tracking mat specified on the command line, looked in: "
+          ,catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $opt{tracking_mat});
     } else {
-        die "Could not find the proper end of the tracking matrix without file type";
-    }
+        my $all_but_type_tracking = '';
+        if ($opt{tracking_mat} =~ m/(.*)\.(.*?)/) {
+            $all_but_type_tracking = $1;
+        } else {
+            die "Could not find the proper end of the tracking matrix without file type";
+        }
 
-    $cfg{adhesion_props_folder} = catdir($cfg{adhesion_props_folder}, $all_but_type_tracking);
-    $cfg{tracking_output_file} = $opt{tracking_mat};
+        $cfg{adhesion_props_folder} = catdir($cfg{adhesion_props_folder}, $all_but_type_tracking);
+        $cfg{tracking_output_file} = $opt{tracking_mat};
+    }
 }
 
 ###############################################################################

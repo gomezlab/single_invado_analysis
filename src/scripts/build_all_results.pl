@@ -70,15 +70,17 @@ if ($opt{emerald}) {
        [
         ["../analyze_cell_features", "./filter_tracking_matrix.pl"],
        ],
+       [
+        ["../analyze_cell_features", "./gather_tracking_results.pl -tracking_mat filtered/longevity/20.csv"],
+       ],
+       [
+        ["../visualize_cell_features", "./collect_visualizations.pl"],
+       ],
       );
-    if (not($opt{skip_vis}) || $opt{only_vis}) {
-        push @overall_command_seq, 
-          [
-           ["../visualize_cell_features", "./collect_visualizations.pl"],
-          ];
-        if ($opt{only_vis}) {
-           @overall_command_seq = @overall_command_seq[-1]; 
-        }
+    if ($opt{skip_vis}) {
+        @overall_command_seq = @overall_command_seq[0 .. $#overall_command_seq - 1];
+    } elsif ($opt{only_vis}) {
+        @overall_command_seq = @overall_command_seq[-1]; 
     } 
     
     for (@overall_command_seq) {
@@ -222,4 +224,3 @@ sub gather_running_status {
 	}
 	return $running;
 }
-

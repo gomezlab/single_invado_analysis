@@ -130,7 +130,6 @@ for i = 1:max_image_num
     %Build the matrices translating number to colormap
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     for j = 1:size(tracking_seq,1)
-
         %if the adhesion idenfied by the current lineage is not alive, skip
         %this lineage
         if (tracking_seq(j,i_seen) <= 0), continue; end
@@ -186,11 +185,11 @@ for i = 1:max_image_num
 
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
-        highlighted_ghost_unique = zeros(size(orig_i));
-        highlighted_ghost_time = zeros(size(orig_i));
+        highlighted_ghost_unique = ones(size(orig_i));
+        highlighted_ghost_time = ones(size(orig_i));
 
-        highlighted_ghost_unique_filled = zeros(size(orig_i));
-        highlighted_ghost_time_filled = zeros(size(orig_i));
+        highlighted_ghost_unique_filled = ones(size(orig_i));
+        highlighted_ghost_time_filled = ones(size(orig_i));
         for m=size(labels,2):-1:1
             this_i_num = i_seen - m + 1;
             this_ad_perim = labels(m).ad_perim;
