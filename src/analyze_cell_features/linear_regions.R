@@ -829,7 +829,7 @@ find_mean_change_location_probs <- function(ts) {
 gather_datafile_from_dirs <- function (dirs, data_file='Average_adhesion_signal.csv') {
 	exp_data = list()
 	for (k in 1:length(dirs)) {
-		exp_data[[k]] <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
+		exp_data[[k]] <- read.table(file.path(dirs[[k]],data_file),header = TRUE, sep  = ',');
 	}
 	exp_data
 }

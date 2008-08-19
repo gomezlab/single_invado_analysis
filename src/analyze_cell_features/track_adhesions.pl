@@ -321,7 +321,7 @@ sub track_live_adhesions {
     #    defaults to 0.8
 
     for my $i (0 .. $#tracking_mat) {
-
+        
         #The tracking matrix code for dead lineage is any number less than or
         #equal to -1, add another -1 to those lineages to make sure they stay
         #the proper length, then skip to the next lineage
@@ -361,7 +361,7 @@ sub track_live_adhesions {
             my @close_p_sim_by_dist_indexes = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
 
             if (scalar(@p_sim_close_ad_nums) > 1) {
-                foreach my $ad_num (@close_p_sim_by_dist_indexes[1..(scalar(@close_p_sim_by_dist_indexes) - 1)]) {
+                foreach my $ad_num (@close_p_sim_by_dist_indexes[1.. $#close_p_sim_by_dist_indexes]) {
                     $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
                 }
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;

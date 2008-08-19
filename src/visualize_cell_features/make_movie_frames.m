@@ -94,9 +94,8 @@ for i = 1:max_image_num
 
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
 
-    padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
-
     i_seen = i_seen + 1;
+    padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input adhesion image

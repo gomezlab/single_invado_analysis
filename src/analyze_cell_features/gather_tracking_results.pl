@@ -69,7 +69,6 @@ if ($opt{emerald}) {
 }
 
 print "Gathering/Converting Data Files\n" if $opt{debug};
-
 my @data_files;
 push @data_files, @{ $cfg{general_data_files} };
 push @data_files, @{ $cfg{lineage_analysis_data_files} };
@@ -91,8 +90,8 @@ my %ad_lineage_props = &gather_ad_lineage_properties;
 &output_adhesion_lineage_props;
 #&build_lineage_plots;
 
-print "\n\nBuilding R Model Files\n", if $opt{debug};
 if (not($opt{skip_lin_regions})) {
+    print "\n\nBuilding R Model Files\n", if $opt{debug};
     &run_R_linear_region_code;
 }
 
@@ -284,15 +283,16 @@ sub build_single_ad_plots {
 sub gather_ad_lineage_properties {
     my %props;
 
-    $props{longevity}                     = &gather_longevities;
-    $props{merge_count}                   = &gather_merge_count;
-    $props{death_status}                  = &gather_death_status;
-    $props{Average_adhesion_signal}       = &gather_prop_seq("Average_adhesion_signal");
-    $props{Background_corrected_signal}       = &gather_prop_seq("Background_corrected_signal");
-    $props{Eccentricity}                  = &gather_prop_seq("Eccentricity");
-    $props{Solidity}                      = &gather_prop_seq("Solidity");
-    $props{ad_sig}                        = &gather_average_ad_sig($props{Average_adhesion_signal});
-    $props{Max_adhesion_signal}           = &gather_prop_seq("Max_adhesion_signal");
+    $props{longevity}                      = &gather_longevities;
+    $props{merge_count}                    = &gather_merge_count;
+    $props{death_status}                   = &gather_death_status;
+    $props{split_birth_status}             = &gather_split_birth_status;
+    $props{Average_adhesion_signal}        = &gather_prop_seq("Average_adhesion_signal");
+    $props{Background_corrected_signal}    = &gather_prop_seq("Background_corrected_signal");
+    $props{Eccentricity}                   = &gather_prop_seq("Eccentricity");
+    $props{Solidity}                       = &gather_prop_seq("Solidity");
+    $props{ad_sig}                         = &gather_average_ad_sig($props{Average_adhesion_signal});
+    $props{Max_adhesion_signal}            = &gather_prop_seq("Max_adhesion_signal");
     ($props{All_speeds}, $props{velocity}) = &gather_adhesion_speeds;
 
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
@@ -491,18 +491,27 @@ sub gather_merge_count {
 
 sub gather_death_status {
     my @death_status = map 0, (0 .. $#tracking_mat);
-    my @data_keys = sort keys %data_sets;
     for my $i (0 .. $#tracking_mat) {
-        my $in_seq = 0;
-        for my $j (0 .. $#{ $tracking_mat[$i] }) {
-            $in_seq = 1 if ($tracking_mat[$i][$j] >= 0);
-            $death_status[$i] = 1 if ($tracking_mat[$i][$j] == -1 && $in_seq);
-            $in_seq = 0 if ($tracking_mat[$i][$j] <= -1 && $in_seq);
+        my $pre_birth_num = (grep $tracking_mat[$i][$_] >= 0 && $tracking_mat[$i][$_ + 1] == -1, (0 .. $#{ $tracking_mat[$i] } - 1))[0];
 
+        if (defined $pre_birth_num) {
+            $death_status[$i] = 1;
         }
     }
 
     return \@death_status;
+}
+
+sub gather_split_birth_status {
+    my @sb_status = map 0, (0 .. $#tracking_mat);
+    for my $i (0 .. $#tracking_mat) {
+        my $pre_birth_num = (grep $tracking_mat[$i][$_] >= 0 && $tracking_mat[$i][$_ - 1] <= -2, (1 .. $#{ $tracking_mat[$i] }))[0];
+
+        if (defined $pre_birth_num) {
+            $sb_status[$i] = 1;
+        }
+    }
+    return \@sb_status;
 }
 
 sub output_adhesion_lineage_props {
@@ -529,7 +538,7 @@ sub output_adhesion_lineage_props {
 
 sub gather_lineage_summary_data {
     my @possible_props = qw(longevity largest_area starting_edge_dist ending_edge_dist
-      starting_center_dist ending_center_dist merge_count death_status average_speeds max_speeds ad_sig);
+      starting_center_dist ending_center_dist merge_count death_status split_birth_status average_speeds max_speeds ad_sig);
 
     my @lin_summary_data;
     for (@possible_props) {

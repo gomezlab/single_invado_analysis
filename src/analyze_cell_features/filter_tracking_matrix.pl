@@ -84,27 +84,20 @@ sub filter_tracking_matrix {
     for my $required_longevity (split(/\s+/,$cfg{required_longevity_filter})) {
         for my $i (0 .. $#{ $lin_props{'longevity'} }) {
             my $this_longev = $lin_props{'longevity'}[$i];
-            if (   $this_longev >= $required_longevity
-                || $this_longev >= $#tracking_mat) {
+            if ($this_longev >= $required_longevity) {
                 push @{ $matrix_set{'longevity'}{$required_longevity} }, $tracking_mat[$i];
             }
-        }
-    }
-
-    for my $i (0 .. $#tracking_mat) {
-        my $in_lin = 0;
-        for my $j (0 .. $#{ $tracking_mat[$i] }) {
-            $in_lin = 1 if ($tracking_mat[$i][$j] >= 0);
-            if ($in_lin && $tracking_mat[$i][$j] <= -1) {
-                push @{ $matrix_set{'no_movie'}{'dead'}{'all'} }, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
-                $in_lin = 0;
-                if ($lin_props{'longevity'}[$i] >= 10) {
-                    push @{ $matrix_set{'no_movie'}{'dead'}{'10'} }, $tracking_mat[$i] if ($tracking_mat[$i][$j] == -1);
-                }
+            if ($this_longev >= $required_longevity && $lin_props{'death_status'}[$i]) {
+                push @{ $matrix_set{'dead'}{$required_longevity} }, $tracking_mat[$i];
+            }
+            if ($this_longev >= $required_longevity && $lin_props{'split_birth_status'}[$i]) {
+                push @{ $matrix_set{'split_birth'}{$required_longevity} }, $tracking_mat[$i];
             }
         }
+        @{ $matrix_set{'split_birth'}{$required_longevity} } = 
+          &add_split_birth_parents(@{ $matrix_set{'split_birth'}{$required_longevity} });
     }
-
+    
     #ad-hoc line to pick out specific lineages
     #@{$matrix_set{'special'}{'high_speed'}} = map $tracking_mat[$_], (146,262,516);
     
@@ -123,6 +116,28 @@ sub filter_tracking_matrix {
     }
 
     return %matrix_set;
+}
+
+sub add_split_birth_parents {
+    my @mat_set = @_;
+    
+    my @set_with_parents;
+    for my $i (0 .. $#mat_set) {
+        my $pre_birth_index = (grep $mat_set[$i][$_] >= 0 && $mat_set[$i][$_ - 1] <= -2, (1 .. $#{ $mat_set[$i] }))[0] - 1;
+        die "Error identifying matrix index of split birth event" if ($mat_set[$i][$pre_birth_index] >= -1); 
+
+        my $ad_parent_num = -1*($mat_set[$i][$pre_birth_index] + 2);
+        
+        my @parent_lin_num = grep $tracking_mat[$_][$pre_birth_index + 1] == $ad_parent_num, (0 .. $#tracking_mat);
+        die "Expected to only find one parent lineage" if (scalar(@parent_lin_num) > 1);
+        die "Unable to find any parent lineages\n", join(" ", @{$mat_set[$i]}), "\n" if (scalar(@parent_lin_num) == 0);
+
+        push @set_with_parents, $tracking_mat[$parent_lin_num[0]];
+        push @set_with_parents, $mat_set[$i];
+    }
+    die if 2*scalar(@mat_set) != scalar(@set_with_parents);
+
+    return @set_with_parents;
 }
 
 sub output_filtered_matrices {
