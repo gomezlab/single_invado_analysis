@@ -362,7 +362,15 @@ sub track_live_adhesions {
 
             if (scalar(@p_sim_close_ad_nums) > 1) {
                 foreach my $ad_num (@close_p_sim_by_dist_indexes[1.. $#close_p_sim_by_dist_indexes]) {
-                    $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
+                    if (exists $tracking_facts{$i_num}{split_birth_quant}[$ad_num]) {
+                        if ($tracking_facts{$i_num}{split_birth_quant}[$ad_num] < $p_sim_to_next_ads[$ad_num]) {
+                            $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
+                            $tracking_facts{$i_num}{split_birth_quant}[$ad_num] = $p_sim_to_next_ads[$ad_num];
+                        }
+                    } else {
+                        $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
+                        $tracking_facts{$i_num}{split_birth_quant}[$ad_num] = $p_sim_to_next_ads[$ad_num];
+                    }
                 }
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
                 if ($close_p_sim_by_dist_indexes[0] != $sorted_p_sim_indexes[0]) {
