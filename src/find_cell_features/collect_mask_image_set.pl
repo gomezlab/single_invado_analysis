@@ -28,7 +28,8 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{emerald} = 0;
-GetOptions(\%opt, "cfg|c=s", "folder=s", "debug|d", "emerald|e") or die;
+GetOptions(\%opt, "cfg|c=s", "folder=s", "debug|d", "emerald|e", 
+                  "emerald_debug|e_d") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -64,17 +65,26 @@ my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_s
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set', 'error.txt');
 
 mkpath($error_folder);
-my %emerald_opt = ("folder", $error_folder);
+my %emerald_opt = ("folder" => $error_folder, "runtime" => "0:5");
 if (exists($opt{folder})) {
+    $emerald_opt{"runtime"} = "0:15";
     my @command = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
-    &Emerald::send_LSF_commands(\@command);
-} elsif ($opt{emerald}) {
+    if ($opt{emerald_debug}) {
+        print join("\n", @command);
+    } else {
+        &Emerald::send_LSF_commands(\@command);
+    }
+} elsif ($opt{emerald} || $opt{emerald_debug}) {
     my @command;
     for (sort @image_folders) {
         push @command, "$0 -cfg $opt{cfg} -folder $_\n";
     }
     @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
-    &Emerald::send_LSF_commands(\@command);
+    if ($opt{emerald_debug}) {
+        print join("\n", @command);
+    } else {
+        &Emerald::send_LSF_commands(\@command);
+    }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }

@@ -28,7 +28,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d") 
+  or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -85,10 +86,14 @@ my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup'
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup', 'error.txt');
 mkpath($error_folder);
 
-my %emerald_opt = ("folder", $error_folder);
-if ($opt{emerald}) {
+my %emerald_opt = ("folder" => $error_folder, "runtime" => "0:5");
+if ($opt{emerald} || $opt{emerald_debug}) {
     my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-    &Emerald::send_LSF_commands(\@commands);
+    if ($opt{emerald_debug}) {
+        print join("\n", @commands);
+    } else {
+        &Emerald::send_LSF_commands(\@commands);
+    }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
 }
