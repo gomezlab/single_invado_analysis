@@ -28,7 +28,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d") 
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -42,28 +42,27 @@ my %cfg = ParseConfig(\%opt);
 
 mkpath($cfg{individual_results_folder});
 
-my @image_sets = ([qw(raw_mask_folder raw_mask_file)], 
-                  [qw(adhesion_image_folder adhesion_image_file)]);
+my @image_sets = ([qw(raw_mask_folder raw_mask_file)], [qw(adhesion_image_folder adhesion_image_file)]);
 my @matlab_code;
 my $all_images_empty = 1;
 
 foreach (@image_sets) {
     my $folder   = $cfg{ $_->[0] };
     my $out_file = $cfg{ $_->[1] };
-    
+
     next if (not(defined($folder)));
-    
+
     #Remove an ' marks used in config file to keep the folder name together
     $folder =~ s/\'//g;
-    
+
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
-    my @image_files = map { $_=~s/\'//g; $_; } @image_files;
+    my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
 
     #Move all the files with spaces in their names, MATLAB on emerald doesn't
     #like them
     @image_files = &remove_file_name_spaces(@image_files);
     $all_images_empty = 0 if (@image_files);
-    
+
     if ($opt{debug}) {
         if (scalar(@image_files) > 1) {
             print "Image files found: $image_files[0] - $image_files[$#image_files]\n";
@@ -137,8 +136,7 @@ sub create_matlab_code_stack {
         my $output_path = catdir($cfg{individual_results_folder}, $padded_num);
         mkpath($output_path);
         my $final_out_file = catfile($output_path, $out_file);
-        $matlab_code[0] .=
-          "write_normalized_image('$image_files[0]','$final_out_file','I_num',$i_num);\n";
+        $matlab_code[0] .= "write_normalized_image('$image_files[0]','$final_out_file','I_num',$i_num);\n";
     }
     return @matlab_code;
 }
@@ -148,20 +146,19 @@ sub create_matlab_code_single {
     my $out_file    = $_[1];
 
     my @matlab_code;
-    
 
     foreach my $file_name (@image_files) {
         my $i_num;
         my $original_i_num;
         if ($file_name =~ /.*?(\d+)\./) {
             $original_i_num = $1;
-            $i_num = (grep $file_name eq $image_files[$_ - 1], (1 .. $#image_files + 1))[0];
+            $i_num = (grep $file_name eq $image_files[ $_ - 1 ], (1 .. $#image_files + 1))[0];
         } else {
             warn "Unable to find image number in: $file_name, skipping this image.";
             next;
         }
 
-        next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
+        next if grep $i_num == $_,          @{ $cfg{exclude_image_nums} };
         next if grep $original_i_num == $_, @{ $cfg{exclude_image_nums} };
 
         my $padded_num = sprintf("%0" . length(scalar(@image_files)) . "d", $i_num);
@@ -177,13 +174,13 @@ sub create_matlab_code_single {
 sub remove_file_name_spaces {
     my @new_files;
     for (@_) {
-        my $dir = dirname($_);
+        my $dir       = dirname($_);
         my $file_name = basename($_);
-        
+
         if ($file_name =~ /\s/) {
             if ($file_name =~ /(\d+\..*)/) {
-                if( move($_,catfile($dir,$1)) ) {
-                    push @new_files, catfile($dir,$1);
+                if (move($_, catfile($dir, $1))) {
+                    push @new_files, catfile($dir, $1);
                 }
             } else {
                 warn "Unable to determine image number for file: $_";

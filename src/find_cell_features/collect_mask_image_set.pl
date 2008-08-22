@@ -26,10 +26,9 @@ use Emerald;
 $| = 1;
 
 my %opt;
-$opt{debug} = 0;
+$opt{debug}   = 0;
 $opt{emerald} = 0;
-GetOptions(\%opt, "cfg|c=s", "folder=s", "debug|d", "emerald|e", 
-                  "emerald_debug|e_d") or die;
+GetOptions(\%opt, "cfg|c=s", "folder=s", "debug|d", "emerald|e", "emerald_debug|e_d") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -41,12 +40,12 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ###############################################################################
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
-my @image_files = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
+my @image_files   = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
 
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
         print "Cell mask files found: $image_files[0] - $image_files[$#image_files]\n";
-    } elsif ( scalar(@image_files) == 0 ) {
+    } elsif (scalar(@image_files) == 0) {
         warn "Couldn't find any cell mask files in $cfg{individual_results_folder} subfolders\n\n";
     } else {
         print "Cell mask file found: $image_folders[0]\n";
@@ -68,7 +67,7 @@ mkpath($error_folder);
 my %emerald_opt = ("folder" => $error_folder, "runtime" => "0:5");
 if (exists($opt{folder})) {
     $emerald_opt{"runtime"} = "0:15";
-    my @command = &Emerald::create_LSF_Matlab_commands(\@matlab_code,\%emerald_opt);
+    my @command = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
     if ($opt{emerald_debug}) {
         print join("\n", @command);
     } else {
@@ -79,7 +78,7 @@ if (exists($opt{folder})) {
     for (sort @image_folders) {
         push @command, "$0 -cfg $opt{cfg} -folder $_\n";
     }
-    @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
+    @command = &Emerald::create_general_LSF_commands(\@command, \%emerald_opt);
     if ($opt{emerald_debug}) {
         print join("\n", @command);
     } else {
@@ -116,12 +115,12 @@ sub create_all_matlab_commands {
 
 sub create_single_matlab_command {
     my @command;
-    
+
     my @image_files = grep -e $_, <$opt{folder}/$cfg{raw_mask_file}>;
 
     if (scalar(@image_files) == 0) {
     } elsif (scalar(@image_files) > 1) {
-       die "More than one image file found (". scalar(@image_files) . "), quiting";
+        die "More than one image file found (" . scalar(@image_files) . "), quiting";
     } else {
         my $out_file = catfile(dirname($image_files[0]), $cfg{cell_mask_file});
         push @command, "find_cell_mask('$image_files[0]','$out_file')";

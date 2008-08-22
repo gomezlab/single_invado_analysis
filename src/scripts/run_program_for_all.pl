@@ -22,7 +22,7 @@ $opt{extra} = "";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug") or die;
 
 die "Can't find cfg file ($opt{cfg}) specified on the command line" if not(exists $opt{cfg});
-die "Can't find program to execute on the command line" if not(exists $opt{program});
+die "Can't find program to execute on the command line"             if not(exists $opt{program});
 
 print "Collecting Configuration\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
@@ -42,7 +42,7 @@ $cfg_suffix =~ s/.*\.(.*)/$1/;
 my @exp = <$cfg{data_folder}/*/*$cfg_suffix>;
 
 foreach (@exp) {
-    next if /config\/default/; 
+    next if /config\/default/;
     if ($opt{run_all_debug}) {
         print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
     } else {
