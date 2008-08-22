@@ -181,11 +181,11 @@ for i = 1:max_image_num
 
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
-        highlighted_ghost_unique = ones(size(orig_i));
-        highlighted_ghost_time = ones(size(orig_i));
+        highlighted_ghost_unique = zeros(size(orig_i));
+        highlighted_ghost_time = zeros(size(orig_i));
 
-        highlighted_ghost_unique_filled = ones(size(orig_i));
-        highlighted_ghost_time_filled = ones(size(orig_i));
+        highlighted_ghost_unique_filled = zeros(size(orig_i));
+        highlighted_ghost_time_filled = zeros(size(orig_i));
         for m=size(labels,2):-1:1
             this_i_num = i_seen - m + 1;
             this_ad_perim = labels(m).ad_perim;
@@ -214,7 +214,6 @@ for i = 1:max_image_num
             end
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
             highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
-
         end
         highlighted_ghost_unique = highlighted_ghost_unique(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         highlighted_ghost_time = highlighted_ghost_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);

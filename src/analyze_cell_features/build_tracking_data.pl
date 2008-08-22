@@ -28,7 +28,8 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{output} = "data.stor";
-GetOptions(\%opt, "cfg|config=s", "debug|d", "output|o=s", "image_num=s", "emerald|e") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "output|o=s", "image_num=s", 
+                  "emerald|e", "emerald_debug|e_d") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -41,18 +42,26 @@ my %cfg = $ad_conf->get_cfg_hash;
 #Main Program
 ###############################################################################
 
-my @image_nums;
 my %data_sets;
-if ($opt{emerald}) {
-    @image_nums = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
+if ($opt{emerald} || $opt{emerald_debug}) {
+    my @image_nums = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
     my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking_data');
     mkpath($error_folder);
     
     my %emerald_opt = ("folder" => $error_folder);
 
-    my @commands = &create_data_building_commands;
+    my @commands;
+    foreach (@image_nums) {
+        #$0 - the name of the program currently running, used to protect against
+        #future file name changes
+        push @commands, "$0 -cfg $opt{cfg} -o $opt{output} -image_num $_";
+    }
     @commands = &Emerald::create_general_LSF_commands(\@commands,\%emerald_opt);
-    &Emerald::send_LSF_commands(\@commands);
+    if ($opt{emerald_debug}) {
+        print join("\n", @commands);
+    } else {
+        &Emerald::send_LSF_commands(\@commands);
+    }
     exit;
 } else {
     print "\n\nGathering Data Files\n" if $opt{debug};
@@ -70,17 +79,6 @@ if ($opt{emerald}) {
 ###############################################################################
 #Functions
 ###############################################################################
-
-sub create_data_building_commands {
-    my @commands;
-    foreach (@image_nums) {
-        #$0 - the name of the program currently running, used to protect against
-        #future file name changes
-        push @commands, "$0 -cfg $opt{cfg} -o $opt{output} -image_num $_";
-    }
-
-    return @commands;
-}
 
 #######################################
 # Process Data Sets

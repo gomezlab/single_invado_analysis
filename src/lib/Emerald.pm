@@ -13,7 +13,9 @@ use Data::Dumper;
 ###############################################################################
 # Module Definition
 ###############################################################################
-
+my %opt = ("queue" => "week", "output_file" => "out.txt", 
+           "error_file" => "error.txt", "folder" => "./",
+           "runtime" => "24",);
 sub send_LSF_commands {
     my @commands = @{$_[0]};
     
@@ -24,8 +26,6 @@ sub send_LSF_commands {
 
 sub create_LSF_Matlab_commands {
     my @commands = @{$_[0]};
-    my %opt = ("queue" => "week", "output_file" => "out.txt", 
-               "error_file" => "error.txt", "folder" => "./");
     if (scalar(@_) > 1) {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
@@ -33,7 +33,7 @@ sub create_LSF_Matlab_commands {
     $opt{output_file} = File::Spec->catfile($opt{folder},$opt{output_file});
     $opt{error_file}  = File::Spec->catfile($opt{folder},$opt{error_file});
 
-    my $bsub_command   = "bsub -R blade -q $opt{queue} -o $opt{output_file} -e $opt{error_file}";
+    my $bsub_command   = "bsub -R blade -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     my $matlab_command = "/afs/isis/pkg/matlab/matlab -nodisplay -nojvm -nosplash -r";
 
     @commands = map { split(/\n/, $_) } @commands;
@@ -43,8 +43,6 @@ sub create_LSF_Matlab_commands {
 
 sub create_general_LSF_commands {
     my @commands = @{$_[0]};
-    my %opt = ("queue" => "week", "output_file" => "out.txt", 
-               "error_file" => "error.txt", "folder" => "./");
     if (scalar(@_) > 1) {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
@@ -52,7 +50,7 @@ sub create_general_LSF_commands {
     $opt{output_file} = File::Spec->catfile($opt{folder},$opt{output_file});
     $opt{error_file}  = File::Spec->catfile($opt{folder},$opt{error_file});
 
-    my $bsub_command   = "bsub -R blade -q $opt{queue} -o $opt{output_file} -e $opt{error_file}";
+    my $bsub_command   = "bsub -R blade -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command \"$_\""} @commands;
