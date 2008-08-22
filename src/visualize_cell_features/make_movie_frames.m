@@ -238,28 +238,16 @@ for i = 1:max_image_num
     %Build the unique lineage highlighted image
     cmap_nums = lineage_to_cmap(tracking_seq(:,i_seen) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',padded_i_num);
-    this_cmap = zeros(max(ad_label(:)),3);
-    for j=1:length(cmap_nums)
-        this_cmap(ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
-    end
-    test_cmap = zeros(max(ad_label(:)),3);
-    test_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
-
-    assert(all(all(this_cmap == test_cmap)), 'Error: testing unique color cmap broken, image %d',padded_i_num);
+    this_cmap = zeros(max(ad_label_perim(:)),3);
+    this_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
 
     highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     %Build the birth time highlighted image
     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in birth time image %d',padded_i_num);
-    this_cmap = zeros(max(ad_label(:)),3);
-    for j=1:length(cmap_nums)
-        this_cmap(ad_nums(j),:) = time_cmap(cmap_nums(j),:);
-    end
-    test_cmap = zeros(max(ad_label(:)),3);
-    test_cmap(ad_nums,:) = time_cmap(cmap_nums,:);
-
-    assert(all(all(this_cmap == test_cmap)), 'Error: testing unique color cmap broken, image %d',padded_i_num);
+    this_cmap = zeros(max(ad_label_perim(:)),3);
+    this_cmap(ad_nums,:) = time_cmap(cmap_nums,:);
 
     highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
@@ -274,7 +262,7 @@ for i = 1:max_image_num
     highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
 
-    spacer = 0.5*ones(size(orig_i,1),round(0.02*size(orig_i,2)),3);
+    spacer = 0.5*ones(size(orig_i,1),1,3);
 
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
