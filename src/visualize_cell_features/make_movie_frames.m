@@ -32,22 +32,9 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-I_folder_dir = dir(I_folder);
-max_image_num = -Inf;
-folder_char_length = 0;
-i_size = 0;
-for i = 1:size(I_folder_dir)
-    if (strcmp(I_folder_dir(i).name,'.') || strcmp(I_folder_dir(i).name,'..') || not(I_folder_dir(i).isdir)), continue; end
-
-    if (str2num(I_folder_dir(i).name) > max_image_num), max_image_num = str2num(I_folder_dir(i).name); end
-
-    folder_char_length = length(I_folder_dir(i).name);
-
-    poss_sample_image =fullfile(I_folder,sprintf(['%0',num2str(folder_char_length),'d'],i),focal_image);
-    if (exist(poss_sample_image,'file') && length(i_size) == 1)
-        i_size = size(imread(poss_sample_image));
-    end
-end
+max_image_num = find_max_image_num(I_folder);
+folder_char_length = length(num2str(max_image_num));
+i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
 
@@ -114,10 +101,10 @@ for i = 1:max_image_num
         assert(any(any(ad_label == this_num)), 'Error: can''t find ad num %d in image number %d.',this_num,padded_i_num)
     end
 
-    ad_label_perim = zeros(size(orig_i,1),size(orig_i,2));
+    ad_label_perim = zeros(i_size);
     for j = 1:length(ad_nums)
         this_num = ad_nums(j);
-        this_ad = zeros(size(orig_i,1),size(orig_i,2));
+        this_ad = zeros(i_size);
         this_ad(ad_label == this_num) = 1;
         ad_label_perim(bwperim(this_ad)) = this_num;
     end
@@ -181,11 +168,11 @@ for i = 1:max_image_num
 
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
-        highlighted_ghost_unique = zeros(size(orig_i));
-        highlighted_ghost_time = zeros(size(orig_i));
+        highlighted_ghost_unique = zeros(i_size);
+        highlighted_ghost_time = zeros(i_size);
 
-        highlighted_ghost_unique_filled = zeros(size(orig_i));
-        highlighted_ghost_time_filled = zeros(size(orig_i));
+        highlighted_ghost_unique_filled = zeros(i_size);
+        highlighted_ghost_time_filled = zeros(i_size);
         for m=size(labels,2):-1:1
             this_i_num = i_seen - m + 1;
             this_ad_perim = labels(m).ad_perim;
@@ -262,7 +249,7 @@ for i = 1:max_image_num
     highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
 
-    spacer = 0.5*ones(size(orig_i,1),1,3);
+    spacer = 0.5*ones(i_size(1),1,3);
 
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
