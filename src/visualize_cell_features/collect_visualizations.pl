@@ -28,7 +28,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only|only_config", "emerald|e") or die;
+GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only|only_config", 
+                  "emerald|e", "emerald_debug|e_d") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -71,10 +72,14 @@ my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visual
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
 mkpath($error_folder);
 
-if ($opt{emerald}) {
-    my %emerald_opt = ("folder", $error_folder);
+my %emerald_opt = ("folder" => $error_folder);
+if ($opt{emerald} || $opt{emerald_debug}) {
     my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-    &Emerald::send_LSF_commands(\@commands);
+    if ($opt{emerald_debug}) {
+        print join("\n", @commands);
+    } else {
+        &Emerald::send_LSF_commands(\@commands);
+    }
 } elsif (not $opt{config_only}) {
     my $t1 = new Benchmark;
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
