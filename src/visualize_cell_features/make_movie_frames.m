@@ -115,10 +115,11 @@ for i = 1:max_image_num
     end
 
     ad_label_perim = zeros(size(orig_i,1),size(orig_i,2));
-    for j = 1:max(ad_label(:))
+    for j = 1:length(ad_nums)
+        this_num = ad_nums(j);
         this_ad = zeros(size(orig_i,1),size(orig_i,2));
-        this_ad(ad_label == j) = 1;
-        ad_label_perim(bwperim(this_ad)) = j;
+        this_ad(ad_label == this_num) = 1;
+        ad_label_perim(bwperim(this_ad)) = this_num;
     end
 
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
@@ -170,17 +171,13 @@ for i = 1:max_image_num
         for j = frame_size_count:-1:1
             labels(j+1).ad_perim = labels(j).ad_perim;
             labels(j+1).ad_filled = labels(j).ad_filled;
-            labels(j+1).edge = labels(j).edge;
         end
         labels(1).ad_perim = ad_label_perim;
         labels(1).ad_filled = ad_label;
-        labels(1).edge = cell_edge;
     else
         labels(1).ad_perim = ad_label_perim;
         labels(1).ad_filled = ad_label;
-        labels(1).edge = cell_edge;
     end
-    size(labels)
 
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
@@ -193,7 +190,6 @@ for i = 1:max_image_num
             this_i_num = i_seen - m + 1;
             this_ad_perim = labels(m).ad_perim;
             this_ad_filled = labels(m).ad_filled;
-            this_edge = labels(m).edge;
 
             these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
 
@@ -206,10 +202,7 @@ for i = 1:max_image_num
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
             highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
-
-            highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
             highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
 
             %Birth time colored adhesion lineage image drawing
@@ -219,10 +212,7 @@ for i = 1:max_image_num
             for j=1:length(cmap_nums)
                 this_cmap(these_ad_nums(j),:) = time_cmap(cmap_nums(j),:);
             end
-            highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
-
-            highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_edge,'color_map',edge_cmap(this_i_num,:),'mix_percent',mix_percent);
             highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
 
         end
