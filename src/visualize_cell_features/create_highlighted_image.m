@@ -1,17 +1,8 @@
 function high_image = create_highlighted_image(I,high,varargin)
 %CREATE_HIGHLIGHTED_IMAGE    add highlights to an image
 %
-%   Color Number Codes:
-%       -1: red
-%       -2: green
-%       -3: blue
-%
 %   H_I = create_highlighted_image(I,HIGHLIGHTS) adds green highlights to
 %   image 'I', using the binary image 'HIGHLIGHTS' as the guide
-%
-%   H_I = create_highlighted_image(I,HIGHLIGHTS,'color',N) adds highlights of
-%   color 'N' to image 'I', using the binary image 'HIGHLIGHTS' as the
-%   guide
 %
 %   H_I = create_highlighted_image(I,HIGHLIGHTS,'color',[R,G,B]) adds
 %   highlights of color specified by the RGB sequence '[R,G,B]' to image
