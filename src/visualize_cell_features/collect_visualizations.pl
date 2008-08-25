@@ -66,6 +66,7 @@ foreach (@movie_params) {
     &write_matlab_config(%params);
     
     push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+    push @matlab_code, "make_single_ad_frames('" . $params{'config_file'} . "'$movie_debug_string)";
 }
 
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
