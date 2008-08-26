@@ -3,7 +3,6 @@ function make_single_ad_frames(cfg_file,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-profile off; profile on;
 i_p = inputParser;
 i_p.FunctionName = 'MAKE_SINGLE_AD_FRAMES';
 
@@ -11,6 +10,7 @@ i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(cfg_file,varargin{:});
+if (i_p.Results.debug == 1), profile off; profile on; end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -34,7 +34,6 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
-% tracking_seq = [tracking_seq(1,:);tracking_seq(end,:)];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
@@ -97,7 +96,13 @@ for j = 1:max_image_num
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
 
     i_seen = i_seen + 1;
-
+    surrounding_cols = zeros(size(tracking_seq,1),3);
+    surrounding_cols(:,2) = tracking_seq(:,i_seen);
+    try, surrounding_cols(:,1) = tracking_seq(:,i_seen - 1); end
+    try, surrounding_cols(:,3) = tracking_seq(:,i_seen + 1); end
+    
+    if (all(all(surrounding_cols <= 0))), continue; end
+    
     %Gather and scale the input adhesion image
     orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
     scale_factor = double(intmax(class(orig_i)));
@@ -121,9 +126,11 @@ for j = 1:max_image_num
 
     for i = 1:size(tracking_seq,1)
         tracking_row = tracking_seq(i,:);
-        if ((i_seen == 1 || tracking_row(i_seen - 1) <=0) && (i_seen == length(tracking_row) ||  tracking_row(i_seen + 1) <= 0))
-            continue;
-        end
+        surrounding_entries = [0, tracking_row(i_seen), 0];
+        try, surrounding_entries(1) = tracking_row(i_seen - 1); end
+        try, surrounding_entries(3) = tracking_row(i_seen + 1); end
+        
+        if (all(surrounding_entries <= 0)), continue; end
 
         ad_num = tracking_row(i_seen);
         if (ad_num <= 0); ad_num = -Inf; end
@@ -145,7 +152,7 @@ for j = 1:max_image_num
 
         all_images{i,j} = highlighted_image;
     end
-    if (mod(j,10) == 0), disp(j); end
+    if (mod(j,10) == 0 && i_p.Results.debug), disp(j); end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,5 +200,5 @@ for i = 1:size(all_images,1)
     imwrite(montage,fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']));
 end
 
-
-profile off; profile viewer;
+profile off;
+if (i_p.Results.debug), profile viewer; end

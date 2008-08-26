@@ -735,7 +735,7 @@ filter_results <- function(results,needed_R_sq=0.9) {
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
-		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq
+		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & (! res$exp_props$split_birth_status)
 		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status
 	
 		points$early_slope = c(points$early_slope,res$early$slope[early_filt])
