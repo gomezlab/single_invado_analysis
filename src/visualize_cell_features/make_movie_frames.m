@@ -249,7 +249,7 @@ for i = 1:max_image_num
     highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
 
-    spacer = 0.5*ones(i_size(1),1,3);
+    spacer = 0.5*ones(size(edge_image_ad_bounded,1),1,3);
 
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
