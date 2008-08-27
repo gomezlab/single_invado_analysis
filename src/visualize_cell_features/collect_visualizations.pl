@@ -66,8 +66,11 @@ foreach (@movie_params) {
     &write_matlab_config(%params);
     
     push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
-    push @matlab_code, "make_single_ad_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+    if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
+        push @matlab_code, "make_single_ad_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+    }
 }
+
 
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
@@ -92,7 +95,7 @@ if ($opt{emerald} || $opt{emerald_debug}) {
 #Functions
 ###############################################################################
 sub include_in_vis {
-    if ($File::Find::name =~ /.csv/
+    if (   $File::Find::name =~ /.csv/
         && not($File::Find::name =~ /no_movie/)) {
         my $folder = catdir($cfg{exp_results_folder}, $cfg{tracking_folder});
         if ($File::Find::name =~ /$folder\/(.*)/) {
