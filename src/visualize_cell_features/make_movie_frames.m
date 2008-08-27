@@ -22,10 +22,12 @@ if (i_p.Results.debug == 1), profile off; profile on; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process config file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[cfg_file_path,cfg_filename] = fileparts(cfg_file);
-addpath(cfg_file_path);
-eval(cfg_filename);
-rmpath(cfg_file_path);
+fid = fopen(cfg_file);
+while 1
+    line = fgetl(fid);
+    if ~ischar(line), break; end
+    eval(line);
+end
 
 addpath(genpath(path_folders));
 
@@ -110,7 +112,7 @@ for i = 1:max_image_num
     end
 
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
-        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
+        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename))); %#ok<NASGU>
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,8 +158,8 @@ for i = 1:max_image_num
         frame_size_count = size(labels,2);
         if (frame_size_count >= ghost_frames_count), frame_size_count = ghost_frames_count - 1; end
         for j = frame_size_count:-1:1
-            labels(j+1).ad_perim = labels(j).ad_perim;
-            labels(j+1).ad_filled = labels(j).ad_filled;
+            labels(j+1).ad_perim = labels(j).ad_perim; %#ok<AGROW>
+            labels(j+1).ad_filled = labels(j).ad_filled; %#ok<AGROW>
         end
         labels(1).ad_perim = ad_label_perim;
         labels(1).ad_filled = ad_label;
@@ -248,22 +250,27 @@ for i = 1:max_image_num
     highlighted_all = highlighted_all(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
-
+    
     spacer = 0.5*ones(size(edge_image_ad_bounded,1),1,3);
 
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
     frame{2} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
-
+    
     if (exist('pixel_size','var'))
         for j = 1:size(frame,2)
             frame{j} = draw_scale_bar(frame{j},pixel_size);
         end
     end
+    
+    if (output_original_image)
+        if (not(exists(fullfile(out_path,'orig_i')))), mkdir(fullfile(out_path,'orig_i')); end
+        imwrite(orig_i,fullfile(out_path,'orig_i',[padded_i_seen,'.png']));
+    end
 
     if (exist('out_path','var'))
-        for j = 1:length(out_prefix)
+        for j = 1:length(out_prefix) %#ok<USENS>
             output_filename = fullfile(out_path,out_prefix{1,j},[padded_i_seen,'.png']);
             fullpath = fileparts(output_filename);
             if (not(exist(fullpath,'dir')))

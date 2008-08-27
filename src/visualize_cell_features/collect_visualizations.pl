@@ -107,7 +107,7 @@ sub write_matlab_config {
     my @config = &build_matlab_visualization_config(@_);
     open VIS_CFG_OUT, ">" . $params{'config_file'}
       or die "Unsuccessfully tried to open visualization config file: $params{config_file}";
-    print VIS_CFG_OUT @config;
+    print VIS_CFG_OUT join("\n",@config);
     close VIS_CFG_OUT;
 }
 
@@ -124,30 +124,35 @@ sub build_matlab_visualization_config {
     my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
 
     my @config_lines = (
-        "%Config file produced by collect_visualizations.pl\n",
+        "%Config file produced by collect_visualizations.pl",
         "%@timestamp\n\n",
-        "%General Parameters\n",
-        "exp_name = '$cfg{exp_name}';\n",
-        "base_results_folder = fullfile('", join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})),
-        "', exp_name);\n\n",
+        "%General Parameters",
+        "exp_name = '$cfg{exp_name}';",
+        "base_results_folder = fullfile('" . join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})) .  "', exp_name);\n",
 
-        "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n\n",
+        "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n",
 
-        "focal_image = '$cfg{adhesion_image_file}';\n",
-        "adhesions_filename = 'adhesions.png';\n",
-        "edge_filename = '$cfg{cell_mask_file}';\n",
+        "focal_image = '$cfg{adhesion_image_file}';",
+        "adhesions_filename = 'adhesions.png';",
+        "edge_filename = '$cfg{cell_mask_file}';",
 
-        "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n\n",
+        "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
 
-        "out_path = fullfile(base_results_folder,'$params{movie_path}');\n",
-        "out_prefix = {'", join("\',\'", @{ $cfg{movie_output_prefix} }), "'};\n\n",
+        "out_path = fullfile(base_results_folder,'$params{movie_path}');",
+        "out_prefix = {'" . join("\',\'", @{ $cfg{movie_output_prefix} }) . "'};\n",
 
-        "excluded_image_nums = $excluded_image_nums;\n",
-        "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');\n",
-        "path_folders = '$cfg{path_folders}';\n\n",
+        "excluded_image_nums = $excluded_image_nums;",
+        "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');",
+        "path_folders = '$cfg{path_folders}';\n",
 
-        "image_padding_min = $cfg{image_padding_min};\n\n",
+        "image_padding_min = $cfg{image_padding_min};\n",
     );
+    if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
+        push @config_lines, "output_original_image = 1;";
+    } else {
+        push @config_lines, "output_original_image = 0;";
+    }
+
 
     if (exists($cfg{pixel_size})) {
         push @config_lines, "pixel_size = $cfg{pixel_size};\n";
