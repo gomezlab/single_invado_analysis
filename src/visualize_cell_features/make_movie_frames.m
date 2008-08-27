@@ -98,10 +98,14 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
     ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
+    temp_ad_label = zeros(size(ad_label));
     for j = 1:length(ad_nums)
         this_num = ad_nums(j);
         assert(any(any(ad_label == this_num)), 'Error: can''t find ad num %d in image number %d.',this_num,padded_i_num)
+
+        temp_ad_label(ad_label == this_num) = this_num;
     end
+    ad_label = temp_ad_label;
 
     ad_label_perim = zeros(i_size);
     for j = 1:length(ad_nums)
@@ -188,9 +192,7 @@ for i = 1:max_image_num
             cmap_nums = lineage_to_cmap(tracking_seq(:,this_i_num) > 0);
             assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in unique color ghost image creation %d',this_i_num);
             this_cmap = zeros(max(this_ad_perim(:)),3);
-            for j=1:length(cmap_nums)
-                this_cmap(these_ad_nums(j),:) = lineage_cmap(cmap_nums(j),:);
-            end
+            this_cmap(these_ad_nums,:) = lineage_cmap(cmap_nums,:);
             highlighted_ghost_unique = create_highlighted_image(highlighted_ghost_unique,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
             highlighted_ghost_unique_filled = create_highlighted_image(highlighted_ghost_unique_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
 
@@ -198,9 +200,7 @@ for i = 1:max_image_num
             cmap_nums = birth_time_to_cmap(tracking_seq(:,this_i_num) > 0);
             assert(length(these_ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the number of lineage numbers in birth time color ghost image creation %d',this_i_num);
             this_cmap = zeros(max(this_ad_perim(:)),3);
-            for j=1:length(cmap_nums)
-                this_cmap(these_ad_nums(j),:) = time_cmap(cmap_nums(j),:);
-            end
+            this_cmap(these_ad_nums,:) = time_cmap(cmap_nums,:);
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
             highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
         end
@@ -229,7 +229,6 @@ for i = 1:max_image_num
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',padded_i_num);
     this_cmap = zeros(max(ad_label_perim(:)),3);
     this_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
-
     highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     %Build the birth time highlighted image
@@ -237,7 +236,6 @@ for i = 1:max_image_num
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in birth time image %d',padded_i_num);
     this_cmap = zeros(max(ad_label_perim(:)),3);
     this_cmap(ad_nums,:) = time_cmap(cmap_nums,:);
-
     highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
@@ -250,20 +248,20 @@ for i = 1:max_image_num
     highlighted_all = highlighted_all(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
-    
+
     spacer = 0.5*ones(size(edge_image_ad_bounded,1),1,3);
 
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
     frame{2} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
-    
+
     if (exist('pixel_size','var'))
         for j = 1:size(frame,2)
             frame{j} = draw_scale_bar(frame{j},pixel_size);
         end
     end
-    
+
     if (output_original_image)
         if (not(exists(fullfile(out_path,'orig_i')))), mkdir(fullfile(out_path,'orig_i')); end
         imwrite(orig_i,fullfile(out_path,'orig_i',[padded_i_seen,'.png']));

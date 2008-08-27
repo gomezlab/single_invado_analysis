@@ -35,6 +35,10 @@ else
     high_image = I;
 end
 
+if (all(high(:) == 0))
+    return
+end
+
 for j = 1:size(I,1)
     for k = 1:size(I,2)
         if (i_p.Results.high(j,k) == 0), continue; end
