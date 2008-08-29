@@ -40,6 +40,9 @@ tracking_seq = load(tracking_seq_file) + 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 bounding_matrix = [Inf*ones(size(tracking_seq,1),1), Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
 
+%i_seen will keep track of the number of images that have actually been
+%read into the program, we need to keep track of this due to skipped
+%frames, which will show up as missing files in the following loop
 i_seen = 0;
 
 for j = 1:max_image_num
@@ -70,14 +73,17 @@ for j = 1:max_image_num
 end
 
 bounding_matrix(:,1:2) = bounding_matrix(:,1:2) - image_padding_min;
+bounding_matrix(:,1:2) = floor(bounding_matrix(:,1:2));
 bounding_matrix(bounding_matrix(:,1) <= 0,1) = 1;
 bounding_matrix(bounding_matrix(:,2) <= 0,2) = 1;
-bounding_matrix(:,1:2) = floor(bounding_matrix(:,1:2));
 
 bounding_matrix(:,3:4) = bounding_matrix(:,3:4) + image_padding_min;
+bounding_matrix(:,3:4) = ceil(bounding_matrix(:,3:4));
 bounding_matrix(bounding_matrix(:,3) > i_size(2),3) = i_size(2);
 bounding_matrix(bounding_matrix(:,4) > i_size(1),4) = i_size(1);
-bounding_matrix(:,3:4) = ceil(bounding_matrix(:,3:4));
+
+assert(all(all(isnumeric(bounding_matrix))),'Error: part of bounding matrix is not numeric')
+assert(all(all(bounding_matrix >= 1)),'Error: part of bounding matrix is less than 1')
 
 lineage_lengths = zeros(1,size(tracking_seq,1));
 for i = 1:size(tracking_seq,1)
@@ -87,8 +93,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Build Single Ad Image Sequences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%i_seen will keep track of the number of images that have actually been
+%read into the program, we need to keep track of this due to skipped
+%frames, which will show up as missing files in the following loop
 i_seen = 0;
 
+%all_images will hold all the highlighted frames produced for the movies,
+%each row will hold the images from each lineages, where the columns will
+%hold all the frames from each time point
 all_images = cell(size(tracking_seq,1), max_image_num);
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
@@ -96,10 +109,17 @@ for j = 1:max_image_num
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
 
     i_seen = i_seen + 1;
+    %we want to include the frames immediately before and after the deaths
+    %of the adhesions and we also want to skip process of reading and doing
+    %calculations on the images which don't contain any rendered adhesions,
+    %so we find the columns surrounding the current column in the tracking
+    %matrix and ask if this columns contain any numbers greater than 0
+    %indicating the precense of an adhesion or an adhesion in the next
+    %frame
     surrounding_cols = zeros(size(tracking_seq,1),3);
     surrounding_cols(:,2) = tracking_seq(:,i_seen);
-    try, surrounding_cols(:,1) = tracking_seq(:,i_seen - 1); end
-    try, surrounding_cols(:,3) = tracking_seq(:,i_seen + 1); end
+    try surrounding_cols(:,1) = tracking_seq(:,i_seen - 1); end %#ok<TRYNC>
+    try surrounding_cols(:,3) = tracking_seq(:,i_seen + 1); end %#ok<TRYNC>
     
     if (all(all(surrounding_cols <= 0))), continue; end
     
@@ -126,9 +146,13 @@ for j = 1:max_image_num
 
     for i = 1:size(tracking_seq,1)
         tracking_row = tracking_seq(i,:);
+        
+        %now we do a check to see if there is an adhesion in the next
+        %image or the image before, because we also want to render the
+        %image immediately before birth and right after death
         surrounding_entries = [0, tracking_row(i_seen), 0];
-        try, surrounding_entries(1) = tracking_row(i_seen - 1); end
-        try, surrounding_entries(3) = tracking_row(i_seen + 1); end
+        try surrounding_entries(1) = tracking_row(i_seen - 1); end %#ok<TRYNC>
+        try surrounding_entries(3) = tracking_row(i_seen + 1); end %#ok<TRYNC>
         
         if (all(surrounding_entries <= 0)), continue; end
 
