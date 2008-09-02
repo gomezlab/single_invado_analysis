@@ -2,7 +2,7 @@ function bbox = find_binary_bounding_box(I)
 % FIND_BINARY_BOUNDING_BOX    finds the minimum box which completely encloses
 %                             the provided binary image
 %
-%   [min_x,min_y,max_x,max_y] = find_binary_bounding_box(I) finds the min
+%   [min_row,min_col,max_row,max_col] = find_binary_bounding_box(I) finds the min
 %   and max, x and y coordinates that completely enclose the binary 
 %   image, 'I'
 

@@ -204,20 +204,30 @@ for i = 1:max_image_num
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
             highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
         end
+        
+        ghost_image_dir = fullfile(out_path,'ghost_images');
+        try mkdir(fullfile(out_path,'ghost_images')); end %#ok<TRYNC>
+        
         highlighted_ghost_unique = highlighted_ghost_unique(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         highlighted_ghost_time = highlighted_ghost_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         highlighted_ghost_unique_filled = highlighted_ghost_unique_filled(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
         highlighted_ghost_time_filled = highlighted_ghost_time_filled(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
+
+        imwrite(highlighted_ghost_unique,fullfile(ghost_image_dir,'ghost_uni_ns.png'));
+        imwrite(highlighted_ghost_time,fullfile(ghost_image_dir,'ghost_time_ns.png'));
+        imwrite(highlighted_ghost_unique_filled,fullfile(ghost_image_dir,'ghost_uni_filled_ns.png'));
+        imwrite(highlighted_ghost_time_filled,fullfile(ghost_image_dir,'ghost_time_filled_ns.png'));
+        
         if (exist('pixel_size','var'))
             highlighted_ghost_unique = draw_scale_bar(highlighted_ghost_unique,pixel_size);
             highlighted_ghost_time = draw_scale_bar(highlighted_ghost_time,pixel_size);
             highlighted_ghost_unique_filled = draw_scale_bar(highlighted_ghost_unique_filled,pixel_size);
             highlighted_ghost_time_filled = draw_scale_bar(highlighted_ghost_time_filled,pixel_size);
         end
-        imwrite(highlighted_ghost_unique,fullfile(out_path,'ghost_uni.png'));
-        imwrite(highlighted_ghost_time,fullfile(out_path,'ghost_time.png'));
-        imwrite(highlighted_ghost_unique_filled,fullfile(out_path,'ghost_uni_filled.png'));
-        imwrite(highlighted_ghost_time_filled,fullfile(out_path,'ghost_time_filled.png'));
+        imwrite(highlighted_ghost_unique,fullfile(ghost_image_dir,'ghost_uni.png'));
+        imwrite(highlighted_ghost_time,fullfile(ghost_image_dir,'ghost_time.png'));
+        imwrite(highlighted_ghost_unique_filled,fullfile(ghost_image_dir,'ghost_uni_filled.png'));
+        imwrite(highlighted_ghost_time_filled,fullfile(ghost_image_dir,'ghost_time_filled.png'));
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
