@@ -572,29 +572,36 @@ plot_ad_seq <- function (results,index,dir,type='early') {
 	
 	resid = c()
 	
-	if (type ==  'early') {
-		this_ad_seq = ad_seq[1:results$early_offset[index]];
-		this_ad_seq = this_ad_seq/this_ad_seq[1];
+	if (type == 'early') {
+		this_ad_seq = ad_seq[1:results$early$offset[index]];
+		this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
 
-		x = c(0,results$early_offset[index]);
-		y = c(results$early_slope[index]*x[1] + results$early_inter[index],
-		   	  results$early_slope[index]*x[2] + results$early_inter[index])
+		x = c(0,results$early$offset[index]);
+		y = c(results$early$slope[index]*x[1] + results$early$inter[index],
+		   	  results$early$slope[index]*x[2] + results$early$inter[index])
 		
-		plot(1:results$early_offset[index],this_ad_seq,xlab='Time (minutes)',ylab='Normalized Paxillin Signal',
-				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		plot(1:results$early$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
+				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)),
+				 main='Assembly')
 		
 		lines(x,y,col='red',lwd=2)
-	
-		x = 1:length(this_ad_seq)
-		y = c()
-	
-		for (i in 1:length(this_ad_seq)) {
-			y[i] = this_ad_seq[i] - (results$early_slope[index]*x[i] + results$early_inter[index])
-		}
-	
-		plot(x,y,ylab='Residual Value')
+		text(x[1]+3,0.5*max(this_ad_seq),paste('R = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index])))
+
+		this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
+		this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
+
+		x = c(length(ad_seq) - results$late$offset[index],length(ad_seq));
+		y = c(results$late$slope[index]*x[1] + results$late$inter[index],
+		   	  results$late$slope[index]*x[2] + results$late$inter[index])
 		
-		resid = c(resid,y)
+		plot((length(ad_seq) - results$late$offset[index]) : length(ad_seq),
+			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
+			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)),
+			 main='Disassembly')
+		
+		lines(x,y,col='red',lwd=2)
+		text(x[1]+ 3,0.5*max(this_ad_seq),paste('R = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index])))
+		
 	}
 	
 	if (type == 'late') {
@@ -735,6 +742,7 @@ filter_results <- function(results,needed_R_sq=0.9) {
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
+
 		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & (! res$exp_props$split_birth_status)
 		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status
 	

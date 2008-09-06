@@ -124,11 +124,11 @@ sub build_matlab_visualization_config {
     my $excluded_image_nums = "[" . join(",", @{ $cfg{exclude_image_nums} }) . "]";
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
-    my @timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
+    my $timestamp = join("/", ($mon + 1, $day, $year + 1900)) . " $hour:$min";
 
     my @config_lines = (
-        "%Config file produced by collect_visualizations.pl",
-        "%@timestamp\n\n",
+        "%Config file produced by $0",
+        "%$timestamp\n",
         "%General Parameters",
         "exp_name = '$cfg{exp_name}';",
         "base_results_folder = fullfile('" . join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})) .  "', exp_name);\n",
@@ -137,6 +137,7 @@ sub build_matlab_visualization_config {
 
         "focal_image = '$cfg{adhesion_image_file}';",
         "adhesions_filename = 'adhesions.png';",
+        "adhesions_perim_filename = 'adhesions_perim.png';",
         "edge_filename = '$cfg{cell_mask_file}';",
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
@@ -148,7 +149,8 @@ sub build_matlab_visualization_config {
         "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');",
         "path_folders = '$cfg{path_folders}';\n",
 
-        "image_padding_min = $cfg{image_padding_min};\n",
+        "image_padding_min = $cfg{padding_min};",
+        "single_image_padding_min = $cfg{single_ad_padding_min};\n",
     );
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
         push @config_lines, "output_original_image = 1;";

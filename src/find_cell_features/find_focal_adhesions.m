@@ -30,9 +30,10 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.parse(I_file);
 
 i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
-i_p.addOptional('min_size',40,@(x)isnumeric(x) && x > 1);
+i_p.addOptional('min_size',0.56,@(x)isnumeric(x) && x > 1);
+i_p.addOptional('pixel_size',0.215051,@isnumeric);
 i_p.addOptional('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addOptional('filter_thresh', 0.1, @isnumeric);
+i_p.addOptional('filter_thresh',0.1,@isnumeric);
 i_p.addOptional('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('output_file', 'adhesions.png', @ischar);
 i_p.addOptional('output_file_perim', 'adhesions_perim.png', @ischar);
@@ -57,7 +58,20 @@ focal_image  = double(focal_image)/scale_factor;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 I_filt = fspecial('disk',i_p.Results.filter_size);
-high_passed_image = focal_image - imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
+blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
+high_passed_image = focal_image - blurred_image;
+
+% imwrite(blurred_image(70:270,70:300),'blurred_region.png')
+% 
+% high_passed_image = focal_image - blurred_image;
+% h_sect = high_passed_image(70:270,70:300);
+% h_sect = h_sect - min(h_sect(:));
+% h_sect = h_sect/max(h_sect(:));
+% imwrite(h_sect,'high_passed_region.png')
+% 
+% sample_highlight = create_highlighted_image(focal_image,im2bw(high_passed_image,0.1),'mix_percent',0.25);
+% 
+% imwrite(sample_highlight(1:end,83:523,1:3),'green_highlight_sample.png');
 
 ad_zamir = find_ad_zamir(high_passed_image,i_p);
 if (exist('cell_mask','var'))

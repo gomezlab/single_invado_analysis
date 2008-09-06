@@ -97,24 +97,20 @@ for i = 1:max_image_num
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
+    ad_label_perim = imread(fullfile(I_folder,padded_i_num,adhesions_perim_filename));
     ad_nums = tracking_seq(tracking_seq(:,i_seen) > 0,i_seen);
     temp_ad_label = zeros(size(ad_label));
+    temp_ad_label_perim = zeros(size(ad_label_perim));
     for j = 1:length(ad_nums)
         this_num = ad_nums(j);
         assert(any(any(ad_label == this_num)), 'Error: can''t find ad num %d in image number %d.',this_num,padded_i_num)
 
         temp_ad_label(ad_label == this_num) = this_num;
+        temp_ad_label_perim(ad_label == this_num) = this_num;
     end
     ad_label = temp_ad_label;
-
-    ad_label_perim = zeros(i_size);
-    for j = 1:length(ad_nums)
-        this_num = ad_nums(j);
-        this_ad = zeros(i_size);
-        this_ad(ad_label == this_num) = 1;
-        ad_label_perim(bwperim(this_ad)) = this_num;
-    end
-
+    ad_label_perim = temp_ad_label_perim;
+    
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename))); %#ok<NASGU>
     end

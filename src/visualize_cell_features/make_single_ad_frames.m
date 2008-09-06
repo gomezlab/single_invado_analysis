@@ -19,10 +19,12 @@ if (i_p.Results.debug == 1), profile off; profile on; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process config file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[cfg_file_path,cfg_filename] = fileparts(cfg_file);
-addpath(cfg_file_path);
-eval(cfg_filename);
-rmpath(cfg_file_path);
+fid = fopen(cfg_file);
+while 1
+    line = fgetl(fid);
+    if ~ischar(line), break; end
+    eval(line);
+end
 
 addpath(genpath(path_folders));
 
@@ -34,6 +36,7 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
+if (i_p.Results.debug), tracking_seq = tracking_seq(1:2,:); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
@@ -70,14 +73,18 @@ for j = 1:max_image_num
         if (corners(3) > bounding_matrix(i,3)), bounding_matrix(i,3) = corners(3); end
         if (corners(4) > bounding_matrix(i,4)), bounding_matrix(i,4) = corners(4); end
     end
+    
+    if ((i_p.Results.debug && mod(i_seen,10) == 0) || j == max_image_num) 
+        disp(['Bounding image: ',num2str(i_seen)]); 
+    end
 end
 
-bounding_matrix(:,1:2) = bounding_matrix(:,1:2) - image_padding_min;
+bounding_matrix(:,1:2) = bounding_matrix(:,1:2) - single_image_padding_min;
 bounding_matrix(:,1:2) = floor(bounding_matrix(:,1:2));
 bounding_matrix(bounding_matrix(:,1) <= 0,1) = 1;
 bounding_matrix(bounding_matrix(:,2) <= 0,2) = 1;
 
-bounding_matrix(:,3:4) = bounding_matrix(:,3:4) + image_padding_min;
+bounding_matrix(:,3:4) = bounding_matrix(:,3:4) + single_image_padding_min;
 bounding_matrix(:,3:4) = ceil(bounding_matrix(:,3:4));
 bounding_matrix(bounding_matrix(:,3) > i_size(2),3) = i_size(2);
 bounding_matrix(bounding_matrix(:,4) > i_size(1),4) = i_size(1);
@@ -107,20 +114,20 @@ for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
 
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
-
+    
     i_seen = i_seen + 1;
     %we want to include the frames immediately before and after the deaths
-    %of the adhesions and we also want to skip process of reading and doing
+    %of the adhesions and we also want to skip the process of reading and doing
     %calculations on the images which don't contain any rendered adhesions,
     %so we find the columns surrounding the current column in the tracking
     %matrix and ask if this columns contain any numbers greater than 0
-    %indicating the precense of an adhesion or an adhesion in the next
-    %frame
+    %indicating the precense of an adhesion or an adhesion in the next or
+    %prior frame
     surrounding_cols = zeros(size(tracking_seq,1),3);
     surrounding_cols(:,2) = tracking_seq(:,i_seen);
     try surrounding_cols(:,1) = tracking_seq(:,i_seen - 1); end %#ok<TRYNC>
     try surrounding_cols(:,3) = tracking_seq(:,i_seen + 1); end %#ok<TRYNC>
-    
+
     if (all(all(surrounding_cols <= 0))), continue; end
     
     %Gather and scale the input adhesion image
@@ -128,16 +135,8 @@ for j = 1:max_image_num
     scale_factor = double(intmax(class(orig_i)));
     orig_i = double(orig_i)/scale_factor;
 
-    %Gather and process the ad label image
-    ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
-    ad_label_perim = zeros(i_size);
-    for i = 1:max(ad_label(:))
-        assert(any(any(ad_label == i)), 'Error: can''t find ad number %d, in adhesion image number %d',i,padded_i_num);
-
-        this_ad = zeros(i_size);
-        this_ad(ad_label == i) = 1;
-        ad_label_perim(bwperim(this_ad)) = i;
-    end
+    %Gather the ad label image
+    ad_label_perim = imread(fullfile(I_folder,padded_i_num,adhesions_perim_filename));
 
     %Gather the cell edge image if available
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
@@ -176,7 +175,9 @@ for j = 1:max_image_num
 
         all_images{i,j} = highlighted_image;
     end
-    if (mod(j,10) == 0 && i_p.Results.debug), disp(j); end
+    if (mod(j,10) == 0 && i_p.Results.debug)
+        disp(['Highlight image: ',num2str(i_seen)]); 
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

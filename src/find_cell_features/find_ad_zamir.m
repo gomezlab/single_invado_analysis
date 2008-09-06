@@ -1,5 +1,28 @@
 function ad_zamir = find_ad_zamir(high_passed_image,i_p)
+% FIND_AD_ZAMIR    Assigns adhesion pixels to specific adhesions using the
+%                  same algorithm as described in Zamir, 1999
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+i_p_zamir = inputParser;
+i_p_zamir.FunctionName = 'FIND_AD_ZAMIR';
+
+i_p_zamir.addRequired('high_passed_image',@isnumeric);
+i_p_zamir.addRequired('i_p',@(x)isa(x,'inputParser'));
+
+i_p_zamir.parse(high_passed_image,i_p);
+
+%Translate the min_size parameter into the pixel count, using the pixel
+%size
+min_size_pixels = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
+
 if (i_p.Results.debug == 1), profile on; end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_count = 0;
 
 if (start_count > 0)
@@ -25,7 +48,7 @@ for i = (start_count + 1):length(sorted_pix_vals)
 
     for j = 1:length(lin_ind)
         assert(ad_zamir(lin_ind(j)) == 0, 'Error: Adhesion already assigned in this position %d',lin_ind(j))
-        ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),i_p.Results.min_size);
+        ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),min_size_pixels);
     end
 
     count = count + 1;
@@ -39,11 +62,10 @@ for i = (start_count + 1):length(sorted_pix_vals)
     end
 end
 
-
 filled_ad_zamir = imfill(ad_zamir);
 filled_pix = find(and(filled_ad_zamir > 0, ad_zamir == 0));
 for i = 1:length(filled_pix)
-    ad_zamir = add_single_pixel(ad_zamir,filled_pix(i),i_p.Results.min_size);
+    ad_zamir = add_single_pixel(ad_zamir,filled_pix(i),min_size_pixels);
 end
 
 ad_nums = unique(ad_zamir);
@@ -55,6 +77,9 @@ end
 profile off;
 if (i_p.Results.debug), profile viewer; end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function ad_zamir = add_single_pixel(ad_zamir,pix_pos,min_size)
 
@@ -71,10 +96,10 @@ connected_ad(pix_pos) = 1;
 ad_nums = zeros(4);
 %wrap these calls in try, since they could attempt to access indexes
 %outside the accepted 1-size range
-try ad_nums(1) = ad_zamir(pix_pos_ind(1) - 1,pix_pos_ind(2)); end
-try ad_nums(2) = ad_zamir(pix_pos_ind(1) + 1,pix_pos_ind(2)); end    
-try ad_nums(3) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) - 1); end
-try ad_nums(4) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) + 1); end
+try ad_nums(1) = ad_zamir(pix_pos_ind(1) - 1,pix_pos_ind(2)); end %#ok<TRYNC>
+try ad_nums(2) = ad_zamir(pix_pos_ind(1) + 1,pix_pos_ind(2)); end %#ok<TRYNC>
+try ad_nums(3) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) - 1); end %#ok<TRYNC>
+try ad_nums(4) = ad_zamir(pix_pos_ind(1),pix_pos_ind(2) + 1); end %#ok<TRYNC>
 
 for i = 1:length(ad_nums)
     if (ad_nums(i) ~= 0)
