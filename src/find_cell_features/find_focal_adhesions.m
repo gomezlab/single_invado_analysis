@@ -61,18 +61,6 @@ I_filt = fspecial('disk',i_p.Results.filter_size);
 blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 high_passed_image = focal_image - blurred_image;
 
-% imwrite(blurred_image(70:270,70:300),'blurred_region.png')
-% 
-% high_passed_image = focal_image - blurred_image;
-% h_sect = high_passed_image(70:270,70:300);
-% h_sect = h_sect - min(h_sect(:));
-% h_sect = h_sect/max(h_sect(:));
-% imwrite(h_sect,'high_passed_region.png')
-% 
-% sample_highlight = create_highlighted_image(focal_image,im2bw(high_passed_image,0.1),'mix_percent',0.25);
-% 
-% imwrite(sample_highlight(1:end,83:523,1:3),'green_highlight_sample.png');
-
 ad_zamir = find_ad_zamir(high_passed_image,i_p);
 if (exist('cell_mask','var'))
     ad_zamir = find_in_cell_ads(ad_zamir,cell_mask);

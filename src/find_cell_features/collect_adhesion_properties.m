@@ -67,7 +67,7 @@ if (exist('cell_mask','var'))
     dists = bwdist(~cell_mask);
     cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
     cell_centroid = cell_centroid.Centroid;
-
+    
     for i=1:max(labeled_adhesions(:))
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid;
@@ -85,6 +85,9 @@ if (exist('cell_mask','var'))
         end
 
     end
+    
+    [border_row,border_col] = ind2sub(size(cell_mask),find(bwperim(cell_mask)));
+    adhesion_props(1).Border_pix = [border_col,border_row];
     
     adhesion_props(1).Cell_size = sum(cell_mask(:));
 end

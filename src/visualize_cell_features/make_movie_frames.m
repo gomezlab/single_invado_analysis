@@ -106,7 +106,7 @@ for i = 1:max_image_num
         assert(any(any(ad_label == this_num)), 'Error: can''t find ad num %d in image number %d.',this_num,padded_i_num)
 
         temp_ad_label(ad_label == this_num) = this_num;
-        temp_ad_label_perim(ad_label == this_num) = this_num;
+        temp_ad_label_perim(ad_label_perim == this_num) = this_num;
     end
     ad_label = temp_ad_label;
     ad_label_perim = temp_ad_label_perim;
@@ -269,7 +269,7 @@ for i = 1:max_image_num
     end
 
     if (output_original_image)
-        if (not(exist(fullfile(out_path,'orig_i')))), mkdir(fullfile(out_path,'orig_i')); end
+        if (not(exist(fullfile(out_path,'orig_i'),'dir'))), mkdir(fullfile(out_path,'orig_i')); end
         imwrite(orig_i,fullfile(out_path,'orig_i',[padded_i_seen,'.png']));
     end
 

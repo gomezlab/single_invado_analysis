@@ -31,7 +31,7 @@ if (not(exist(out_dir,'dir')))
     mkdir(out_dir);
 end
 
-to_exclude = strvcat('ConvexHull','ConvexImage','Image','FilledImage','PixelIdxList','PixelList','SubarrayIdx');
+to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage','PixelIdxList','PixelList','SubarrayIdx', 'Border_pix'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -66,7 +66,7 @@ for i = 1:size(field_names,1)
         file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
         file_handle = fopen(file_out,'wt');
         for j = 1:num_ad
-            data = [S(j).PixelIdxList'];
+            data = (S(j).PixelIdxList');
             for k = 1:size(data,2)
                 if (k < size(data,2))
                     fprintf(file_handle,'%0.f,',data(k));
@@ -76,5 +76,7 @@ for i = 1:size(field_names,1)
             end
         end
         fclose(file_handle);
+    elseif (strmatch(field_names(i),'Border_pix'))
+        csvwrite(fullfile(out_dir,[cell2mat(field_names(i)),'.csv']),[S.(cell2mat(field_names(i)))]);
     end
 end

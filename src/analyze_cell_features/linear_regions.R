@@ -585,7 +585,10 @@ plot_ad_seq <- function (results,index,dir,type='early') {
 				 main='Assembly')
 		
 		lines(x,y,col='red',lwd=2)
-		text(x[1]+3,0.5*max(this_ad_seq),paste('R = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index])))
+		r_sq_val_str = sprintf('%.3f',results$early$R_sq[index])
+		slope_val_str = sprintf('%.3f',results$early$slope[index])
+		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
+		text(x[1]+3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index]),sep=''))
 
 		this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
 		this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
@@ -600,7 +603,7 @@ plot_ad_seq <- function (results,index,dir,type='early') {
 			 main='Disassembly')
 		
 		lines(x,y,col='red',lwd=2)
-		text(x[1]+ 3,0.5*max(this_ad_seq),paste('R = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index])))
+		text(x[1]+ 3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$late$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$late$slope[index]),sep=''))
 		
 	}
 	
@@ -743,11 +746,21 @@ filter_results <- function(results,needed_R_sq=0.9) {
 	for (i in 1:length(results)) {
 		res = results[[i]]
 
-		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & (! res$exp_props$split_birth_status)
+		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq
+		if (any(names(res$exp_props) == 'split_birth_status')) {
+			early_filt = early_filt & ! res$exp_props$split_birth_status
+		}
 		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status
 	
 		points$early_slope = c(points$early_slope,res$early$slope[early_filt])
 		points$late_slope = c(points$late_slope,res$late$slope[late_filt])
+		points$early_R_sq = c(points$early_R_sq, res$early$R_sq[early_filt])
+		points$late_R_sq = c(points$late_R_sq, res$late$R_sq[late_filt])
+		points$longev = c(points$longev, res$exp_props$longev[late_filt & early_filt])
+		points$exp_num_early = c(points$exp_num_early, rep(i,sum(early_filt)))
+		points$exp_num_late = c(points$exp_num_late, rep(i,sum(late_filt)))
+		points$lin_num_early = c(points$lin_num_early, which(early_filt))
+		points$lin_num_late = c(points$lin_num_late, which(late_filt))
 		
 		points$ind_exp[[i]] = list(early_slope = res$early$slope[early_filt],
 								   late_slope = res$late$slope[late_filt])
