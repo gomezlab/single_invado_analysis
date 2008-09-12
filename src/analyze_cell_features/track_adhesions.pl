@@ -27,7 +27,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i=s", "output|o=s", "emerald|e") or die;
+$opt{input} = "data.stor";
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i|input_data_files=s", "emerald|e") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -51,18 +52,6 @@ if ($opt{emerald}) {
 }
 
 my %data_sets;
-if (not(defined $opt{input}) || defined $opt{output}) {
-    print "\n\nGathering Data Files\n" if $opt{debug};
-
-    my @data_files;
-    push @data_files, @{$cfg{general_data_files}};
-    push @data_files, @{$cfg{tracking_files}};
-
-    %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
-
-    print "\n\nMaking Comparison Matrices\n" if $opt{debug};
-    &make_comp_matices;
-}
 
 print "\n\nDetermining Tracking Matrix\n" if $opt{debug};
 my @tracking_mat;
@@ -85,115 +74,6 @@ mkpath(dirname($tracking_output_file));
 ###############################################################################
 #Functions
 ###############################################################################
-
-#######################################
-# Process Data Sets
-#######################################
-sub make_comp_matices {
-    my @data_keys = sort { $a <=> $b } keys %data_sets;
-    for (0 .. $#data_keys) {
-
-        #The last image can not be compared to a future image, so we skip
-        #calculations on it, but still save the image data if the output
-        #option is specified
-        if ($_ == $#data_keys) {
-            if (defined $opt{output}) {
-                my $key_1 = $data_keys[$_];
-                store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
-                delete $data_sets{$key_1};
-            }
-            next;
-        }
-
-        #These are the keys we will use for all the subsequent matrix creation
-        my ($key_1, $key_2) = @data_keys[ $_, $_ + 1 ];
-
-        print "Working on image Number: $key_1 - " if $opt{debug};
-
-        #Gather the Centroid distance matrix
-        my @x1 = @{ $data_sets{$key_1}{Centroid_x} };
-        my @y1 = @{ $data_sets{$key_1}{Centroid_y} };
-        my @x2 = @{ $data_sets{$key_2}{Centroid_x} };
-        my @y2 = @{ $data_sets{$key_2}{Centroid_y} };
-        @{ $data_sets{$key_1}{Cent_dist} } = &make_dist_mat(\@x1, \@y1, \@x2, \@y2);
-        print "Cent_dist Collected - " if $opt{debug};
-
-        #Gather the Area difference matrix
-        my @area1 = @{ $data_sets{$key_1}{Area} };
-        my @area2 = @{ $data_sets{$key_2}{Area} };
-        @{ $data_sets{$key_1}{Area_diff} } = &make_abs_diff_mat(\@area1, \@area2);
-        print "Area_diff Collected - " if $opt{debug};
-
-        #Gather the Pixel Similarity matrix
-        my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
-        my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
-        @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
-
-        print "Pix_sim Collected" if $opt{debug};
-        print "\r"                if $opt{debug};
-
-        if (defined $opt{output}) {
-            store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
-            delete $data_sets{$key_1};
-        }
-    }
-}
-
-sub make_dist_mat {
-    my ($ref_1, $ref_2, $ref_3, $ref_4) = @_;
-    my @x1 = @$ref_1;
-    my @y1 = @$ref_2;
-    my @x2 = @$ref_3;
-    my @y2 = @$ref_4;
-
-    my @diff_mat;
-
-    for my $i (0 .. $#x1) {
-        for my $j (0 .. $#x2) {
-            $diff_mat[$i][$j] = sqrt(($x1[$i] - $x2[$j])**2 + ($y1[$i] - $y2[$j])**2);
-        }
-    }
-    return @diff_mat;
-}
-
-sub make_abs_diff_mat {
-    my @mat1 = @{ $_[0] };
-    my @mat2 = @{ $_[1] };
-
-    my @diff_mat;
-
-    for my $i (0 .. $#mat1) {
-        for my $j (0 .. $#mat2) {
-            $diff_mat[$i][$j] = abs($mat1[$i] - $mat2[$j]);
-        }
-    }
-    return @diff_mat;
-}
-
-sub calc_pix_sim {
-    my @pix_id1 = @{ $_[0] };
-    my @pix_id2 = @{ $_[1] };
-
-    my @sim_percents;
-    for my $i (0 .. $#pix_id1) {
-        my @temp_sim;
-        my @pix_list = @{ $pix_id1[$i] };
-        for my $j (0 .. $#pix_id2) {
-            my @matching_list = @{ $pix_id2[$j] };
-            my $match_count   = grep {
-                my $poss_match = $_;
-                my $a = grep $poss_match == $_, @pix_list;
-                if ($a > 1) {
-                    die;
-                }
-                $a;
-            } @matching_list;
-            push @temp_sim, $match_count / scalar(@pix_list);
-        }
-        push @sim_percents, \@temp_sim;
-    }
-    return @sim_percents;
-}
 
 #######################################
 # Tracking Matrix Production
@@ -395,6 +275,7 @@ sub detect_merged_adhesions {
     my $num_ad_lineages = $#tracking_mat;
     my $cur_step        = $#{ $tracking_mat[0] };
     my @areas           = @{ $data_sets{$i_num}{Area} };
+    my @next_areas      = @{ $data_sets{$next_i_num}{Area} };
     my @dists           = @{ $data_sets{$i_num}{Cent_dist} };
     my @pix_sims        = @{ $data_sets{$i_num}{Pix_sim} };
 
@@ -407,7 +288,8 @@ sub detect_merged_adhesions {
         my $this_ad = $tracking_mat[$i][$cur_step];
         push @{ $dest_adhesions{$this_ad}{lineage_nums} }, $i;
         push @{ $dest_adhesions{$this_ad}{starting_ad} },  $tracking_mat[$i][ $cur_step - 1 ];
-        push @{ $dest_adhesions{$this_ad}{ending_ad} },    $tracking_mat[$i][$cur_step];
+        push @{ $dest_adhesions{$this_ad}{ending_ad} },    $this_ad;
+        push @{ $dest_adhesions{$this_ad}{starting_lifetime} }, &determine_ahesion_lifetime(@{$tracking_mat[$i]});
     }
 
     $tracking_facts{$i_num}{merged_count}      = 0;
@@ -420,19 +302,40 @@ sub detect_merged_adhesions {
         my @lineage_nums = @{ $dest_adhesions{$i}{lineage_nums} };
         my @starting_ads = @{ $dest_adhesions{$i}{starting_ad} };
         my @ending_ad    = @{ $dest_adhesions{$i}{ending_ad} };
+        for my $j (1 .. $#ending_ad) {
+            die "Problem with merge detection, attempted to merge with different predicted end adhesions." . 
+                join(" ",@ending_ad) if ($ending_ad[0] != $ending_ad[$j]);
+        }
 
         my @merged_areas = @areas[@starting_ads];
         my @dist_shifts  = map { $dists[ $starting_ads[$_] ][ $ending_ad[$_] ] } (0 .. $#lineage_nums);
-        my @pix_sims_set = map { $pix_sims[ $starting_ads[$_] ][ $ending_ad[$_] ] } (0 .. $#lineage_nums);
+        my @pix_sims = map { $pix_sims[ $starting_ads[$_] ][ $ending_ad[$_] ] } (0 .. $#lineage_nums);
+        my $ending_area = @next_areas[$ending_ad[0]];
+        my @lifetimes    = @{ $dest_adhesions{$i}{starting_lifetime} };
 
-        my @merge_decisions = &select_best_merge_decision(\@merged_areas, \@dist_shifts, \@pix_sims_set);
-
+        my @merge_decisions = &select_best_merge_decision(\@merged_areas, \@dist_shifts, \@pix_sims, \$ending_area, \@lifetimes);
+        
+        foreach (@merge_decisions) {
+            if (${$_}{case} != 0) {
+                my $case_str = "merge_case_" . ${$_}{case};
+                $tracking_facts{$i_num}{$case_str}++;
+            }
+        }
+        
+        my $all_dead = 1;
+        foreach (0 .. $#lineage_nums) {
+            $all_dead = 0 if (not($merge_decisions[$_]{dead}));
+        }
         foreach (0 .. $#lineage_nums) {
             if ($merge_decisions[$_]{dead}) {
                 $tracking_mat[ $lineage_nums[$_] ][$cur_step] = -1;
             } elsif (not $merge_decisions[$_]{winner}) {
                 $tracking_mat[ $lineage_nums[$_] ][$cur_step] =
                   -1 * ($tracking_mat[ $lineage_nums[$_] ][$cur_step] + 2);
+            }
+            
+            if ($merge_decisions[$_]{winner} && $merge_decisions[$_]{dead} && not($all_dead)) {
+                $tracking_facts{$i_num}{dead_winners}++;
             }
         }
     }
@@ -441,65 +344,134 @@ sub detect_merged_adhesions {
 sub select_best_merge_decision {
     my @merged_areas = @{ $_[0] };
     my @dist_shifts  = @{ $_[1] };
-    my @pix_sims_set = @{ $_[2] };
-
-    my @sorted_area_indexes = sort { $merged_areas[$b] <=> $merged_areas[$a] } (0 .. $#merged_areas);
-    my $biggest_area_index = $sorted_area_indexes[0];
-
-    my @sorted_dist_indexes = sort { $dist_shifts[$a] <=> $dist_shifts[$b] } (0 .. $#dist_shifts);
-    my $shortest_dist_index = $sorted_dist_indexes[0];
+    my @pix_sims = @{ $_[2] };
+    my $ending_area = ${$_[3]};
+    my @lifetimes = @{$_[4]};
 
     #There are several cases to deal with in picking the adhesion which will
-    #continue:
+    #continue. Also note that "close" will be defined as within the percentage
+    #specified by "$pix_sim_indeter_percent"
+    #    
+    # 1. Find the adhesion whose pixels overlap the greatest percentage of the
+    # pixels in the merged adhesion, if there are multiple adhesions with close
+    # overlap percentages, try case 2, otherwise, select the adhesion with the
+    # greatest overlap
     #
-    # 1. The adhesion with the biggest starting area has to shift the least
-    # amount, choose the largest adhesion.
+    # 2. Find the adhesion from the high overlap percentage with the greatest
+    # area, if the areas are close, try case 3, otherwise, select the adhesion
+    # with the greatest area from the high overlap percentages
     #
-    # 2. The differences in area between the largest adhesions in the merge is
-    # negligible, but there is a difference in the centroid shifts.  In this
-    # case, choose the adhesion from the large area adhesions which shifts the
-    # least distance.
-
+    # 3. Find the adhesion from the adhesions with close areas and high overlap
+    # percentages and pick the adhesion whose centroid is the shortest distance
+    # from the merged adhesion's centroid, if more than one adhesion is close,
+    # try case 4
+    #
+    # 4. Find the adhesion with the longest life from the adhesions with close
+    # areas, high overlap percentages and similar centroid distances, pick one
+    # adhesion regardless of how close the lifetimes are
+    #
+    # 5. The lifetimes used in step 5 are equal and I don't know what else to
+    # use for deciding the merge decision, select the adhesion that happens to
+    # come up first in the 
+    
+    #Merge decision data structure, holds which adhesion wins the merge event,
+    #which adhesions die and which case from the above comment made the
+    #decision
     my @merge_decisions = map { { winner => 0, dead => 0, case => 0 } } (0 .. $#merged_areas);
-
-    #Case 1
-    if ($biggest_area_index == $shortest_dist_index) {
-        $merge_decisions[$biggest_area_index]{winner} = 1;
-        $merge_decisions[$biggest_area_index]{dead}   = 0;
-        $merge_decisions[$biggest_area_index]{case}   = 1;
-    } else {
-
-        #Case 2
-        my $shift_percent = 0.75;
-        $shift_percent = $cfg{merge_shift_percent} if defined($cfg{merge_shift_percent});
-
-        my @areas_close_indexes = grep {
-            if ($merged_areas[$biggest_area_index] / $merged_areas[$_]) {
-                1;
-            } else {
-                0;
-            }
-        } (0 .. $#merged_areas);
-
-        #GET COUNTS ON NUMBER OF SINGLE MEMBER
-
-        my @areas_close_dist_sort = sort { $dist_shifts[$a] <=> $dist_shifts[$b] } (@areas_close_indexes);
-
-        $merge_decisions[ $areas_close_dist_sort[0] ]{winner} = 1;
-        $merge_decisions[ $areas_close_dist_sort[0] ]{dead}   = 0;
-        $merge_decisions[ $areas_close_dist_sort[0] ]{case}   = 2;
+    
+    ###################################
+    #Property Calculations   
+    ###################################
+    my @percent_end_overlap = map {($pix_sims[$_] * $merged_areas[$_])/$ending_area } (0 .. $#merged_areas);
+    my $sum = 0;
+    for (0 .. $#percent_end_overlap) {
+        $sum += $percent_end_overlap[$_];
     }
+    die "\nProblem with determining percent of each merging adhesion that overlaps with the merged adhesion." if ($sum > 1.01);
+    my $high_overlap = (sort {$b <=> $a} (@percent_end_overlap))[0];
+
+    my $pix_sim_indeter_percent = 0.8;
+    $pix_sim_indeter_percent = $cfg{pix_sim_indeter_percent} if defined $cfg{pix_sim_indeter_percent};
+    my $pix_sim_indeter_percent = 0.99;
+    
+    my @overlap_close = grep {
+        if ($percent_end_overlap[$_] >= $high_overlap * $pix_sim_indeter_percent) {
+            1;
+        } else {
+            0;
+        }
+    } (0 .. $#merged_areas);
+    die "Merge problem: no overlap close results." if scalar(@overlap_close) == 0;
+    
+    my $high_area = (sort {$b <=> $a} (@merged_areas[@overlap_close]))[0];
+    my @areas_close = grep {
+        if ($merged_areas[$_] >= $high_area * $pix_sim_indeter_percent) {
+            1;
+        } else {
+            0;
+        }
+    } (@overlap_close);
+    die "Merge problem: no area close results." if scalar(@areas_close) == 0;
+    
+    my $min_dist = (sort {$a <=> $b} @dist_shifts[@areas_close])[0];
+    my @dists_close = grep {
+        if ($dist_shifts[$_] <= $min_dist * (2 - $pix_sim_indeter_percent)) {
+            1;
+        } else {
+            0;
+        }
+    } (@areas_close);
+    die "No dist close results.$min_dist\n", join(" ", @areas_close) if scalar(@dists_close) == 0;
+    
+    my @sorted_lifetime_indexes = sort {$lifetimes[$b] <=> $lifetimes[$a]} (@dists_close);
+    my $lifetimes_close_count = grep {
+        if ($lifetimes[$_] == $lifetimes[$sorted_lifetime_indexes[0]] * $pix_sim_indeter_percent) {
+            1;
+        } else {
+            0;
+        }
+    } (@dists_close);
+    foreach (@sorted_lifetime_indexes) {
+        die "Problem with sorted lifetime indexes.\n Values: ", join(" ",@sorted_lifetime_indexes) if $_ > $#merged_areas;
+    }
+
+    ###################################
+    # Make Decisions  
+    ###################################
+    if (scalar(@overlap_close) == 1) {
+        $merge_decisions[$overlap_close[0]]{winner} = 1;
+        $merge_decisions[$overlap_close[0]]{case}   = 1;
+    } else {
+        if (scalar(@areas_close) == 1) {
+            $merge_decisions[$areas_close[0]]{winner} = 1;
+            $merge_decisions[$areas_close[0]]{case}   = 2;
+        } else {
+            if (scalar(@dists_close) == 1) {
+                $merge_decisions[$dists_close[0]]{winner} = 1;
+                $merge_decisions[$dists_close[0]]{case}   = 3;
+             } else {
+                $merge_decisions[$sorted_lifetime_indexes[0]]{winner} = 1;
+                $merge_decisions[$sorted_lifetime_indexes[0]]{case}   = 4;
+                $merge_decisions[$sorted_lifetime_indexes[0]]{case}   = 5 if $lifetimes_close_count > 1;
+                
+            }
+        }
+    } 
     
     #To detect dead adhesions we will examine the pixel similarities counts, if
     #the similarity to the next adhesion is zero, then we know there wasn't any
     #overlap with the merged adhesion and it is unlikely that the event
     #constitutes a merge. Instead, it is more likely that we are observing a
-    #death event.
+    #death event. Also, make sure there is only one and no more winners
+    my $winner_count = 0;
     for (0 .. $#merge_decisions) {
-        if ($pix_sims_set[$_] == 0) {
+        if ($pix_sims[$_] == 0) {
             $merge_decisions[$_]{dead} = 1;
         }
+        $winner_count++ if ($merge_decisions[$_]{winner});
     }
+    die "Too many winners found in merge event." if ($winner_count > 1);
+    die "No winners found in merge event." if ($winner_count <= 0);
 
     return @merge_decisions;
 }
@@ -571,8 +543,18 @@ sub output_tracking_facts {
     print "# of Best Pixel Sim Not Selected: ", &get_all_i_num_count("best_pix_sim_not_selected"), "\n";
     print "# of Multiple Good P Sims: ",        &get_all_i_num_count("multiple_good_p_sims"),      "\n";
     print "# of Dist and P Sim Guesses Diff: ", &get_all_i_num_count("dist_p_sim_guess_diff"),     "\n";
-    print "# of Merge Operations/# Merge Problems: ",
-      &get_all_i_num_count("merged_count"), "/", &get_all_i_num_count("merged_prob_count");
+    print "# of Merge Operations/# Dead Merge Winners: ",
+      &get_all_i_num_count("merged_count"), "/", &get_all_i_num_count("dead_winners"), "\n";
+    print "# of Merge Operations - Case 1: ",
+      &get_all_i_num_count("merge_case_1")/&get_all_i_num_count("merged_count"),"\n" ;
+    print "# of Merge Operations - Case 2: ",
+      &get_all_i_num_count("merge_case_2")/&get_all_i_num_count("merged_count"),"\n" ;
+    print "# of Merge Operations - Case 3: ",
+      &get_all_i_num_count("merge_case_3")/&get_all_i_num_count("merged_count"),"\n" ;
+    print "# of Merge Operations - Case 4: ",
+      &get_all_i_num_count("merge_case_4")/&get_all_i_num_count("merged_count"),"\n" ;
+    print "# of Merge Operations - Case 5: ",
+      &get_all_i_num_count("merge_case_5")/&get_all_i_num_count("merged_count"),"\n" ;
 }
 
 sub get_all_i_num_count {
@@ -613,6 +595,16 @@ sub output_merge_problems {
             }
         }
     }
+}
+
+#######################################
+# Misc Helper Functions
+#######################################
+
+sub determine_ahesion_lifetime {
+    my @tracking_row = @_;
+
+    return scalar( grep $tracking_row[$_] >= 0, (0 .. $#tracking_row) );
 }
 
 ################################################################################
