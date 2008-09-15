@@ -1,5 +1,15 @@
 function make_movie_frames(cfg_file,varargin)
-%MAKE_MOVIE_FRAMES
+%MAKE_MOVIE_FRAMES    Builds movie frames with the adhesions highlighted in
+%                     using various conventions
+%
+%   make_movie_frames(cfg_file,options) builds individual movie frames from
+%   raw experimental data, where files are placed and the movie config
+%   options are coded in cfg_file
+%
+%   Options:
+%
+%       -debug: set to 1 to output debugging information, defaults to 0
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -40,7 +50,7 @@ i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
 
-ghost_frames_count = 1000;
+ghost_frames_count = Inf;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find edges of image data in adhesion images

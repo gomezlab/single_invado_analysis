@@ -74,7 +74,6 @@ end
 ad_zamir_perim = zeros(size(ad_zamir));
 for i = 1:max(ad_zamir(:))
     assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
-
     this_ad = zeros(size(ad_zamir));
     this_ad(ad_zamir == i) = 1;
     ad_zamir_perim(bwperim(this_ad)) = i;

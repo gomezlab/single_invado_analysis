@@ -132,7 +132,7 @@ sub make_tracking_mat {
         &check_tracking_mat_integrity if $_ == 0;
 
         #Begin tracking
-        print "Image #: $i_num - " if $opt{debug};
+        print "\r", " "x80, "\rImage #: $i_num - " if $opt{debug};
 
         #STEP 2
         &track_live_adhesions($i_num);
@@ -148,7 +148,6 @@ sub make_tracking_mat {
         print "# New: $tracking_facts{$i_num}{new_count}" if $opt{debug};
 
         &check_tracking_mat_integrity;
-        print "\r" if $opt{debug};
 
         delete $data_sets{$i_num};
     }
@@ -172,8 +171,8 @@ sub track_live_adhesions {
     my @time_step_dists  = @{ $data_sets{$i_num}{Cent_dist} };
     my @time_step_p_sims = @{ $data_sets{$i_num}{Pix_sim} };
 
-    my $pix_sim_indeter_percent = 0.8;
-    $pix_sim_indeter_percent = $cfg{pix_sim_indeter_percent} if defined $cfg{pix_sim_indeter_percent};
+    my $prop_indeter_percent = 0.8;
+    $prop_indeter_percent = $cfg{prop_indeter_percent} if defined $cfg{prop_indeter_percent};
 
     #This function makes a tracking guess for all the adhesion lineages living
     #in the current image. The tracking guess is based on two factors: the
@@ -197,7 +196,7 @@ sub track_live_adhesions {
     #    Notes:
     #
     #    -how close the similarity measures have to be to trigger using centroid
-    #    distance between adhesions is defined in $pix_sim_indeter_percent, which
+    #    distance between adhesions is defined in $prop_indeter_percent, which
     #    defaults to 0.8
 
     for my $i (0 .. $#tracking_mat) {
@@ -231,7 +230,7 @@ sub track_live_adhesions {
         #Case 1 and 2
         if ($high_p_sim > 0) {
             my @p_sim_close_ad_nums = grep {
-                if ($p_sim_to_next_ads[$_] >= $high_p_sim * $pix_sim_indeter_percent) {
+                if ($p_sim_to_next_ads[$_] >= $high_p_sim * $prop_indeter_percent) {
                     1;
                 } else {
                     0;
@@ -350,7 +349,7 @@ sub select_best_merge_decision {
 
     #There are several cases to deal with in picking the adhesion which will
     #continue. Also note that "close" will be defined as within the percentage
-    #specified by "$pix_sim_indeter_percent"
+    #specified by "$prop_indeter_percent"
     #    
     # 1. Find the adhesion whose pixels overlap the greatest percentage of the
     # pixels in the merged adhesion, if there are multiple adhesions with close
@@ -390,12 +389,11 @@ sub select_best_merge_decision {
     die "\nProblem with determining percent of each merging adhesion that overlaps with the merged adhesion." if ($sum > 1.01);
     my $high_overlap = (sort {$b <=> $a} (@percent_end_overlap))[0];
 
-    my $pix_sim_indeter_percent = 0.8;
-    $pix_sim_indeter_percent = $cfg{pix_sim_indeter_percent} if defined $cfg{pix_sim_indeter_percent};
-    my $pix_sim_indeter_percent = 0.99;
+    my $prop_indeter_percent = 0.8;
+    $prop_indeter_percent = $cfg{prop_indeter_percent} if defined $cfg{prop_indeter_percent};
     
     my @overlap_close = grep {
-        if ($percent_end_overlap[$_] >= $high_overlap * $pix_sim_indeter_percent) {
+        if ($percent_end_overlap[$_] >= $high_overlap * $prop_indeter_percent) {
             1;
         } else {
             0;
@@ -405,7 +403,7 @@ sub select_best_merge_decision {
     
     my $high_area = (sort {$b <=> $a} (@merged_areas[@overlap_close]))[0];
     my @areas_close = grep {
-        if ($merged_areas[$_] >= $high_area * $pix_sim_indeter_percent) {
+        if ($merged_areas[$_] >= $high_area * $prop_indeter_percent) {
             1;
         } else {
             0;
@@ -415,7 +413,7 @@ sub select_best_merge_decision {
     
     my $min_dist = (sort {$a <=> $b} @dist_shifts[@areas_close])[0];
     my @dists_close = grep {
-        if ($dist_shifts[$_] <= $min_dist * (2 - $pix_sim_indeter_percent)) {
+        if ($dist_shifts[$_] <= $min_dist * (2 - $prop_indeter_percent)) {
             1;
         } else {
             0;
@@ -425,7 +423,7 @@ sub select_best_merge_decision {
     
     my @sorted_lifetime_indexes = sort {$lifetimes[$b] <=> $lifetimes[$a]} (@dists_close);
     my $lifetimes_close_count = grep {
-        if ($lifetimes[$_] == $lifetimes[$sorted_lifetime_indexes[0]] * $pix_sim_indeter_percent) {
+        if ($lifetimes[$_] == $lifetimes[$sorted_lifetime_indexes[0]] * $prop_indeter_percent) {
             1;
         } else {
             0;
@@ -488,13 +486,9 @@ sub detect_new_adhesions {
         $expected_ad_nums{ $tracking_mat[$i][$lineage_length] } = 1;
     }
 
-    my $new_adhesions_count = 0;
-    for (keys %expected_ad_nums) {
-        $tracking_facts{$i_num}{new_count}++;
-    }
-
     for my $i (sort { $a <=> $b } keys %expected_ad_nums) {
         if (not($expected_ad_nums{$i})) {
+            $tracking_facts{$i_num}{new_count}++;
             my @temp;
             for (0 .. $lineage_length - 1) {
                 push @temp, -1;

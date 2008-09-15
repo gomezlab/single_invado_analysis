@@ -1,4 +1,16 @@
 function make_single_ad_frames(cfg_file,varargin)
+%MAKE_SINGLE_AD_FRAMES    Builds single image montages that track single
+%                         adhesions through their entire lifecycle,
+%                         including frames immediately preceding and
+%                         following the adhesion's lifetime, if available
+%
+%   make_single_ad_frames(cfg_file,options) builds single adhesion montages
+%   from raw experimental data, most config options are set in cfg_file
+%
+%   Options:
+%
+%       -debug: set to 1 to output debugging information, defaults to 0
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line

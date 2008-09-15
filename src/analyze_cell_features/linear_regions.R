@@ -737,6 +737,21 @@ boxplot_with_points <- function(data,
 	}
 }
 
+hist_with_percents <- function(data, ...) {
+	hist_data = hist(data, ...);
+	print(hist_data)
+	for (i in 1:length(hist_data$breaks)) {
+		y_pos = 0;
+		if ((hist_data$counts[i] + 0.05*max(hist_data$counts)) > 0.5*max(hist_data$counts)) {
+			y_pos = hist_data$counts[i] - 0.05*max(hist_data$counts);
+		} else {
+			y_pos = hist_data$counts[i] + 0.05*max(hist_data$counts);
+		}
+		text(hist_data$mids[i], y_pos, sprintf('%.03f',hist_data$counts[i]/sum(hist_data$counts)), srt = 45)
+	}
+}
+
+
 ########################################
 #Misc functions
 ########################################
