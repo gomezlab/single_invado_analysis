@@ -50,11 +50,11 @@ if ($opt{emerald}) {
         [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
         [ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
+        [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
         [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
         [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
         [ [ "../analyze_cell_features",   "./filter_tracking_matrix.pl" ], ],
-        [ [ "../analyze_cell_features",   "./gather_tracking_results.pl -tracking_mat filtered/longevity/20.csv" ], ],
         [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
     );
     if ($opt{skip_vis}) {
