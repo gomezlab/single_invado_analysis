@@ -60,11 +60,11 @@ my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'e
 mkpath($error_folder);
 my %emerald_opt = ("folder" => $error_folder, "runtime" => "1");
 if ($opt{emerald} || $opt{emerald_debug}) {
-    my @lsf_commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
+    my @lsf_command = &Emerald::create_general_LSF_commands(\@matlab_code, \%emerald_opt);
     if ($opt{emerald_debug}) {
-        print join("\n", @lsf_commands);
+        print join("\n", @lsf_command);
     } else {
-        &Emerald::send_LSF_commands(\@lsf_commands);
+        &Emerald::send_LSF_commands(\@lsf_command);
     }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
@@ -77,19 +77,20 @@ if ($opt{emerald} || $opt{emerald_debug}) {
 sub create_all_matlab_commands {
     my @matlab_code;
 
-    my @image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
-    foreach my $file_name (@image_files) {
-        my $cell_mask = catfile(dirname($file_name), $cfg{cell_mask_file});
+    my @raw_image_files = grep -e $_, <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+    my @adhesion_image_files = grep -e $_, <$cfg{individual_results_folder}/*/adhesions.png>;
+    die "Expected to find equal number of raw data adhesion image and adhesion mask images." if (scalar(@raw_image_files) != scalar(@adhesion_image_files));
+    foreach (0..$#raw_image_files) {
+        my $raw_image_file = $raw_image_files[$_];
+        my $adhesion_image_file = $adhesion_image_files[$_];
+        my $cell_mask = catfile(dirname($raw_image_file), $cfg{cell_mask_file});
 
         my $extra_opt = "";
-        if (defined $cfg{filter_thresh}) {
-            $extra_opt .= ",'filter_thresh',$cfg{filter_thresh}";
-        }
 
         if (-e $cell_mask) {
-            $matlab_code[0] .= "find_focal_adhesions('$file_name','cell_mask','$cell_mask'$extra_opt)\n";
+            $matlab_code[0] .= "find_adhesion_properties('$raw_image_file','$adhesion_image_file','cell_mask','$cell_mask'$extra_opt)\n";
         } else {
-            $matlab_code[0] .= "find_focal_adhesions('$file_name'$extra_opt)\n";
+            $matlab_code[0] .= "find_adhesion_properties('$raw_image_file','$adhesion_image_file'$extra_opt)\n";
         }
     }
 

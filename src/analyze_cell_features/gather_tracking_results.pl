@@ -87,7 +87,7 @@ my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 #&build_single_ad_plots;
 
 print "\n\nCreating Adhesion Lineage Property Files\n", if $opt{debug};
-&new_gather_output;
+&gather_and_output_lineage_properties;
 #&output_adhesion_lineage_props;
 #&build_lineage_plots;
 
@@ -112,7 +112,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity Background_corrected_signal))
+            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity Background_corrected_signal Angle_to_center))
                 || ($data_type =~ /adhesion_signal/)) {
 
                 #This is the arbitrary units place, don't do any unit
@@ -185,50 +185,14 @@ sub output_single_adhesion_props {
 #######################################
 #Adhesion Lineage Property Collection
 #######################################
-sub gather_ad_lineage_properties {
-    my %props;
-    
-    $props{longevity}                      = &gather_longevities;
-    $props{merge_count}                    = &gather_merge_count;
-    $props{death_status}                   = &gather_death_status;
-    $props{split_birth_status}             = &gather_split_birth_status;
-    $props{Average_adhesion_signal}        = &gather_prop_seq("Average_adhesion_signal");
-    $props{ad_sig}                         = &gather_average_value($props{Average_adhesion_signal});
-    $props{Background_corrected_signal}    = &gather_prop_seq("Background_corrected_signal");
-    $props{Eccentricity}                   = &gather_prop_seq("Eccentricity");
-    $props{Solidity}                       = &gather_prop_seq("Solidity");
-    $props{Max_adhesion_signal}            = &gather_prop_seq("Max_adhesion_signal");
-    ($props{All_speeds}, $props{velocity}) = &gather_adhesion_speeds;
-    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{All_speeds});
-
-    if (grep "Area" eq $_, @available_data_types) {
-        $props{Area}         = &gather_prop_seq("Area");
-        $props{largest_area} = &gather_largest_entry($props{Area});
-    }
-
-    if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
-        $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
-        $props{starting_center_dist}      = &gather_first_entry($props{Centroid_dist_from_center});
-        $props{ending_center_dist}        = &gather_last_entry($props{Centroid_dist_from_center});
-    }
-
-    if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
-        $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
-        $props{starting_edge_dist}      = &gather_first_entry($props{Centroid_dist_from_edge});
-        $props{ending_edge_dist}        = &gather_last_entry($props{Centroid_dist_from_edge});
-    }
-
-    #return %props;
-}
-
-sub new_gather_output {
+sub gather_and_output_lineage_properties {
     mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
     mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}));
     
     my %props;
     
     #Pure Time Series Props
-    my @ts_props = qw(Max_adhesion_signal Eccentricity Solidity Background_corrected_signal);
+    my @ts_props = qw(Angle_to_center Max_adhesion_signal Eccentricity Solidity Background_corrected_signal);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, @available_data_types));
@@ -245,7 +209,8 @@ sub new_gather_output {
     $props{Average_adhesion_signal}        = &gather_prop_seq("Average_adhesion_signal");
     &output_prop_time_series($props{Average_adhesion_signal},"Average_adhesion_signal");
     $props{ad_sig}                         = &gather_average_value($props{Average_adhesion_signal});
-    
+    undef $props{Average_adhesion_signal};
+
     ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
     &output_prop_time_series($props{speeds}{All},"All_speeds");
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{speeds}{All});
@@ -254,13 +219,15 @@ sub new_gather_output {
         $props{Area}         = &gather_prop_seq("Area");
         &output_prop_time_series($props{Area},"Area");
         $props{largest_area} = &gather_largest_entry($props{Area});
+        undef $props{Area};
     }
-
+    
     if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
         $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
         &output_prop_time_series($props{Centroid_dist_from_center},"Centroid_dist_from_center");
         $props{starting_center_dist}      = &gather_first_entry($props{Centroid_dist_from_center});
         $props{ending_center_dist}        = &gather_last_entry($props{Centroid_dist_from_center});
+        undef $props{Centroid_dist_from_center};
     }
 
     if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
@@ -268,10 +235,13 @@ sub new_gather_output {
         &output_prop_time_series($props{Centroid_dist_from_edge},"Centroid_dist_from_edge");
         $props{starting_edge_dist}      = &gather_first_entry($props{Centroid_dist_from_edge});
         $props{ending_edge_dist}        = &gather_last_entry($props{Centroid_dist_from_edge});
+        undef $props{Centroid_dist_from_edge};
     }
+
     my @lin_summary_data = &gather_lineage_summary_data(\%props);
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
     &output_mat_csv(\@lin_summary_data, $output_file);
+    %props = ();
 }
 
 sub output_prop_time_series {

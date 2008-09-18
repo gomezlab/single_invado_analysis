@@ -28,7 +28,7 @@ $| = 1;
 my %opt;
 $opt{debug}   = 0;
 $opt{emerald} = 0;
-GetOptions(\%opt, "cfg|c=s", "folder=s", "debug|d", "emerald|e", "emerald_debug|e_d") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -41,6 +41,8 @@ my %cfg     = $ad_conf->get_cfg_hash;
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
 my @image_files   = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
+die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
+  if (scalar(@image_files) != scalar(@image_folders));
 
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
@@ -52,37 +54,19 @@ if ($opt{debug}) {
     }
 }
 
-my @matlab_code;
-if (exists($opt{folder})) {
-    @matlab_code = &create_single_matlab_command;
-} elsif ($opt{emerald}) {
-} else {
-    @matlab_code = &create_all_matlab_commands;
-}
+my @matlab_code = &create_all_matlab_commands;
 
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set', 'error.txt');
 
 mkpath($error_folder);
 my %emerald_opt = ("folder" => $error_folder, "runtime" => "0:5");
-if (exists($opt{folder})) {
-    $emerald_opt{"runtime"} = "0:15";
-    my @command = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
+if ($opt{emerald} || $opt{emerald_debug}) {
+    my @lsf_commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
     if ($opt{emerald_debug}) {
-        print join("\n", @command);
+        print join("\n", @lsf_commands);
     } else {
-        &Emerald::send_LSF_commands(\@command);
-    }
-} elsif ($opt{emerald} || $opt{emerald_debug}) {
-    my @command;
-    for (sort @image_folders) {
-        push @command, "$0 -cfg $opt{cfg} -folder $_\n";
-    }
-    @command = &Emerald::create_general_LSF_commands(\@command, \%emerald_opt);
-    if ($opt{emerald_debug}) {
-        print join("\n", @command);
-    } else {
-        &Emerald::send_LSF_commands(\@command);
+        &Emerald::send_LSF_commands(\@lsf_commands);
     }
 } else {
     &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
@@ -95,37 +79,13 @@ if (exists($opt{folder})) {
 sub create_all_matlab_commands {
     my @matlab_code;
 
+    my @image_files   = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
     foreach my $file_name (@image_files) {
-        my $i_num;
-        if ($file_name =~ /$cfg{individual_results_folder}\/(\d+)\//) {
-            $i_num = $1;
-        } else {
-            warn "Skipping file: $file_name\n", "Unable to find image number.";
-            next;
-        }
-
-        next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
-
         my $out_file = catfile(dirname($file_name), $cfg{cell_mask_file});
         $matlab_code[0] .= "find_cell_mask('$file_name','$out_file')\n";
     }
 
     return @matlab_code;
-}
-
-sub create_single_matlab_command {
-    my @command;
-
-    my @image_files = grep -e $_, <$opt{folder}/$cfg{raw_mask_file}>;
-
-    if (scalar(@image_files) == 0) {
-    } elsif (scalar(@image_files) > 1) {
-        die "More than one image file found (" . scalar(@image_files) . "), quiting";
-    } else {
-        my $out_file = catfile(dirname($image_files[0]), $cfg{cell_mask_file});
-        push @command, "find_cell_mask('$image_files[0]','$out_file')";
-    }
-    return @command;
 }
 
 ###############################################################################

@@ -79,17 +79,10 @@ for i = 1:max(ad_zamir(:))
     ad_zamir_perim(bwperim(this_ad)) = i;
 end
 
-if (exist('cell_mask','var'))
-    adhesion_properties = collect_adhesion_properties(ad_zamir,focal_image,'cell_mask',cell_mask);
-else
-    adhesion_properties = collect_adhesion_properties(ad_zamir,focal_image);
-end
-
 %write the results to files
 imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file),'bitdepth',16);
 imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file_perim),'bitdepth',16);
 imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_file_binary));
-write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
 
 if (nargout > 0)
     varargout{1} = struct('adhesions',adhesions,'ad_zamir',ad_zamir);

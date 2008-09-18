@@ -27,6 +27,7 @@ i_p.addRequired('orig_I',@isnumeric);
 
 i_p.addParamValue('cell_mask',0,@(x)isnumeric(x) || islogical(x));
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
+i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(ad_I,orig_I,varargin{:});
 
@@ -61,6 +62,8 @@ for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Background_size = sum(background_region(:));
     
     adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
+    
+    if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', numstr(max(labeled_adhesions(:)))]); end
 end
 
 if (exist('cell_mask','var'))
@@ -78,12 +81,18 @@ if (exist('cell_mask','var'))
             adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
 
             adhesion_props(i).Centroid_dist_from_center = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
-            adhesion_props(i).Angle_to_center = acos((centroid_unrounded(2) - cell_centroid(2))/adhesion_props(i).Centroid_dist_from_center);
-            if (centroid_pos(2) - cell_centroid(2) < 0)
-                adhesion_props(i).Angle_to_center = adhesion_props(i).Angle_to_center + pi;
-            end
+            adhesion_props(i).Angle_to_center = acos((centroid_unrounded(1) - cell_centroid(1))/adhesion_props(i).Centroid_dist_from_center);
+            assert(adhesion_props(i).Angle_to_center >= 0 && adhesion_props(i).Angle_to_center <= pi, 'Error: angle to center out of range: %d',adhesion_props(i).Angle_to_center);
+            if (centroid_unrounded(2) - cell_centroid(2) < 0)
+                if (centroid_unrounded(1) - cell_centroid(1) < 0)
+                    assert(adhesion_props(i).Angle_to_center >= pi/2 && adhesion_props(i).Angle_to_center <= pi)
+                    adhesion_props(i).Angle_to_center = 2*pi - adhesion_props(i).Angle_to_center;
+                elseif (centroid_unrounded(1) - cell_centroid(1) >= 0)
+                    assert(adhesion_props(i).Angle_to_center >= 0 && adhesion_props(i).Angle_to_center <= pi/2)
+                    adhesion_props(i).Angle_to_center = 2*pi - adhesion_props(i).Angle_to_center;
+                end
+            end                
         end
-
     end
     
     [border_row,border_col] = ind2sub(size(cell_mask),find(bwperim(cell_mask)));
