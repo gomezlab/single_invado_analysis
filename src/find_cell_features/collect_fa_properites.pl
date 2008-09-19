@@ -54,13 +54,13 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_all_matlab_commands;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA_props');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA_props', 'error.txt');
 
 mkpath($error_folder);
 my %emerald_opt = ("folder" => $error_folder, "runtime" => "1");
 if ($opt{emerald} || $opt{emerald_debug}) {
-    my @lsf_command = &Emerald::create_general_LSF_commands(\@matlab_code, \%emerald_opt);
+    my @lsf_command = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
     if ($opt{emerald_debug}) {
         print join("\n", @lsf_command);
     } else {
