@@ -27,7 +27,7 @@ edge_binary_image = ismember(connected_areas, find([region_sizes.Area] == max([r
 
 ad_nums = unique(edge_binary_image);
 
-assert(length(ad_nums) == 2, 'Error in cell mask cleaning: more than one labeled adhesion found in largest search');
+assert(length(ad_nums) == 2, 'Error in cell mask cleaning: Hoped to see only background and foreground in image');
 
 edge_binary_image(edge_binary_image == ad_nums(2)) = 1;
 

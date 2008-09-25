@@ -84,12 +84,9 @@ print "\n\nCreating Individual Adhesion Property Files\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 &output_single_adhesion_props;
 @single_ad_props = (); undef @single_ad_props;
-#&build_single_ad_plots;
 
 print "\n\nCreating Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
-#&output_adhesion_lineage_props;
-#&build_lineage_plots;
 
 if (not($opt{skip_lin_regions})) {
     print "\n\nBuilding R Model Files\n", if $opt{debug};
@@ -112,7 +109,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity Background_corrected_signal Angle_to_center))
+            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity Background_corrected_signal Angle_to_center Orientation))
                 || ($data_type =~ /adhesion_signal/)) {
 
                 #This is the arbitrary units place, don't do any unit
@@ -192,7 +189,7 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     #Pure Time Series Props
-    my @ts_props = qw(Angle_to_center Max_adhesion_signal Eccentricity Solidity Background_corrected_signal);
+    my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal Eccentricity Solidity Background_corrected_signal);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, @available_data_types));
