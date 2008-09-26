@@ -1030,13 +1030,13 @@ disp(['Successful processed images:      ', num2str(sum(img_proccessed))]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% save the spline time series of the edge %%%%%%
-save([dir_w  'edge_spline.mat'], 'edge_sp_array_x', 'edge_sp_array_y');
-save([dir_w  'pixel_edge.mat'], 'pixel_edge');
+save(fullfile(dir_w, 'edge_spline.mat'), 'edge_sp_array_x', 'edge_sp_array_y');
+save(fullfile(dir_w, 'pixel_edge.mat'), 'pixel_edge');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if PROTRUSION
-    save([dir_w  'protrusion.mat'],    'protrusion');
+    save(fullfile(dir_w, 'protrusion.mat'),    'protrusion');
 end
-save([dir_w  'normal_matrix.mat'], 'normal_matrix');
+save(fullfile(dir_w, 'normal_matrix.mat'), 'normal_matrix');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -1261,9 +1261,9 @@ ylabel('Length [pixel]');
 
 
 %safe figure
-hgsave(h_edge_length,[dir_w  'figures', 'edge_length.fig']);
-print(h_edge_length, [dir_w  'figures', 'edge_length.eps'],'-depsc2','-tiff');
-print(h_edge_length, [dir_w  'figures', 'edge_length.tif'],'-dtiff');
+hgsave(h_edge_length,fullfile(dir_w, 'figures', 'edge_length.fig'));
+print(h_edge_length, fullfile(dir_w, 'figures', 'edge_length.eps'),'-depsc2','-tiff');
+print(h_edge_length, fullfile(dir_w, 'figures', 'edge_length.tif'),'-dtiff');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

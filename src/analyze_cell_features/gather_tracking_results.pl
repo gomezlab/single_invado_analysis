@@ -102,6 +102,8 @@ sub convert_data_to_units {
 
     my $lin_conv_factor = $cfg{pixel_size} / $cfg{target_unit_size};
     my $sq_conv_factor  = $lin_conv_factor**2;
+    
+    my @no_conversion = qw(Class Eccentricity Solidity Background_corrected_signal Angle_to_center Orientation Shrunk_corrected_signal);
 
     for my $time (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -109,7 +111,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif ((grep $data_type eq $_, qw(Class Eccentricity Solidity Background_corrected_signal Angle_to_center Orientation))
+            } elsif ((grep $data_type eq $_, @no_conversion)
                 || ($data_type =~ /adhesion_signal/)) {
 
                 #This is the arbitrary units place, don't do any unit
@@ -189,7 +191,8 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     #Pure Time Series Props
-    my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal Eccentricity Solidity Background_corrected_signal);
+    my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal 
+      Eccentricity Solidity Background_corrected_signal Shrunk_corrected_signal);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, @available_data_types));

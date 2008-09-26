@@ -896,11 +896,13 @@ if (length(args) != 0) {
 	ave_results = gather_bilinear_models_from_dirs(args, 
 		results.file=file.path('..','intensity_model.Rdata'))
 		
-	corr_results = gather_bilinear_models_from_dirs(args, 
+	gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
 		results.file=file.path('..','corrected_intensity_model.Rdata'))
-	
-	hold = gather_correlations_from_dirs(args, ave_results, results.file='../corr_model.Rdata')
-	
+
+	gather_bilinear_models_from_dirs(args, 
+		data_file='Shrunk_corrected_signal.csv', 
+		results.file=file.path('..','shrunk_intensity_model.Rdata'))
+		
 	write_high_r_rows(ave_results[[1]],file.path(args[1],'..','for_vis'))
 }
