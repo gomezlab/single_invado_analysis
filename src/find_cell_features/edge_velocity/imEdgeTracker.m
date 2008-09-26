@@ -1,29 +1,29 @@
 function [img_proccessed, img_edge]=imEdgeTracker(varargin)
 % IMEDGETRACKER measures the protrusion rate of cell leading edge
-% 
+%
 %               imEdgeTracker measures the protrusion rate of a cell edge. For
 %               that a time series of cell images, such as FSM, is
 %               required. The image is segmented based on an intensity
-%               criterion. The threshold value for this is automaticly determined 
-%               based on the image histogram. 
+%               criterion. The threshold value for this is automaticly determined
+%               based on the image histogram.
 %               The segmented binary image is median filtered and
-%               cleaned up. Attention, if the cell covers only a small part 
+%               cleaned up. Attention, if the cell covers only a small part
 %               of the image unexpected results can occure since a size
 %               criterion is used to identify the cell body.
 %               The cell edge is defined as 8-nghb. connected. For the
 %               analysis the edge is approximated with a smoothing
-%               spline. 
+%               spline.
 %               The edge protrusion (displacement) is calculated.
 %               There are various definitions of the protrusion, i)
 %               displacement along the normal to the leading edge, ii)
 %               along the shortest distance between two positions and iii)
-%               based on a mechanical model. 
+%               based on a mechanical model.
 %               The mechanical model needs a good estimate as initial value,
 %               preferabely from the "nearest" calcualtion!
-%               After stack processing some data analyis is performed. 
+%               After stack processing some data analyis is performed.
 %               As a control output the variable 'img_proccessed' is given.
 %               The values are: 0 if the image is not processed (because
-%               t_step is not 1), 1 for a successful process and -1 when 
+%               t_step is not 1), 1 for a successful process and -1 when
 %               the atempt failed
 %               If you want to calculate the protrusion:
 %               'protrusion',1
@@ -51,7 +51,7 @@ function [img_proccessed, img_edge]=imEdgeTracker(varargin)
 %               'protrusion',1
 %               'prot_sampling',10
 %               'prot_depth',20
-%               'nr_sect',10 
+%               'nr_sect',10
 %               'filter_image',1
 %               'img_sigma',0.9
 %               'normal',0
@@ -63,19 +63,19 @@ function [img_proccessed, img_edge]=imEdgeTracker(varargin)
 %               The function writes the following data to disk:
 %               the coordinates of the edge pixels
 %               object mask (binary image)
-%               averaged unit normal vectors 
+%               averaged unit normal vectors
 %               averaged protrusion vectors
 %               edge_spline.mat:    the spline time series cell edge description
 %
 % SYNOPSIS      [img_edge]=imEdgeTracker()
 %
-% INPUT                    
-% 
+% INPUT
+%
 % OUTPUT                   img_proccessed : -1 error, 0 not processed, 1 ok
 %                          img_edge       : gives the image with the edge
-%                    
-%                           
-%                           
+%
+%
+%
 % DEPENDENCES   imEdgeTracker uses { uigetfile,
 %                                    imreadstacknd,
 %                                    getFileStackNames,
@@ -97,153 +97,153 @@ for i=1:2:l
     in_found=0;
     if strcmp(varargin(i),'contr')
         CONTR=varargin{i+1};
-        in_found=1; 
+        in_found=1;
     elseif strcmp(varargin(i),'debug')
-        DEBUG=varargin{i+1};   
-        in_found=1; 
+        DEBUG=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'file')
-        FILE=varargin{i+1}; 
-        in_found=1; 
+        FILE=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'results')
-        RESULTS=varargin{i+1};    
-        in_found=1;         
+        RESULTS=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'movie')
-        MOVIE=varargin{i+1};     
-        in_found=1; 
+        MOVIE=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'pixel')
-        PIXEL=varargin{i+1};      
-        in_found=1; 
+        PIXEL=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'time_interval')
-        TIME_INTERVAL=varargin{i+1};      
-        in_found=1;     
+        TIME_INTERVAL=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'lambda')
-        LAMBDA=varargin{i+1};     
-        in_found=1; 
+        LAMBDA=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'na')
-        NA=varargin{i+1};    
-        in_found=1; 
+        NA=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'bit_depth')
-        BIT_DEPTH=varargin{i+1};  
-        in_found=1; 
+        BIT_DEPTH=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'first_img')
-        FIRST_IMG=varargin{i+1};     
-        in_found=1; 
+        FIRST_IMG=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'max_img')
         MAX_IMG=varargin{i+1};
-        in_found=1; 
+        in_found=1;
     elseif strcmp(varargin(i),'t_step')
-        T_STEP=varargin{i+1};  
-        in_found=1; 
+        T_STEP=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'protrusion')
-        PROTRUSION=varargin{i+1}; 
-        in_found=1;         
+        PROTRUSION=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'prot_sampling')
-        PROT_SAMPLING=varargin{i+1};       
-        in_found=1;    
+        PROT_SAMPLING=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'prot_depth')
-        PROT_DEPTH=varargin{i+1};  
-        in_found=1; 
+        PROT_DEPTH=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'nr_sect')
-        NR_SECT=varargin{i+1};         
-        in_found=1; 
+        NR_SECT=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'filter_image')
-        FILTER_IMAGE=varargin{i+1};  
-        in_found=1; 
+        FILTER_IMAGE=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'img_sigma')
-        IMG_SIGMA=varargin{i+1};      
-        in_found=1; 
+        IMG_SIGMA=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'filter_f')
-        FILTER_F=varargin{i+1};  
-        in_found=1; 
+        FILTER_F=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin{i},'erode_dilate')
-        ERODE_DILATE=varargin{i+1};     
-        in_found=1; 
-    %%% cluster parameters %%%%%%%%%%%%%%%%%%%    
+        ERODE_DILATE=varargin{i+1};
+        in_found=1;
+        %%% cluster parameters %%%%%%%%%%%%%%%%%%%
     elseif strcmp(varargin{i},'cluster')
-        CLUSTER=varargin{i+1};   
-        in_found=1;     
+        CLUSTER=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin{i},'cluster_method')
-        CLUSTER_METHOD=varargin{i+1};   
-        in_found=1;   
+        CLUSTER_METHOD=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin{i},'k_cluster')
-        K_CLUSTER=varargin{i+1};   
-        in_found=1; 
+        K_CLUSTER=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin{i},'k_max')
-        K_MAX=varargin{i+1};   
+        K_MAX=varargin{i+1};
         in_found=1;
     elseif strcmp(varargin{i},'k_min')
-        K_MIN=varargin{i+1};   
+        K_MIN=varargin{i+1};
         in_found=1;
     elseif strcmp(varargin{i},'binning')
-        BINNING=varargin{i+1};   
+        BINNING=varargin{i+1};
         in_found=1;
     elseif strcmp(varargin(i),'p0')
-        P0=varargin{i+1};  
+        P0=varargin{i+1};
         in_found=1;
     elseif strcmp(varargin(i),'mu0')
         MU0=varargin{i+1};
         in_found=1;
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     elseif strcmp(varargin{i},'f_window')
-        F_WINDOW=varargin{i+1}; 
-        in_found=1; 
+        F_WINDOW=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin{i},'f_sigma')
-        F_SIGMA=varargin{i+1};  
-        in_found=1; 
+        F_SIGMA=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin{i},'tolerance')
-        TOLERANCE=varargin{i+1};    
-        in_found=1; 
+        TOLERANCE=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'normal')
-        NORMAL=varargin{i+1};  
-        in_found=1;       
+        NORMAL=varargin{i+1};
+        in_found=1;
     elseif strcmp(varargin(i),'nearest')
         NEAREST=varargin{i+1};
-        in_found=1; 
+        in_found=1;
     elseif strcmp(varargin(i),'robust_min')
         ROBUST_MIN=varargin{i+1};
-        in_found=1;       
+        in_found=1;
     elseif strcmp(varargin(i),'tol')
         TOL=varargin{i+1};
-        in_found=1;         
+        in_found=1;
     elseif strcmp(varargin(i),'mechanical')
         MECHANICAL=varargin{i+1};
-        in_found=1; 
+        in_found=1;
     elseif strcmp(varargin(i),'level_set')
         LEVEL_SET=varargin{i+1};
-        in_found=1;         
+        in_found=1;
     elseif strcmp(varargin(i),'k_S')
         K_S=varargin{i+1};
-        in_found=1; 
+        in_found=1;
     elseif strcmp(varargin(i),'k_W')
-        K_W=varargin{i+1};   
-        in_found=1; 
-    elseif strcmp(varargin(i),'parenth_l')  
-        PARENTH_L = varargin{i+1};   
-        in_found=1; 
-    elseif strcmp(varargin(i),'parenth_r')  
-        PARENTH_R = varargin{i+1};   
-        in_found=1;    
-    elseif strcmp(varargin(i),'movie')  
-        MOVIE = varargin{i+1};   
-        in_found=1; 
-    elseif strcmp(varargin(i),'use_bw_mask')  
-        USE_BW_MASK = varargin{i+1};   
-        in_found=1;           
-    elseif strcmp(varargin(i),'manual_level')  
-        MANUAL_LEVEL = varargin{i+1};   
-        in_found=1; 
-    elseif strcmp(varargin(i),'orient')  
-        ORIENT_CELL = varargin{i+1};   
-        in_found=1; 
-    elseif strcmp(varargin(i),'cell_mode')  
-        CELL_MODE = varargin{i+1};   
-        in_found=1;           
+        K_W=varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'parenth_l')
+        PARENTH_L = varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'parenth_r')
+        PARENTH_R = varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'movie')
+        MOVIE = varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'use_bw_mask')
+        USE_BW_MASK = varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'manual_level')
+        MANUAL_LEVEL = varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'orient')
+        ORIENT_CELL = varargin{i+1};
+        in_found=1;
+    elseif strcmp(varargin(i),'cell_mode')
+        CELL_MODE = varargin{i+1};
+        in_found=1;
     end
-    
+
     if in_found == 0
         error_string = char(varargin(i));
         error(['Unknown input:   ' , error_string]);
-    end   
+    end
 end
 
 if ~exist('CONTR','var')
@@ -317,7 +317,7 @@ if ~exist('FILTER_IMAGE','var')
     FILTER_IMAGE=1;
 end
 if ~exist('IMG_SIGMA','var')
-    % Gauss filter variance 
+    % Gauss filter variance
     IMG_SIGMA=0.9;
 end
 if ~exist('MEDIAN_F','var')
@@ -347,40 +347,40 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%  Cluster specific parameters  used in "imClusterSeg" %%%%%
 if ~exist('CLUSTER','var')
-   %use cluster algorithm
-   CLUSTER=0;
+    %use cluster algorithm
+    CLUSTER=0;
 end
 if ~exist('CLUSTER_METHOD','var')
-   %use cluster algorithm
-   CLUSTER_METHOD='kmeans';
+    %use cluster algorithm
+    CLUSTER_METHOD='kmeans';
 end
 if ~exist('K_CLUSTER','var')
-   %use cluster algorithm
-   K_CLUSTER=3;
+    %use cluster algorithm
+    K_CLUSTER=3;
 end
 if ~exist('K_MAX','var')
-   %maximum number of cluster for EM algorithm
-   K_MAX=3;
+    %maximum number of cluster for EM algorithm
+    K_MAX=3;
 end
 if ~exist('K_MIN','var')
-   %minimum number of cluster for EM algorithm
-   K_MIN=3;
+    %minimum number of cluster for EM algorithm
+    K_MIN=3;
 end
 if ~exist('CELL_MODE','var')
-   % number of modes that are counted as cell
-   CELL_MODE = 1;
+    % number of modes that are counted as cell
+    CELL_MODE = 1;
 end
 if ~exist('BINNING','var')
-   %binning of the image 
-   BINNING=0;
+    %binning of the image
+    BINNING=0;
 end
 %the probability of the individual normal distributions
 if ~exist('P0','var')
-   P0=[];
+    P0=[];
 end
 %the mean values of the individual normal distributions
 if ~exist('MU0','var')
-   MU0=[];
+    MU0=[];
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% Parameters for the spline function "imPixelChainSpline"  %%%%%%
@@ -424,11 +424,11 @@ if ~exist('K_W')
     K_W=1;
 end
 if ~exist('PARENTH_L')
-    % set the parenthesis from the image border   
+    % set the parenthesis from the image border
     PARENTH_L = 1;
 end
 if ~exist('PARENTH_R')
-    % set the parenthesis from the image border   
+    % set the parenthesis from the image border
     PARENTH_R = 1;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -438,7 +438,7 @@ if ~exist('ORIENT_CELL')
     % orient = 1: start right side
     % orient = 2: start upper side
     % orient = 3: start lower side
-    % orient = 4: ellipse 
+    % orient = 4: ellipse
     ORIENT_CELL = 1;
 end
 
@@ -505,7 +505,7 @@ if exist_dir == 0
     if s==0
         %creation failed, return with error message
         img_proccessed = 0;
-        img_edge       = 0; 
+        img_edge       = 0;
         disp('Failed to create the protrusion directory');
         return
     end
@@ -524,14 +524,14 @@ mkdir(dir_w, 'figures');
 warning on all
 
 if ~exist('MAX_IMG','var')
-    % the index of the last image. If t_step is equal to one this is the 
+    % the index of the last image. If t_step is equal to one this is the
     % max numerber of images
     ans = inputdlg('Number of images','Number of images');
     MAX_IMG = str2num(ans{1});
     clear ans;
 end
 if ~exist('T_STEP','var')
-    % step size 
+    % step size
     ans = inputdlg('Time step','Time step');
     T_STEP = str2num(ans{1});
 end
@@ -620,8 +620,8 @@ rem_pix=zeros(MAX_IMG,1);
 
 if PROTRUSION
     PROTRUSION_ARRAY_SIZE = 700;
-	%disp_mech = zeros(PROTRUSION_ARRAY_SIZE,2,ceil(MAX_IMG));
-	%edge_mech = zeros(PROTRUSION_ARRAY_SIZE,2,ceil(MAX_IMG));
+    %disp_mech = zeros(PROTRUSION_ARRAY_SIZE,2,ceil(MAX_IMG));
+    %edge_mech = zeros(PROTRUSION_ARRAY_SIZE,2,ceil(MAX_IMG));
     %disp_pos  = zeros(PROTRUSION_ARRAY_SIZE,ceil(MAX_IMG));
 end
 %%%%%%%%%%%%%%%%%% End allocate memory  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -644,15 +644,15 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
     index=index+1;
 
     fprintf(1,[strg],index);
-    
+
     fileName=char(filelist(time));
     [tmp_path,tmp_fname] = fileparts(fileName);
 
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%% Image Segmentation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
     % check the bit depth of the image
     info = imfinfo(fileName);
     if info.BitDepth ~= round(log(BIT_DEPTH+1)/log(2)) & bit_depth_test
@@ -697,7 +697,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
     if cell_isolated(index) == 1
         [pixel_list]= prOrientEdge(mask, ORIENT_CELL);
     end
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%% End image Segmentation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -713,7 +713,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
 
         imwrite(mask,[dir_w filesep 'cell_mask' filesep  'mask_' tmp_fname '.tif'],'tif');
 
-        
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%% Create an image with the edge derived from the spline   %%%%
         [x_dim y_dim]=size(pixel_list);
@@ -739,7 +739,10 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
         else
             img_overlay = img_org;
         end
-        sup_img = nrm(img_overlay,1);
+        %I'm not sure what nrm does, so I'll comment it out and hope
+        %nothing breaks - MEB 9/25/2008
+        %         sup_img = nrm(img_overlay,1);
+        sup_img = img_overlay;
         sup_img = cat(3,sup_img,sup_img,sup_img);
 
 
@@ -765,25 +768,26 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
                 sup_img_edge_evolution(round(spline_pixel(i,2)),round(spline_pixel(i,1)),3) = cmap_edge_evolution(index,3);
             end
         end
-        imwrite(sup_img,[dir_w 'edge_cell' filesep 'img_edge_' tmp_fname '.tif'],'tif');
-        
-        
+        warning off all;
+        imwrite(sup_img, fullfile(dir_w, 'edge_cell', ['img_edge_' tmp_fname '.tif']),'tif');
+        warning on all;
+
         % this is integrated overlay with spline edges
         figure(h_sup_img_edge_evolution_spline);
         set(h_sup_img_edge_evolution_spline,'Visible','Off');
         hold on
         plot(spline_pixel(:,1),spline_pixel(:,2));
-        %%% END create an image with the edge derived from the spline  %%%%    
+        %%% END create an image with the edge derived from the spline  %%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        
-        
+
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%% Get normal directions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % create an array of spline parameters
         clear p_n;
         p_n=1:3:edge_pix_nr(index);
-        
+
         % extract a band behind the protrusion edge and the
         % unit normal pointing away from the cell
         [x_normal_out, y_normal_out]=prGetProtRegion(img_org, edge_sp_x, edge_sp_y, p_n, 'prot_depth', PROT_DEPTH);
@@ -797,7 +801,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
         x_normal_out_av = x_normal_out_av ./ l_n_av;
         y_normal_out_av = y_normal_out_av ./ l_n_av;
 
-        
+
         x_n = fnval(edge_sp_x, p_n);
         y_n = fnval(edge_sp_y, p_n);
 
@@ -805,168 +809,168 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
         %%%%%%%%% End get normal directions  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        
-        
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%% Operations on images involving two time steps %%%%%%%%%%%%%
-    if index > 1
-        if PROTRUSION
-            % Set the points at which the protrusion is to be calculated
-            i_nn=1:PROT_SAMPLING:edge_last_pix_nr;
-            l_i_nn=length(i_nn);
-            i_nn(l_i_nn-PARENTH_R:l_i_nn)=[];
-            i_nn(1:PARENTH_L)=[];
-            clear l_i_nn;
 
-            if NORMAL
-                [temp1, temp2, i_pos]=prGetDispNormal(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn);
 
-                nr_prot_vectors(index) = size(temp1,1);
-                if nr_prot_vectors(index) > PROTRUSION_ARRAY_SIZE
-                    error('Too many protrusion vectors! Increase array size!')
-                end
-                edge_mech(1:nr_prot_vectors(index) ,: ,index)   = temp1;
-                disp_mech(1:nr_prot_vectors(index) ,: ,index)   = temp2;
-                disp_pos(1:nr_prot_vectors(index), index)       = i_pos';
-                clear temp1 temp2 i_pos;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%% Operations on images involving two time steps %%%%%%%%%%%%%
+        if index > 1
+            if PROTRUSION
+                % Set the points at which the protrusion is to be calculated
+                i_nn=1:PROT_SAMPLING:edge_last_pix_nr;
+                l_i_nn=length(i_nn);
+                i_nn(l_i_nn-PARENTH_R:l_i_nn)=[];
+                i_nn(1:PARENTH_L)=[];
+                clear l_i_nn;
 
-            elseif NEAREST
-                [temp1, temp2, i_pos]=prGetDispNearest(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn,...
-                    'tol', TOL, 'robust_min', ROBUST_MIN);
+                if NORMAL
+                    [temp1, temp2, i_pos]=prGetDispNormal(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn);
 
-                nr_prot_vectors(index) = size(temp1,1);
-                if nr_prot_vectors(index) > PROTRUSION_ARRAY_SIZE
-                    error('Too many protrusion vectors! Increase array size!')
-                end
-                edge_mech(1:nr_prot_vectors(index) ,: ,index)   = temp1;
-                disp_mech(1:nr_prot_vectors(index) ,: ,index)   = temp2;
-                disp_pos(1:nr_prot_vectors(index), index)       = i_pos';
-                clear temp1 temp2 i_pos;
-
-            elseif MECHANICAL
-                % first find a initial solution based on the nearest
-                % model
-                [temp1, temp2, i_n]=prGetDispNearest(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn,...
-                    'tol', TOL, 'robust_min', ROBUST_MIN);
-                clear temp1 temp2;
-
-                % take just the part of the spline with valid
-                % displacements. This is because the object can move out
-                % of the image
-                i_n_l = length(i_n);
-                if i_n(i_n_l) > edge_pix_nr(index)
-                    i = i_n_l;
-                    while i_n(i) > edge_pix_nr(index) & length(i_n) > 0
-                        i_n(i) = [];
-                        i_nn(i) = [];
-                        i = i-1;
-                    end
-                end
-                if i_n(1) < 1
-                    i = 1;
-                    while i_n(i) < 1 & length(i_n) > 0
-                        i_n(i) =  [];
-                        i_nn(i) = [];
-                    end
-                end
-
-                % now use it for the mechanical model
-                i_0 = i_n;
-                clear i_n;
-                % calculate the protrusion based on a mechanical model
-                if length(i_0) > 2
-                    [temp1, temp2, i_pos, x_normal, y_normal]=...
-                        prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
-                        'k_S', K_S, 'k_W', K_W);
                     nr_prot_vectors(index) = size(temp1,1);
-
-                    protrusion{index-1} = [temp1 temp2];
-                    
+                    if nr_prot_vectors(index) > PROTRUSION_ARRAY_SIZE
+                        error('Too many protrusion vectors! Increase array size!')
+                    end
+                    edge_mech(1:nr_prot_vectors(index) ,: ,index)   = temp1;
+                    disp_mech(1:nr_prot_vectors(index) ,: ,index)   = temp2;
+                    disp_pos(1:nr_prot_vectors(index), index)       = i_pos';
                     clear temp1 temp2 i_pos;
-                else
-                    nr_prot_vectors(index) = 1;
-                    edge_mech(1:nr_prot_vectors(index) ,: ,index) = 0;
-                    disp_mech(1:nr_prot_vectors(index) ,: ,index) = 0;
-                    disp_pos(1:nr_prot_vectors(index), index)     = 0;
-                end
-            elseif LEVEL_SET
-                % use the Level Set method
-                if index == 2
-                    % This is for the first time step, here we have to
-                    % initialize both level set functions
-                    % This function gives two outputs:
-                    % disp_points   : corresponding point at next timestep
-                    % protrusion    : integrated marker path length
-                    [phi_t1, val_t1, disp_points, ls_protrusion] =...
-                        lsLineMatching('mask_img_t0',mask_last, 'mask_img_t1',mask,...
-                        'x_spline_t0',edge_sp_x_last, 'y_spline_t0',edge_sp_y_last,...
-                        'x_spline_t1',edge_sp_x, 'y_spline_t1',edge_sp_y,...
-                        'known_zero_level_points_t0', pixel_list_last,...
-                        'known_zero_level_points_t1', pixel_list,...
-                        'i_nn',i_nn,'result_dir',dir_w,...
-                        'control',1);
-                else
-                    [phi_t1, val_t1, disp_points, ls_protrusion] =...
-                        lsLineMatching('mask_img_t0',mask_last, 'mask_img_t1',mask,...
-                        'x_spline_t0',edge_sp_x_last, 'y_spline_t0',edge_sp_y_last,...
-                        'x_spline_t1',edge_sp_x, 'y_spline_t1',edge_sp_y,...
-                        'known_zero_level_points_t0', pixel_list_last,...
-                        'known_zero_level_points_t1', pixel_list,...
-                        'val_t0', val_t0, 'phi_t0', phi_t0,...
-                        'i_nn',i_nn,'result_dir',dir_w,...
-                        'control',1);
-                end
 
-                x_nn=fnval(edge_sp_x_last,i_nn);
-                y_nn=fnval(edge_sp_y_last,i_nn);
+                elseif NEAREST
+                    [temp1, temp2, i_pos]=prGetDispNearest(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn,...
+                        'tol', TOL, 'robust_min', ROBUST_MIN);
 
-                nr_prot_vectors(index) = size(ls_protrusion,1);
-                edge_mech(1:nr_prot_vectors(index) ,: ,index)= [x_nn', y_nn'];
+                    nr_prot_vectors(index) = size(temp1,1);
+                    if nr_prot_vectors(index) > PROTRUSION_ARRAY_SIZE
+                        error('Too many protrusion vectors! Increase array size!')
+                    end
+                    edge_mech(1:nr_prot_vectors(index) ,: ,index)   = temp1;
+                    disp_mech(1:nr_prot_vectors(index) ,: ,index)   = temp2;
+                    disp_pos(1:nr_prot_vectors(index), index)       = i_pos';
+                    clear temp1 temp2 i_pos;
+
+                elseif MECHANICAL
+                    % first find a initial solution based on the nearest
+                    % model
+                    [temp1, temp2, i_n]=prGetDispNearest(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn,...
+                        'tol', TOL, 'robust_min', ROBUST_MIN);
+                    clear temp1 temp2;
+
+                    % take just the part of the spline with valid
+                    % displacements. This is because the object can move out
+                    % of the image
+                    i_n_l = length(i_n);
+                    if i_n(i_n_l) > edge_pix_nr(index)
+                        i = i_n_l;
+                        while i_n(i) > edge_pix_nr(index) & length(i_n) > 0
+                            i_n(i) = [];
+                            i_nn(i) = [];
+                            i = i-1;
+                        end
+                    end
+                    if i_n(1) < 1
+                        i = 1;
+                        while i_n(i) < 1 & length(i_n) > 0
+                            i_n(i) =  [];
+                            i_nn(i) = [];
+                        end
+                    end
+
+                    % now use it for the mechanical model
+                    i_0 = i_n;
+                    clear i_n;
+                    % calculate the protrusion based on a mechanical model
+                    if length(i_0) > 2
+                        [temp1, temp2, i_pos, x_normal, y_normal]=...
+                            prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
+                            'k_S', K_S, 'k_W', K_W);
+                        nr_prot_vectors(index) = size(temp1,1);
+
+                        protrusion{index-1} = [temp1 temp2];
+
+                        clear temp1 temp2 i_pos;
+                    else
+                        nr_prot_vectors(index) = 1;
+                        edge_mech(1:nr_prot_vectors(index) ,: ,index) = 0;
+                        disp_mech(1:nr_prot_vectors(index) ,: ,index) = 0;
+                        disp_pos(1:nr_prot_vectors(index), index)     = 0;
+                    end
+                elseif LEVEL_SET
+                    % use the Level Set method
+                    if index == 2
+                        % This is for the first time step, here we have to
+                        % initialize both level set functions
+                        % This function gives two outputs:
+                        % disp_points   : corresponding point at next timestep
+                        % protrusion    : integrated marker path length
+                        [phi_t1, val_t1, disp_points, ls_protrusion] =...
+                            lsLineMatching('mask_img_t0',mask_last, 'mask_img_t1',mask,...
+                            'x_spline_t0',edge_sp_x_last, 'y_spline_t0',edge_sp_y_last,...
+                            'x_spline_t1',edge_sp_x, 'y_spline_t1',edge_sp_y,...
+                            'known_zero_level_points_t0', pixel_list_last,...
+                            'known_zero_level_points_t1', pixel_list,...
+                            'i_nn',i_nn,'result_dir',dir_w,...
+                            'control',1);
+                    else
+                        [phi_t1, val_t1, disp_points, ls_protrusion] =...
+                            lsLineMatching('mask_img_t0',mask_last, 'mask_img_t1',mask,...
+                            'x_spline_t0',edge_sp_x_last, 'y_spline_t0',edge_sp_y_last,...
+                            'x_spline_t1',edge_sp_x, 'y_spline_t1',edge_sp_y,...
+                            'known_zero_level_points_t0', pixel_list_last,...
+                            'known_zero_level_points_t1', pixel_list,...
+                            'val_t0', val_t0, 'phi_t0', phi_t0,...
+                            'i_nn',i_nn,'result_dir',dir_w,...
+                            'control',1);
+                    end
+
+                    x_nn=fnval(edge_sp_x_last,i_nn);
+                    y_nn=fnval(edge_sp_y_last,i_nn);
+
+                    nr_prot_vectors(index) = size(ls_protrusion,1);
+                    edge_mech(1:nr_prot_vectors(index) ,: ,index)= [x_nn', y_nn'];
+                    if 1
+                        % linear interpolation
+                        disp_mech(1:nr_prot_vectors(index) ,: ,index)= [disp_points(:,1) - x_nn', disp_points(:,2) - y_nn'];
+                    else
+                        % integrated paths, that does not work as it is!
+                        disp_mech(1:nr_prot_vectors(index) ,: ,index) = abs(ls_protrusion);
+                    end
+                    disp_pos(1:nr_prot_vectors(index), index) = i_nn';
+
+                    clear disp_points;
+                    clear ls_protrusionl
+                end  %if NEAREST, NORMAL, MECHANICAL, LEVEL_SET
+
+                % save control images
                 if 1
-                    % linear interpolation
-                    disp_mech(1:nr_prot_vectors(index) ,: ,index)= [disp_points(:,1) - x_nn', disp_points(:,2) - y_nn'];
-                else
-                    % integrated paths, that does not work as it is!
-                    disp_mech(1:nr_prot_vectors(index) ,: ,index) = abs(ls_protrusion);
+                    h_prot_control = figure('Visible','Off');
+                    quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3),protrusion{index-1}(:,4), 0);
+                    hold on
+                    plot(fnval(edge_sp_x,      1: edge_sp_x.knots(end)),        fnval(edge_sp_y,      1: edge_sp_y.knots(end)));
+                    plot(fnval(edge_sp_x_last, 1: edge_sp_x_last.knots(end)),   fnval(edge_sp_y_last, 1: edge_sp_y_last.knots(end)));
+                    axis equal
+                    axis ij
+
+                    axis([0 m_img 0 n_img]);
+                    axis off
+                    %set(gca,'xtick',[]);
+                    %set(gca,'ytick',[]);
+
+                    print(h_prot_control,  fullfile(dir_w, 'pr_vectors', ['prot_vec_' tmp_fname '.tif']),'-dtiff');
                 end
-                disp_pos(1:nr_prot_vectors(index), index) = i_nn';
+            end %if PROTRUSION
+        end %if index>1
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    end % if ans== -1
 
-                clear disp_points;
-                clear ls_protrusionl
-            end  %if NEAREST, NORMAL, MECHANICAL, LEVEL_SET
-
-            % save control images
-            if 1
-                h_prot_control = figure('Visible','Off');
-                quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3),protrusion{index-1}(:,4), 0);
-                hold on
-                plot(fnval(edge_sp_x,      1: edge_sp_x.knots(end)),        fnval(edge_sp_y,      1: edge_sp_y.knots(end)));
-                plot(fnval(edge_sp_x_last, 1: edge_sp_x_last.knots(end)),   fnval(edge_sp_y_last, 1: edge_sp_y_last.knots(end)));
-                axis equal
-                axis ij
-             
-                axis([0 m_img 0 n_img]);
-                axis off
-                %set(gca,'xtick',[]);
-                %set(gca,'ytick',[]);
-               
-                print(h_prot_control,  [dir_w  'pr_vectors' filesep 'prot_vec_' tmp_fname '.tif'],'-dtiff');
-            end
-        end %if PROTRUSION
-    end %if index>1
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-end % if ans== -1
-   
     %%%%%%%%%%   save current timestep variables for next timestep %%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %img_org_last=img_org;
     pixel_list_last=[];
-    pixel_list_last=pixel_list; 
+    pixel_list_last=pixel_list;
     edge_last_pix_nr=[];
     edge_last_pix_nr = edge_pix_nr(index);
     edge_sp_x_last=[];
-    edge_sp_y_last=[];   
+    edge_sp_y_last=[];
     edge_sp_x_last=edge_sp_x;
     edge_sp_y_last=edge_sp_y;
     mask_last = mask;
@@ -976,42 +980,42 @@ end % if ans== -1
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
     %make a rgb image
     [p q]=size(pixel_list);
     for j=1:p
         img_edge_rgb(pixel_list(j,2),pixel_list(j,1),1)=cmap_edge_evolution(index,1);
         img_edge_rgb(pixel_list(j,2),pixel_list(j,1),2)=cmap_edge_evolution(index,2);
         img_edge_rgb(pixel_list(j,2),pixel_list(j,1),3)=cmap_edge_evolution(index,3);
-        
+
         img_edge_w_rgb(pixel_list(j,2),pixel_list(j,1),1)=cmap_edge_evolution(index,1);
         img_edge_w_rgb(pixel_list(j,2),pixel_list(j,1),2)=cmap_edge_evolution(index,2);
-        img_edge_w_rgb(pixel_list(j,2),pixel_list(j,1),3)=cmap_edge_evolution(index,3);       
+        img_edge_w_rgb(pixel_list(j,2),pixel_list(j,1),3)=cmap_edge_evolution(index,3);
     end
 
-    
+
     if MOVIE
-        MakeQTMovie('addmatrix',img_edge_rgb);    
+        MakeQTMovie('addmatrix',img_edge_rgb);
     end
     % save the last image of the movie
     if time ==  FIRST_IMG + T_STEP*(MAX_IMG-1)
         fileName=char(filelist(FIRST_IMG)); %T_STEP*(MAX_IMG-1)
         img_org=imreadnd2(fileName,0,BIT_DEPTH);
-        imwrite(img_edge_rgb, [dir_w  'figures' filesep 'edges_overlay.tif'],'tif' ); 
-        imwrite(img_edge_w_rgb, [dir_w  'figures' filesep 'edges_w_overlay.tif'],'tif'); 
+        imwrite(img_edge_rgb, [dir_w  '/figures' filesep 'edges_overlay.tif'],'tif' );
+        imwrite(img_edge_w_rgb, [dir_w  '/figures' filesep 'edges_w_overlay.tif'],'tif');
         h_img_edge_rgb = figure;
         set(h_img_edge_rgb,'Visible','Off');
         imshow(img_edge_rgb);
-        print(h_img_edge_rgb, [dir_w  'figures' filesep 'edges_overlay.eps'],'-depsc2','-tiff'); 
+        print(h_img_edge_rgb, [dir_w  '/figures' filesep 'edges_overlay.eps'],'-depsc2','-tiff');
         close(h_img_edge_rgb);
         h_img_edge_w_rgb = figure;
         set(h_img_edge_w_rgb,'Visible','Off');
         imshow(img_edge_w_rgb);
-        print(h_img_edge_w_rgb, [dir_w  'figures' filesep 'edges_w_overlay.eps'],'-depsc2','-tiff');         
+        print(h_img_edge_w_rgb, [dir_w  '/figures' filesep 'edges_w_overlay.eps'],'-depsc2','-tiff');
         close(h_img_edge_w_rgb);
     end
     clear pixel_list;
-    
+
     % reset counter in matlab display
     fprintf(1,backSpc);
 end
@@ -1049,36 +1053,36 @@ save([dir_w  'normal_matrix.mat'], 'normal_matrix');
 %%%%%%%%%%%%%%%%%%%  Plot superposition of protrusion and edge %%%%%%%%%%%%
 if PROTRUSION
     h_prot_edge = figure;
-	imshow(img_edge_rgb);
-	hold on
-	for ii=2:index
-       quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');
-	end
-	title('Cell leading edge and protrusion vectors');
-	text(100,100,['Number of images  :',num2str(index)],'Color','r');
-	text(100,120,['Image increment   :',num2str(T_STEP)],'Color','r');
-	text(100,140,['Images  :',fileName],'Color','r','Interpreter','none');
-    
+    imshow(img_edge_rgb);
+    hold on
+    for ii=2:index
+        quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');
+    end
+    title('Cell leading edge and protrusion vectors');
+    text(100,100,['Number of images  :',num2str(index)],'Color','r');
+    text(100,120,['Image increment   :',num2str(T_STEP)],'Color','r');
+    text(100,140,['Images  :',fileName],'Color','r','Interpreter','none');
+
     h_prot_edge_w = figure;
-	imshow(img_edge_w_rgb);
-	hold on
-	for ii=2:index
-       quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r'); 
-	end
-	title('Cell leading edge and protrusion vectors');
-	text(100,100,['Number of images  :',num2str(index)],'Color','r');
-	text(100,120,['Image increment   :',num2str(T_STEP)],'Color','r');
-	text(100,140,['Images  :',fileName],'Color','r','Interpreter','none');    
-    
+    imshow(img_edge_w_rgb);
+    hold on
+    for ii=2:index
+        quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');
+    end
+    title('Cell leading edge and protrusion vectors');
+    text(100,100,['Number of images  :',num2str(index)],'Color','r');
+    text(100,120,['Image increment   :',num2str(T_STEP)],'Color','r');
+    text(100,140,['Images  :',fileName],'Color','r','Interpreter','none');
+
     %save figures
-    hgsave(h_prot_edge,[dir_w  'figures' filesep 'prot_edge.fig']); 
-    print(h_prot_edge, [dir_w  'figures' filesep 'prot_edge.eps'],'-depsc2','-tiff'); 
-    print(h_prot_edge, [dir_w  'figures' filesep 'prot_edge.tif'],'-dtiff'); 
-    
-    hgsave(h_prot_edge_w,[dir_w  'figures' filesep 'prot_edge_w.fig']); 
-    print(h_prot_edge_w, [dir_w  'figures' filesep 'prot_edge_w.eps'],'-depsc2','-tiff'); 
-    print(h_prot_edge_w, [dir_w  'figures' filesep 'prot_edge_w.tif'],'-dtiff');     
-    
+    hgsave(h_prot_edge,fullfile(dir_w, 'figures', 'prot_edge.fig'));
+    print(h_prot_edge, fullfile(dir_w, 'figures', 'prot_edge.eps'),'-depsc2','-tiff');
+    print(h_prot_edge, fullfile(dir_w, 'figures', 'prot_edge.tif'),'-dtiff');
+
+    hgsave(h_prot_edge_w,fullfile(dir_w, 'figures', 'prot_edge_w.fig'));
+    print(h_prot_edge_w, fullfile(dir_w, 'figures', 'prot_edge_w.eps'),'-depsc2','-tiff');
+    print(h_prot_edge_w, fullfile(dir_w, 'figures', 'prot_edge_w.tif'),'-dtiff');
+
     if CONTR
         % plot the edge spline and the protrusion
         figure;
@@ -1089,13 +1093,13 @@ if PROTRUSION
             y=fnval(edge_sp_array_y(ii),knots);
             plot(x,y);
             plot(pixel_edge{ii}(:,1),pixel_edge{ii}(:,2),'rs','MarkerSize',1);
-        end    
+        end
         for ii=2:index;
-            quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');  
+            quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');
         end
         title('The displacement and the edge spline');
-        axis([0 m_img 0  n_img]); 
-        axis ij; 
+        axis([0 m_img 0  n_img]);
+        axis ij;
     end
 end
 
@@ -1105,7 +1109,7 @@ set(h_sup_img_edge_evolution_spline,'Visible','Off');
 hold on
 if PROTRUSION
     for ii=2:index
-        quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');  
+        quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3), protrusion{index-1}(:,4), 0,'r');
     end
 end
 title('Cell leading edge and protrusion vectors');
@@ -1113,17 +1117,17 @@ text(100,100,['Number of images  :',num2str(index)],'Color','r');
 text(100,120,['Image increment   :',num2str(T_STEP)],'Color','r');
 text(100,140,['Images  :',fileName],'Color','r','Interpreter','none');
 set(h_sup_img_edge_evolution_spline,'Visible','On');
-hgsave(h_sup_img_edge_evolution_spline,[dir_w  'figures' filesep 'prot_edge_spline.fig']); 
-print(h_sup_img_edge_evolution_spline, [dir_w  'figures' filesep 'prot_edge_spline.eps'],'-depsc2','-tiff'); 
-print(h_sup_img_edge_evolution_spline, [dir_w  'figures' filesep 'prot_edge_spline.tif'],'-dtiff');  
+hgsave(h_sup_img_edge_evolution_spline,fullfile(dir_w, 'figures', 'prot_edge_spline.fig'));
+print(h_sup_img_edge_evolution_spline, fullfile(dir_w, 'figures', 'prot_edge_spline.eps'),'-depsc2','-tiff');
+print(h_sup_img_edge_evolution_spline, fullfile(dir_w, 'figures', 'prot_edge_spline.tif'),'-dtiff');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%  Save the overlay of speckle image and edge evolution %%
-imwrite(sup_img_edge_evolution,[dir_w  'figures' filesep 'edge_evolution_overlay.tif'],'tif');
+imwrite(sup_img_edge_evolution,fullfile(dir_w, 'figures', 'edge_evolution_overlay.tif'),'tif');
 h_sup_img_edge_evolution = figure;
 imshow(sup_img_edge_evolution);
-print(h_sup_img_edge_evolution, [dir_w  'figures' filesep 'edge_evolution_overlay.eps'],'-depsc2','-tiff');
-hgsave(h_sup_img_edge_evolution,[dir_w  'figures' filesep 'edge_evolution_overlay.fig']); 
+print(h_sup_img_edge_evolution, fullfile(dir_w, 'figures', 'edge_evolution_overlay.eps'),'-depsc2','-tiff');
+hgsave(h_sup_img_edge_evolution, fullfile(dir_w, 'figures', 'edge_evolution_overlay.fig'));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1135,7 +1139,7 @@ hgsave(h_sup_img_edge_evolution,[dir_w  'figures' filesep 'edge_evolution_overla
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%% Calculate the assembled area per time step %%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%% Calculate the assembled area per time step %%%%%%%%%%%
 if MAX_IMG > 1
     index=0;
     for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
@@ -1143,42 +1147,42 @@ if MAX_IMG > 1
         %read the BW image
         fileName=char(filelist(time));
         [tmp_path,tmp_fname] = fileparts(fileName);
-        mask_filename = [dir_w  'cell_mask' filesep 'mask_' tmp_fname '.tif'];           
+        mask_filename = fullfile(dir_w, 'cell_mask', ['mask_', tmp_fname, '.tif']);
         bw_img = imread(mask_filename);
-        
+
         if index > 1
             %calculate current area
             [i,j,c_ta]  = find(bw_img == 1);
-            cell_area(index)  = sum(sum(c_ta));   
-          
+            cell_area(index)  = sum(sum(c_ta));
+
             %calculate assembly area based on BW images
             protrusion_img = 2 .* bw_img +  bw_img_old;
-            
+
             %calculate created area:
             [i,j,c_a]  = find(protrusion_img == 2);
-            created_area(index)   = sum(sum(c_a));   
+            created_area(index)   = sum(sum(c_a));
             %calculate destroid area
-            [i,j,d_a] = find(protrusion_img == 1);  
-            destroied_area(index) = sum(sum(d_a));            
+            [i,j,d_a] = find(protrusion_img == 1);
+            destroied_area(index) = sum(sum(d_a));
         end
         %store image for next time step
         bw_img_old = bw_img;
     end
-    
+
     x_array = FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1);
     % eliminate first value
     x_array(1) = [];
     cell_area(1) = [];
     created_area(1) = [];
     destroied_area(1) = [];
-    
+
     h_total_area = figure;
     plot(x_array, cell_area*PIXEL*PIXEL);
     title('Cell area');
     xlabel('Image frame #');
     ylabel('Area [nm^2]');
     box off;
-    h_axes_area(1) = gca; 
+    h_axes_area(1) = gca;
     h_axes_area(2) = axes('position',get(h_axes_area(1),'position'));
     xlimits = get(h_axes_area(1),'XLim');
     ylimits = get(h_axes_area(1),'YLim');
@@ -1192,7 +1196,7 @@ if MAX_IMG > 1
     xlabel('Time step [s]');
     ylabel('Area [pixel^2]');
     hold off
-    
+
     h_area = figure;
     plot(x_array, created_area*PIXEL*PIXEL);
     hold on
@@ -1202,7 +1206,7 @@ if MAX_IMG > 1
     ylabel('Area [nm^2]');
     legend('Area assembled', 'Area dissasembled');
     box off;
-    h_axes_area(1) = gca; 
+    h_axes_area(1) = gca;
     h_axes_area(2) = axes('position',get(h_axes_area(1),'position'));
     xlimits = get(h_axes_area(1),'XLim');
     ylimits = get(h_axes_area(1),'YLim');
@@ -1217,30 +1221,30 @@ if MAX_IMG > 1
     xlabel('Time step [s]');
     ylabel('Area [pixel^2]');
     hold off
-    
+
     %safe figures
-    hgsave(h_total_area,[dir_w  'figures' filesep 'cell_area.fig']); 
-    print(h_total_area, [dir_w  'figures' filesep 'cell_area.eps'],'-depsc2','-tiff'); 
-    print(h_total_area, [dir_w  'figures' filesep 'cell_area.tif'],'-dtiff');    
-    
-    hgsave(h_area,[dir_w  'figures' filesep 'diff_area.fig']); 
-    print(h_area, [dir_w  'figures' filesep 'diff_area.eps'],'-depsc2','-tiff'); 
-    print(h_area, [dir_w  'figures' filesep 'diff_area.tif'],'-dtiff');
+    hgsave(h_total_area, fullfile(dir_w, 'figures', 'cell_area.fig'));
+    print(h_total_area,  fullfile(dir_w, 'figures', 'cell_area.eps'),'-depsc2','-tiff');
+    print(h_total_area,  fullfile(dir_w, 'figures', 'cell_area.tif'),'-dtiff');
+
+    hgsave(h_area,fullfile(dir_w, 'figures', 'diff_area.fig'));
+    print(h_area, fullfile(dir_w, 'figures', 'diff_area.eps'),'-depsc2','-tiff');
+    print(h_area, fullfile(dir_w, 'figures', 'diff_area.tif'),'-dtiff');
     clear x_array;
 end % MAX_IMG >1
-%%%%%%%%%%%%%%%%%%%  End calculate the assembled area per time step %%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%  End calculate the assembled area per time step %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%   Plot edge length  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 h_edge_length = figure;
-x_array = FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1); 
+x_array = FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1);
 plot(x_array, edge_l .* PIXEL / 1000);
 title('Length of the leading edge');
 xlabel('Image frame #');
 ylabel('Length [\mu m]');
 box off;
-h_axes_edge(1) = gca; 
+h_axes_edge(1) = gca;
 h_axes_edge(2) = axes('position',get(h_axes_edge(1),'position'));
 xlimits = get(h_axes_edge(1),'XLim');
 ylimits = get(h_axes_edge(1),'YLim');
@@ -1257,24 +1261,24 @@ ylabel('Length [pixel]');
 
 
 %safe figure
-hgsave(h_edge_length,[dir_w  'figures' filesep 'edge_length.fig']); 
-print(h_edge_length, [dir_w  'figures' filesep 'edge_length.eps'],'-depsc2','-tiff'); 
-print(h_edge_length, [dir_w  'figures' filesep 'edge_length.tif'],'-dtiff');
+hgsave(h_edge_length,[dir_w  'figures', 'edge_length.fig']);
+print(h_edge_length, [dir_w  'figures', 'edge_length.eps'],'-depsc2','-tiff');
+print(h_edge_length, [dir_w  'figures', 'edge_length.tif'],'-dtiff');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%   Plot control values  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure;
 plot(x_array, rem_pix);
-h_axes_closure(1) = gca; 
+h_axes_closure(1) = gca;
 xlimits = get(h_axes_closure(1),'XLim');
 title('Number of corrected pixels by closure operation');
 xlabel('Image frame #');
 ylabel('Corrected pixel');
 %set(h_axes_closure(1),'XTick',[xlimits(1):3:xlimits(2)]);
-clear x_array; 
+clear x_array;
 %%%%%%%%%%%%%%%%%   End plot control values  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1477,5 +1481,5 @@ if ~PROTRUSION
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
 fclose all
