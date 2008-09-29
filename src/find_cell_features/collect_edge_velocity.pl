@@ -155,7 +155,8 @@ sub create_matlab_code_single {
     
     my $results_folder = catdir($cfg{exp_results_folder},'edge_velocity');
     
-    my @matlab_code = $command_prefix . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count" . $command_suffix;
+    my @matlab_code = "addpath(genpath('edge_velocity')); " . $command_prefix . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count" . $command_suffix;
+    
     return @matlab_code;
 }
 
