@@ -711,7 +711,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
 
         pixel_edge{index} = pixel_list;
 
-        imwrite(mask,[dir_w filesep 'cell_mask' filesep  'mask_' tmp_fname '.tif'],'tif');
+        imwrite(mask,fullfile(dir_w, 'cell_mask',  ['mask_' tmp_fname '.tif']),'tif');
 
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

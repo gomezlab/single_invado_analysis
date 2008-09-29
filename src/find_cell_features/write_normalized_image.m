@@ -3,11 +3,11 @@ function write_normalized_image(I_file,out_file,varargin)
 %                         file using the minimum and maximum values
 %                         specified in a provided file
 %
-%   write_grayscale_image(I,out) normalize the image file 'I', writing the 
+%   write_grayscale_image(I,out) normalize the image file 'I', writing the
 %   result to the file 'out'
 %
-%   write_grayscale_image(I,out'I_num',num) normalize image number 'num' in the 
-%   stacked image file 'I', using the value in the file 'min_max', writing the 
+%   write_grayscale_image(I,out'I_num',num) normalize image number 'num' in the
+%   stacked image file 'I', using the value in the file 'min_max', writing the
 %   result to the file 'out'
 
 
@@ -42,7 +42,7 @@ end
 input_image = imread(I_file,I_num);
 
 output_bits = 8;
-if (intmax(class(input_image)) > 255) 
+if (intmax(class(input_image)) > 255)
     output_bits = 16;
 end
 
@@ -51,7 +51,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 possible_ranges = [2^8, 2^12, 2^16];
-max_val = possible_ranges(find(possible_ranges > max(input_image(:)), 1, 'first')); 
+max_val = possible_ranges(find(possible_ranges > max(input_image(:)), 1, 'first'));
 
 normalized_image = normalize_grayscale_image(input_image,'min_max',[0,max_val - 1]);
 
