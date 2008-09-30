@@ -1,4 +1,4 @@
-function [img_proccessed, img_edge]=imEdgeTracker(varargin)
+function [img_proccessed, img_edge]=imEdgeTracker_nojava(varargin)
 % IMEDGETRACKER measures the protrusion rate of cell leading edge
 %
 %               imEdgeTracker measures the protrusion rate of a cell edge. For

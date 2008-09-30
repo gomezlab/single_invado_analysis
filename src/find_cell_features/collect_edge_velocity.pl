@@ -148,7 +148,7 @@ sub create_matlab_code_stack {
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
 
-    my $command_prefix = "imEdgeTracker('contr',0,'protrusion',1,'t_step',1,";
+    my $command_prefix = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,";
     my $command_suffix = ")";
 
     my $image_file_count = scalar(@image_files);
