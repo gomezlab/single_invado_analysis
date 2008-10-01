@@ -62,7 +62,7 @@ foreach (@movie_params) {
     }
 
     mkpath(dirname($params{'config_file'}));
-
+    
     &write_matlab_config(%params);
     
     push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
@@ -70,7 +70,6 @@ foreach (@movie_params) {
         push @matlab_code, "make_single_ad_frames('" . $params{'config_file'} . "'$movie_debug_string)";
     }
 }
-
 
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
@@ -80,7 +79,7 @@ my %emerald_opt = ("folder" => $error_folder);
 if ($opt{emerald} || $opt{emerald_debug}) {
     my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
     if ($opt{emerald_debug}) {
-        print join("\n", @commands);
+        print "\n", join("\n\n", @commands), "\n";
     } else {
         &Emerald::send_LSF_commands(\@commands);
     }

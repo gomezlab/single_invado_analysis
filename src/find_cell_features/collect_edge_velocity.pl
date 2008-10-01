@@ -81,15 +81,15 @@ foreach (@image_sets) {
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup', 'error.txt');
+my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo');
+my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo', 'error.txt');
 mkpath($error_folder);
 
-my %emerald_opt = ("folder" => $error_folder, "runtime" => "0:5");
+my %emerald_opt = ("folder" => $error_folder);
 if ($opt{emerald} || $opt{emerald_debug}) {
     my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
     if ($opt{emerald_debug}) {
-        print join("\n", @commands);
+        print "\n", join("\n", @commands), "\n";
     } else {
         &Emerald::send_LSF_commands(\@commands);
     }
@@ -147,7 +147,7 @@ sub create_matlab_code_stack {
 
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
-
+    
     my $command_prefix = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,";
     my $command_suffix = ")";
 
@@ -155,7 +155,7 @@ sub create_matlab_code_single {
     
     my $results_folder = catdir($cfg{exp_results_folder},'edge_velocity');
     
-    my @matlab_code = "addpath(genpath('edge_velocity')); " . $command_prefix . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count" . $command_suffix;
+    my @matlab_code = $command_prefix . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count" . $command_suffix;
     
     return @matlab_code;
 }
