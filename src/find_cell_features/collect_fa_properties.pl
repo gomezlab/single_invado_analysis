@@ -67,7 +67,11 @@ if ($opt{emerald} || $opt{emerald_debug}) {
         &Emerald::send_LSF_commands(\@lsf_command);
     }
 } else {
-    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+    if ($opt{debug}) {
+        print join("\n", @matlab_code);
+    } else {
+        &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
+    }
 }
 
 ################################################################################
@@ -84,14 +88,21 @@ sub create_all_matlab_commands {
         my $raw_image_file = $raw_image_files[$_];
         my $adhesion_image_file = $adhesion_image_files[$_];
         my $cell_mask = catfile(dirname($raw_image_file), $cfg{cell_mask_file});
-
+        
+        my $protrusion_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_data_file});
+        
         my $extra_opt = "";
-
         if (-e $cell_mask) {
-            $matlab_code[0] .= "find_adhesion_properties('$raw_image_file','$adhesion_image_file','cell_mask','$cell_mask'$extra_opt)\n";
-        } else {
-            $matlab_code[0] .= "find_adhesion_properties('$raw_image_file','$adhesion_image_file'$extra_opt)\n";
+            $extra_opt .= ",'cell_mask','$cell_mask'";
         }
+        if (-e $protrusion_file) {
+            $extra_opt .= ",'protrusion_file','$protrusion_file'";
+        }
+        
+        my $this_command = "find_adhesion_properties('$raw_image_file','$adhesion_image_file','i_num',";
+        $this_command .= $_ + 1 . "$extra_opt)\n";
+
+        $matlab_code[0] .= $this_command;
     }
 
     return @matlab_code;

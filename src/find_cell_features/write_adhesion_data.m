@@ -31,7 +31,9 @@ if (not(exist(out_dir,'dir')))
     mkdir(out_dir);
 end
 
-to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage','PixelIdxList','PixelList','SubarrayIdx', 'Border_pix'};
+to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage', ...
+              'PixelIdxList', 'PixelList', 'SubarrayIdx', 'Border_pix', ... 
+              'Edge_speed'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -59,19 +61,22 @@ for i = 1:size(field_names,1)
     fclose(file_handle);
 end
 
+print_strings = struct('PixelIdxList','%0.f','Edge_speed','%f');
+
 for i = 1:size(field_names,1)
-    if (strmatch(field_names(i),'PixelIdxList'))
+    if (not(isempty(strmatch(field_names(i),'PixelIdxList'))) || ... 
+        not(isempty(strmatch(field_names(i),'Edge_speed'))))
         num_ad = size(S,1);
 
         file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
         file_handle = fopen(file_out,'wt');
         for j = 1:num_ad
-            data = (S(j).PixelIdxList');
+            data = S(j).(field_names{i})';
             for k = 1:size(data,2)
                 if (k < size(data,2))
-                    fprintf(file_handle,'%0.f,',data(k));
+                    fprintf(file_handle,[print_strings.(field_names{i}),','],data(k));
                 else
-                    fprintf(file_handle,'%0.f\n',data(k));
+                    fprintf(file_handle,[print_strings.(field_names{i}),'\n'],data(k));
                 end
             end
         end
