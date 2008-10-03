@@ -16,6 +16,7 @@ use Data::Dumper;
 my %opt = ("queue" => "week", "output_file" => "out.txt", 
            "error_file" => "error.txt", "folder" => "./",
            "runtime" => "24",);
+
 sub send_LSF_commands {
     my @commands = @{$_[0]};
     

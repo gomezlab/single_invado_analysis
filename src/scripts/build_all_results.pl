@@ -20,7 +20,7 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "skip_vis|skip_visualization", "only_vis|only_visualization")
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", "only_vis|only_visualization")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -44,7 +44,7 @@ my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
 @config_files = ($config_files[0]) if $opt{debug};
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
-if ($opt{emerald}) {
+if ($opt{lsf}) {
     my $starting_dir        = getcwd;
     my @overall_command_seq = (
         [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
@@ -65,7 +65,7 @@ if ($opt{emerald}) {
 
     for (@overall_command_seq) {
         my @command_seq = @{$_};
-        my @command_seq = map { [ $_->[0], $_->[1] . " -emerald" ] } @command_seq;
+        my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
         &execute_command_seq(\@command_seq, $starting_dir);
         &wait_till_LSF_jobs_finish;
     }
@@ -140,7 +140,11 @@ sub execute_command_seq {
         foreach (@config_files) {
             my $config_command = "$command -cfg $_";
             chdir $dir;
-            system $config_command;
+            if ($opt{debug}) {
+                print $config_command, "\n";
+            } else {
+                system $config_command;
+            }
             chdir $starting_dir;
         }
     }

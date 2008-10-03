@@ -21,6 +21,7 @@ use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
 use Emerald;
+use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -28,8 +29,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d")
-  or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -68,25 +68,10 @@ if ($opt{debug}) {
 
 push @matlab_code, &create_matlab_code(\@image_files, $out_file);
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo', 'error.txt');
-mkpath($error_folder);
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo');
+$opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo', 'error.txt');
 
-my %emerald_opt = ("folder" => $error_folder);
-if ($opt{emerald} || $opt{emerald_debug}) {
-    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-    if ($opt{emerald_debug}) {
-        print "\n", join("\n", @commands), "\n";
-    } else {
-        &Emerald::send_LSF_commands(\@commands);
-    }
-} else {
-    if ($opt{debug}) {
-        print join("\n", @matlab_code);
-    } else {
-        &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
-    }
-}
+&FA_job::run_matlab_progam(\@matlab_code,\%opt);
 
 ################################################################################
 #Functions
@@ -112,26 +97,6 @@ sub create_matlab_code {
     return @matlab_code;
 }
 
-sub create_matlab_code_stack {
-    my @image_files = @{ $_[0] };
-    my $out_file    = $_[1];
-
-    my @matlab_code;
-
-    my $total_stack_images = Image::Stack::get_image_stack_number($image_files[0]);
-    foreach my $i_num (1 .. $total_stack_images) {
-        next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
-
-        my $padded_num = sprintf("%0" . length($total_stack_images) . "d", $i_num);
-
-        my $output_path = catdir($cfg{individual_results_folder}, $padded_num);
-        mkpath($output_path);
-        my $final_out_file = catfile($output_path, $out_file);
-        $matlab_code[0] .= "write_normalized_image('$image_files[0]','$final_out_file','I_num',$i_num);\n";
-    }
-    return @matlab_code;
-}
-
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
 
@@ -139,36 +104,15 @@ sub create_matlab_code_single {
     my $command_suffix = ")";
 
     my $image_file_count = scalar(@image_files);
-
-    my $results_folder = catdir($cfg{exp_results_folder}, 'edge_velocity');
-
+    
+    my $results_folder = catdir($cfg{exp_results_folder},'pax_edge_velocity');
+    
     my @matlab_code =
         $command_prefix
       . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count"
       . $command_suffix;
 
     return @matlab_code;
-}
-
-sub remove_file_name_spaces {
-    my @new_files;
-    for (@_) {
-        my $dir       = dirname($_);
-        my $file_name = basename($_);
-
-        if ($file_name =~ /\s/) {
-            if ($file_name =~ /(\d+\..*)/) {
-                if (move($_, catfile($dir, $1))) {
-                    push @new_files, catfile($dir, $1);
-                }
-            } else {
-                warn "Unable to determine image number for file: $_";
-            }
-        } else {
-            push @new_files, $_;
-        }
-    }
-    return @new_files;
 }
 
 ################################################################################

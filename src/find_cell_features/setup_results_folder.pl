@@ -21,6 +21,7 @@ use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
 use Math::Matlab::Extra;
 use Emerald;
+use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -28,7 +29,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d")
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -81,21 +82,11 @@ foreach (@image_sets) {
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup', 'error.txt');
-mkpath($error_folder);
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup');
+$opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup', 'error.txt');
+$opt{lsf_opt}{runtime} = "0:5";
 
-my %emerald_opt = ("folder" => $error_folder, "runtime" => "0:5");
-if ($opt{emerald} || $opt{emerald_debug}) {
-    my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-    if ($opt{emerald_debug}) {
-        print join("\n", @commands);
-    } else {
-        &Emerald::send_LSF_commands(\@commands);
-    }
-} else {
-    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
-}
+&FA_job::run_matlab_progam(\@matlab_code,\%opt);
 
 ################################################################################
 #Functions

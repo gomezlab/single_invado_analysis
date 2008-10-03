@@ -20,6 +20,7 @@ use Config::Adhesions;
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
 use Emerald;
+use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -29,7 +30,7 @@ my %opt;
 $opt{debug} = 0;
 $opt{output} = "data.stor";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "output|o=s", "image_num=s", 
-                  "emerald|e", "emerald_debug|e_d") or die;
+                  "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -43,12 +44,8 @@ my %cfg = $ad_conf->get_cfg_hash;
 ###############################################################################
 
 my %data_sets;
-if ($opt{emerald} || $opt{emerald_debug}) {
+if ($opt{lsf}) {
     my @image_nums = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
-    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking_data');
-    mkpath($error_folder);
-    
-    my %emerald_opt = ("folder" => $error_folder);
 
     my @commands;
     foreach (@image_nums) {
@@ -56,12 +53,11 @@ if ($opt{emerald} || $opt{emerald_debug}) {
         #future file name changes
         push @commands, "$0 -cfg $opt{cfg} -o $opt{output} -image_num $_";
     }
-    @commands = &Emerald::create_general_LSF_commands(\@commands,\%emerald_opt);
-    if ($opt{emerald_debug}) {
-        print join("\n", @commands);
-    } else {
-        &Emerald::send_LSF_commands(\@commands);
-    }
+    
+    $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking_data');
+    
+    &FA_job::run_general_lsf_program(\@commands,\%opt);
+
     exit;
 } else {
     print "\n\nGathering Data Files\n" if $opt{debug};

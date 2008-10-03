@@ -20,6 +20,7 @@ use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
 use Emerald;
+use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -28,7 +29,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{input} = "data.stor";
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i|input_data_files=s", "emerald|e") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i|input_data_files=s", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -40,14 +41,11 @@ my %cfg = &ParseConfig(\%opt);
 #Main Program
 ###############################################################################
 
-if ($opt{emerald}) {
-    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking');
-    mkpath($error_folder);
-    
-    my %emerald_opt = ("folder" => $error_folder);
+if ($opt{lsf}) {
     my @command = "$0 -cfg $opt{cfg} -input data.stor";
-    @command = &Emerald::create_general_LSF_commands(\@command,\%emerald_opt);
-    &Emerald::send_LSF_commands(\@command);
+    $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking');    
+    &FA_job::run_general_lsf_program(\@command,\%opt);
+    
     exit;
 }
 

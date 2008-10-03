@@ -22,6 +22,7 @@ use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
 use Math::R;
 use Emerald;
+use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -29,7 +30,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "tracking_mat=s", "skip_lin_regions", "emerald|e") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "tracking_mat=s", 
+                  "skip_lin_regions", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -56,16 +58,16 @@ if (exists $opt{tracking_mat}) {
 # Main Program
 ###############################################################################
 
-if ($opt{emerald}) {
-    my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis');
-    mkpath($error_folder);
-
-    my %emerald_opt = ("folder" => $error_folder);
+if ($opt{lsf}) {
+    #$0 - the name of the program currently running, used to protect against
+    #future file name changes
     my @command = "$0 -cfg $opt{cfg}";
     $command[0] .= " -tracking_mat $opt{tracking_mat}" if (exists $opt{tracking_mat});
 
-    @command = &Emerald::create_general_LSF_commands(\@command, \%emerald_opt);
-    &Emerald::send_LSF_commands(\@command);
+    $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis');
+
+    &FA_job::run_general_lsf_program(\@command,\%opt);
+    
     exit;
 }
 

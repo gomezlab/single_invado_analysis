@@ -18,6 +18,7 @@ use Data::Dumper;
 use Config::Adhesions;
 use Math::Matlab::Extra;
 use Emerald;
+use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -25,7 +26,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "emerald|e", "emerald_debug|e_d") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -54,21 +55,11 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_all_matlab_commands;
 
-my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
-my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
+$opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
+$opt{lsf_opt}{runtime} = "1";
 
-mkpath($error_folder);
-my %emerald_opt = ("folder" => $error_folder, "runtime" => "1");
-if ($opt{emerald} || $opt{emerald_debug}) {
-    my @lsf_commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%emerald_opt);
-    if ($opt{emerald_debug}) {
-        print join("\n", @lsf_commands);
-    } else {
-        &Emerald::send_LSF_commands(\@lsf_commands);
-    }
-} else {
-    &Math::Matlab::Extra::execute_commands(\@matlab_code, $error_file);
-}
+&FA_job::run_matlab_progam(\@matlab_code,\%opt);
 
 ################################################################################
 #Functions
