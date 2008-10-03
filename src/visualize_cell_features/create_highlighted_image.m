@@ -4,7 +4,7 @@ function high_image = create_highlighted_image(I,high,varargin)
 %   H_I = create_highlighted_image(I,HIGHLIGHTS) adds green highlights to
 %   image 'I', using the binary image 'HIGHLIGHTS' as the guide
 %
-%   H_I = create_highlighted_image(I,HIGHLIGHTS,'color',[R,G,B]) adds
+%   H_I = create_highlighted_image(I,HIGHLIGHTS,'color_map',[R,G,B]) adds
 %   highlights of color specified by the RGB sequence '[R,G,B]' to image
 %   'I', using the binary image 'HIGHLIGHTS' as the guide
 

@@ -40,46 +40,33 @@ my %cfg = ParseConfig(\%opt);
 # Main Program
 ################################################################################
 
-mkpath($cfg{individual_results_folder});
-
-my @image_sets = ([qw(raw_mask_folder raw_mask_file)]);
 my @matlab_code;
-my $all_images_empty = 1;
 
-foreach (@image_sets) {
-    my $folder   = $cfg{ $_->[0] };
-    my $out_file = $cfg{ $_->[1] };
+my $folder   = $cfg{adhesion_image_folder};
+my $out_file = $cfg{adhesion_image_file};
 
-    next if (not(defined($folder)));
+next if (not(defined($folder)));
 
-    #Remove an ' marks used in config file to keep the folder name together
-    $folder =~ s/\'//g;
+#Remove an ' marks used in config file to keep the folder name together
+$folder =~ s/\'//g;
 
-    my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
-    my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
+my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
+my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
 
-    #Move all the files with spaces in their names, MATLAB on emerald doesn't
-    #like them
-    @image_files = &remove_file_name_spaces(@image_files);
-    $all_images_empty = 0 if (@image_files);
-
-    if ($opt{debug}) {
-        if (scalar(@image_files) > 1) {
-            print "Image files found: $image_files[0] - $image_files[$#image_files]\n";
-        } elsif (scalar(@image_files) == 0) {
-            print "No image files found matching $cfg{exp_data_folder}/$folder, moving onto next image set.\n";
-            next;
-        } else {
-            print "Image file found: $image_files[0]\n";
-        }
-        print "For Config Variable: ", $_->[0], "\n\n";
+if ($opt{debug}) {
+    if (scalar(@image_files) > 1) {
+        print "Image files found: $image_files[0] - $image_files[$#image_files]\n";
+    } elsif (scalar(@image_files) == 0) {
+        print "No image files found matching $cfg{exp_data_folder}/$folder, moving onto next image set.\n";
+        next;
     } else {
-        next if (not @image_files);
+        print "Image file found: $image_files[0]\n";
     }
-    
-    push @matlab_code, &create_matlab_code(\@image_files, $out_file);
+} else {
+    next if (not @image_files);
 }
-die "Unable to find any images to include in the new experiment" if $all_images_empty;
+
+push @matlab_code, &create_matlab_code(\@image_files, $out_file);
 
 my $error_folder = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo');
 my $error_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'edge_velo', 'error.txt');
@@ -147,16 +134,19 @@ sub create_matlab_code_stack {
 
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
-    
+
     my $command_prefix = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,";
     my $command_suffix = ")";
 
     my $image_file_count = scalar(@image_files);
-    
-    my $results_folder = catdir($cfg{exp_results_folder},'edge_velocity');
-    
-    my @matlab_code = $command_prefix . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count" . $command_suffix;
-    
+
+    my $results_folder = catdir($cfg{exp_results_folder}, 'edge_velocity');
+
+    my @matlab_code =
+        $command_prefix
+      . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count"
+      . $command_suffix;
+
     return @matlab_code;
 }
 

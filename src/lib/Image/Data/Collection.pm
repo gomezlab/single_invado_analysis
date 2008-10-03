@@ -205,29 +205,6 @@ sub check_PixelIdxList_uniqueness {
 ########################################
 # Other
 #######################################
-sub trim_data_sets {
-    my %cfg       = %{ $_[0] };
-    my %opt       = %{ $_[1] };
-    my %data_sets = %{ $_[2] };
-
-    my @excluded_nums;
-    for my $ex_num (@{ $cfg{exclude_image_nums} }) {
-        for my $this_num (sort { $a <=> $b } keys %data_sets) {
-            if ($ex_num == $this_num) {
-                delete $data_sets{$this_num};
-                push @excluded_nums, $ex_num;
-            }
-        }
-    }
-    if ($opt{debug}) {
-        if (scalar(@excluded_nums) != 0) {
-            print "Image number removed from further Dataset: ", join(", ", @excluded_nums), "\n";
-        }
-    }
-
-    return %data_sets;
-}
-
 sub read_in_tracking_mat {
     my %cfg  = %{ $_[0] };
     my %opt  = %{ $_[1] };
