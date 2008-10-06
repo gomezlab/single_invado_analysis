@@ -35,15 +35,11 @@ sorted_pix_vals = sort(unique(high_passed_image(:)),'descend');
 
 count = start_count;
 
+%Cycle through all pixels of image
 for i = (start_count + 1):length(sorted_pix_vals)
-    if (sorted_pix_vals(i) <= i_p.Results.filter_thresh)
-        continue
-    end
-
-    if (count > numel(high_passed_image) && i_p.Results.debug == 1)
-        continue
-    end
-
+    %skip pixels below the filter threshold
+    if (sorted_pix_vals(i) <= i_p.Results.filter_thresh), continue, end
+    
     lin_ind = find(high_passed_image == sorted_pix_vals(i));
 
     for j = 1:length(lin_ind)
@@ -52,20 +48,24 @@ for i = (start_count + 1):length(sorted_pix_vals)
     end
 
     count = count + 1;
-    if (i_p.Results.debug)
-        if (not(exist('ad_zamir_samples','dir'))), mkdir('ad_zamir_samples'); end
-        imwrite(double(ad_zamir)/2^16,fullfile('ad_zamir_samples',[num2str(count),'.png']),'bitdepth',16)
-    end
 
     if (mod(count,100) == 0 && i_p.Results.debug)
         disp(['Count: ',num2str(count),'/',num2str(sum(sorted_pix_vals > i_p.Results.filter_thresh))])
     end
 end
 
-filled_ad_zamir = imfill(ad_zamir);
-filled_pix = find(and(filled_ad_zamir > 0, ad_zamir == 0));
-for i = 1:length(filled_pix)
-    ad_zamir = add_single_pixel(ad_zamir,filled_pix(i),min_size_pixels);
+%Find and fill holes in single adhesions
+ad_nums = unique(ad_zamir);
+assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
+for i = 2:length(ad_nums)
+    this_num = ad_nums(i);
+    this_ad = zeros(size(ad_zamir));
+    this_ad(ad_zamir == this_num) = 1;
+    filled_ad = imfill(this_ad);
+    filled_pix = find(and(filled_ad > 0, not(this_ad)));
+    for j = 1:length(filled_pix)
+        ad_zamir = add_single_pixel(ad_zamir,filled_pix(j),min_size_pixels);
+    end
 end
 
 ad_nums = unique(ad_zamir);
