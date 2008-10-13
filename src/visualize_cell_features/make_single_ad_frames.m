@@ -48,12 +48,13 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
-if (i_p.Results.debug), tracking_seq = tracking_seq(1:2,:); end
+if (i_p.Results.debug), tracking_seq = tracking_seq(1:1000,:); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-bounding_matrix = [Inf*ones(size(tracking_seq,1),1), Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
+bounding_matrix = [Inf*ones(size(tracking_seq,1),1), Inf*ones(size(tracking_seq,1),1), ...
+                   -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
 
 %i_seen will keep track of the number of images that have actually been
 %read into the program, we need to keep track of this due to skipped
@@ -121,7 +122,7 @@ i_seen = 0;
 %all_images will hold all the highlighted frames produced for the movies,
 %each row will hold the images from each lineages, where the columns will
 %hold all the frames from each time point
-all_images = cell(size(tracking_seq,1), max_image_num);
+all_images = cell(size(tracking_seq,1), 1);
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
 
@@ -165,11 +166,23 @@ for j = 1:max_image_num
         try surrounding_entries(1) = tracking_row(i_seen - 1); end %#ok<TRYNC>
         try surrounding_entries(3) = tracking_row(i_seen + 1); end %#ok<TRYNC>
         
-        if (all(surrounding_entries <= 0)), continue; end
+        if (all(surrounding_entries <= 0))
+            if (size(all_images{i},2) > 0)                
+                padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
+%                 output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
+
+                output_file = fullfile(out_path,'testing', ['montage_',padded_num, '.png']);
+
+                write_montage_image_set(all_images{i},output_file)
+                all_images{i} = cell(0);
+            end
+            continue; 
+        end
 
         ad_num = tracking_row(i_seen);
         if (ad_num <= 0); ad_num = -Inf; end
-        bounded_ad_label_perim = ad_label_perim(bounding_matrix(i,2):bounding_matrix(i,4), bounding_matrix(i,1):bounding_matrix(i,3));
+        bounded_ad_label_perim = ad_label_perim(bounding_matrix(i,2):bounding_matrix(i,4), ...
+                                                bounding_matrix(i,1):bounding_matrix(i,3));
 
         this_ad = zeros(size(bounded_ad_label_perim));
         this_ad(bounded_ad_label_perim == ad_num) = 1;
@@ -185,27 +198,39 @@ for j = 1:max_image_num
             highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0],'mix_percent',0.5);
         end
 
-        all_images{i,j} = highlighted_image;
+        all_images{i}{i_seen} = highlighted_image;
     end
-    if (mod(j,10) == 0 && i_p.Results.debug)
+    if (mod(j,1) == 0 && i_p.Results.debug)
         disp(['Highlight image: ',num2str(i_seen)]); 
     end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Write Ad Sequences in Montage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 for i = 1:size(all_images,1)
-    this_set = all_images(i,1:end);
-    notempty = zeros(size(this_set));
-    for j = 1:size(this_set,2)
-        notempty(j) = not(isempty(this_set{j}));
+    if (size(all_images{i}, 2) == 0), continue; end
+    
+    padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
+%     output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
+    output_file = fullfile(out_path,'testing', ['montage_',padded_num, '.png']);
+    write_montage_image_set(all_images{i},output_file)
+end
+
+
+
+profile off;
+if (i_p.Results.debug), profile viewer; end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function write_montage_image_set(image_set,output_file)
+    
+    while isempty(image_set{1})
+        image_set{1:size(image_set,2) - 1} = image_set{2:end};
     end
-    if (sum(notempty) == 0), continue; end
-
-    total_images = find(notempty,1,'last') - find(notempty,1,'first') + 1;
-
+    
+    total_images = size(image_set,2);
+    
     images_per_side = ones(1,2);
     for j = 1:(ceil(sqrt(total_images)) - 1)
         if (total_images <= images_per_side(1)*images_per_side(2)), continue; end
@@ -218,24 +243,24 @@ for i = 1:size(all_images,1)
         end
     end
     assert(images_per_side(1)*images_per_side(2) >= total_images, 'Error; images per side not large enough');
-    image_size = size(this_set{1,find(notempty,1,'first')});
+    image_size = size(image_set{1});
 
-    montage = 0.5*ones(image_size(1)*images_per_side(1)+images_per_side(1)-1, image_size(2)*images_per_side(2)+images_per_side(2) - 1, 3);
+    montage = 0.5*ones(image_size(1)*images_per_side(1)+images_per_side(1) - 1, ...
+                       image_size(2)*images_per_side(2)+images_per_side(2) - 1, ...
+                       3);
     for j = 1:images_per_side(1)
         for k = 1:images_per_side(2)
-            i_index = find(notempty,1,'first') + (j-1)*images_per_side(2) + (k-1);
+            i_index = (j-1)*images_per_side(2) + k;
+            
+            if (isempty(image_set{i_index})), continue; end
+            if (i_index > total_images), continue; end
 
-            if (i_index > length(notempty)), continue; end
-            if (not(notempty(i_index))), continue; end
-
-            montage((j-1)*image_size(1) + j:(j)*image_size(1) + j - 1, (k-1)*image_size(2) + k:(k)*image_size(2) + k - 1, 1:3) = this_set{1,i_index};
+            montage((j-1)*image_size(1) + j:(j)*image_size(1) + j - 1, ...
+                    (k-1)*image_size(2) + k:(k)*image_size(2) + k - 1, ...
+                    1:3) = image_set{i_index};
         end
     end
-    if (not(exist(fullfile(out_path,'single_ad'),'dir'))), mkdir(fullfile(out_path,'single_ad')); end
+    output_folder = fileparts(output_file);
+    if (not(exist(output_folder,'dir'))), mkdir(output_folder); end
 
-    padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
-    imwrite(montage,fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']));
-end
-
-profile off;
-if (i_p.Results.debug), profile viewer; end
+    imwrite(montage, output_file);
