@@ -54,7 +54,7 @@ if (i_p.Results.debug), tracking_seq = tracking_seq(1:1000,:); end
 % Gather Bounding Matrices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 bounding_matrix = [Inf*ones(size(tracking_seq,1),1), Inf*ones(size(tracking_seq,1),1), ...
-                   -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
+    -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
 
 %i_seen will keep track of the number of images that have actually been
 %read into the program, we need to keep track of this due to skipped
@@ -86,9 +86,9 @@ for j = 1:max_image_num
         if (corners(3) > bounding_matrix(i,3)), bounding_matrix(i,3) = corners(3); end
         if (corners(4) > bounding_matrix(i,4)), bounding_matrix(i,4) = corners(4); end
     end
-    
-    if ((i_p.Results.debug && mod(i_seen,10) == 0) || j == max_image_num) 
-        disp(['Bounding image: ',num2str(i_seen)]); 
+
+    if (i_p.Results.debug && (mod(i_seen,10) == 0 || j == max_image_num))
+        disp(['Bounding image: ',num2str(i_seen)]);
     end
 end
 
@@ -127,7 +127,7 @@ for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
 
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
-    
+
     i_seen = i_seen + 1;
     %we want to include the frames immediately before and after the deaths
     %of the adhesions and we also want to skip the process of reading and doing
@@ -142,7 +142,7 @@ for j = 1:max_image_num
     try surrounding_cols(:,3) = tracking_seq(:,i_seen + 1); end %#ok<TRYNC>
 
     if (all(all(surrounding_cols <= 0))), continue; end
-    
+
     %Gather and scale the input adhesion image
     orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
     scale_factor = double(intmax(class(orig_i)));
@@ -158,31 +158,28 @@ for j = 1:max_image_num
 
     for i = 1:size(tracking_seq,1)
         tracking_row = tracking_seq(i,:);
-        
+
         %now we do a check to see if there is an adhesion in the next
         %image or the image before, because we also want to render the
         %image immediately before birth and right after death
         surrounding_entries = [0, tracking_row(i_seen), 0];
         try surrounding_entries(1) = tracking_row(i_seen - 1); end %#ok<TRYNC>
         try surrounding_entries(3) = tracking_row(i_seen + 1); end %#ok<TRYNC>
-        
+
         if (all(surrounding_entries <= 0))
-            if (size(all_images{i},2) > 0)                
+            if (size(all_images{i},2) > 0)
                 padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
-%                 output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
-
-                output_file = fullfile(out_path,'testing', ['montage_',padded_num, '.png']);
-
+                output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
                 write_montage_image_set(all_images{i},output_file)
                 all_images{i} = cell(0);
             end
-            continue; 
+            continue;
         end
 
         ad_num = tracking_row(i_seen);
         if (ad_num <= 0); ad_num = -Inf; end
         bounded_ad_label_perim = ad_label_perim(bounding_matrix(i,2):bounding_matrix(i,4), ...
-                                                bounding_matrix(i,1):bounding_matrix(i,3));
+            bounding_matrix(i,1):bounding_matrix(i,3));
 
         this_ad = zeros(size(bounded_ad_label_perim));
         this_ad(bounded_ad_label_perim == ad_num) = 1;
@@ -201,20 +198,17 @@ for j = 1:max_image_num
         all_images{i}{i_seen} = highlighted_image;
     end
     if (mod(j,1) == 0 && i_p.Results.debug)
-        disp(['Highlight image: ',num2str(i_seen)]); 
+        disp(['Highlight image: ',num2str(i_seen)]);
     end
 end
 
 for i = 1:size(all_images,1)
     if (size(all_images{i}, 2) == 0), continue; end
-    
+
     padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
-%     output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
-    output_file = fullfile(out_path,'testing', ['montage_',padded_num, '.png']);
+    output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
     write_montage_image_set(all_images{i},output_file)
 end
-
-
 
 profile off;
 if (i_p.Results.debug), profile viewer; end
@@ -224,43 +218,45 @@ if (i_p.Results.debug), profile viewer; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function write_montage_image_set(image_set,output_file)
-    
-    while isempty(image_set{1})
-        image_set{1:size(image_set,2) - 1} = image_set{2:end};
+temp_image_set = cell(0);
+for i = 1:size(image_set,2)
+    if (isempty(image_set{i})), continue; end
+    temp_image_set{size(temp_image_set,2) + 1} = image_set{i};
+end
+image_set = temp_image_set;
+
+total_images = size(image_set,2);
+
+images_per_side = ones(1,2);
+for j = 1:(ceil(sqrt(total_images)) - 1)
+    if (total_images <= images_per_side(1)*images_per_side(2)), continue; end
+
+    if (total_images <= j * (j + 1))
+        images_per_side = [j, j+1];
+        continue;
+    else
+        images_per_side = [j + 1, j + 1];
     end
-    
-    total_images = size(image_set,2);
-    
-    images_per_side = ones(1,2);
-    for j = 1:(ceil(sqrt(total_images)) - 1)
-        if (total_images <= images_per_side(1)*images_per_side(2)), continue; end
+end
+assert(images_per_side(1)*images_per_side(2) >= total_images, 'Error; images per side not large enough');
+image_size = size(image_set{1});
 
-        if (total_images <= j * (j + 1))
-            images_per_side = [j, j+1];
-            continue;
-        else
-            images_per_side = [j + 1, j + 1];
-        end
+montage = 0.5*ones(image_size(1)*images_per_side(1)+images_per_side(1) - 1, ...
+    image_size(2)*images_per_side(2)+images_per_side(2) - 1, ...
+    3);
+for j = 1:images_per_side(1)
+    for k = 1:images_per_side(2)
+        i_index = (j-1)*images_per_side(2) + k;
+
+        if (i_index > total_images), continue; end
+        if (isempty(image_set{i_index})), continue; end
+
+        montage((j-1)*image_size(1) + j:(j)*image_size(1) + j - 1, ...
+            (k-1)*image_size(2) + k:(k)*image_size(2) + k - 1, ...
+            1:3) = image_set{i_index};
     end
-    assert(images_per_side(1)*images_per_side(2) >= total_images, 'Error; images per side not large enough');
-    image_size = size(image_set{1});
+end
+output_folder = fileparts(output_file);
+if (not(exist(output_folder,'dir'))), mkdir(output_folder); end
 
-    montage = 0.5*ones(image_size(1)*images_per_side(1)+images_per_side(1) - 1, ...
-                       image_size(2)*images_per_side(2)+images_per_side(2) - 1, ...
-                       3);
-    for j = 1:images_per_side(1)
-        for k = 1:images_per_side(2)
-            i_index = (j-1)*images_per_side(2) + k;
-            
-            if (isempty(image_set{i_index})), continue; end
-            if (i_index > total_images), continue; end
-
-            montage((j-1)*image_size(1) + j:(j)*image_size(1) + j - 1, ...
-                    (k-1)*image_size(2) + k:(k)*image_size(2) + k - 1, ...
-                    1:3) = image_set{i_index};
-        end
-    end
-    output_folder = fileparts(output_file);
-    if (not(exist(output_folder,'dir'))), mkdir(output_folder); end
-
-    imwrite(montage, output_file);
+imwrite(montage, output_file);
