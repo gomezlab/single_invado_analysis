@@ -206,7 +206,7 @@ sub track_live_adhesions {
             push @{ $tracking_mat[$i] }, -1;
             next;
         }
-
+        
         $tracking_facts{$i_num}{live_adhesions}++;
         my $adhesion_num      = ${ $tracking_mat[$i] }[$cur_step];
         my @dist_to_next_ads  = @{ $time_step_dists[$adhesion_num] };
@@ -225,8 +225,14 @@ sub track_live_adhesions {
         }
 
         my $tracking_guess;
-        #Case 1 and 2
+
+        #Cases 1 and 2
+        #Check if the highest pixel sim (p_sim) is above zero, indicating that
+        #this adhesion overlaps with at least one adhesion in the next image
         if ($high_p_sim > 0) {
+
+            #Find how many adhesions in the next image overlap with this
+            #adhesion
             my @p_sim_close_ad_nums = grep {
                 if ($p_sim_to_next_ads[$_] >= $high_p_sim * $prop_indeter_percent) {
                     1;
@@ -235,10 +241,19 @@ sub track_live_adhesions {
                 }
             } (0 .. $#p_sim_to_next_ads);
             
+            #Of the adhesions with close pixel similarities, sort them by the
+            #centroid distances, most of the time, this matrix will only contain
+            #one value, either way, the first entry in this matrix will always
+            #be our winner
             my @close_p_sim_by_dist_indexes = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
-
+            
+            $tracking_guess = $close_p_sim_by_dist_indexes[0];
+            
+            #Now for some additional data collection: detecting split birth
+            #events and cases where the adhesion with the best pixel similarity
+            #was not selected
             if (scalar(@p_sim_close_ad_nums) > 1) {
-                foreach my $ad_num (@close_p_sim_by_dist_indexes[1.. $#close_p_sim_by_dist_indexes]) {
+                foreach my $ad_num (@close_p_sim_by_dist_indexes[1 .. $#close_p_sim_by_dist_indexes]) {
                     if (exists $tracking_facts{$i_num}{split_birth_quant}[$ad_num]) {
                         if ($tracking_facts{$i_num}{split_birth_quant}[$ad_num] < $p_sim_to_next_ads[$ad_num]) {
                             $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
@@ -254,8 +269,6 @@ sub track_live_adhesions {
                     $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
                 }
             }
-
-            $tracking_guess = $close_p_sim_by_dist_indexes[0];
         } else {
 
             #Case 3
@@ -369,7 +382,7 @@ sub select_best_merge_decision {
     #
     # 5. The lifetimes used in step 5 are equal and I don't know what else to
     # use for deciding the merge decision, select the adhesion that happens to
-    # come up first in the 
+    # come up first 
     
     #Merge decision data structure, holds which adhesion wins the merge event,
     #which adhesions die and which case from the above comment made the
@@ -449,7 +462,6 @@ sub select_best_merge_decision {
                 $merge_decisions[$sorted_lifetime_indexes[0]]{winner} = 1;
                 $merge_decisions[$sorted_lifetime_indexes[0]]{case}   = 4;
                 $merge_decisions[$sorted_lifetime_indexes[0]]{case}   = 5 if $lifetimes_close_count > 1;
-                
             }
         }
     } 

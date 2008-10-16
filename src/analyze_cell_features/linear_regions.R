@@ -7,6 +7,51 @@
 #Data fitting functions
 ########################################
 
+gather_bilinear_models_from_dirs <- function (dirs, min_length=10, 
+	data_file='Average_adhesion_signal.csv', col_lims = NA, 
+	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
+	save.exp_data = TRUE, debug = FALSE) {
+	
+	results = list()
+	
+	for (i in 1:length(dirs)) {
+		if (is.na(dirs[[i]])) {
+			next
+		}
+		
+		if (debug) {
+			print(dirs[[i]])
+		}
+			
+		exp_data <- as.matrix(read.table(file.path(dirs[[i]],data_file),header = FALSE, sep  = ','));
+
+		exp_props <- read.table(file.path(dirs[[i]],'../single_lin.csv'), header = TRUE, sep=',');
+		
+		#process the col_lim parameter passed in if values were passed in
+		this_col_lim = NA 
+		if (! is.na(as.matrix(col_lims)[1,1])) {
+			if(dim(as.matrix(col_lims))[[2]] == 1) {
+				this_col_lim = c(col_lims[i],dim(exp_data)[[2]])
+			} else {
+				this_col_lim = col_lims[i,]
+			}
+		}
+		
+		results[[i]] <- gather_bilinear_models(exp_data, exp_props, 
+							min_length = min_length, col_lims = this_col_lim, 
+							normed = normed, log.trans = log.trans, 
+							boot.samp = boot.samp, save.exp_data = save.exp_data)
+        
+        results[[i]]$exp_dir = dirs[[i]]
+        if (! is.na(results.file)) {
+            this_result = results[[i]]
+            save(this_result,file = file.path(dirs[[i]],results.file))
+        }
+	}
+	
+	results
+}
+
 gather_bilinear_models <- function(data_set, props, 
 	min_length = 10, col_lims = NA, normed = TRUE, 
 	log.trans = TRUE, boot.samp = NA, save.exp_data = TRUE, debug = FALSE) {
@@ -34,7 +79,6 @@ gather_bilinear_models <- function(data_set, props,
 		if (length(numeric_data_set) == 0) {
 			next
 		}
-		data_set_frame = data.frame(y = numeric_data_set, x = 1:length(numeric_data_set))
 		
 		if (i %% 100 == 0 & debug) {
 			print(i)
@@ -304,50 +348,6 @@ gather_linear_regions.boot <- function(results,
 	sim_results <- gather_linear_regions(sim_ad_sig, sim_props, 
 				       min_length = min_length, normed = normed, log.trans = log.trans, save.exp_data = FALSE)
 }	
-
-gather_bilinear_models_from_dirs <- function (dirs, min_length=10, 
-	data_file='Average_adhesion_signal.csv', col_lims = NA, 
-	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
-	save.exp_data = TRUE, debug = FALSE) {
-	
-	results = list()
-	
-	for (k in 1:length(dirs)) {
-		if (is.na(dirs[[k]])) {
-			next
-		}
-		
-		if (debug) {
-			print(dirs[[k]])
-		}
-			
-		exp_data <- as.matrix(read.table(file.path(dirs[[k]],data_file),header = FALSE, sep  = ','));
-
-		exp_props <- read.table(file.path(dirs[[k]],'../single_lin.csv'), header = TRUE, sep=',');
-		
-		#process the col_lim parameter passed in if values were passed in
-		this_col_lim = NA 
-		if (! is.na(as.matrix(col_lims)[1,1])) {
-			if(dim(as.matrix(col_lims))[[2]] == 1) {
-				this_col_lim = c(col_lims[k],dim(exp_data)[[2]])
-			} else {
-				this_col_lim = col_lims[k,]
-			}
-		}
-		
-		results[[k]] <- gather_bilinear_models(exp_data, exp_props, 
-							min_length = min_length, col_lims = this_col_lim, 
-							normed = normed, log.trans = log.trans, 
-							boot.samp = boot.samp, save.exp_data = save.exp_data)
-        
-        if (! is.na(results.file)) {
-            this_result = results[[k]]
-            save(this_result,file = file.path(dirs[[k]],results.file))
-        }
-	}
-	
-	results
-}
 
 gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
 	result.normed = TRUE, exp.normed = TRUE, result.log.trans = TRUE, 

@@ -15,6 +15,7 @@ use Data::Dumper;
 use Storable qw(nstore);
 use Text::CSV;
 use IO::File;
+use Math::Matrix;
 
 use Config::Adhesions;
 use Image::Data::Collection;
@@ -111,17 +112,11 @@ sub make_comp_matices {
         @{ $data_sets{$key_1}{Cent_dist} } = &make_dist_mat(\@x1, \@y1, \@x2, \@y2);
         print "Cent_dist Collected - " if $opt{debug};
 
-        #Gather the Area difference matrix
-        my @area1 = @{ $data_sets{$key_1}{Area} };
-        my @area2 = @{ $data_sets{$key_2}{Area} };
-        @{ $data_sets{$key_1}{Area_diff} } = &make_abs_diff_mat(\@area1, \@area2);
-        print "Area_diff Collected - " if $opt{debug};
-
         #Gather the Pixel Similarity matrix
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
-        @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
-
+        @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2, $data_sets{$key_1}{Cent_dist});
+        
         print "Pix_sim Collected" if $opt{debug};
         print "\r"                if $opt{debug};
 
@@ -149,41 +144,34 @@ sub make_dist_mat {
     return @diff_mat;
 }
 
-sub make_abs_diff_mat {
-    my @mat1 = @{ $_[0] };
-    my @mat2 = @{ $_[1] };
-
-    my @diff_mat;
-
-    for my $i (0 .. $#mat1) {
-        for my $j (0 .. $#mat2) {
-            $diff_mat[$i][$j] = abs($mat1[$i] - $mat2[$j]);
-        }
-    }
-    return @diff_mat;
-}
-
 sub calc_pix_sim {
     my @pix_id1 = @{ $_[0] };
     my @pix_id2 = @{ $_[1] };
+    my @cent_dists = @{ $_[2] };
 
     my @sim_percents;
     for my $i (0 .. $#pix_id1) {
-        my @temp_sim;
-        my @pix_list = @{ $pix_id1[$i] };
-        for my $j (0 .. $#pix_id2) {
-            my @matching_list = @{ $pix_id2[$j] };
-            my $match_count   = grep {
-                my $poss_match = $_;
-                my $a = grep $poss_match == $_, @pix_list;
-                if ($a > 1) {
-                    die;
+        our @current_pix_list = @{ $pix_id1[$i] };
+        my $current_pix_list_length = scalar(@current_pix_list);
+        
+        my @dist_to_next_ads = @{$cent_dists[$i]};
+        my @sorted_ads = sort {$dist_to_next_ads[$a] <=> $dist_to_next_ads[$b]} (0 .. $#dist_to_next_ads);
+        my @unsorted_ads = 0 .. $#dist_to_next_ads;
+        
+        for my $j (@sorted_ads) {
+            my @next_pix_list = @{ $pix_id2[$j] };
+            my $match_count = 0;
+            for (0 .. $#current_pix_list) {
+                my $poss_match = pop @current_pix_list;
+                my $temp_match_count = grep $poss_match == $_, @next_pix_list;
+                if ($temp_match_count == 0) {
+                    unshift @current_pix_list, $poss_match;
+                } else {
+                    $match_count += $temp_match_count;
                 }
-                $a;
-            } @matching_list;
-            push @temp_sim, $match_count / scalar(@pix_list);
+            }
+            $sim_percents[$i][$j] = $match_count / $current_pix_list_length;
         }
-        push @sim_percents, \@temp_sim;
     }
     return @sim_percents;
 }
