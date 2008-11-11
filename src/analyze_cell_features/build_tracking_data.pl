@@ -101,7 +101,7 @@ sub make_comp_matices {
 
         #These are the keys we will use for all the subsequent matrix creation
         my ($key_1, $key_2) = @data_keys[ $_, $_ + 1 ];
-
+        
         print "Working on image Number: $key_1 - " if $opt{debug};
 
         #Gather the Centroid distance matrix
@@ -117,6 +117,14 @@ sub make_comp_matices {
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2, $data_sets{$key_1}{Cent_dist});
         
+        if ($cfg{debug}) {
+            @{ $data_sets{$key_1}{Pix_sim_f} } = &calc_pix_sim_old(\@pix_id1, \@pix_id2, $data_sets{$key_1}{Cent_dist});
+            my $mat_1 = new Math::Matrix @{$data_sets{$key_1}{Pix_sim}};
+            my $mat_2 = new Math::Matrix @{$data_sets{$key_1}{Pix_sim_f}};
+            die "Problem with new pixel sim calc method\n", join(" ", $mat_1->size), "  ",join(" ", $mat_2->size) if not $mat_1->equal($mat_2);
+        }
+
+        delete $data_sets{$key_1}{PixelIdxList};
         print "Pix_sim Collected" if $opt{debug};
         print "\r"                if $opt{debug};
 
@@ -154,9 +162,10 @@ sub calc_pix_sim {
         our @current_pix_list = @{ $pix_id1[$i] };
         my $current_pix_list_length = scalar(@current_pix_list);
         
+        die "$i" if not $current_pix_list_length;
+
         my @dist_to_next_ads = @{$cent_dists[$i]};
         my @sorted_ads = sort {$dist_to_next_ads[$a] <=> $dist_to_next_ads[$b]} (0 .. $#dist_to_next_ads);
-        my @unsorted_ads = 0 .. $#dist_to_next_ads;
         
         for my $j (@sorted_ads) {
             my @next_pix_list = @{ $pix_id2[$j] };
@@ -172,6 +181,31 @@ sub calc_pix_sim {
             }
             $sim_percents[$i][$j] = $match_count / $current_pix_list_length;
         }
+    }
+    return @sim_percents;
+}
+
+sub calc_pix_sim_old {
+    my @pix_id1 = @{ $_[0] };
+    my @pix_id2 = @{ $_[1] };
+
+    my @sim_percents;
+    for my $i (0 .. $#pix_id1) {
+        my @temp_sim;
+        my @pix_list = @{ $pix_id1[$i] };
+        for my $j (0 .. $#pix_id2) {
+            my @matching_list = @{ $pix_id2[$j] };
+            my $match_count   = grep {
+                my $poss_match = $_;
+                my $a = grep $poss_match == $_, @pix_list;
+                if ($a > 1) {
+                    die;
+                }
+                $a;
+            } @matching_list;
+            push @temp_sim, $match_count / scalar(@pix_list);
+        }
+        push @sim_percents, \@temp_sim;
     }
     return @sim_percents;
 }

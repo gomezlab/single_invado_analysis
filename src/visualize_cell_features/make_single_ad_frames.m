@@ -48,7 +48,7 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
-if (i_p.Results.debug), tracking_seq = tracking_seq(1:1000,:); end
+if (i_p.Results.debug), tracking_seq = tracking_seq(672,:); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
@@ -217,28 +217,38 @@ if (i_p.Results.debug), profile viewer; end
 %%Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function write_montage_image_set(image_set,output_file)
-temp_image_set = cell(0);
-for i = 1:size(image_set,2)
-    if (isempty(image_set{i})), continue; end
-    temp_image_set{size(temp_image_set,2) + 1} = image_set{i};
-end
-image_set = temp_image_set;
+function write_montage_image_set(image_set,output_file,varargin)
+
+i_p = inputParser;
+i_p.FunctionName = 'WRITE_MONTAGE_IMAGE_SET';
+
+i_p.addRequired('image_set',@iscell);
+i_p.addRequired('output_file',@ischar);
+i_p.addOptional('num_cols',0,@isnumeric);
+
+i_p.parse(image_set,output_file,varargin{:});
+
+while isempty(image_set{1}), image_set = image_set(2:end); end
 
 total_images = size(image_set,2);
 
-images_per_side = ones(1,2);
-for j = 1:(ceil(sqrt(total_images)) - 1)
-    if (total_images <= images_per_side(1)*images_per_side(2)), continue; end
+if (not(isempty(strfind(i_p.UsingDefaults, 'num_cols'))))
+    images_per_side = ones(1,2);
+    for j = 1:(ceil(sqrt(total_images)) - 1)
+        if (total_images <= images_per_side(1)*images_per_side(2)), continue; end
 
-    if (total_images <= j * (j + 1))
-        images_per_side = [j, j+1];
-        continue;
-    else
-        images_per_side = [j + 1, j + 1];
+        if (total_images <= j * (j + 1))
+            images_per_side = [j, j+1];
+            continue;
+        else
+            images_per_side = [j + 1, j + 1];
+        end
     end
+    assert(images_per_side(1)*images_per_side(2) >= total_images, 'Error; images per side not large enough');
+else
+    images_per_side = [ceil(total_images/i_p.Results.num_cols),i_p.Results.num_cols];
 end
-assert(images_per_side(1)*images_per_side(2) >= total_images, 'Error; images per side not large enough');
+
 image_size = size(image_set{1});
 
 montage = 0.5*ones(image_size(1)*images_per_side(1)+images_per_side(1) - 1, ...

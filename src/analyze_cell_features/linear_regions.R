@@ -40,7 +40,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 		results[[i]] <- gather_bilinear_models(exp_data, exp_props, 
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log.trans = log.trans, 
-							boot.samp = boot.samp, save.exp_data = save.exp_data)
+							boot.samp = boot.samp, save.exp_data = save.exp_data, debug=debug)
         
         results[[i]]$exp_dir = dirs[[i]]
         if (! is.na(results.file)) {
@@ -62,24 +62,25 @@ gather_bilinear_models <- function(data_set, props,
 
 	rows <- dim(data_set)[[1]]
 	cols <- dim(data_set)[[2]]
-					  
+		  
 	results <- list()
 	results$exp_props = props
 	
 	if (save.exp_data) {
 		results$exp_data = data_set;
 	}
+	results$stable_data_set = list();
 	for (i in 1:rows) {
 		if (i > 500) {
 			#next
 		}
 		
-		this_data_set = data_set[i,]
+		this_data_set = as.vector(data_set[i,])
 		numeric_data_set = this_data_set[! is.nan(this_data_set)]
 		if (length(numeric_data_set) == 0) {
 			next
 		}
-		
+
 		if (i %% 100 == 0 & debug) {
 			print(i)
 		}
@@ -105,9 +106,21 @@ gather_bilinear_models <- function(data_set, props,
 		results$late$slope[i]   = temp_results$late$slope
 		results$late$fold_change[i]  = temp_results$late$fold_change
 		results$late$residual[i]   = temp_results$late$residual
-
-		results$stable_lifetime[i] = length(numeric_data_set) - (results$late$offset[i] + results$early$offset[i])
-
+		
+		#if either of the offset values are NA, then we weren't able 
+		#to get a fit for one side of the data, don't calculate a 
+		#stable lifetime because we don't know how long the adhesion 
+		#was around before the movie starts or after it ends
+		if (! is.na(results$late$offset[i]) && ! is.na(results$early$offset[i])) {
+			results$stable_data_set[[i]] = numeric_data_set[results$early$offset[i]:(length(numeric_data_set) - results$late$offset[i])]
+			
+			results$stable_lifetime[i] = length(results$stable_data_set[[i]])
+			results$stable_mean[i] = mean(results$stable_data_set[[i]])
+			results$stable_variance[i] = var(results$stable_data_set[[i]])
+			if (length(results$stable_data_set[[i]]) == 1) {
+				results$stable_variance[i] = 0;
+			}
+		}
 	}
 
 	results <- pad_results_to_row_length(results, rows)
@@ -133,6 +146,9 @@ pad_results_to_row_length <- function(results, desired_length) {
 	}
 	for (i in (length(results$stable_lifetime) + 1):desired_length) {
 		results$stable_lifetime[i] = NA
+		results$stable_data_set[i] = NA
+		results$stable_variance[i] = NA
+		results$stable_mean[i] = NA		
 	}
 	results
 }
@@ -559,82 +575,43 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 				  )
 }
 
-plot_ad_seq <- function (results,index,dir,type='early') {
-	
-	ad_seq = results$exp_data[index,]
-	ad_seq = t(ad_seq[!(is.nan(ad_seq))]);
-	if (! file.exists(dir)) {
-		dir.create(dir,recursive=TRUE)
-	}
-	
-	pdf(file.path(dir,paste(index,'.pdf',sep='')),width=12);
-	par(mfrow=c(1,2),bty='n', mar=c(5,4,1,1))
-	
-	resid = c()
+plot_ad_seq <- function (results,index,type='early',...) {
+	ad_seq = as.vector(results$exp_data[index,])
+	ad_seq = t(ad_seq[!(is.nan(ad_seq))])
 	
 	if (type == 'early') {
-		this_ad_seq = ad_seq[1:results$early$offset[index]];
-		this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
-
-		x = c(0,results$early$offset[index]);
-		y = c(results$early$slope[index]*x[1] + results$early$inter[index],
+	this_ad_seq = ad_seq[1:results$early$offset[index]];
+	this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
+		
+	x = c(0,results$early$offset[index]);
+	y = c(results$early$slope[index]*x[1] + results$early$inter[index],
 		   	  results$early$slope[index]*x[2] + results$early$inter[index])
 		
-		plot(1:results$early$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
-				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)),
-				 main='Assembly')
-		
-		lines(x,y,col='red',lwd=2)
-		r_sq_val_str = sprintf('%.3f',results$early$R_sq[index])
-		slope_val_str = sprintf('%.3f',results$early$slope[index])
-		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
-		text(x[1]+3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index]),sep=''))
-
-		this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
-		this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
-
-		x = c(length(ad_seq) - results$late$offset[index],length(ad_seq));
-		y = c(results$late$slope[index]*x[1] + results$late$inter[index],
-		   	  results$late$slope[index]*x[2] + results$late$inter[index])
-		
-		plot((length(ad_seq) - results$late$offset[index]) : length(ad_seq),
-			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
-			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)),
-			 main='Disassembly')
-		
-		lines(x,y,col='red',lwd=2)
-		text(x[1]+ 3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$late$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$late$slope[index]),sep=''))
-		
-	}
-	
-	if (type == 'late') {
-		this_ad_seq = ad_seq[(length(ad_seq) - results$late_offset[index]) : length(ad_seq)];
-		this_ad_seq = this_ad_seq[1]/this_ad_seq;
-
-		x = c(length(ad_seq) - results$late_offset[index],length(ad_seq));
-		y = c(results$late_slope[index]*x[1] + results$late_inter[index],
-		   	  results$late_slope[index]*x[2] + results$late_inter[index])
-		
-		plot((length(ad_seq) - results$late_offset[index]) : length(ad_seq),
-			 this_ad_seq, xlab='Time (minutes)', ylab='Normalized Paxillin Signal',
+	plot(1:results$early$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
-		lines(x,y,col='red',lwd=2)
-		
-		x = (length(ad_seq) - results$late_offset[index]) : length(ad_seq)
-		y = c()
-	
-		for (i in 1:length(this_ad_seq)) {
-			y[i] = this_ad_seq[i] - (results$late_slope[index]*x[i] + results$late_inter[index])
-		}
-	
-		plot(x,y,ylab='Residual Value')
-		resid = c(resid,y)
+	lines(x,y,col='red',lwd=2)
+	r_sq_val_str = sprintf('%.3f',results$early$R_sq[index])
+	slope_val_str = sprintf('%.3f',results$early$slope[index])
+	exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
+	text(x[1]+3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index]),sep=''))
 	}
-	
-	dev.off();
-	
-	resid
+
+	if (type == 'late') {
+	this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
+	this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
+
+	x = c(length(ad_seq) - results$late$offset[index],length(ad_seq));
+	y = c(results$late$slope[index]*x[1] + results$late$inter[index],
+		   	  results$late$slope[index]*x[2] + results$late$inter[index])
+		
+	plot((length(ad_seq) - results$late$offset[index]) : length(ad_seq),
+		 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
+		 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		
+	lines(x,y,col='red',lwd=2)
+	text(x[1]+ 3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$late$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$late$slope[index]),sep=''))
+	}
 }
 
 plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',window = 0.1) {
@@ -728,7 +705,6 @@ boxplot_with_points <- function(data,
 	colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), 
 	notch=F, names, range=1.5, ...) {
 		
-	par(bty='n')
 	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range,...)
 	for (i in 1:length(data)) {
 		this_data = data[[i]]
@@ -762,21 +738,28 @@ filter_results <- function(results,needed_R_sq=0.9) {
 	for (i in 1:length(results)) {
 		res = results[[i]]
 
-		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq
+		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & res$early$slope > 0
 		if (any(names(res$exp_props) == 'split_birth_status')) {
 			early_filt = early_filt & ! res$exp_props$split_birth_status
 		}
-		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status
+		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status & res$late$slope > 0
 	
 		points$early_slope = c(points$early_slope,res$early$slope[early_filt])
 		points$late_slope = c(points$late_slope,res$late$slope[late_filt])
 		points$early_R_sq = c(points$early_R_sq, res$early$R_sq[early_filt])
 		points$late_R_sq = c(points$late_R_sq, res$late$R_sq[late_filt])
-		points$longev = c(points$longev, res$exp_props$longev[late_filt & early_filt])
-		points$exp_num_early = c(points$exp_num_early, rep(i,sum(early_filt)))
-		points$exp_num_late = c(points$exp_num_late, rep(i,sum(late_filt)))
-		points$lin_num_early = c(points$lin_num_early, which(early_filt))
-		points$lin_num_late = c(points$lin_num_late, which(late_filt))
+
+		points$stable_lifetime_early = c(points$stable_lifetime_early, res$stable_lifetime[early_filt])
+		points$stable_lifetime_late = c(points$stable_lifetime_late, res$stable_lifetime[late_filt])
+		points$stable_mean_early = c(points$stable_mean_early, res$stable_mean[early_filt])
+		points$stable_mean_late = c(points$stable_mean_late, res$stable_mean[late_filt])
+		points$stable_variance_early = c(points$stable_variance_early, res$stable_variance[early_filt])
+		points$stable_variance_late = c(points$stable_variance_late, res$stable_variance[late_filt])
+
+		points$lin_num_early[[i]] = which(early_filt)
+		points$lin_num_late[[i]] = which(late_filt)
+		
+		points$exp_dir[[i]] = res$exp_dir
 		
 		points$ind_exp[[i]] = list(early_slope = res$early$slope[early_filt],
 								   late_slope = res$late$slope[late_filt])
@@ -838,29 +821,6 @@ write_high_r_rows <- function(result, dir, file=c('early_R_sq.csv','late_R_sq.cs
 	if (! is.null(row_nums)) {
 		write.table(row_nums,file=file.path(dir,file[3]), row.names=FALSE, col.names=FALSE)
 	}
-}
-
-find_mean_change_location_probs <- function(ts) {
-	mean_diffs = array(0,length(ts));
-	for (i in 5:(length(ts)-4)) {
-		if (is.finite(ts[i - 1]) & is.finite(ts[i + 1])) {
-			early = ts[1:i]
-			late = ts[i+1:length(ts)]
-			early = early[is.finite(early)]
-			late = late[is.finite(late)]
-			
-			mean_diffs[i] = mean(late) - mean(early)
-		}
-	}
-	mean_diffs = mean_diffs + min(mean_diffs)
-	prob_seq = mean_diffs/sum(mean_diffs)
-	
-	if (sum(prob_seq) <= 0.99 || sum(prob_seq) >= 1.01) {
-		print(prob_seq)
-		stop("Problem with sum of prob_seq")
-	}
-	
-	prob_seq
 }
 
 gather_datafile_from_dirs <- function (dirs, data_file='Average_adhesion_signal.csv') {

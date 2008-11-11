@@ -8,10 +8,8 @@ function [varargout] = find_focal_adhesions(I_file,varargin)
 %
 %   Options:
 %
-%       -cell_mask: file which contains the cell mask, defaults to not
-%        present
-%       -filter_size: size of the MATLAB average filter to use, defaults to
-%        23
+%       -cell_mask: file which contains the cell mask
+%       -filter_size: size of the averaging filter to use, defaults to 23
 %       -filter_thresh: threshold used to identify focal adhesions in the
 %        average filtered image, defaults to 0.1
 %       -output_dir: folder used to hold all the results, defaults to the
