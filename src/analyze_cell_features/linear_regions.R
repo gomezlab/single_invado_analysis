@@ -90,7 +90,9 @@ gather_bilinear_models <- function(data_set, props,
 			next
 		}
 		
-		temp_results = find_optimum_bilinear_fit(this_data_set, normed = normed, 
+		these_exp_props = results$exp_props[i,]
+		
+		temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
 			min_length = min_length, log.trans = log.trans)
 
 		results$early$offset[i] = temp_results$early$offset
@@ -153,7 +155,7 @@ pad_results_to_row_length <- function(results, desired_length) {
 	results
 }
 
-find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_length = 10, log.trans = TRUE) {
+find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 10, log.trans = TRUE) {
 
 	results = list(initial_data_set = initial_data_set)
 	resid = list(early = list(), late = list())	
@@ -164,7 +166,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
 
 	#Search the beginning of the sequence for a linear fit
-	if (is.nan(initial_data_set[1])) {
+	early_slope_calculated = FALSE;
+	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status) {
+		early_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			early_subset = this_data_set[1:j,]
 			if (normed) {
@@ -211,7 +215,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 	}
 	
 	#Search the end of the sequence for a linear fit
-	if (is.nan(initial_data_set[length(initial_data_set)])) {
+	late_slope_calculated = FALSE;
+	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status) {
+		late_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			late_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
 			if (normed) {
@@ -257,14 +263,14 @@ find_optimum_bilinear_fit <- function(initial_data_set, normed = TRUE, min_lengt
 		resid$late[[1]] = NA	
 	}
 
-	best_indexes = find_best_offset_combination(results,min_length = min_length)
+	best_indexes = find_best_offset_combination(results, min_length = min_length)
 	
 	#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
 	#there were no fits calculated for them
-	if (! is.nan(initial_data_set[1])) {
+	if (! early_slope_calculated) {
 		results$early$R_sq[1] = NA
 	}	
-	if (! is.nan(initial_data_set[length(initial_data_set)])) {
+	if (! late_slope_calculated) {
 		results$late$R_sq[1] = NA
 	}
 	
@@ -738,48 +744,44 @@ filter_results <- function(results,needed_R_sq=0.9) {
 	for (i in 1:length(results)) {
 		res = results[[i]]
 
-		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & res$early$slope > 0
-		if (any(names(res$exp_props) == 'split_birth_status')) {
-			early_filt = early_filt & ! res$exp_props$split_birth_status
-		}
-		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & res$exp_props$death_status & res$late$slope > 0
+		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & is.finite(res$early$slope) & res$early$slope > 0
+		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & is.finite(res$late$slope) & res$late$slope > 0
 	
-		points$early_slope = c(points$early_slope,res$early$slope[early_filt])
-		points$late_slope = c(points$late_slope,res$late$slope[late_filt])
-		points$early_R_sq = c(points$early_R_sq, res$early$R_sq[early_filt])
-		points$late_R_sq = c(points$late_R_sq, res$late$R_sq[late_filt])
+		points$early$slope = c(points$early$slope,res$early$slope[early_filt])
+		points$late$slope = c(points$late$slope,res$late$slope[late_filt])
+		points$early$R_sq = c(points$early$R_sq, res$early$R_sq[early_filt])
+		points$late$R_sq = c(points$late$R_sq, res$late$R_sq[late_filt])
 
-		points$stable_lifetime_early = c(points$stable_lifetime_early, res$stable_lifetime[early_filt])
-		points$stable_lifetime_late = c(points$stable_lifetime_late, res$stable_lifetime[late_filt])
-		points$stable_mean_early = c(points$stable_mean_early, res$stable_mean[early_filt])
-		points$stable_mean_late = c(points$stable_mean_late, res$stable_mean[late_filt])
-		points$stable_variance_early = c(points$stable_variance_early, res$stable_variance[early_filt])
-		points$stable_variance_late = c(points$stable_variance_late, res$stable_variance[late_filt])
+		points$early$stable_lifetime = c(points$early$stable_lifetime, res$stable_lifetime[early_filt])
+		points$late$stable_lifetime = c(points$late$stable_lifetime, res$stable_lifetime[late_filt])
+		points$early$stable_mean = c(points$early$stable_mean, res$stable_mean[early_filt])
+		points$late$stable_mean = c(points$late$stable_mean, res$stable_mean[late_filt])
+		points$early$stable_variance = c(points$early$stable_variance, res$stable_variance[early_filt])
+		points$late$stable_variance = c(points$late$stable_variance, res$stable_variance[late_filt])
 
-		points$lin_num_early[[i]] = which(early_filt)
-		points$lin_num_late[[i]] = which(late_filt)
+		points$early$lin_num = c(points$early$lin_num,which(early_filt))
+		points$late$lin_num = c(points$late$lin_num,which(late_filt))
 		
-		points$exp_dir[[i]] = res$exp_dir
+		points$early$exp_dir = c(points$early$exp_dir,rep(res$exp_dir,length(which(early_filt))))
+		points$late$exp_dir = c(points$late$exp_dir,rep(res$exp_dir,length(which(late_filt))))
 		
 		points$ind_exp[[i]] = list(early_slope = res$early$slope[early_filt],
 								   late_slope = res$late$slope[late_filt])
 		
 		if (any(names(res$exp_props) == 'starting_edge_dist')) {
-			points$starting_edge_dist = c(points$starting_edge_dist,res$exp_props$starting_edge_dist[early_filt])
-		}
-		if (any(names(res$exp_props) == 'starting_center_dist')) {
-			points$starting_center_dist = c(points$starting_center_dist,res$exp_props$starting_center_dist[early_filt])
+			points$early$edge_dist = c(points$early$edge_dist,res$exp_props$starting_edge_dist[early_filt])
 		}
 		
 		if (any(names(res$exp_props) == 'ending_edge_dist')) {
-			points$ending_edge_dist = c(points$ending_edge_dist,res$exp_props$ending_edge_dist[late_filt])
-		}
-		if (any(names(res$exp_props) == 'ending_center_dist')) {
-			points$ending_center_dist = c(points$ending_center_dist,res$exp_props$ending_center_dist[late_filt])
+			points$late$edge_dist = c(points$late$edge_dist,res$exp_props$ending_edge_dist[late_filt])
 		}
 	}
+	points$early = as.data.frame(points$early)
+	points$late = as.data.frame(points$late)
+	
 	points
 }
+
 
 load_results <- function(dirs,file) {
 	results = list()
@@ -843,6 +845,34 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 	}
 	rbind(left_x_seq,bottom_y_seq,right_x_seq,top_y_seq)
 }	
+
+find_birth_death_rate <- function(results) {
+	birth_rate = list()
+	death_rate = list()
+	for (i in 1:length(results)) {
+		birth_rate[[i]] = rep(0,dim(results[[i]]$exp_data)[[2]]-1);
+		death_rate[[i]] = rep(0,dim(results[[i]]$exp_data)[[2]]-1);
+		for (j in 1:dim(results[[i]]$exp_data)[[1]]) {
+			data_line = is.na(as.vector(results[[i]]$exp_data[j,]));
+			true_line = which(!data_line);
+#		print(data_line)
+			if (length(true_line) == 0) {
+				next;
+			}
+			if (data_line[1]) {
+				birth_rate[[i]][true_line[1]-1] = birth_rate[[i]][true_line[1]-1] + 1;
+			}
+			if (data_line[length(data_line)]) {
+				death_rate[[i]][true_line[length(true_line)]] = death_rate[[i]][true_line[length(true_line)]] + 1;
+			}		
+		}
+	}
+
+	for (i in 1:length(birth_rate)) {
+	#	print(cor(birth_rate[[i]],death_rate[[i]]))
+	#	print(mean(birth_rate[[i]]-death_rate[[i]]))
+	}
+}
 
 ################################################################################
 # Main Program
