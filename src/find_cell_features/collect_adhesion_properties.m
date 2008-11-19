@@ -91,7 +91,7 @@ if (exist('protrusion_data','var'))
 end
 
 if (exist('cell_mask','var'))
-    dists = bwdist(~cell_mask);
+    [dists, indices] = bwdist(~cell_mask);
     cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
     cell_centroid = cell_centroid.Centroid;
 
@@ -103,6 +103,7 @@ if (exist('cell_mask','var'))
             adhesion_props(i).Centroid_dist_from_edge = NaN;
         else
             adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
+            adhesion_props(i).Closest_edge_pixel = ind2sub(size(cell_mask), indices(centroid_pos(2), centroid_pos(1)));
 
             adhesion_props(i).Centroid_dist_from_center = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
             adhesion_props(i).Angle_to_center = acos((centroid_unrounded(1) - cell_centroid(1))/adhesion_props(i).Centroid_dist_from_center);

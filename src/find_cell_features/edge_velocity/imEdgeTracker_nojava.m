@@ -646,6 +646,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
     fprintf(1,[strg],index);
 
     fileName=char(filelist(time));
+
     [tmp_path,tmp_fname] = fileparts(fileName);
 
 
@@ -679,7 +680,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
     end
     [ans, img_edge(:,:), mask(:,:), pixel_list, edge_l(index),...
         cell_isolated(index), rem_pix(index), cell_pos_old, P0, MU0]=...
-        imFindCellEdge(img_org,fileName,CONTR, 'bit_depth',BIT_DEPTH, 'filter_image',FILTER_IMAGE,  'img_sigma',IMG_SIGMA,...
+        imFindCellEdge_matt(img_org,fileName,CONTR, 'bit_depth',BIT_DEPTH, 'filter_image',FILTER_IMAGE,  'img_sigma',IMG_SIGMA,...
         'f_window', F_WINDOW,  'f_sigma', F_SIGMA,...
         'erode_dilate',ERODE_DILATE, 'median_f', MEDIAN_F,...
         'cluster', CLUSTER, 'cluster_method', CLUSTER_METHOD, 'k_cluster', K_CLUSTER, 'k_min', K_MIN,...
@@ -883,7 +884,7 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
                             prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
                             'k_S', K_S, 'k_W', K_W);
                         nr_prot_vectors(index) = size(temp1,1);
-
+                        
                         protrusion{index-1} = [temp1 temp2];
 
                         clear temp1 temp2 i_pos;
@@ -941,6 +942,8 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
 
                 % save control images
                 if 1
+                    csvwrite(fullfile(dir_w, 'pr_vectors', ['prot_vec_' tmp_fname '.csv']), protrusion{index-1});
+                    
                     h_prot_control = figure('Visible','Off');
                     quiver(protrusion{index-1}(:,1), protrusion{index-1}(:,2), protrusion{index-1}(:,3),protrusion{index-1}(:,4), 0);
                     hold on

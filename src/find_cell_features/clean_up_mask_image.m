@@ -1,4 +1,4 @@
-function edge_binary_image = clean_up_mask_image(input_edge_binary)
+function [mask_image, edge_binary_image] = clean_up_mask_image(input_edge_binary)
 %CLEAN_UP_EDGE_IMAGE   isolates the largest enclosed area in a provided
 %                       binary image and fills in any holes in the enclosed
 %                       area and returns the edge of the filled in area
@@ -33,6 +33,6 @@ edge_binary_image(edge_binary_image == ad_nums(2)) = 1;
 
 edge_binary_image = imdilate(edge_binary_image,strel('diamond',1));
 
-edge_binary_image = imfill(edge_binary_image,'holes');
+mask_image = imfill(edge_binary_image,'holes');
 
 end
