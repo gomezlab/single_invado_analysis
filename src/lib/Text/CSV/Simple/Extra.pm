@@ -11,7 +11,7 @@ use IO::File;
 use Text::CSV;
 
 
-our @EXPORT = qw( output_mat_csv );
+our @EXPORT = qw( output_mat_csv, output_has_csv );
 use Exporter;
 our @ISA = qw(Exporter);
 ###############################################################################
