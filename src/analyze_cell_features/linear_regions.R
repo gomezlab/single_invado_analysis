@@ -97,6 +97,7 @@ gather_bilinear_models <- function(data_set, props,
 
 		results$early$offset[i] = temp_results$early$offset
 		results$early$R_sq[i]   = temp_results$early$R_sq
+		results$early$p_val[i]   = temp_results$early$p_val
 		results$early$inter[i]  = temp_results$early$inter
 		results$early$slope[i]  = temp_results$early$slope
 		results$early$fold_change[i]  = temp_results$early$fold_change
@@ -104,6 +105,7 @@ gather_bilinear_models <- function(data_set, props,
 		
 		results$late$offset[i]  = temp_results$late$offset
 		results$late$R_sq[i]    = temp_results$late$R_sq
+		results$late$p_val[i]    = temp_results$late$p_val
 		results$late$inter[i]   = temp_results$late$inter
 		results$late$slope[i]   = temp_results$late$slope
 		results$late$fold_change[i]  = temp_results$late$fold_change
@@ -190,6 +192,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 				results$early$R_sq[j] = 1
 			}
 			
+			results$early$p_val[j] = summary$coefficients[2,4]
 			results$early$length[j] = dim(early_subset)[[1]]
 			results$early$offset[j] = j
 			results$early$inter[j] = coef(model)[[1]]
@@ -204,7 +207,8 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		}
 	} else {
 		results$early$R_sq[1] = 0
-		
+
+		results$early$p_val[1] = NA		
 		results$early$length[1] = NA
 		results$early$offset[1] = NA
 		results$early$inter[1] = NA
@@ -239,6 +243,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 				results$late$R_sq[j] = 1
 			}
 			
+			results$late$p_val[j] = summary$coefficients[2,4]
 			results$late$length[j] = dim(late_subset)[[1]]
 			results$late$offset[j] = j
 			results$late$inter[j] = coef(model)[[1]]
@@ -253,7 +258,8 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		}
 	} else {
 		results$late$R_sq[1] = 0
-				
+		
+		results$late$p_val[1] = NA	
 		results$late$length[1] = NA
 		results$late$offset[1] = NA
 		results$late$inter[1] = NA
@@ -586,37 +592,44 @@ plot_ad_seq <- function (results,index,type='early',...) {
 	ad_seq = t(ad_seq[!(is.nan(ad_seq))])
 	
 	if (type == 'early') {
-	this_ad_seq = ad_seq[1:results$early$offset[index]];
-	this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
+		this_ad_seq = ad_seq[1:results$early$offset[index]];
+		this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
 		
-	x = c(0,results$early$offset[index]);
-	y = c(results$early$slope[index]*x[1] + results$early$inter[index],
-		   	  results$early$slope[index]*x[2] + results$early$inter[index])
+		x = c(0,results$early$offset[index]);
+		y = c(results$early$slope[index]*x[1] + results$early$inter[index],
+			  results$early$slope[index]*x[2] + results$early$inter[index])
 		
-	plot(1:results$early$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
-			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		plot(1:results$early$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
+				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
-	lines(x,y,col='red',lwd=2)
-	r_sq_val_str = sprintf('%.3f',results$early$R_sq[index])
-	slope_val_str = sprintf('%.3f',results$early$slope[index])
-	exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
-	text(x[1]+3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index]),sep=''))
+		lines(x,y,col='red',lwd=2)
+		r_sq_val_str = sprintf('%.3f',results$early$R_sq[index])
+		slope_val_str = sprintf('%.3f',results$early$slope[index])
+		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
+		text(x[1]+3,0.5*max(this_ad_seq), 
+			 paste('R^2 = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index]),sep=''))
 	}
 
 	if (type == 'late') {
-	this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
-	this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
+		this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
+		this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
 
-	x = c(length(ad_seq) - results$late$offset[index],length(ad_seq));
-	y = c(results$late$slope[index]*x[1] + results$late$inter[index],
+		x = c(length(ad_seq) - results$late$offset[index],length(ad_seq));
+		y = c(results$late$slope[index]*x[1] + results$late$inter[index],
 		   	  results$late$slope[index]*x[2] + results$late$inter[index])
 		
-	plot((length(ad_seq) - results$late$offset[index]) : length(ad_seq),
-		 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
-		 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
+		plot((length(ad_seq) - results$late$offset[index]) : length(ad_seq),
+			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
+			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
-	lines(x,y,col='red',lwd=2)
-	text(x[1]+ 3,0.5*max(this_ad_seq),paste('R^2 = ',sprintf('%.3f',results$late$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$late$slope[index]),sep=''))
+		lines(x,y,col='red',lwd=2)
+		text(x[1]+ 3,0.5*max(this_ad_seq), 
+			 paste('R^2 = ',sprintf('%.3f',results$late$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$late$slope[index]),sep=''))
+	}
+	
+	if (type == 'overall') {
+		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Intensity',
+			 ylim=c(0,1))
 	}
 }
 
@@ -758,7 +771,9 @@ filter_results <- function(results,needed_R_sq=0.9) {
 		points$late$stable_mean = c(points$late$stable_mean, res$stable_mean[late_filt])
 		points$early$stable_variance = c(points$early$stable_variance, res$stable_variance[early_filt])
 		points$late$stable_variance = c(points$late$stable_variance, res$stable_variance[late_filt])
-
+		
+		points$early$stable_cv = c(points$early$stable_cv, sqrt(res$stable_variance[early_filt])/res$stable_mean[early_filt])
+		
 		points$early$lin_num = c(points$early$lin_num,which(early_filt))
 		points$late$lin_num = c(points$late$lin_num,which(late_filt))
 		
@@ -782,6 +797,60 @@ filter_results <- function(results,needed_R_sq=0.9) {
 	points
 }
 
+filter_mixed_results <- function(results, corrected, needed_R_sq=0.9) {
+	points = list()
+	for (i in 1:length(corrected)) {
+		corr = corrected[[i]]
+		res = results[[i]]
+
+		assembly_filt = is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq & is.finite(corr$early$slope) & corr$early$slope > 0
+		disassembly_filt = is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq & is.finite(corr$late$slope) & corr$late$slope > 0
+	
+		points$assembly$slope = c(points$assembly$slope, corr$early$slope[assembly_filt])
+		points$disassembly$slope = c(points$disassembly$slope,corr$late$slope[disassembly_filt])
+		points$assembly$R_sq = c(points$assembly$R_sq, corr$early$R_sq[assembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$late$R_sq[disassembly_filt])
+
+		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
+		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
+		points$assembly$stable_mean = c(points$assembly$stable_mean, res$stable_mean[assembly_filt])
+		points$disassembly$stable_mean = c(points$disassembly$stable_mean, res$stable_mean[disassembly_filt])
+		points$assembly$stable_variance = c(points$assembly$stable_variance, res$stable_variance[assembly_filt])
+		points$disassembly$stable_variance = c(points$disassembly$stable_variance, res$stable_variance[disassembly_filt])
+		
+		points$assembly$stable_cv = c(points$assembly$stable_cv, 
+									  sqrt(res$stable_variance[assembly_filt])/res$stable_mean[assembly_filt])
+		points$disassembly$stable_cv = c(points$disassembly$stable_cv, 
+							  			 sqrt(res$stable_variance[disassembly_filt])/res$stable_mean[disassembly_filt])
+		
+		points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
+		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
+
+		points$assembly$average_speeds = c(points$assembly$average_speeds, res$exp_props$average_speeds[assembly_filt])
+		points$disassembly$average_speeds = c(points$disassembly$average_speeds, res$exp_props$average_speeds[disassembly_filt])
+		
+		if (any(names(res$exp_props) == 'starting_edge_dist')) {
+			points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
+		}
+		
+		if (any(names(res$exp_props) == 'ending_edge_dist')) {
+			points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
+		}
+		
+		points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
+		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
+		
+		points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
+		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir, length(which(disassembly_filt))))
+
+		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
+		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
+	}
+	points$assembly = as.data.frame(points$assembly)
+	points$disassembly = as.data.frame(points$disassembly)
+	
+	points
+}
 
 load_results <- function(dirs,file) {
 	results = list()
