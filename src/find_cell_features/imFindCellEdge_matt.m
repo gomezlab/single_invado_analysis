@@ -213,7 +213,7 @@ end
 
 % find the cell edge
 img_edge = bwperim(im2bw(img_org,adaptive_thresh(img_org,'upper_mean_weight',0.2)));
-[img_edge, img_bg] = clean_up_mask_image(img_edge);
+[img_bg, img_edge] = clean_up_mask_image(img_edge);
 %edge_pixel = ind2sub(size(img_edge),find(bwperim(img_edge)));
 
 edge_labels = bwlabel(img_edge, 8);

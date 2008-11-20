@@ -70,7 +70,7 @@ my $tracking_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folde
 mkpath(dirname($tracking_output_file));
 &output_mat_csv(\@tracking_mat, $tracking_output_file);
 my $birth_map_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{birth_map_output_file});
-&output_hash_csv(\@birth_map, $birth_map_output_file);
+&output_hash_csv(\#birth_map, $birth_map_output_file);
 
 ###############################################################################
 #Functions
