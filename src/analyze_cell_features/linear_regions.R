@@ -751,65 +751,25 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-
-filter_results <- function(results,needed_R_sq=0.9) {
-	points = list()
-	for (i in 1:length(results)) {
-		res = results[[i]]
-
-		early_filt = is.finite(res$early$R_sq) & res$early$R_sq > needed_R_sq & is.finite(res$early$slope) & res$early$slope > 0
-		late_filt = is.finite(res$late$R_sq) & res$late$R_sq > needed_R_sq & is.finite(res$late$slope) & res$late$slope > 0
-	
-		points$early$slope = c(points$early$slope,res$early$slope[early_filt])
-		points$late$slope = c(points$late$slope,res$late$slope[late_filt])
-		points$early$R_sq = c(points$early$R_sq, res$early$R_sq[early_filt])
-		points$late$R_sq = c(points$late$R_sq, res$late$R_sq[late_filt])
-
-		points$early$stable_lifetime = c(points$early$stable_lifetime, res$stable_lifetime[early_filt])
-		points$late$stable_lifetime = c(points$late$stable_lifetime, res$stable_lifetime[late_filt])
-		points$early$stable_mean = c(points$early$stable_mean, res$stable_mean[early_filt])
-		points$late$stable_mean = c(points$late$stable_mean, res$stable_mean[late_filt])
-		points$early$stable_variance = c(points$early$stable_variance, res$stable_variance[early_filt])
-		points$late$stable_variance = c(points$late$stable_variance, res$stable_variance[late_filt])
-		
-		points$early$stable_cv = c(points$early$stable_cv, sqrt(res$stable_variance[early_filt])/res$stable_mean[early_filt])
-		
-		points$early$lin_num = c(points$early$lin_num,which(early_filt))
-		points$late$lin_num = c(points$late$lin_num,which(late_filt))
-		
-		points$early$exp_dir = c(points$early$exp_dir,rep(res$exp_dir,length(which(early_filt))))
-		points$late$exp_dir = c(points$late$exp_dir,rep(res$exp_dir,length(which(late_filt))))
-		
-		points$ind_exp[[i]] = list(early_slope = res$early$slope[early_filt],
-								   late_slope = res$late$slope[late_filt])
-		
-		if (any(names(res$exp_props) == 'starting_edge_dist')) {
-			points$early$edge_dist = c(points$early$edge_dist,res$exp_props$starting_edge_dist[early_filt])
-		}
-		
-		if (any(names(res$exp_props) == 'ending_edge_dist')) {
-			points$late$edge_dist = c(points$late$edge_dist,res$exp_props$ending_edge_dist[late_filt])
-		}
-	}
-	points$early = as.data.frame(points$early)
-	points$late = as.data.frame(points$late)
-	
-	points
-}
-
 filter_mixed_results <- function(results, corrected, needed_R_sq=0.9) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
 		res = results[[i]]
 
-		assembly_filt = is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq & is.finite(corr$early$slope) & corr$early$slope > 0
-		disassembly_filt = is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq & is.finite(corr$late$slope) & corr$late$slope > 0
+		assembly_filt = (is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq
+					   & is.finite(corr$early$slope) & corr$early$slope > 0
+					   & is.finite(corr$early$p_val) & corr$early$p_val <= 0.05)
+		disassembly_filt = (is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq 
+						  & is.finite(corr$late$slope) & corr$late$slope > 0
+						  & is.finite(corr$late$p_val) & corr$late$p_val <= 0.05)
 	
 		points$assembly$slope = c(points$assembly$slope, corr$early$slope[assembly_filt])
 		points$disassembly$slope = c(points$disassembly$slope,corr$late$slope[disassembly_filt])
 		points$assembly$R_sq = c(points$assembly$R_sq, corr$early$R_sq[assembly_filt])
 		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$late$R_sq[disassembly_filt])
+		points$assembly$p_val = c(points$assembly$p_val, corr$early$p_val[assembly_filt])
+		points$disassembly$p_val = c(points$disassembly$p_val, corr$late$p_val[disassembly_filt])
 
 		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
 		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
@@ -849,6 +809,19 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9) {
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)
 	
+	points
+}
+
+gather_general_props <- function(results) {
+	points = list()
+	for (i in 1:length(results)) {
+		res = results[[i]]
+	
+		points$longevity = c(points$longevity, res$exp_props$longevity)
+		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
+		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
+	}	
+	points = as.data.frame(points)
 	points
 }
 

@@ -395,13 +395,19 @@ sub output_prop_time_series {
 
 sub gather_longevities {
     my @longevities;
+    my $default_val = "NA";
+    $default_val = $_[0] if (scalar(@_) > 0);
+
     print "\r", " " x 80, "\rGathering Longevity" if $opt{debug};
+    my $default_count = 0;
     for my $i (0 .. $#tracking_mat) {
-        my $count = 0;
-        for my $j (0 .. $#{ $tracking_mat[$i] }) {
-            $count++ if ($tracking_mat[$i][$j] > -1);
+        if ($tracking_mat[$i][0] > -1 || $tracking_mat[$i][-1] > -1) {
+            $default_count++;
+            push @longevities, $default_val;
+        } else {
+            my $count = scalar(grep $tracking_mat[$i][$_] > -1, 0..$#{$tracking_mat[$i]});
+            push @longevities, $count;
         }
-        push @longevities, $count;
     }
     return \@longevities;
 }
