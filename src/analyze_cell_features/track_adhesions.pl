@@ -516,7 +516,7 @@ sub detect_new_adhesions {
             }
             push @temp,         $i;
             push @tracking_mat, \@temp;
-            push @births, $#tracking_mat - 1;
+            push @births, $#tracking_mat;
         }
     }
 
