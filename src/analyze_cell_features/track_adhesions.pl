@@ -105,6 +105,10 @@ sub make_tracking_mat {
     #	   form a new lineage for each adhesion (birth)
     #	5. Repeat 2-5 until the data from each image has been used to build the
     #	   tracking matrix
+    #
+    #This loop also builds a birth matrix. Each row in the matrix is a frame in
+    #the movie (data set) and contains the numbers of the adhesions (i.e. 
+    #indices of the tracking matrix) that were born in that frame.
 
     for (0 .. $#data_keys - 1) {
         my $i_num      = $data_keys[$_];
