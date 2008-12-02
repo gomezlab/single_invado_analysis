@@ -53,7 +53,7 @@ my %data_sets;
 
 print "\n\nDetermining Tracking Matrix\n" if $opt{debug};
 my @tracking_mat;
-my %birth_map;
+my @birth_mat;
 my %tracking_probs;
 my %tracking_facts;
 &make_tracking_mat;
@@ -70,7 +70,7 @@ my $tracking_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folde
 mkpath(dirname($tracking_output_file));
 &output_mat_csv(\@tracking_mat, $tracking_output_file);
 my $birth_map_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{birth_map_output_file});
-&output_hash_csv(\%birth_map, $birth_map_output_file);
+&output_mat_csv(\@birth_mat, $birth_map_output_file);
 
 ###############################################################################
 #Functions
@@ -155,13 +155,13 @@ sub make_tracking_mat {
 }
 
 sub initialize_tracking_mat {
-    my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
-
+    my @data_keys = sort { $a <=> $b } keys %data_sets
+    my $first_key = $data_keys[0];
     my $num_adhesions = $#{ $data_sets{$first_key}{Area} };
 
     for (0 .. $num_adhesions) {
         push @{ $tracking_mat[$_] }, $_;
-        $birth_map{$_} = 0;
+        push @{ $birth_mat[0] }, $_;
     }
     print "Intialized the tracking matrix on image #: $first_key\n" if $opt{debug};
 }
@@ -494,6 +494,7 @@ sub detect_new_adhesions {
     my $expected_ad_count = $#{ $data_sets{$next_i_num}{Area} };
     my %expected_ad_nums  = map { $_ => 0 } (0 .. $expected_ad_count);
     my $lineage_length    = $#{ $tracking_mat[0] };
+    my @births;
 
     for my $i (0 .. $#tracking_mat) {
         next if ($tracking_mat[$i][$lineage_length] <= -1);
@@ -515,9 +516,11 @@ sub detect_new_adhesions {
             }
             push @temp,         $i;
             push @tracking_mat, \@temp;
-            $birth_map{$i} = $lineage_length;
+            push @births, $i;
         }
     }
+
+    push @birth_mat, \@births;
 }
 
 sub check_tracking_mat_integrity {
