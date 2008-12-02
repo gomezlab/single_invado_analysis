@@ -155,7 +155,7 @@ sub make_tracking_mat {
 }
 
 sub initialize_tracking_mat {
-    my @data_keys = sort { $a <=> $b } keys %data_sets
+    my @data_keys = sort { $a <=> $b } keys %data_sets;
     my $first_key = $data_keys[0];
     my $num_adhesions = $#{ $data_sets{$first_key}{Area} };
 
