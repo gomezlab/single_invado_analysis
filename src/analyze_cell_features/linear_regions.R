@@ -332,7 +332,7 @@ find_best_offset_combination <- function(results, min_length = 10) {
 			if (j_priority <= 0) {
 				j_priority = 0
 			}
-			this_priority = i_priority^2 + j_priority^2
+			this_priority = i_priority + j_priority
 			
 			if (  max_R_sq == R_sq_sums[i,j]
 				& highest_square_priority < this_priority) {
@@ -751,7 +751,7 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-filter_mixed_results <- function(results, corrected, needed_R_sq=0.9) {
+filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_val = 0.05) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
@@ -759,10 +759,10 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9) {
 
 		assembly_filt = (is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq
 					   & is.finite(corr$early$slope) & corr$early$slope > 0
-					   & is.finite(corr$early$p_val) & corr$early$p_val <= 0.05)
+					   & is.finite(corr$early$p_val) & corr$early$p_val <= needed_p_val)
 		disassembly_filt = (is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq 
 						  & is.finite(corr$late$slope) & corr$late$slope > 0
-						  & is.finite(corr$late$p_val) & corr$late$p_val <= 0.05)
+						  & is.finite(corr$late$p_val) & corr$late$p_val <= needed_p_val)
 	
 		points$assembly$slope = c(points$assembly$slope, corr$early$slope[assembly_filt])
 		points$disassembly$slope = c(points$disassembly$slope,corr$late$slope[disassembly_filt])
@@ -805,9 +805,13 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9) {
 
 		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
 		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
+		
+		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[assembly_filt & disassembly_filt])
+		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[assembly_filt & disassembly_filt])
 	}
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)
+	points$joint = as.data.frame(points$joint)
 	
 	points
 }
@@ -888,33 +892,68 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 	rbind(left_x_seq,bottom_y_seq,right_x_seq,top_y_seq)
 }	
 
-find_birth_death_rate <- function(results) {
-	birth_rate = list()
-	death_rate = list()
-	for (i in 1:length(results)) {
-		birth_rate[[i]] = rep(0,dim(results[[i]]$exp_data)[[2]]-1);
-		death_rate[[i]] = rep(0,dim(results[[i]]$exp_data)[[2]]-1);
-		for (j in 1:dim(results[[i]]$exp_data)[[1]]) {
-			data_line = is.na(as.vector(results[[i]]$exp_data[j,]));
-			true_line = which(!data_line);
-#		print(data_line)
-			if (length(true_line) == 0) {
-				next;
+find_death_time <- function(alive_dead) {
+	#alive_dead should be a sequence of T/F values, where T is alive and F is dead
+	stopifnot(is.logical(alive_dead))
+	
+	#set the death time to NA, to indicate the default of no death observed
+	death_time = NA
+	
+	#First deal with the posibility that the last entry is T, so the adhesion 
+	#lives to the end of the experiment, thus, we don't see a death
+	if (! alive_dead[length(alive_dead)]) {
+		#If the first entry is T (alive), then we need to find the first dead
+		#entry to find the death time
+		if (alive_dead[1]) {
+			dead_points = which(!alive_dead)
+			if (any(dead_points)) {
+				death_time = dead_points[1]
+			}	
+		} else {
+			#We know the first entry is F (dead) and that the adhesion dies, now 
+			#we search for the spot where the adhesion transistions from live 
+			#to dead
+			for (i in 2:length(alive_dead)) {
+				if (alive_dead[i - 1] & !alive_dead[i]) {
+					death_time = i
+				}
 			}
-			if (data_line[1]) {
-				birth_rate[[i]][true_line[1]-1] = birth_rate[[i]][true_line[1]-1] + 1;
-			}
-			if (data_line[length(data_line)]) {
-				death_rate[[i]][true_line[length(true_line)]] = death_rate[[i]][true_line[length(true_line)]] + 1;
-			}		
 		}
 	}
-
-	for (i in 1:length(birth_rate)) {
-	#	print(cor(birth_rate[[i]],death_rate[[i]]))
-	#	print(mean(birth_rate[[i]]-death_rate[[i]]))
-	}
+	death_time
 }
+
+find_birth_time <- function(alive_dead) {
+	#alive_dead should be a sequence of T/F values, where T is alive and F is dead
+	stopifnot(is.logical(alive_dead))
+	
+	#set the birth time to NA, to indicate the default of no birth observed
+	birth_time = NA
+	
+	#all we need to search for is the first T (alive) entry, assuming the first 
+	#entry is F (dead) otherwise, we don't know when birth occured
+	if (! alive_dead[1]) {
+		birth_time = which(alive_dead)[1]
+	}
+	birth_time
+}
+
+########################################
+#Tests
+########################################
+
+#Birth/Death Rates
+stopifnot(is.na(find_death_time(c(T,T,T,T))))
+stopifnot(find_death_time(c(T,T,T,F)) == 4)
+stopifnot(find_death_time(c(T,T,F,F)) == 3)
+stopifnot(find_death_time(c(F,T,F,F)) == 3)
+stopifnot(find_death_time(c(F,T,T,F)) == 4)
+
+stopifnot(is.na(find_birth_time(c(T,T,T,T))))
+stopifnot(is.na(find_birth_time(c(T,T,T,F))))
+stopifnot(find_birth_time(c(F,T,F,F)) == 2)
+stopifnot(find_birth_time(c(F,F,T,T)) == 3)
+
 
 ################################################################################
 # Main Program
