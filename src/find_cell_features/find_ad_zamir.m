@@ -23,34 +23,30 @@ if (i_p.Results.debug == 1), profile on; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-start_count = 0;
-
-if (start_count > 0)
-    ad_zamir = imread(fullfile('ad_zamir_samples',[num2str(start_count),'.png']));
-else
-    ad_zamir = zeros(size(high_passed_image));
-end
+ad_zamir = zeros(size(high_passed_image));
 
 sorted_pix_vals = sort(unique(high_passed_image(:)),'descend');
 
-count = start_count;
+count = 0;
+total_pixels = sum(sum(im2bw(high_passed_image,i_p.Results.filter_thresh)));
 
 %Cycle through all pixels of image
-for i = (start_count + 1):length(sorted_pix_vals)
+for i = 1:length(sorted_pix_vals)
     %skip pixels below the filter threshold
     if (sorted_pix_vals(i) <= i_p.Results.filter_thresh), continue, end
     
     lin_ind = find(high_passed_image == sorted_pix_vals(i));
 
     for j = 1:length(lin_ind)
+        %skip a pixel if it has already been assigned        
+%         if (ad_zamir(lin_ind(j)) ~= 0), continue, end
         assert(ad_zamir(lin_ind(j)) == 0, 'Error: Adhesion already assigned in this position %d',lin_ind(j))
         ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),min_size_pixels);
+        count = count + 1;
     end
 
-    count = count + 1;
-
     if (mod(count,100) == 0 && i_p.Results.debug)
-        disp(['Count: ',num2str(count),'/',num2str(sum(sorted_pix_vals > i_p.Results.filter_thresh))])
+        disp(['Count: ',num2str(count),'/',num2str(total_pixels)])
     end
 end
 
@@ -68,6 +64,7 @@ for i = 2:length(ad_nums)
     end
 end
 
+%renumber the found adhesions to start at one
 ad_nums = unique(ad_zamir);
 assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
 for i = 2:length(ad_nums)
@@ -90,7 +87,7 @@ function ad_zamir = add_single_pixel(ad_zamir,pix_pos,min_size)
 initial_size = sum(sum(im2bw(ad_zamir,0)));
 
 %now locate the adhesions in the current adhesions that touch the newest
-%selected pixel
+%selected pixel, store these adhesions in connected_ad
 connected_ad = false(size(ad_zamir));
 connected_ad(pix_pos) = 1;
 ad_nums = zeros(4);
@@ -107,10 +104,14 @@ for i = 1:length(ad_nums)
     end
 end
 
-%build a binary image of the current touching adhesions
+%build a binary image of the current touching adhesions, without the new
+%pixel
 old_ad = false(size(ad_zamir));
 old_ad(and(ad_zamir > 0,connected_ad)) = 1;
 
+%also build an image with the connected old adhesions renumbered to start
+%with one, since it will be easier to work with the regionprops output when
+%numbered from one
 relabeled_old_ad = ad_zamir;
 relabeled_old_ad(old_ad ~= 1) = 0;
 ad_nums = unique(relabeled_old_ad);
@@ -150,6 +151,8 @@ else
         if (all([props.Area] < min_size))
             ad_zamir(connected_ad) = min(ad_zamir(old_ad == 1));
         elseif (sum(meets_min) == 1)
+            %There is only one large adhesion touching, find the current
+            %adhesion number and add the new pixel
             large_area_ad = ismember(relabeled_old_ad,find([props.Area] >= min_size));
 
             ad_number = ad_zamir(find(large_area_ad == 1,1));
@@ -158,9 +161,16 @@ else
 
             ad_zamir(connected_ad) = ad_number;
         else
+            %There are two or more large adhesions touching the new pixel,
+            %figure out which adhesion is closer in terms of centroid to
+            %the new pixel and add the new pixel to that adhesion, if there
+            %is a tie, just use the first adhesion in the list
             large_area_ads = ismember(relabeled_old_ad,find([props.Area] >= min_size));
             large_area_nums = unique(relabeled_old_ad(large_area_ads));
-
+            
+            %Also, the new pixel might be connected to small adhesions as
+            %well as large adhesions, so capture the position of the small
+            %adhesions for later assignment to selected large adhesion
             small_area_ads = ismember(relabeled_old_ad, find([props.Area] < min_size));
             
             closest_relabeled_info = [0,inf];
@@ -175,7 +185,7 @@ else
             ad_number = ad_zamir(find(relabeled_old_ad == closest_relabeled_info(1),1));
             assert(ad_number > 0, 'Error in largest ad filtering: adhesion number less than 1');
             assert(all(ad_number == ad_zamir(relabeled_old_ad == closest_relabeled_info(1))),'Error in largest ad filtering: single adhesion with different numbers');
-
+            
             ad_zamir(pix_pos) = ad_number;
             ad_zamir(small_area_ads) = ad_number;
         end

@@ -4,7 +4,7 @@ function [varargout] = find_focal_adhesions(I_file,varargin)
 %                         the segmented image to a file
 %
 %   find_focal_adhesions(I,OPTIONS) locate the focal adhesions in image
-%   file, 'I', and collects the properties of the focal adhesions
+%   file, 'I'
 %
 %   Options:
 %
@@ -27,16 +27,16 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 
 i_p.parse(I_file);
 
-i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
-i_p.addOptional('min_size',0.56,@(x)isnumeric(x) && x > 1);
-i_p.addOptional('pixel_size',0.215051,@isnumeric);
-i_p.addOptional('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addOptional('filter_thresh',0.1,@isnumeric);
-i_p.addOptional('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
-i_p.addOptional('output_file', 'adhesions.png', @ischar);
-i_p.addOptional('output_file_perim', 'adhesions_perim.png', @ischar);
-i_p.addOptional('output_file_binary', 'adhesions_binary.png', @ischar);
-i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('cell_mask',0,@(x)exist(x,'file') == 2);
+i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 1);
+i_p.addParamValue('pixel_size',0.215051,@isnumeric);
+i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
+i_p.addParamValue('filter_thresh',0.1,@isnumeric);
+i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
+i_p.addParamValue('output_file', 'adhesions.png', @ischar);
+i_p.addParamValue('output_file_perim', 'adhesions_perim.png', @ischar);
+i_p.addParamValue('output_file_binary', 'adhesions_binary.png', @ischar);
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,varargin{:});
 
@@ -83,7 +83,7 @@ imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results
 imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_file_binary));
 
 if (nargout > 0)
-    varargout{1} = struct('adhesions',adhesions,'ad_zamir',ad_zamir);
+    varargout{1} = struct('adhesions',im2bw(ad_zamir,0),'ad_zamir',ad_zamir);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
