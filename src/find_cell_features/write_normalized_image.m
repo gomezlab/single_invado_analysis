@@ -39,7 +39,13 @@ else
     I_num = 1;
 end
 
-input_image = imread(I_file,I_num);
+input_image_info = imfinfo(I_file);
+
+if (size(input_image_info,2) > 1)
+    input_image = imread(I_file,I_num);
+else
+    input_image = imread(I_file);
+end
 
 output_bits = 8;
 if (intmax(class(input_image)) > 255)

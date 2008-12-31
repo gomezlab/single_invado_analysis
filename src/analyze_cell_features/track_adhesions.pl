@@ -19,7 +19,6 @@ use IO::File;
 use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
-use Emerald;
 use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off

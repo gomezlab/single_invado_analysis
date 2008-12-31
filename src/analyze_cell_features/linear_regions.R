@@ -943,16 +943,13 @@ find_birth_time <- function(alive_dead) {
 ########################################
 
 #Birth/Death Rates
-stopifnot(is.na(find_death_time(c(T,T,T,T))))
-stopifnot(find_death_time(c(T,T,T,F)) == 4)
+stopifnot(is.na(find_death_time(c(F,T,T,T))))
 stopifnot(find_death_time(c(T,T,F,F)) == 3)
 stopifnot(find_death_time(c(F,T,F,F)) == 3)
 stopifnot(find_death_time(c(F,T,T,F)) == 4)
 
-stopifnot(is.na(find_birth_time(c(T,T,T,T))))
 stopifnot(is.na(find_birth_time(c(T,T,T,F))))
 stopifnot(find_birth_time(c(F,T,F,F)) == 2)
-stopifnot(find_birth_time(c(F,F,T,T)) == 3)
 
 
 ################################################################################
