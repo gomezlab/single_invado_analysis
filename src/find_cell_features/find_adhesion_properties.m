@@ -27,7 +27,7 @@ i_p.addRequired('adhesions_file',@(x)exist(x,'file') == 2);
 
 i_p.parse(focal_file, adhesions_file);
 
-i_p.addOptional('output_dir', fileparts(focal_file), @(x)exist(x,'dir')==7);
+i_p.addParamValue('output_dir', fileparts(focal_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
 i_p.addOptional('protrusion_file',0,@(x)exist(x,'file') == 2);
 i_p.addOptional('i_num',0,@(x)isnumeric(x) && x >= 1);
@@ -50,10 +50,12 @@ adhesions = imread(adhesions_file);
 
 %check if protrusion_file is specified, read it in if i_num is also
 %specified
-if (not(isempty(strmatch('protrusion_file',i_p.UsingDefaults))) && isempty(strmatch('i_num',i_p.Results.usingDefaults)))
-    warning('AdhesionProps:dataloading','Protrusion file specified, but don''t know which image number to use for this image, not including protrusion data.');
-else
-    load(i_p.Results.protrusion_file);
+if (not(strmatch('protrusion_file',i_p.UsingDefaults)))
+    if (not(strmatch('i_num',i_p.UsingDefaults)))
+        warning('AdhesionProps:dataloading','Protrusion file specified, but don''t know which image number to use for this image, not including protrusion data.');
+    else
+        load(i_p.Results.protrusion_file);
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
