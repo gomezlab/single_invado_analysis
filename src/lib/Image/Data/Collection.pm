@@ -28,7 +28,7 @@ sub gather_data_sets {
 
     my %data_sets;
 
-    my @folders     = <$cfg{individual_results_folder}/*/$cfg{raw_data_folder}>;
+    my @folders = <$cfg{individual_results_folder}/*/$cfg{raw_data_folder}>;
 
     foreach my $this_folder (@folders) {
         my $i_num;
@@ -52,7 +52,7 @@ sub gather_data_sets {
 
         foreach my $file (@data_files) {
             my @file_matches = <$this_folder/$file.*>;
-            
+
             if (scalar(@file_matches) > 1) {
                 warn(
                     "Multiple data files for file name: $file\n",
@@ -62,27 +62,40 @@ sub gather_data_sets {
             }
 
             next if (scalar(@file_matches) == 0);
-            
+
             if (-e "$file_matches[0]" && -f "$file_matches[0]" && -r "$file_matches[0]") {
                 @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$file_matches[0]");
                 if ($file eq "Centroid") {
-                    @{ $data_sets{$i_num}{ $file . "_x" } } = 
-                        map $data_sets{$i_num}{$file}[$_ * 2], (0 .. $#{ $data_sets{$i_num}{$file} }/2);
-                    @{ $data_sets{$i_num}{ $file . "_y" } } = 
-                        map $data_sets{$i_num}{$file}[$_ * 2 + 1], (0 .. $#{ $data_sets{$i_num}{$file} }/2);
+                    my %split_centroid_data = &process_centroid_positions(@{ $data_sets{$i_num}{$file} });
+                    @{ $data_sets{$i_num}{ "Centroid_x" } } = @{$split_centroid_data{"x"}};
+                    @{ $data_sets{$i_num}{ "Centroid_y" } } = @{$split_centroid_data{"y"}};
                     
-                    delete $data_sets{$i_num}{$file};
+                    delete $data_sets{$i_num}{"Centroid"};
                 }
             }
         }
     }
 
     die "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
-    
+
     &check_data_set_lengths(\%data_sets);
     &check_PixelIdxList_lengths(\%data_sets);
 
     return %data_sets;
+}
+
+sub process_centroid_positions {
+    my @centroid_data = @_;
+    
+    die "Expected Centroid position data to have an even number of entries, got " . 
+      scalar(@centroid_data) if not (scalar(@centroid_data) % 2 == 0);
+
+    my %split_centroid_data;
+    
+    @{$split_centroid_data{"x"}} = map $centroid_data[ $_ * 2 ], (0 .. $#centroid_data/2);
+    @{$split_centroid_data{"y"}} = map $centroid_data[ $_ * 2  + 1], (0 .. $#centroid_data/2);
+    
+    return %split_centroid_data;
 }
 
 sub gather_data_from_matlab_file {
@@ -90,7 +103,7 @@ sub gather_data_from_matlab_file {
 
     my $parser = Text::CSV::Simple->new;
     my @data   = $parser->read_file($file);
-    
+
     if (scalar(@data) == 1) {
         @data = @{ $data[0] };
     }
@@ -124,7 +137,7 @@ sub gather_PixelIdxList_data {
 
 sub check_data_set_lengths {
     my %data_sets = %{ $_[0] };
-    
+
     my %data_sets_length;
     for my $key (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$key} }) {
@@ -154,7 +167,7 @@ sub check_PixelIdxList_lengths {
     my %data_sets = %{ $_[0] };
 
     my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
-    
+
     if (   not(exists $data_sets{$first_key}{"Area"})
         || not(exists $data_sets{$first_key}{"PixelIdxList"})) {
         return 1;

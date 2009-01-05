@@ -30,29 +30,11 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "tracking_mat=s", 
-                  "skip_lin_regions", "lsf|l") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_lin_regions", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 my %cfg = ParseConfig(\%opt);
-
-if (exists $opt{tracking_mat}) {
-    if (not -e catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $opt{tracking_mat})) {
-        die "Could not find the tracking mat specified on the command line, looked in: ",
-          catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $opt{tracking_mat});
-    } else {
-        my $all_but_type_tracking = '';
-        if ($opt{tracking_mat} =~ m/(.*)\.(.*?)/) {
-            $all_but_type_tracking = $1;
-        } else {
-            die "Could not find the proper end of the tracking matrix without file type";
-        }
-
-        $cfg{adhesion_props_folder} = catdir($cfg{adhesion_props_folder}, $all_but_type_tracking);
-        $cfg{tracking_output_file} = $opt{tracking_mat};
-    }
-}
 
 ###############################################################################
 # Main Program
@@ -62,7 +44,6 @@ if ($opt{lsf}) {
     #$0 - the name of the program currently running, used to protect against
     #future file name changes
     my @command = "$0 -cfg $opt{cfg}";
-    $command[0] .= " -tracking_mat $opt{tracking_mat}" if (exists $opt{tracking_mat});
 
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis');
 
@@ -225,6 +206,13 @@ sub gather_and_output_lineage_properties {
     &output_prop_time_series($props{Average_adhesion_signal}, "Average_adhesion_signal");
     $props{ad_sig} = &gather_average_value($props{Average_adhesion_signal});
     undef $props{Average_adhesion_signal};
+    
+    $props{Centroid_x} = &gather_prop_seq("Centroid_x");
+    &output_prop_time_series($props{Centroid_x}, "Centroid_x");
+    undef $props{Centroid_x};
+    $props{Centroid_y} = &gather_prop_seq("Centroid_y");
+    &output_prop_time_series($props{Centroid_y}, "Centroid_y");
+    undef $props{Centroid_y};
 
     ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
     &output_prop_time_series($props{speeds}{All}, "All_speeds");
