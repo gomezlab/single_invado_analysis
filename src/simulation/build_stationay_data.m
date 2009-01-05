@@ -30,8 +30,6 @@ i_p.parse(varargin{:});
 % load('in_ad_pixels.mat')
 % load('not_in_ad_pixels.mat')
 % 
-% in_ad_indexes = randperm(size(in_ad,1));
-% not_in_ad_indexes = randperm(size(not_in_ad,1));
 
 
 base_dir = '../../results/focal_adhesions/time_series_01/individual_pictures/';
@@ -69,6 +67,8 @@ for i=1:length(dirs)
     means(i-2,2) = mean(fi(not(ads) & cm));
 end
 
+in_ad_indexes = randperm(size(in_ad,1));
+not_in_ad_indexes = randperm(size(not_in_ad,1));
 
 
 ad_padding = 10;
@@ -110,31 +110,24 @@ for i = 1:image_number
     output_image = zeros(size(binary_image));
     
     in_ad_pixels_to_fill = find(binary_image);
-    
-    for j = 1:size(in_ad_pixels_to_fill,1)
-        try
-            output_image(in_ad_pixels_to_fill(j)) = in_ad(in_ad_indexes(1));
-            in_ad_indexes = in_ad_indexes(2:end);
-        catch
-            in_ad_indexes = randperm(size(in_ad,1));
-            output_image(in_ad_pixels_to_fill(j)) = in_ad(in_ad_indexes(1));
-            in_ad_indexes = in_ad_indexes(2:end);
-        end
+    try
+        output_image(in_ad_pixels_to_fill) = in_ad(in_ad_indexes(1:size(in_ad_pixels_to_fill,1)));
+        in_ad_indexes = in_ad_indexes(size(in_ad_pixels_to_fill,1):end);
+    catch
+        in_ad_indexes = randperm(size(in_ad,1));
+        output_image(in_ad_pixels_to_fill) = in_ad(in_ad_indexes(1:size(in_ad_pixels_to_fill,1)));        
+        in_ad_indexes = in_ad_indexes(size(in_ad_pixels_to_fill,1)+1:end);        
     end
 
     not_in_ad_pixels_to_fill = find(not(binary_image));
-
-    for j = 1:size(not_in_ad_pixels_to_fill,1)
-        try
-            output_image(not_in_ad_pixels_to_fill(j)) = not_in_ad(not_in_ad_indexes(1));
-            not_in_ad_indexes = not_in_ad_indexes(2:end);
-        catch
-            not_in_ad_indexes = randperm(size(not_in_ad,1));
-            output_image(not_in_ad_pixels_to_fill(j)) = not_in_ad(not_in_ad_indexes(1));
-            not_in_ad_indexes = not_in_ad_indexes(2:end);
-        end
+    try
+        output_image(not_in_ad_pixels_to_fill) = not_in_ad(not_in_ad_indexes(1:size(not_in_ad_pixels_to_fill,1)));
+        not_in_ad_indexes = not_in_ad_indexes(size(not_in_ad_pixels_to_fill,1)+1:end);
+    catch
+        not_in_ad_indexes = randperm(size(not_in_ad,1));
+        output_image(not_in_ad_pixels_to_fill) = not_in_ad(not_in_ad_indexes(1:size(not_in_ad_pixels_to_fill,1)));
+        not_in_ad_indexes = not_in_ad_indexes(size(not_in_ad_pixels_to_fill,1)+1:end);
     end
-    
 %     for j=1:size(binary_image,1)
 %         for k = 1:size(binary_image,2)
 %             if (binary_image(j,k))
