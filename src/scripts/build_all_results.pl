@@ -114,7 +114,7 @@ close OUTPUT;
 
 sub wait_till_LSF_jobs_finish {
     for (1 .. 6) {
-        my $sleep_time = 10;
+        my $sleep_time = 5;
         do {
             sleep($sleep_time);
             $sleep_time++;

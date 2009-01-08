@@ -9,6 +9,7 @@ use strict;
 use warnings;
 use Text::CSV::Simple;
 use Math::Matrix;
+use Data::Dumper;
 use File::Spec::Functions;
 
 our @EXPORT = qw( read_in_tracking_mat gather_data_sets);
@@ -107,32 +108,16 @@ sub gather_data_from_matlab_file {
     if (scalar(@data) == 1) {
         @data = @{ $data[0] };
     }
+    
+    #PixelIdxList is supposed to be an array of arrayes containing the pixel id
+    #numbers, when only a single adhesion is present in the image, then the
+    #parser returns just an array, not an array of arrays, this checks for that
+    #problem and fixes it
+    if ($file =~ /PixelIdxList/ && !(ref($data[0]) eq "ARRAY")) {
+        @data = [@data];
+    }
 
     return @data;
-}
-
-sub gather_PixelIdxList_data {
-    my $folder = $_[0];
-
-    my @all_pixid;
-
-    my @ad_folders = <$folder/*>;
-    my $total_ad   = scalar(@ad_folders);
-
-    for my $ad_num (1 .. $total_ad) {
-        my @temp;
-        open INPUT, "$folder/$ad_num" or die "Unable to open PixelIdxList file: $folder/$ad_num";
-        for (<INPUT>) {
-            chomp($_);
-            my $converted_line = sprintf("%d", $_);
-            if ($converted_line =~ /(\d+)/) {
-                push @temp, $1;
-            }
-        }
-        close INPUT;
-        push @all_pixid, \@temp;
-    }
-    return @all_pixid;
 }
 
 sub check_data_set_lengths {

@@ -34,7 +34,7 @@ sub create_LSF_Matlab_commands {
     $opt{output_file} = File::Spec->catfile($opt{folder},$opt{output_file});
     $opt{error_file}  = File::Spec->catfile($opt{folder},$opt{error_file});
 
-    my $bsub_command   = "bsub -R blade -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     my $matlab_command = "/afs/isis/pkg/matlab/matlab -nodisplay -nojvm -nosplash -r";
 
     @commands = map { split(/\n/, $_) } @commands;

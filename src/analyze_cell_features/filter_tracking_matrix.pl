@@ -81,6 +81,7 @@ sub filter_tracking_matrix {
     for my $required_longevity (split(/\s+/, $cfg{required_longevity_filter})) {
         for my $i (0 .. $#{ $lin_props{'longevity'} }) {
             my $this_longev = $lin_props{'longevity'}[$i];
+            next if ($this_longev eq "NA");
             if ($this_longev >= $required_longevity) {
                 push @{ $matrix_set{'longevity'}{$required_longevity} }, $tracking_mat[$i];
             }

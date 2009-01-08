@@ -79,6 +79,7 @@ foreach (@image_sets) {
     }
 
     push @matlab_code, &create_matlab_code(\@image_files, $folder, $out_file);
+
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
@@ -141,7 +142,11 @@ sub create_matlab_code_single {
     foreach my $file_name (@image_files) {
         my $i_num;
         my $original_i_num;
-        if ($file_name =~ /.*?(\d+)\./) {
+
+        #Using basename here because folder names with .\digit will match this
+        #regular expression, but we only want to match the last part of the file
+        #name
+        if (basename($file_name) =~ /.*?(\d+)\./) {
             $original_i_num = $1;
             $i_num = (grep $file_name eq $image_files[ $_ - 1 ], (1 .. $#image_files + 1))[0];
         } else {

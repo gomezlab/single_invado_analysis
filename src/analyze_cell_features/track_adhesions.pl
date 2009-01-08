@@ -28,7 +28,9 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{input} = "data.stor";
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i|input_data_files=s", "lsf|l") or die;
+$opt{keep_data_files} = 0;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i|input_data_files=s", 
+                  "lsf|l", "keep_data_files") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -154,6 +156,12 @@ sub make_tracking_mat {
         &check_tracking_mat_integrity;
 
         delete $data_sets{$i_num};
+        unlink(catfile($cfg{individual_results_folder}, $i_num, $opt{input})) if (not $opt{keep_data_files});
+        
+        #Remove the last image's data file, if keep_data_files is not true
+        if (not $opt{keep_data_files} && $_ == ($#data_keys - 1)) { 
+            unlink(catfile($cfg{individual_results_folder}, $next_i_num, $opt{input}));
+        }
     }
 }
 
