@@ -30,7 +30,7 @@ background_mean_intensity = 0.1220;
 
 background_noise_var = 0.004;
 
-max_ad_size = 20;
+max_ad_size = 40;
 
 ad_padding = ceil(max_ad_size*0.8);
 

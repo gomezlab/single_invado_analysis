@@ -28,10 +28,11 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.parse(I_file);
 
 i_p.addParamValue('cell_mask',0,@(x)exist(x,'file') == 2);
-i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 1);
+i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('pixel_size',0.215051,@isnumeric);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addParamValue('filter_thresh',0.1,@isnumeric);
+i_p.addParamValue('filter_thresh_low',0.1,@isnumeric);
+i_p.addParamValue('filter_thresh_high',0.2,@isnumeric);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('output_file', 'adhesions.png', @ischar);
 i_p.addParamValue('output_file_perim', 'adhesions_perim.png', @ischar);
@@ -58,16 +59,22 @@ focal_image  = double(focal_image)/scale_factor;
 I_filt = fspecial('disk',i_p.Results.filter_size);
 blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 high_passed_image = focal_image - blurred_image;
+threshed_image = logical(im2bw(high_passed_image,i_p.Results.filter_thresh_low));
 
-ad_zamir = find_ad_zamir(high_passed_image,i_p);
+sum(threshed_image(:))
+[row_indexes,col_indexes] = ind2sub(size(focal_image),find(high_passed_image > i_p.Results.filter_thresh_high));
+threshed_image = bwselect(im2bw(high_passed_image,0.1),col_indexes,row_indexes,4);
+
+sum(threshed_image(:))
 if (exist('cell_mask','var'))
-    ad_zamir = find_in_cell_ads(ad_zamir,cell_mask);
-    ad_nums = unique(ad_zamir);
-    assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix');
-    for i = 2:length(ad_nums)
-        ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
-    end
+    [row_indexes,col_indexes] = ind2sub(size(focal_image),find(cell_mask));
+    threshed_image = bwselect(threshed_image,col_indexes,row_indexes,4);
 end
+sum(threshed_image(:))
+
+min_pixel_size = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
+
+ad_zamir = find_ad_zamir(high_passed_image,threshed_image,min_pixel_size,'debug',i_p.Results.debug);
 
 ad_zamir_perim = zeros(size(ad_zamir));
 for i = 1:max(ad_zamir(:))
@@ -84,38 +91,4 @@ imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_fi
 
 if (nargout > 0)
     varargout{1} = struct('adhesions',im2bw(ad_zamir,0),'ad_zamir',ad_zamir);
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function filtered_adhesions = find_in_cell_ads(ads,cm)
-% COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
-%                                properties are collected concerning the
-%                                morphology and physical properties of the
-%                                adhesions
-%
-%   ad_p = collect_adhesion_properties(ad_I,c_m,orig_I) collects the
-%   properties of the adhesions identified in the binary image 'ad_I',
-%   using the cell mask in 'c_m' and the original focal image data in
-%   'orig_I', returning a structure 'ad_p' containing properties
-%
-%   Properties Collected:
-%       -all of the properties collected by regioprops(...,'all')
-%       -the distance of each adhesion's centroid from the nearest cell
-%        edge
-%       -the average and variance of the normalized fluorescence signal
-%        within each adhesion
-
-filtered_adhesions = zeros(size(ads,1),size(ads,2));
-
-for i = 1:max(ads(:))
-    this_adhesion = false(size(ads,1),size(ads,2));
-    this_adhesion(ads == i) = true;
-    overlap = and(this_adhesion,cm);
-
-    if (sum(overlap(:)) >= 1)
-        filtered_adhesions(this_adhesion) = i;
-    end
 end

@@ -1,4 +1,4 @@
-function ad_zamir = find_ad_zamir(high_passed_image,i_p)
+function ad_zamir = find_ad_zamir(high_passed_image,binary_image,min_pixel_size,varargin)
 % FIND_AD_ZAMIR    Assigns adhesion pixels to specific adhesions using the
 %                  same algorithm as described in Zamir, 1999
 %
@@ -6,17 +6,15 @@ function ad_zamir = find_ad_zamir(high_passed_image,i_p)
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-i_p_zamir = inputParser;
-i_p_zamir.FunctionName = 'FIND_AD_ZAMIR';
+i_p = inputParser;
+i_p.FunctionName = 'FIND_AD_ZAMIR';
 
-i_p_zamir.addRequired('high_passed_image',@isnumeric);
-i_p_zamir.addRequired('i_p',@(x)isa(x,'inputParser'));
+i_p.addRequired('high_passed_image',@isnumeric);
+i_p.addRequired('binary_image',@islogical);
+i_p.addRequired('min_pixel_size',@(x)x >= 1);
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p_zamir.parse(high_passed_image,i_p);
-
-%Translate the min_size parameter into the pixel count, using the pixel
-%size
-min_size_pixels = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
+i_p.parse(high_passed_image,binary_image,min_pixel_size,varargin{:});
 
 if (i_p.Results.debug == 1), profile on; end
 
@@ -25,23 +23,20 @@ if (i_p.Results.debug == 1), profile on; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_zamir = zeros(size(high_passed_image));
 
-sorted_pix_vals = sort(unique(high_passed_image(:)),'descend');
+pix_vals = high_passed_image(i_p.Results.binary_image);
+sorted_pix_vals = sort(unique(pix_vals),'descend');
 
 count = 0;
-total_pixels = sum(sum(im2bw(high_passed_image,i_p.Results.filter_thresh)));
+total_pixels = sum(sum(i_p.Results.binary_image));
 
 %Cycle through all pixels of image
 for i = 1:length(sorted_pix_vals)
-    %skip pixels below the filter threshold
-    if (sorted_pix_vals(i) <= i_p.Results.filter_thresh), continue, end
-    
+
     lin_ind = find(high_passed_image == sorted_pix_vals(i));
 
     for j = 1:length(lin_ind)
-        %skip a pixel if it has already been assigned        
-%         if (ad_zamir(lin_ind(j)) ~= 0), continue, end
         assert(ad_zamir(lin_ind(j)) == 0, 'Error: Adhesion already assigned in this position %d',lin_ind(j))
-        ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),min_size_pixels);
+        ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),i_p.Results.min_pixel_size);
         count = count + 1;
     end
 
@@ -60,7 +55,7 @@ for i = 2:length(ad_nums)
     filled_ad = imfill(this_ad);
     filled_pix = find(and(filled_ad > 0, not(this_ad)));
     for j = 1:length(filled_pix)
-        ad_zamir = add_single_pixel(ad_zamir,filled_pix(j),min_size_pixels);
+        ad_zamir = add_single_pixel(ad_zamir,filled_pix(j),i_p.Results.min_pixel_size);
     end
 end
 
@@ -167,12 +162,12 @@ else
             %is a tie, just use the first adhesion in the list
             large_area_ads = ismember(relabeled_old_ad,find([props.Area] >= min_size));
             large_area_nums = unique(relabeled_old_ad(large_area_ads));
-            
+
             %Also, the new pixel might be connected to small adhesions as
             %well as large adhesions, so capture the position of the small
             %adhesions for later assignment to selected large adhesion
             small_area_ads = ismember(relabeled_old_ad, find([props.Area] < min_size));
-            
+
             closest_relabeled_info = [0,inf];
             for i = 1:length(large_area_nums)
                 dist = sqrt((pix_pos_ind(1) - props(i).Centroid(2))^2 + (pix_pos_ind(2) - props(i).Centroid(1))^2);
@@ -185,7 +180,7 @@ else
             ad_number = ad_zamir(find(relabeled_old_ad == closest_relabeled_info(1),1));
             assert(ad_number > 0, 'Error in largest ad filtering: adhesion number less than 1');
             assert(all(ad_number == ad_zamir(relabeled_old_ad == closest_relabeled_info(1))),'Error in largest ad filtering: single adhesion with different numbers');
-            
+
             ad_zamir(pix_pos) = ad_number;
             ad_zamir(small_area_ads) = ad_number;
         end
