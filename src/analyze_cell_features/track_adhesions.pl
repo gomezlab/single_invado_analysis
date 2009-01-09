@@ -531,6 +531,11 @@ sub detect_new_adhesions {
         }
     }
 
+    # if no FAs were born in this frame, write a -1 to the birth matrix
+    if (scalar @births == 0) {
+        push @births, -1;
+    }
+
     push @birth_mat, \@births;
 }
 
