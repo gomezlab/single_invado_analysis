@@ -640,7 +640,12 @@ bit_depth_test = 1;
 strg = sprintf('%%.%dd',3);
 backSpc = ['\b\b\b'];
 
-for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
+times = FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1);
+nr_images = length(times);
+pr_vector_history(PROTRUSION_ARRAY_SIZE, (nr_images - 1) * 2) = -1;
+pr_vector_history_rows = 0;
+
+for time = times
     index=index+1;
 
     fprintf(1,[strg],index);
@@ -883,10 +888,54 @@ for time=FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1)
                         [temp1, temp2, i_pos, x_normal, y_normal]=...
                             prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
                             'k_S', K_S, 'k_W', K_W);
-                        nr_prot_vectors(index) = size(temp1,1);
+                        temp1_rows = size(temp1,1);
+                        nr_prot_vectors(index) = temp1_rows;
                         
                         protrusion{index-1} = [temp1 temp2];
 
+                        % add this set of vectors to the history
+                        % 1. For each row, add the vector (temp2) to the
+                        % t-1 pixels
+                        pr_pixels = [temp1 (temp1 + temp2)];
+                        
+                        % 2. Unless this is the first frame, match each 
+                        % pixel in the last column of the history matrix 
+                        % to one in the first column of the result and add
+                        % the corresponding second column of the result to
+                        % the next column of the history matrix. For each
+                        % column in the history matrix, there are three
+                        % possibilities:
+                        % 1. The vector continues from the previous frame
+                        % 2. The vector diverges into two or more vectors
+                        % 3. The vector ends
+                        
+                        if index > 2
+                            hist_len = (index-1) * 2;
+                            history_pixels = pr_vector_history(1:pr_vector_history_rows,hist_len-1:hist_len);
+                            for pr_idx=1:temp1_rows
+                                pixel = temp1(pr_idx,:);
+                                [dist, hist_idx] = min(sqrt(power(pixel(1)-history_pixels(:,1),2) + power(pixel(2)-history_pixels(:,2),2)));
+                                % case 3
+                                if dist > 3 % empirical value...should be a parameter
+                                    pr_vector_history_rows = pr_vector_history_rows + 1;
+                                    pr_vector_history(pr_vector_history_rows,1:nr_images) = -1;
+                                    pr_vector_history(pr_vector_history_rows,hist_len-1:hist_len+2) = pr_pixels(pr_idx,:);
+                                % case 2
+                                elseif pr_vector_history(hist_idx,hist_len+1) >= 0
+                                    pr_vector_history_rows = pr_vector_history_rows + 1;
+                                    pr_vector_history(pr_vector_history_rows,1:nr_images) = -1;
+                                    pr_vector_history(pr_vector_history_rows,1:hist_len) = pr_vector_history(hist_idx,1:hist_len);
+                                    pr_vector_history(pr_vector_history_rows,hist_len+1:hist_len+2) = pr_pixels(pr_idx,3:4);
+                                % case 1
+                                else 
+                                    pr_vector_history(hist_idx,hist_len+1:hist_len+2) = pr_pixels(pr_idx,3:4);                                    
+                                end
+                            end
+                        else
+                            pr_vector_history(1:temp1_rows,1:4) = pr_pixels;     
+                            pr_vector_history_rows = temp1_rows;
+                        end
+                        
                         clear temp1 temp2 i_pos;
                     else
                         nr_prot_vectors(index) = 1;
@@ -1025,24 +1074,24 @@ end
 
 disp(['Total number of processed images: ', num2str(length(img_proccessed))]);
 disp(['Successful processed images:      ', num2str(sum(img_proccessed))]);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% save the spline time series of the edge %%%%%%
 save(fullfile(dir_w, 'edge_spline.mat'), 'edge_sp_array_x', 'edge_sp_array_y');
 save(fullfile(dir_w, 'pixel_edge.mat'), 'pixel_edge');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if PROTRUSION
-    save(fullfile(dir_w, 'protrusion.mat'),    'protrusion');
-end
 save(fullfile(dir_w, 'normal_matrix.mat'), 'normal_matrix');
+
+if PROTRUSION
+    % Shrink the matrix if it has too many rows                        
+    if pr_vector_history_rows < PROTRUSION_ARRAY_SIZE
+    	pr_vector_history(pr_vector_history_rows+1:PROTRUSION_ARRAY_SIZE,:) = [];
+    end
+    save(fullfile(dir_w, 'protrusion.mat'),    'protrusion');
+    save(fullfile(dir_w, 'protrusion_history.mat'), 'pr_vector_history');
+    csvwrite(fullfile(dir_w, 'protrusion_history.csv'), pr_vector_history);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

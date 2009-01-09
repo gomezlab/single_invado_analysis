@@ -10,12 +10,30 @@ use warnings;
 use IO::File;
 use Text::CSV;
 
-our @EXPORT = qw( output_mat_csv output_hash_csv );
+our @EXPORT = qw( input_mat_csv output_mat_csv output_hash_csv );
 use Exporter;
 our @ISA = qw(Exporter);
 ###############################################################################
 # Functions
 ###############################################################################
+
+sub input_mat_csv {
+    my @mat;
+    my $file = $_[0];
+    my $in_hand = new IO::File $file or die "Unable to create csv file: $file";
+    my $csv = Text::CSV->new();
+
+    while (<$in_hand>) {
+        if ($csv->parse($in_hand)) {
+            my @row = $csv->fields;
+            push($mat, [@row]);            
+        }
+    }
+
+    $in_hand->close;
+
+    return $mat;
+}
 
 sub output_mat_csv {
     my @mat = @{$_[0]};
