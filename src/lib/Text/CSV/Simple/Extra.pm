@@ -26,13 +26,13 @@ sub input_mat_csv {
     while (<$in_hand>) {
         if ($csv->parse($in_hand)) {
             my @row = $csv->fields;
-            push($mat, [@row]);            
+            push(@mat, [@row]);            
         }
     }
 
     $in_hand->close;
 
-    return $mat;
+    return @mat;
 }
 
 sub output_mat_csv {

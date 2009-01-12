@@ -20,8 +20,8 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", "only_vis|only_visualization")
-  or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
+                  "only_vis|only_visualization", "exp_filter=s") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -42,6 +42,9 @@ $|  = 1;
 
 my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
 @config_files = ($config_files[0]) if $opt{debug};
+if (exists($opt{exp_filter})) {
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
 if ($opt{lsf}) {
