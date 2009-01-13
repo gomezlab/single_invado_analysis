@@ -96,14 +96,14 @@ my $csv=Text::CSV->new();
 ###############################################################################
 
 sub find_nearest_pixel_idx {
-    my @test_pixel = @_[0];
-    my @pixel_mat = @_[1];
-    my $col = @_[2];
-    my $max_dist = @_[3];
-    my $nearest;
+    my @test_pixel = $_[0];
+    my @pixel_mat = $_[1];
+    my $col = $_[2];
+    my $max_dist = $_[3];
+    my $nearest_idx;
     my $nearest_dist = 2 << 31;
 
-    for ($idx = 1; $idx < $#pixel_mat; $idx++) {
+    for (my $idx = 1; $idx < $#pixel_mat; $idx++) {
         my @pixel = $pixel_mat[$idx][$col];
         my $dist = sqrt( ($test_pixel[0]-$pixel[0])**2 + ($test_pixel[1]-$pixel[1])**2 );
         if ($dist < $nearest_dist) {
@@ -120,7 +120,7 @@ sub normalize_vectors {
     my $n_ang = $_[1];
     my @normalized;
 
-    for ($i = 2; $i < scalar @vectors; $i+=2) {
+    for (my $i = 2; $i < scalar @vectors; $i+=2) {
         my $vx = $vectors[$i]-$vectors[$i-2];
         my $vy = $vectors[$i+1]-$vectors[$i-1];
         my $v_mag = sqrt($vx**2 + $vy**2);
@@ -138,8 +138,8 @@ sub normalize_vectors {
             }
             
             my $a = $v_ang - $n_ang;
-            $v_nrm = $v_mag * sin($a);
-            $v_par = $v_mag * cos($a);
+            my $v_nrm = $v_mag * sin($a);
+            my $v_par = $v_mag * cos($a);
         }
         
         push @normalized, ($v_nrm, $v_par);
