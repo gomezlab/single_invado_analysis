@@ -69,11 +69,13 @@ use lib "../lib/perl";
 use strict;
 use File::Path;
 use File::Basename;
+use File::Spec::Functions;
 use Text::CSV;
 use IO::File;
 use Math::Trig;
 use Image::Data::Collection;
 use Getopt::Long;
+use Text::CSV::Simple::Extra;
 
 use Config::Adhesions qw(ParseConfig);
 
