@@ -125,6 +125,7 @@ sub normalize_vectors {
         my $vy = $vectors[$i+1]-$vectors[$i-1];
         my $v_mag = sqrt($vx**2 + $vy**2);
 
+        my $v_nrm = 0;
         my $v_par = 0;
 
         if ($v_mag > 0) {
@@ -138,8 +139,8 @@ sub normalize_vectors {
             }
             
             my $a = $v_ang - $n_ang;
-            my $v_nrm = $v_mag * sin($a);
-            my $v_par = $v_mag * cos($a);
+            $v_nrm = $v_mag * sin($a);
+            $v_par = $v_mag * cos($a);
         }
         
         push @normalized, ($v_nrm, $v_par);
@@ -172,7 +173,7 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     continue if $frame == 0;
 
     # parse the current row of the birth matrix
-    if (!$csv->parse($_) || $#csv->fields == 0) {
+    if (!$csv->parse($_) || scalar($csv->fields) == 0) {
     }
     
     my @tracking_mat_indices = $csv->fields;
@@ -187,16 +188,14 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     # get the nearest edge pixels for the focal adhesions in this frame
     my $nearest_edge_pixel_file = catfile($img_data_folder, 'Nearest_edge_pixel.csv');
     my $nep_handle = new IO::File $nearest_edge_pixel_file || die "Can't open file $nearest_edge_pixel_file";
-    if (!$csv->parse($nep_handle)) {
-    }
+    die "Could not parse $nearest_edge_pixel_file" if (!$csv->parse($nep_handle) || scalar($csv->fields) == 0);
     my @nearest_edge_pixels = $csv->fields;
     $nep_handle->close;
 
     # get the distance-to-edge for the focal adhesions in this frame
     my $dist_from_edge_file = catfile($img_data_folder, 'Centroid_dist_from_edge.csv');
     my $dfe_handle = new IO:File $dist_from_edge_file || die "Can't open file $dist_from_edge_file";
-    if (!$csv->parse($dfe_handle)) {
-    }
+    die "Could not parse $dist_from_edge_file" if (!$csv->parse($dfe_handle) || scalar($csv->fields) == 0);
     my @dists_from_edge = $csv->fields;
     $dfe_handle->close;
 
@@ -204,8 +203,7 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     # center of the cell in this frame
     my $angle_to_center_file = catfile($img_data_folder, 'Angle_to_center.csv');
     my $atc_handle = new IO:File $angle_to_center_file || die "Can't open file $angle_to_center_file";
-    if (!$csv->parse($atc_handle)) {
-    }
+    die "Could not parse $angle_to_center_file" if (!$csv->parse($atc_handle) || scalar($csv->fields) == 0);
     my @angles_to_center = $csv->fields;
     $atc_handle->close;
 
