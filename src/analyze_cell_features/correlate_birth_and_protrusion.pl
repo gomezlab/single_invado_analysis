@@ -73,6 +73,7 @@ use Text::CSV;
 use IO::File;
 use Math::Trig;
 use Image::Data::Collection;
+use Getopt::Long;
 
 use Config::Adhesions qw(ParseConfig);
 
@@ -156,7 +157,7 @@ my @pr_vectors = input_mat_csv($pr_vectors_file, 2);
 
 # tracking matrix (each row is the ID of a single focal adhesion in each frame)
 my $tracking_mat_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
-my $tracking_mat = input_mat_csv($tracking_mat_file);
+my @tracking_mat = input_mat_csv($tracking_mat_file);
 
 # birth matrix (each row contains the tracking matrix indices of the focal adhesions born 
 # during a single frame)
@@ -193,7 +194,7 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
 
     # get the distance-to-edge for the focal adhesions in this frame
     my $dist_from_edge_file = catfile($img_data_folder, 'Centroid_dist_from_edge.csv');
-    my $dfe_handle = new IO:File $dist_from_edge_file || die "Can't open file $dist_from_edge_file";
+    my $dfe_handle = new IO::File $dist_from_edge_file || die "Can't open file $dist_from_edge_file";
     die "Could not parse $dist_from_edge_file" if (!$csv->parse($dfe_handle) || scalar($csv->fields) == 0);
     my @dists_from_edge = $csv->fields;
     $dfe_handle->close;
@@ -201,14 +202,14 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     # get the angle of position of focal adhesions relative to the 
     # center of the cell in this frame
     my $angle_to_center_file = catfile($img_data_folder, 'Angle_to_center.csv');
-    my $atc_handle = new IO:File $angle_to_center_file || die "Can't open file $angle_to_center_file";
+    my $atc_handle = new IO::File $angle_to_center_file || die "Can't open file $angle_to_center_file";
     die "Could not parse $angle_to_center_file" if (!$csv->parse($atc_handle) || scalar($csv->fields) == 0);
     my @angles_to_center = $csv->fields;
     $atc_handle->close;
 
     # iterate through the tracking matrix indices of the focal 
     # adhesions born in this frame
-    foreach $tracking_mat_index $tracking_mat_indices {
+    foreach my $tracking_mat_index (@tracking_mat_indices) {
         my $local_fa_id = $tracking_mat[$tracking_mat_index][$frame];
         my $nearest_edge_pixel = $nearest_edge_pixels[$local_fa_id];
         my $dist_from_edge = $dists_from_edge[$local_fa_id];
@@ -217,7 +218,7 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
         # pixel closest to the FA. We could probably simplify this
         # by just looking for the protrusion vector origin closest
         # to the FA.
-        my $pr_pixel_idx = find_nearest_pixel_idx(\@nearest_edge_pixel, \@pr_vectors, $frame, 3);
+        my $pr_pixel_idx = find_nearest_pixel_idx(\$nearest_edge_pixel, \@pr_vectors, $frame, 3);
 
         # get the sequence of protrusion vectors from the first
         # frame to the current frame
@@ -226,34 +227,34 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
         # FA's angle from the center of the cell
         my @normalized_pr_vectors = normalize_vectors(\@pr_vector_history, $angle_to_center);
         my @seq = ($dist_from_edge);
-        push($seq, \@normalized_pr_vectors);
-        push($sequential_history, [ \@seq ]);
+        push(@seq, \@normalized_pr_vectors);
+        push(@sequential_history, [ \@seq ]);
 
         # calculate the growth/shrinkage of each vector relative
         # to the total size of the protrusion
         my @rel;
         my $total_mag = 0;
-        for ($i = 0; $i < scalar @pr_vector_history; $i+=2) {
-            $vec_mag = $pr_vector_history[$i+1];
+        for (my $i = 0; $i < scalar @pr_vector_history; $i+=2) {
+            my $vec_mag = $pr_vector_history[$i+1];
             if ($i == 0) {
                 $total_mag = $vec_mag;
             }
             else {
-                $growth = (($total_mag + $vec_mag) / $total_mag)
+                my $growth = (($total_mag + $vec_mag) / $total_mag);
                 $total_mag += $vec_mag;
-                push($rel, $growth);
+                push(@rel, $growth);
             }
         }
         my @temp = ($dist_from_edge);
-        push($temp, reverse(\@rel));
-        push($relative_history, [ \@temp ]);        
+        push(@temp, reverse(\@rel));
+        push(@relative_history, [ \@temp ]);        
     }
 }
 
 $birth_handle->close;
 
-$sequential_history_output_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_folder}, $cfg{sequential_history_output_file});
+my $sequential_history_output_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_folder}, $cfg{sequential_history_output_file});
 output_mat_csv(\@sequential_history, $sequential_history_output_file);
 
-$relative_history_output_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_folder}, $cfg{relative_history_output_file});
+my $relative_history_output_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_folder}, $cfg{relative_history_output_file});
 output_mat_csv(\@relative_history, $relative_history_output_file);
