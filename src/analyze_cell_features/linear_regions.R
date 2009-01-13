@@ -824,6 +824,7 @@ gather_general_props <- function(results) {
 		points$longevity = c(points$longevity, res$exp_props$longevity)
 		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
 		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
+		points$largest_area = c(points$largest_area, res$exp_props$largest_area)
 	}	
 	points = as.data.frame(points)
 	points

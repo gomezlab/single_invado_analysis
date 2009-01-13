@@ -29,10 +29,10 @@ i_p.parse(I_file);
 
 i_p.addParamValue('cell_mask',0,@(x)exist(x,'file') == 2);
 i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
-i_p.addParamValue('pixel_size',0.215051,@isnumeric);
+i_p.addParamValue('pixel_size',0.215051,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('filter_thresh_low',0.1,@isnumeric);
-i_p.addParamValue('filter_thresh_high',0.2,@isnumeric);
+i_p.addParamValue('filter_thresh_high',0.1,@isnumeric);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('output_file', 'adhesions.png', @ischar);
 i_p.addParamValue('output_file_perim', 'adhesions_perim.png', @ischar);
@@ -42,8 +42,7 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.parse(I_file,varargin{:});
 
 %read in the cell mask image if defined in parameter set
-if (not(i_p.Results.cell_mask))
-else
+if (isempty(strmatch('cell_mask', i_p.UsingDefaults)))
     cell_mask = imread(i_p.Results.cell_mask);
 end
 
@@ -61,16 +60,13 @@ blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 high_passed_image = focal_image - blurred_image;
 threshed_image = logical(im2bw(high_passed_image,i_p.Results.filter_thresh_low));
 
-sum(threshed_image(:))
 [row_indexes,col_indexes] = ind2sub(size(focal_image),find(high_passed_image > i_p.Results.filter_thresh_high));
-threshed_image = bwselect(im2bw(high_passed_image,0.1),col_indexes,row_indexes,4);
+threshed_image = bwselect(threshed_image,col_indexes,row_indexes,4);
 
-sum(threshed_image(:))
 if (exist('cell_mask','var'))
     [row_indexes,col_indexes] = ind2sub(size(focal_image),find(cell_mask));
     threshed_image = bwselect(threshed_image,col_indexes,row_indexes,4);
 end
-sum(threshed_image(:))
 
 min_pixel_size = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
 
