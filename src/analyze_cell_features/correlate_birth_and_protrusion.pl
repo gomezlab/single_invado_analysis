@@ -170,16 +170,15 @@ my @sequential_history;
 my @relative_history;
 
 for (my $frame = 0; <$birth_handle>; $frame++) {
-    continue if $frame == 0;
+    next if $frame == 0;
 
     # parse the current row of the birth matrix
-    if (!$csv->parse($_) || scalar($csv->fields) == 0) {
-    }
+    die "could not parse row $frame of $birth_map_file" if (!$csv->parse($_) || scalar($csv->fields) == 0);
     
     my @tracking_mat_indices = $csv->fields;
 
     # continue if there were no births in this frame
-    continue if $tracking_mat_indices[0] < 0;
+    next if $tracking_mat_indices[0] < 0;
 
     # get the image number for this frame index
     my $img_num = $data_keys[$frame];
