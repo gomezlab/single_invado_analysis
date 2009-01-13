@@ -642,7 +642,7 @@ backSpc = ['\b\b\b'];
 
 times = FIRST_IMG: T_STEP: FIRST_IMG + T_STEP*(MAX_IMG-1);
 nr_images = length(times);
-pr_vector_history(PROTRUSION_ARRAY_SIZE, (nr_images - 1) * 2) = -1;
+pr_vector_history(PROTRUSION_ARRAY_SIZE, nr_images * 2) = -1;
 pr_vector_history_rows = 0;
 
 for time = times
