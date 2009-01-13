@@ -185,7 +185,7 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
 
     # get the image number for this frame index
     my $img_num = $data_keys[$frame];
-    my $img_data_folder = catfile($cfg{individual_results_folder}, $img_num, $cfg{raw_data});
+    my $img_data_folder = catfile($cfg{individual_results_folder}, $img_num, $cfg{raw_data_folder});
 
     # get the nearest edge pixels for the focal adhesions in this frame
     my $nearest_edge_pixel_file = catfile($img_data_folder, 'Nearest_edge_pixel.csv');
