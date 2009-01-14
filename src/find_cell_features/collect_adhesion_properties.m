@@ -1,4 +1,4 @@
-lsfunction adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,varargin)
+function adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
