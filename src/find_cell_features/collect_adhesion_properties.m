@@ -1,4 +1,4 @@
-function adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,varargin)
+lsfunction adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
@@ -103,7 +103,8 @@ if (exist('cell_mask','var'))
             adhesion_props(i).Centroid_dist_from_edge = NaN;
         else
             adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
-            adhesion_props(i).Closest_edge_pixel = ind2sub(size(cell_mask), indices(centroid_pos(2), centroid_pos(1)));
+            [cep_x,cep_y] = ind2sub(size(cell_mask), indices(centroid_pos(2), centroid_pos(1)));
+            adhesion_props(i).Closest_edge_pixel = [cep_x,cep_y]; 
 
             adhesion_props(i).Centroid_dist_from_center = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
             adhesion_props(i).Angle_to_center = acos((centroid_unrounded(1) - cell_centroid(1))/adhesion_props(i).Centroid_dist_from_center);
