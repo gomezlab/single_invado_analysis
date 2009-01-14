@@ -33,7 +33,6 @@ sub execute_commands {
     unlink($error_file) if (-e $error_file);
 
     foreach my $command (@matlab_code) {
-	print "$command";
         if (not($matlab_object->execute($command))) {
             &File::Path::mkpath(&File::Basename::dirname($error_file));
             open ERR_OUT, ">>$error_file" or die "Error in opening Matlab Error file: $error_file.";
