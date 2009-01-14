@@ -75,18 +75,19 @@ sub create_all_matlab_commands {
         my $adhesion_image_file = $adhesion_image_files[$_];
         my $cell_mask = catfile(dirname($raw_image_file), $cfg{cell_mask_file});
         
-        my $protrusion_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_data_file});
+	#protrusion_data_file is not defined in any config file
+        #my $protrusion_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_data_file});
         
         my $extra_opt = "";
         if (-e $cell_mask) {
             $extra_opt .= ",'cell_mask','$cell_mask'";
         }
-        if (-e $protrusion_file) {
-            $extra_opt .= ",'protrusion_file','$protrusion_file'";
-        }
+        #if (-e $protrusion_file) {
+        #    $extra_opt .= ",'protrusion_file','$protrusion_file'";
+        #}
         
         my $this_command = "find_adhesion_properties('$raw_image_file','$adhesion_image_file','i_num',";
-        $this_command .= $_ + 1 . "$extra_opt)\n";
+        $this_command .= $_ + 1 . "$extra_opt);\n";
 
         $matlab_code[0] .= $this_command;
     }
