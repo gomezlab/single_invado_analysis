@@ -21,7 +21,6 @@ sub get_image_stack_number {
     my @tag_list    = $image_info->GetFoundTags($image_file);
     my $image_count = 0;
     foreach (@tag_list) {
-print "$_\n";
         if (/\((\d+)\)/) {
             if ($1 > $image_count) {
                 $image_count = $1;
