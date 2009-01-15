@@ -40,7 +40,7 @@ ext = [];
 
 % search for letters in remainder
 idxs=length(name);
-while(uint8(name(idxs))>47 & uint8(name(idxs))<58)
+while(idxs > 0 && uint8(name(idxs))>47 & uint8(name(idxs))<58)
    idxs = idxs-1;
 end;
 
