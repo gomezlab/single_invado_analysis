@@ -29,6 +29,20 @@ outputFileList = {};
 %   error('invalid first filename specified');
 %end;
 
+% added to allow for individual images stored in 
+% numbered directories
+indiv_dir_fname = '';
+if(isempty(fno))
+    [tempPath,tempFname,tempFno,tempFext]=getFilenameBody(fpath);
+    if(isempty(tempFno))
+        error('invalid first filename specified');
+    end
+    indiv_dir_fname = strcat(fname,fext);
+    fpath = tempPath;
+    fname = tempFname;
+    fno = tempFno;
+    fext = tempFext;
+end
 
 if(~isempty(fpath))
 	% change to stack directory
@@ -38,8 +52,21 @@ else
    tempName=which(firstfilename);
    if(~isempty(tempName))
       [fpath,fname,fno,fext]=getFilenameBody(tempName);
+      
+      if(isempty(fno))
+        [tempPath,tempFname,tempFno,tempFext]=getFilenameBody(fpath);
+        if(isempty(tempFno))
+          error('invalid first filename specified');
+        end
+        indiv_dir_fname = fname + fext;
+        fpath = tempPath;
+        fname = tempFname;
+        fno = tempFno;
+        fext = tempFext;
+      end
+      
       oldDir = cd(fpath);
-	end;
+   end;
 end;
 
 dirListing = dir;
@@ -47,8 +74,8 @@ dirListing = dir;
 % get all relevant filenames
 iEntry = 1;
 fileList = {};
-for( i = 1:length(dirListing))
-   if(~dirListing(i).isdir)
+for(i = 1:length(dirListing))
+   if((isempty(indiv_dir_fname) && ~dirListing(i).isdir) || (~isempty(indiv_dir_fname) && dirListing(i).isdir))
       fileList(iEntry) = lower({dirListing(i).name});
       iEntry = iEntry + 1;
    end;
@@ -58,8 +85,12 @@ nEntries = 0;
 imIndx = str2num(fno);
 l_fno=length(num2str(fno));
 searchName= [fname,num2str(imIndx,['%.' num2str(l_fno) 'd']),fext];
-outputFileList(1)={strcat(fpath,filesep,searchName)};
-
+if(isempty(indiv_dir_fname))
+    outputFileList(1)={strcat(fpath,filesep,searchName)};
+else
+    outputFileList(1)={strcat(fpath,filesep,searchName,filesep,indiv_dir_fname)};
+end;
+    
 nEntries=1;
 
 if(~isempty(fileList))
@@ -68,7 +99,11 @@ if(~isempty(fileList))
       index(nEntries) = imIndx;
       imIndx = imIndx + 1;
       searchName= [fname,num2str(imIndx,['%.' num2str(l_fno) 'd']),fext];
-      outputFileList(nEntries)={strcat(fpath,filesep,searchName)};
+      if(isempty(indiv_dir_fname))
+          outputFileList(nEntries)={strcat(fpath,filesep,searchName)};
+      else
+          outputFileList(nEntries)={strcat(fpath,filesep,searchName,filesep,indiv_dir_fname)};
+      end;
    end;
 end;
 
@@ -79,4 +114,3 @@ outputFileList=outputFileList(1,1:length(outputFileList)-1);
 if(~isempty(oldDir))
    cd(oldDir);
 end;
-
