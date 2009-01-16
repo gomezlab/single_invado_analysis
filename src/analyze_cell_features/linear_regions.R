@@ -89,7 +89,6 @@ gather_bilinear_models <- function(data_set, props,
 		if (length(numeric_data_set) < (min_length * 2)) {
 			next
 		}
-		
 		these_exp_props = results$exp_props[i,]
 		
 		temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
@@ -126,7 +125,7 @@ gather_bilinear_models <- function(data_set, props,
 			}
 		}
 	}
-
+	
 	results <- pad_results_to_row_length(results, rows)
 
 	if (is.numeric(boot.samp)) {
@@ -138,14 +137,18 @@ gather_bilinear_models <- function(data_set, props,
 }
 
 pad_results_to_row_length <- function(results, desired_length) {
-	for (i in 1:length(results$early)) {
-		for (j in (length(results$early[[i]]) + 1):desired_length) {
-			results$early[[i]][j] = NA
+	if (length(results$early) > 0) {
+		for (i in 1:length(results$early)) {
+			for (j in (length(results$early[[i]]) + 1):desired_length) {
+				results$early[[i]][j] = NA
+			}
 		}
 	}
-	for (i in 1:length(results$late)) {
-		for (j in (length(results$late[[i]]) + 1):desired_length) {
-			results$late[[i]][j] = NA
+	if (length(results$late) > 0) {
+		for (i in 1:length(results$late)) {
+			for (j in (length(results$late[[i]]) + 1):desired_length) {
+				results$late[[i]][j] = NA
+			}
 		}
 	}
 	for (i in (length(results$stable_lifetime) + 1):desired_length) {
@@ -838,6 +841,9 @@ load_results <- function(dirs,file) {
 			load(file.path(dirs[i],file))
 			results[[i]] = this_result
 		}
+	}
+	if (length(results) == 1) {
+		results = results[[1]]
 	}
 	results
 }
