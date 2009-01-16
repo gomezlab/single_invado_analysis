@@ -42,6 +42,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
 my @image_files   = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
+die "Didn't find any cell mask image files, aborting" if (scalar(@image_files) == 0);
 die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
   if (scalar(@image_files) != scalar(@image_folders));
 
