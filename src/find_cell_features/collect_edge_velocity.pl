@@ -105,21 +105,21 @@ sub create_matlab_code {
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
 
-    my $command_prefix = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,";
-    my $command_suffix = ")";
+    my $image_file_count = scalar(@image_files);
+    my $results_folder = catdir($cfg{exp_results_folder}, 'pax_edge_velocity');
 
-    my $image_file_count = scalar(@image_files)
-    my $results_folder = catdir($cfg{exp_results_folder},'pax_edge_velocity');
-print(ref($cfg{exclude_image_nums});
-die
-    my $exclude_imgs = join(',', @{ $cfg{exclude_image_nums} });
+    my $matlab_code = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,'file','$image_files[0]','results','$results_folder','max_img',$image_file_count";
 
-    my @matlab_code =
-        $command_prefix
-      . "'file','$image_files[0]','results','$results_folder','max_img',$image_file_count,'exclude_imgs',$exclude_imgs"
-      . $command_suffix;
+    my @exclude_img_nums = @{ $cfg{exclude_image_nums} };
 
-    return @matlab_code;
+    if (scalar(@exclude_img_nums) > 0) {
+      my $exclude_imgs = join(',', @exclude_img_nums);
+      $matlab_code .= ",'exclude_imgs',$exclude_imgs";
+    }
+    
+    $matlab_code .= ")";
+
+    return $matlab_code;
 }
 
 ################################################################################
