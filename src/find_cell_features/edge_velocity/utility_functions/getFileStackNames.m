@@ -1,4 +1,4 @@
-function [outputFileList]=getFileStackNames(firstfilename)
+function [outputFileList]=getFileStackNames(firstfilename, exclude_imgs)
 % getFileStackNames returns a cell array containing all file names (with path) belonging to a stack
 %
 % SYNOPSIS [outputFileList]=getFileStackNames(firstFileName)
@@ -9,6 +9,8 @@ function [outputFileList]=getFileStackNames(firstfilename)
 %                    - alphanumeric body
 %                    - numeric number
 %                    - extension
+%          exclude_imgs: optional; vector of image numbers
+%                    to exclude
 %
 % OUTPUT   outputFileList: names of all files belonging to the stack
 %                          defined by firstFileName
@@ -16,7 +18,7 @@ function [outputFileList]=getFileStackNames(firstfilename)
 % DEPENDENCES
 %
 % Aaron Ponti, October 4th, 2002
-
+        
 oldDir = [];
 
 % Output
@@ -97,7 +99,12 @@ if(~isempty(fileList))
    while( ~isempty(strmatch(lower(searchName),fileList)))
       nEntries = nEntries + 1;
       index(nEntries) = imIndx;
+            
       imIndx = imIndx + 1;
+      while (any(imIndx==exclude_imgs))
+          imIndx = imIndx + 1;
+      end
+      
       searchName= [fname,num2str(imIndx,['%.' num2str(l_fno) 'd']),fext];
       if(isempty(indiv_dir_fname))
           outputFileList(nEntries)={strcat(fpath,filesep,searchName)};

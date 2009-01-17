@@ -6,7 +6,7 @@ i_p.FunctionName = 'EDGE_VELOCITY_WRAPPER';
 i_p.addOptional('file',@(x)exist(x,'file'));
 i_p.addOptional('results',@ischar);
 i_p.addOptional('max_img',@(x)isnumeric(x) && x >= 1);
-
+i_p.addOptional('exclude_imgs',@ischar);
 i_p.addOptional('contr',0,@(x)isnumeric(x) && (x == 1 || x == 0));
 i_p.addOptional('protrusion',1,@(x)isnumeric(x) && (x == 1 || x == 0));
 i_p.addOptional('t_step',1,@(x)isnumeric(x) && x >= 1);
@@ -22,9 +22,19 @@ assert(isempty(strmatch('max_img',i_p.UsingDefaults)),'Error: must specify the m
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+exclude_imgs = [];
+if (~isempty(i_p.Results.exclude_imgs))
+    exclude_img_strs = str2num(regexp(i_p.Results.exclude_imgs, ',', 'split'));
+    ex_len = length(exclude_img_strs);
+    exclude_imgs = zeros(1, ex_len);
+    for (i = 1:ex_len)
+      exclude_imgs(i) = str2num(exclude_img_strs(i));
+    end
+end
+
 addpath(genpath('edge_velocity'));
 if (i_p.Results.nojava)
-    imEdgeTracker_nojava('contr',i_p.Results.contr,'protrusion',i_p.Results.protrusion,'t_step',i_p.Results.t_step,'file',i_p.Results.file,'results',i_p.Results.results,'max_img',i_p.Results.max_img)
+    imEdgeTracker_nojava('contr',i_p.Results.contr,'protrusion',i_p.Results.protrusion,'t_step',i_p.Results.t_step,'file',i_p.Results.file,'results',i_p.Results.results,'max_img',i_p.Results.max_img,'exclude_imgs',exclude_imgs)
 else
     imEdgeTracker('contr',i_p.Results.contr,'protrusion',i_p.Results.protrusion,'t_step',i_p.Results.t_step,'file',i_p.Results.file,'results',i_p.Results.results,'max_img',i_p.Results.max_img)
 end

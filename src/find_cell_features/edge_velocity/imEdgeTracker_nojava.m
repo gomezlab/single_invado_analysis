@@ -59,6 +59,7 @@ function [img_proccessed, img_edge]=imEdgeTracker_nojava(varargin)
 %               'mechanical',1
 %               'k_s',0.1
 %               'k_w',1
+%               'exclude_imgs',[]
 %
 %               The function writes the following data to disk:
 %               the coordinates of the edge pixels
@@ -609,7 +610,7 @@ cmap_edge_evolution=jet(MAX_IMG);
 %determine the image dimension
 [n_img, m_img]=size(imread(firstfilename));
 % get the filelist filenames
-[filelist]=getFileStackNames(firstfilename);
+[filelist]=getFileStackNames(firstfilename, exclude_imgs);
 
 disp('Allocating memory');
 img_edge_rgb=zeros(n_img,m_img,3);
