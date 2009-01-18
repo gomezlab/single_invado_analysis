@@ -115,7 +115,7 @@ sub create_matlab_code_single {
 
     if (scalar(@exclude_img_nums) > 0) {
         my $exclude_imgs = join(',', @exclude_img_nums);
-        $matlab_code .= ",'exclude_imgs',$exclude_imgs";
+        $matlab_code .= ",'exclude_imgs','$exclude_imgs'";
     }
     
     $matlab_code .= ")";
