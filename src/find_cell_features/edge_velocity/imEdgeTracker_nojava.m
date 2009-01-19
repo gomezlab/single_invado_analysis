@@ -239,6 +239,9 @@ for i=1:2:l
     elseif strcmp(varargin(i),'cell_mode')
         CELL_MODE = varargin{i+1};
         in_found=1;
+    elseif strcmp(varargin(i),'exclude_imgs')
+        EXCLUDE_IMGS = varargin{i+1};
+        in_found=1;
     end
 
     if in_found == 0
@@ -610,7 +613,7 @@ cmap_edge_evolution=jet(MAX_IMG);
 %determine the image dimension
 [n_img, m_img]=size(imread(firstfilename));
 % get the filelist filenames
-[filelist]=getFileStackNames(firstfilename, exclude_imgs);
+[filelist]=getFileStackNames(firstfilename, EXCLUDE_IMGS);
 
 disp('Allocating memory');
 img_edge_rgb=zeros(n_img,m_img,3);
