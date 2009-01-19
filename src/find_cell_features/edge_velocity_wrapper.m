@@ -24,12 +24,7 @@ assert(isempty(strmatch('max_img',i_p.UsingDefaults)),'Error: must specify the m
 
 exclude_imgs = [];
 if (~isempty(i_p.Results.exclude_imgs))
-    exclude_img_strs = regexp(i_p.Results.exclude_imgs, ',', 'split');
-    ex_len = length(exclude_img_strs);
-    exclude_imgs = zeros(1, ex_len);
-    for (i = 1:ex_len)
-      exclude_imgs(i) = str2num(exclude_img_strs(i));
-    end
+    exclude_imgs = str2double(regexp(i_p.Results.exclude_imgs, ',', 'split'));
 end
 
 addpath(genpath('edge_velocity'));
