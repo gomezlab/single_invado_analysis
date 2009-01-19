@@ -29,7 +29,9 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l") or die;
+$opt{first} = -1;
+$opt{max} = -1;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", 'first|f=i', 'max|m=i') or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -104,12 +106,26 @@ sub create_matlab_code {
 
 sub create_matlab_code_single {
     my @image_files = @{ $_[0] };
-
-    my $image_file_count = scalar(@image_files);
-    my $first_file = catfile($image_files[0], $cfg{raw_mask_file});
+    
+    my $first_dir = $image_files[0];
+    if ($opt{first} > 0) {
+        foreach my $dir ($image_files) {
+            if (basename($dir) >= $opt{first}) {
+                $first_dir = $dir;
+                last;
+            }
+        }
+    }
+    my $first_file = catfile($first_dir, $cfg{raw_mask_file});
+    
+    my $max_img = scalar(@image_files);
+    if ($opt{max} > 0) {
+        $max_img = $opt{max};
+    }
+    
     my $results_folder = catdir($cfg{exp_results_folder}, 'pax_edge_velocity');
 
-    my $matlab_code = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,'file','$first_file','results','$results_folder','max_img',$image_file_count";
+    my $matlab_code = "edge_velocity_wrapper('contr',0,'protrusion',1,'t_step',1,'file','$first_file','results','$results_folder','max_img',$max_img";
 
     my @exclude_img_nums = @{ $cfg{exclude_image_nums} };
 
