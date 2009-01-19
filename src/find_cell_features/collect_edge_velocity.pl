@@ -109,7 +109,7 @@ sub create_matlab_code_single {
     
     my $first_dir = $image_files[0];
     if ($opt{first} > 0) {
-        foreach my $dir ($image_files) {
+        foreach my $dir (@image_files) {
             if (basename($dir) >= $opt{first}) {
                 $first_dir = $dir;
                 last;
