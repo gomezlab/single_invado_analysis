@@ -650,10 +650,13 @@ pr_vector_history(PROTRUSION_ARRAY_SIZE, nr_images * 2) = -1;
 pr_vector_history_rows = 0;
 
 for time = times
+    c0 = clock;
+    
     index=index+1;
 
     fprintf(1,[strg],index);
-
+    sprintf('\n');
+    
     fileName=char(filelist(time));
 
     [tmp_path,tmp_fname] = fileparts(fileName);
@@ -687,6 +690,9 @@ for time = times
         P0 = [];
         MU0 = [];
     end
+
+    c1 = clock;
+    
     [ans, img_edge(:,:), mask(:,:), pixel_list, edge_l(index),...
         cell_isolated(index), rem_pix(index), cell_pos_old, P0, MU0]=...
         imFindCellEdge_matt(img_org,fileName,CONTR, 'bit_depth',BIT_DEPTH, 'filter_image',FILTER_IMAGE,  'img_sigma',IMG_SIGMA,...
@@ -695,6 +701,10 @@ for time = times
         'cluster', CLUSTER, 'cluster_method', CLUSTER_METHOD, 'k_cluster', K_CLUSTER, 'k_min', K_MIN,...
         'k_max', K_MAX, 'p0', P0, 'mu0', MU0, 'manual_level', MANUAL_LEVEL, 'cell_mode', CELL_MODE);
 
+    c2 = clock;
+    fprintf('find cell edge: %d seconds\n', etime(c2, c1));
+    
+    
     % In case, re-orient pixel_list
     if index > 1
         d1 = sqrt((pixel_list(1,1) - pixel_list_last(1,1))^2+(pixel_list(1,2) - pixel_list_last(1,2))^2);
@@ -726,6 +736,8 @@ for time = times
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%% Create an image with the edge derived from the spline   %%%%
+        c3 = clock;
+        
         [x_dim y_dim]=size(pixel_list);
         % create a image of superimposed edges
         img_edge_sup=img_edge_sup+img_edge(:,:);
@@ -782,6 +794,9 @@ for time = times
         imwrite(sup_img, fullfile(dir_w, 'edge_cell', ['img_edge_' tmp_fname '.tif']),'tif');
         warning on all;
 
+        c4 = clock;
+        fprintf('derived image: %d seconds\n', etime(c4, c3));
+        
         % this is integrated overlay with spline edges
 %         figure(h_sup_img_edge_evolution_spline);
 %         set(h_sup_img_edge_evolution_spline,'Visible','Off');
@@ -795,6 +810,8 @@ for time = times
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%% Get normal directions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % create an array of spline parameters
+        c5 = clock;
+        
         clear p_n;
         p_n=1:3:edge_pix_nr(index);
 
@@ -816,6 +833,9 @@ for time = times
         y_n = fnval(edge_sp_y, p_n);
 
         normal_matrix{index} = [x_n', y_n', x_normal_out', y_normal_out'];
+        
+        c6 = clock;
+        fprintf('normal directions: %d seconds\n', etime(c6, c5));
         %%%%%%%%% End get normal directions  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -860,8 +880,14 @@ for time = times
                 elseif MECHANICAL
                     % first find a initial solution based on the nearest
                     % model
+                    c7 = clock;
+                    
                     [temp1, temp2, i_n]=prGetDispNearest(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn,...
                         'tol', TOL, 'robust_min', ROBUST_MIN);
+                    
+                    c8 = clock;
+                    fprintf('nearest model: %d seconds\n', etime(c8, c7));
+                    
                     clear temp1 temp2;
 
                     % take just the part of the spline with valid
@@ -889,9 +915,15 @@ for time = times
                     clear i_n;
                     % calculate the protrusion based on a mechanical model
                     if length(i_0) > 2
+                        c9 = clock;
+                        
                         [temp1, temp2, i_pos, x_normal, y_normal]=...
                             prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
                             'k_S', K_S, 'k_W', K_W);
+                        
+                        c10 = clock;
+                        fprintf('mechanical model: %d seconds\n', etime(c10, c9));
+                        
                         temp1_rows = size(temp1,1);
                         nr_prot_vectors(index) = temp1_rows;
                         
@@ -914,6 +946,8 @@ for time = times
                         % 3. The vector ends
                         
                         if index > 2
+                            c11 = clock;
+                            
                             hist_len = (index-1) * 2;
                             history_pixels = pr_vector_history(1:pr_vector_history_rows,hist_len-1:hist_len);
                             for pr_idx=1:temp1_rows
@@ -935,6 +969,9 @@ for time = times
                                     pr_vector_history(hist_idx,hist_len+1:hist_len+2) = pr_pixels(pr_idx,3:4);                                    
                                 end
                             end
+                            
+                            c12 = clock;
+                            fprintf('protrusion vector history: %d seconds\n', etime(c12, c11));
                         else
                             pr_vector_history(1:temp1_rows,1:4) = pr_pixels;     
                             pr_vector_history_rows = temp1_rows;
@@ -994,6 +1031,8 @@ for time = times
                 end  %if NEAREST, NORMAL, MECHANICAL, LEVEL_SET
 
                 % save control images
+                c13 = clock;
+                
                 if 1
                     csvwrite(fullfile(dir_w, 'pr_vectors', ['prot_vec_' tmp_fname '.csv']), protrusion{index-1});
                     
@@ -1012,10 +1051,18 @@ for time = times
 
                     print(h_prot_control,  fullfile(dir_w, 'pr_vectors', ['prot_vec_' tmp_fname '.tif']),'-dtiff');
                 end
+
+                c14 = clock;
+                fprintf('save images: %d seconds\n', etime(c14, c13));
+
             end %if PROTRUSION
         end %if index>1
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        cEnd = clock;
+        fprintf('total time: %d seconds\n', etime(cEnd, c0));
+        
     end % if ans== -1
 
     %%%%%%%%%%   save current timestep variables for next timestep %%%%%%%
