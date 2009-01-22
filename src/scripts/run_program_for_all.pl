@@ -21,8 +21,8 @@ $opt{debug} = 0;
 $opt{extra} = "";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug") or die;
 
-die "Can't find cfg file ($opt{cfg}) specified on the command line" if not(exists $opt{cfg});
-die "Can't find program to execute on the command line"             if not(exists $opt{program});
+die "Can't find cfg file specified on the command line" if not(exists $opt{cfg});
+die "Can't find program to execute on the command line" if not(exists $opt{program});
 
 print "Collecting Configuration\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);

@@ -7,7 +7,7 @@
 #Data fitting functions
 ########################################
 
-gather_bilinear_models_from_dirs <- function (dirs, min_length=10, 
+gather_bilinear_models_from_dirs <- function (dirs, min_length=5, 
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
 	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
 	save.exp_data = TRUE, debug = FALSE) {
@@ -53,7 +53,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length=10,
 }
 
 gather_bilinear_models <- function(data_set, props, 
-	min_length = 10, col_lims = NA, normed = TRUE, 
+	min_length = 5, col_lims = NA, normed = TRUE, 
 	log.trans = TRUE, boot.samp = NA, save.exp_data = TRUE, debug = FALSE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
@@ -160,7 +160,7 @@ pad_results_to_row_length <- function(results, desired_length) {
 	results
 }
 
-find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 10, log.trans = TRUE) {
+find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 5, log.trans = TRUE) {
 
 	results = list(initial_data_set = initial_data_set)
 	resid = list(early = list(), late = list())	
@@ -293,7 +293,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	best_results
 }
 
-find_best_offset_combination <- function(results, min_length = 10) {
+find_best_offset_combination <- function(results, min_length = 5) {
 	
 	#Build an array with the sums of the collected R square values
 	R_sq_sums = array(NA, c(length(results$early$R_sq),length(results$late$R_sq)));
@@ -349,7 +349,7 @@ find_best_offset_combination <- function(results, min_length = 10) {
 }
 
 gather_linear_regions.boot <- function(results, 
-	min_length = 10, col_lims = NaN, normed = 1, 
+	min_length = 5, col_lims = NaN, normed = 1, 
 	log.trans = TRUE, boot.samp = NA) {
 
 	sim_results <- list()
