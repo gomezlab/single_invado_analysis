@@ -7,7 +7,7 @@
 #Data fitting functions
 ########################################
 
-gather_bilinear_models_from_dirs <- function (dirs, min_length=5, 
+gather_bilinear_models_from_dirs <- function (dirs, min_length=5,
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
 	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
 	save.exp_data = TRUE, debug = FALSE) {
@@ -94,28 +94,28 @@ gather_bilinear_models <- function(data_set, props,
 		temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
 			min_length = min_length, log.trans = log.trans)
 
-		results$early$offset[i] = temp_results$early$offset
-		results$early$R_sq[i]   = temp_results$early$R_sq
-		results$early$p_val[i]   = temp_results$early$p_val
-		results$early$inter[i]  = temp_results$early$inter
-		results$early$slope[i]  = temp_results$early$slope
-		results$early$fold_change[i]  = temp_results$early$fold_change
-		results$early$residual[i]  = temp_results$early$residual
+		results$assembly$offset[i] = temp_results$assembly$offset
+		results$assembly$R_sq[i]   = temp_results$assembly$R_sq
+		results$assembly$p_val[i]   = temp_results$assembly$p_val
+		results$assembly$inter[i]  = temp_results$assembly$inter
+		results$assembly$slope[i]  = temp_results$assembly$slope
+		results$assembly$fold_change[i]  = temp_results$assembly$fold_change
+		results$assembly$residual[i]  = temp_results$assembly$residual
 		
-		results$late$offset[i]  = temp_results$late$offset
-		results$late$R_sq[i]    = temp_results$late$R_sq
-		results$late$p_val[i]    = temp_results$late$p_val
-		results$late$inter[i]   = temp_results$late$inter
-		results$late$slope[i]   = temp_results$late$slope
-		results$late$fold_change[i]  = temp_results$late$fold_change
-		results$late$residual[i]   = temp_results$late$residual
+		results$disassembly$offset[i]  = temp_results$disassembly$offset
+		results$disassembly$R_sq[i]    = temp_results$disassembly$R_sq
+		results$disassembly$p_val[i]    = temp_results$disassembly$p_val
+		results$disassembly$inter[i]   = temp_results$disassembly$inter
+		results$disassembly$slope[i]   = temp_results$disassembly$slope
+		results$disassembly$fold_change[i]  = temp_results$disassembly$fold_change
+		results$disassembly$residual[i]   = temp_results$disassembly$residual
 		
 		#if either of the offset values are NA, then we weren't able 
-		#to get a fit for one side of the data, don't calculate a 
+		#to get a fit for one side of the data, don't calcudisassembly a 
 		#stable lifetime because we don't know how long the adhesion 
 		#was around before the movie starts or after it ends
-		if (! is.na(results$late$offset[i]) && ! is.na(results$early$offset[i])) {
-			results$stable_data_set[[i]] = numeric_data_set[results$early$offset[i]:(length(numeric_data_set) - results$late$offset[i])]
+		if (! is.na(results$disassembly$offset[i]) && ! is.na(results$assembly$offset[i])) {
+			results$stable_data_set[[i]] = numeric_data_set[results$assembly$offset[i]:(length(numeric_data_set) - results$disassembly$offset[i])]
 			
 			results$stable_lifetime[i] = length(results$stable_data_set[[i]])
 			results$stable_mean[i] = mean(results$stable_data_set[[i]])
@@ -137,17 +137,17 @@ gather_bilinear_models <- function(data_set, props,
 }
 
 pad_results_to_row_length <- function(results, desired_length) {
-	if (length(results$early) > 0) {
-		for (i in 1:length(results$early)) {
-			for (j in (length(results$early[[i]]) + 1):desired_length) {
-				results$early[[i]][j] = NA
+	if (length(results$assembly) > 0) {
+		for (i in 1:length(results$assembly)) {
+			for (j in (length(results$assembly[[i]]) + 1):desired_length) {
+				results$assembly[[i]][j] = NA
 			}
 		}
 	}
-	if (length(results$late) > 0) {
-		for (i in 1:length(results$late)) {
-			for (j in (length(results$late[[i]]) + 1):desired_length) {
-				results$late[[i]][j] = NA
+	if (length(results$disassembly) > 0) {
+		for (i in 1:length(results$disassembly)) {
+			for (j in (length(results$disassembly[[i]]) + 1):desired_length) {
+				results$disassembly[[i]][j] = NA
 			}
 		}
 	}
@@ -163,7 +163,7 @@ pad_results_to_row_length <- function(results, desired_length) {
 find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 5, log.trans = TRUE) {
 
 	results = list(initial_data_set = initial_data_set)
-	resid = list(early = list(), late = list())	
+	resid = list(assembly = list(), disassembly = list())	
 	results$filt_init = initial_data_set[! is.nan(initial_data_set)]
 	if (length(results$filt_init) == 0) {
 		return(c(NA, NA))
@@ -171,124 +171,124 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
 
 	#Search the beginning of the sequence for a linear fit
-	early_slope_calculated = FALSE;
+	assembly_slope_calcudisassemblyd = FALSE;
 	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status) {
-		early_slope_calculated = TRUE;
+		assembly_slope_calcudisassemblyd = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
-			early_subset = this_data_set[1:j,]
+			assembly_subset = this_data_set[1:j,]
 			if (normed) {
-				early_subset$y = early_subset$y/early_subset$y[1]
+				assembly_subset$y = assembly_subset$y/assembly_subset$y[1]
 			}
 			if (log.trans) {
-				early_subset$y = log(early_subset$y)
+				assembly_subset$y = log(assembly_subset$y)
 			}
 				
-			model <- lm(y ~ x, data = early_subset)
+			model <- lm(y ~ x, data = assembly_subset)
 			summary <- summary(model);
 			
-			results$early$R_sq[j] = summary$adj.r.squared
+			results$assembly$R_sq[j] = summary$adj.r.squared
 			#dealing with a degerate case, where lm produce NaN for the R squared 
 			#value when the data set is a flat line, see:
 			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
 			#	>summary(lm(y ~ x, data=data))
-			if (is.nan(results$early$R_sq[j])) {
-				results$early$R_sq[j] = 1
+			if (is.nan(results$assembly$R_sq[j])) {
+				results$assembly$R_sq[j] = 1
 			}
 			
-			results$early$p_val[j] = summary$coefficients[2,4]
-			results$early$length[j] = dim(early_subset)[[1]]
-			results$early$offset[j] = j
-			results$early$inter[j] = coef(model)[[1]]
-			results$early$slope[j] = coef(model)[[2]]
+			results$assembly$p_val[j] = summary$coefficients[2,4]
+			results$assembly$length[j] = dim(assembly_subset)[[1]]
+			results$assembly$offset[j] = j
+			results$assembly$inter[j] = coef(model)[[1]]
+			results$assembly$slope[j] = coef(model)[[2]]
 
 			if (log.trans) {
-				results$early$fold_change[j] = max(early_subset$y)
+				results$assembly$fold_change[j] = max(assembly_subset$y)
 			} else {				
-				results$early$fold_change[j] = max(early_subset$y)/min(early_subset$y)
+				results$assembly$fold_change[j] = max(assembly_subset$y)/min(assembly_subset$y)
 			}
-			resid$early[[j]] = as.numeric(resid(model))
+			resid$assembly[[j]] = as.numeric(resid(model))
 		}
 	} else {
-		results$early$R_sq[1] = 0
+		results$assembly$R_sq[1] = 0
 
-		results$early$p_val[1] = NA		
-		results$early$length[1] = NA
-		results$early$offset[1] = NA
-		results$early$inter[1] = NA
-		results$early$slope[1] = NA
-		results$early$fold_change[1] = NA
+		results$assembly$p_val[1] = NA		
+		results$assembly$length[1] = NA
+		results$assembly$offset[1] = NA
+		results$assembly$inter[1] = NA
+		results$assembly$slope[1] = NA
+		results$assembly$fold_change[1] = NA
 
-		resid$early[[1]] = NA
+		resid$assembly[[1]] = NA
 	}
 	
 	#Search the end of the sequence for a linear fit
-	late_slope_calculated = FALSE;
+	disassembly_slope_calcudisassemblyd = FALSE;
 	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status) {
-		late_slope_calculated = TRUE;
+		disassembly_slope_calcudisassemblyd = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
-			late_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
+			disassembly_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
 			if (normed) {
-				late_subset$y = late_subset$y[1]/late_subset$y
+				disassembly_subset$y = disassembly_subset$y[1]/disassembly_subset$y
 			}
 			if (log.trans) {
-				late_subset$y = log(late_subset$y)
+				disassembly_subset$y = log(disassembly_subset$y)
 			}
 	
-			model <- lm(y ~ x, data = late_subset)
+			model <- lm(y ~ x, data = disassembly_subset)
 			summary <- summary(model);
 			
-			results$late$R_sq[j] = summary$adj.r.squared
+			results$disassembly$R_sq[j] = summary$adj.r.squared
 			#dealing with a degerate case, where lm produce NaN for the R squared 
 			#value when the data set is a flat line, see:
 			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
 			#	>summary(lm(y ~ x, data=data))
-			if (is.nan(results$late$R_sq[j])) {
-				results$late$R_sq[j] = 1
+			if (is.nan(results$disassembly$R_sq[j])) {
+				results$disassembly$R_sq[j] = 1
 			}
 			
-			results$late$p_val[j] = summary$coefficients[2,4]
-			results$late$length[j] = dim(late_subset)[[1]]
-			results$late$offset[j] = j
-			results$late$inter[j] = coef(model)[[1]]
-			results$late$slope[j] = coef(model)[[2]]
+			results$disassembly$p_val[j] = summary$coefficients[2,4]
+			results$disassembly$length[j] = dim(disassembly_subset)[[1]]
+			results$disassembly$offset[j] = j
+			results$disassembly$inter[j] = coef(model)[[1]]
+			results$disassembly$slope[j] = coef(model)[[2]]
 
 			if (log.trans) {
-				results$late$fold_change[j] = max(late_subset$y)
+				results$disassembly$fold_change[j] = max(disassembly_subset$y)
 			} else {						
-				results$late$fold_change[j] = max(late_subset$y)/min(late_subset$y)
+				results$disassembly$fold_change[j] = max(disassembly_subset$y)/min(disassembly_subset$y)
 			}
-			resid$late[[j]] = as.numeric(resid(model))
+			resid$disassembly[[j]] = as.numeric(resid(model))
 		}
 	} else {
-		results$late$R_sq[1] = 0
+		results$disassembly$R_sq[1] = 0
 		
-		results$late$p_val[1] = NA	
-		results$late$length[1] = NA
-		results$late$offset[1] = NA
-		results$late$inter[1] = NA
-		results$late$slope[1] = NA
-		results$late$fold_change[1] = NA
+		results$disassembly$p_val[1] = NA	
+		results$disassembly$length[1] = NA
+		results$disassembly$offset[1] = NA
+		results$disassembly$inter[1] = NA
+		results$disassembly$slope[1] = NA
+		results$disassembly$fold_change[1] = NA
 
-		resid$late[[1]] = NA	
+		resid$disassembly[[1]] = NA	
 	}
 
 	best_indexes = find_best_offset_combination(results, min_length = min_length)
 	
-	#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
-	#there were no fits calculated for them
-	if (! early_slope_calculated) {
-		results$early$R_sq[1] = NA
+	#With the R squared matrix calcudisassemblyd reset the r_sq componenets to NA, if needed since 
+	#there were no fits calcudisassemblyd for them
+	if (! assembly_slope_calcudisassemblyd) {
+		results$assembly$R_sq[1] = NA
 	}	
-	if (! late_slope_calculated) {
-		results$late$R_sq[1] = NA
+	if (! disassembly_slope_calcudisassemblyd) {
+		results$disassembly$R_sq[1] = NA
 	}
 	
 	best_results = list()
 				
-	best_results$early = as.data.frame(results$early)[best_indexes[1],]
-	best_results$early$residual = resid$early[best_indexes[1]]
-	best_results$late = as.data.frame(results$late)[best_indexes[2],]
-	best_results$late$residual = resid$late[best_indexes[2]]
+	best_results$assembly = as.data.frame(results$assembly)[best_indexes[1],]
+	best_results$assembly$residual = resid$assembly[best_indexes[1]]
+	best_results$disassembly = as.data.frame(results$disassembly)[best_indexes[2],]
+	best_results$disassembly$residual = resid$disassembly[best_indexes[2]]
 
 	best_results
 }
@@ -296,20 +296,20 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 find_best_offset_combination <- function(results, min_length = 5) {
 	
 	#Build an array with the sums of the collected R square values
-	R_sq_sums = array(NA, c(length(results$early$R_sq),length(results$late$R_sq)));
-	for (i in 1:length(results$early$R_sq)) {
-		if (is.na(results$early$R_sq[i]) | is.nan(results$early$R_sq[i])) {
+	R_sq_sums = array(NA, c(length(results$assembly$R_sq),length(results$disassembly$R_sq)));
+	for (i in 1:length(results$assembly$R_sq)) {
+		if (is.na(results$assembly$R_sq[i]) | is.nan(results$assembly$R_sq[i])) {
 			next
 		}
-		for (j in 1:length(results$late$R_sq)) {
-			if (is.na(results$late$R_sq[j]) | is.nan(results$late$R_sq[j])) {
+		for (j in 1:length(results$disassembly$R_sq)) {
+			if (is.na(results$disassembly$R_sq[j]) | is.nan(results$disassembly$R_sq[j])) {
 				next
 			}
 			if ((j+i) > length(results$filt_init)) {
 				next
 			}
 			
-			R_sq_sums[i,j] = results$early$R_sq[i]+results$late$R_sq[j]
+			R_sq_sums[i,j] = results$assembly$R_sq[i]+results$disassembly$R_sq[j]
 		}
 	}
 		
@@ -420,18 +420,18 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 	}
 	
 	count = 0
-	for (i in 1:length(result$early$R_sq)) {
+	for (i in 1:length(result$assembly$R_sq)) {
 		data_1 = as.numeric(result$exp_data[i,])
 		data_1 = data_1[! is.nan(data_1)]
 		data_2 = as.numeric(exp_data[i,])
 		data_2 = data_2[! is.nan(data_2)]		
 		
-		corr_result$early[i] = NA
-		corr_result$late[i] = NA
+		corr_result$assembly[i] = NA
+		corr_result$disassembly[i] = NA
 
-		if (! is.na(result$early$R_sq[i])) {
-			this_data_1 = data_1[1:result$early$offset[i]]
-			this_data_2 = data_2[1:result$early$offset[i]]
+		if (! is.na(result$assembly$R_sq[i])) {
+			this_data_1 = data_1[1:result$assembly$offset[i]]
+			this_data_2 = data_2[1:result$assembly$offset[i]]
 			
 			if (result.normed) {
 				this_data_1 = this_data_1/this_data_1[1]
@@ -448,14 +448,14 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 			}
 			
 			if (sd(this_data_1) != 0 & sd(this_data_2) != 0) {
-				corr_result$early[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
-				corr_result$conf$early_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
-				corr_result$conf$early_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
+				corr_result$assembly[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
+				corr_result$conf$assembly_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
+				corr_result$conf$assembly_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
 			}
 		}
-		if (! is.na(result$late$R_sq[i])) {
-			this_data_1 = data_1[(length(data_1) - result$late$offset[i]):length(data_1)]
-			this_data_2 = data_2[(length(data_2) - result$late$offset[i]):length(data_2)]
+		if (! is.na(result$disassembly$R_sq[i])) {
+			this_data_1 = data_1[(length(data_1) - result$disassembly$offset[i]):length(data_1)]
+			this_data_2 = data_2[(length(data_2) - result$disassembly$offset[i]):length(data_2)]
 
 			if (result.normed) {
 				this_data_1 = this_data_1[1]/this_data_1
@@ -472,9 +472,9 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 			}
 				
 			if (sd(this_data_1) != 0 & sd(this_data_2) != 0) {
-				corr_result$late[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
-				corr_result$conf$late_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
-				corr_result$conf$late_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
+				corr_result$disassembly[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$estimate)
+				corr_result$conf$disassembly_lower[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[1]
+				corr_result$conf$disassembly_upper[i] = as.numeric(cor.test(this_data_1,this_data_2,use="all.obs")$conf.int)[2]
 			}
 		}
 	}
@@ -486,20 +486,20 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 ########################################
 
 plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA) {
-	early_slope = c()
-	early_error = c()
-	early_n = c()
-	late_slope  = c()
-	late_error  = c()
-	late_n = c()
+	assembly_slope = c()
+	assembly_error = c()
+	assembly_n = c()
+	disassembly_slope  = c()
+	disassembly_error  = c()
+	disassembly_n = c()
 	for (i in 1:10) {
 		slope_ests = exp_set_slope_estimate(results,r_cutoff = ((i - 1)/10));
-		early_slope[i] = slope_ests$early
-		early_n[i] = slope_ests$early_n
-		early_error[i] = slope_ests$early_sem
-		late_slope[i] = slope_ests$late
-		late_n[i] = slope_ests$late_n
-		late_error[i] = slope_ests$late_sem
+		assembly_slope[i] = slope_ests$assembly
+		assembly_n[i] = slope_ests$assembly_n
+		assembly_error[i] = slope_ests$assembly_sem
+		disassembly_slope[i] = slope_ests$disassembly
+		disassembly_n[i] = slope_ests$disassembly_n
+		disassembly_error[i] = slope_ests$disassembly_sem
 	}
 	
 	library(Hmisc)
@@ -507,35 +507,35 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
     par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
 	
 	#########################################################################
-	#Plot 1 - Slope versus R squared (early)
+	#Plot 1 - Slope versus R squared (assembly)
 	#########################################################################	
-    plot(results$early_slope[results$early_R_sq != 0],
-         results$early_R_sq[results$early_R_sq != 0],
+    plot(results$assembly_slope[results$assembly_R_sq != 0],
+         results$assembly_R_sq[results$assembly_R_sq != 0],
          xlab='Formation Slope', ylab='R Squared', cex = 0.5,
          ylim = c(0,1)
         );
 
 	#########################################################################
-	#Plot 2 - R squared versus Slope (late)
+	#Plot 2 - R squared versus Slope (disassembly)
 	#########################################################################	
-    plot(results$late_slope[results$late_R_sq != 0 & results$exp_props$death_status],
-		 results$late_R_sq[results$late_R_sq != 0 & results$exp_props$death_status],
+    plot(results$disassembly_slope[results$disassembly_R_sq != 0 & results$exp_props$death_status],
+		 results$disassembly_R_sq[results$disassembly_R_sq != 0 & results$exp_props$death_status],
          xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5,
          ylim = c(0,1)
         )
     
 	#Plot 3
-    errbar(seq(0,0.9,by=0.1), early_slope, early_slope - early_error, early_slope + early_error, xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
+    errbar(seq(0,0.9,by=0.1), assembly_slope, assembly_slope - assembly_error, assembly_slope + assembly_error, xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
     for (i in 1:10) {
     	x_points = seq(0,0.9,by=0.1)
-    	text(x_points[i],early_slope[i]+early_error[i],early_n[i])
+    	text(x_points[i],assembly_slope[i]+assembly_error[i],assembly_n[i])
     }
 	
 	#Plot 4
-    errbar(seq(0,0.9,by=0.1), late_slope, late_slope - late_error, late_slope + late_error, xlab = 'R squared cutoff', ylab='Decay Rate (/min)')
+    errbar(seq(0,0.9,by=0.1), disassembly_slope, disassembly_slope - disassembly_error, disassembly_slope + disassembly_error, xlab = 'R squared cutoff', ylab='Decay Rate (/min)')
     for (i in 1:10) {
     	x_points = seq(0,0.9,by=0.1)
-    	text(x_points[i],late_slope[i]+late_error[i],late_n[i])
+    	text(x_points[i],disassembly_slope[i]+disassembly_error[i],disassembly_n[i])
     }
 	
 	if (! is.na(hist_file)) {
@@ -543,16 +543,16 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
     	par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
         
 	    #Plot 1
-    	hist(results$early_length, xlab = 'Linear Sequence Length (min)', main='')
+    	hist(results$assembly_length, xlab = 'Linear Sequence Length (min)', main='')
     
 	    #Plot 2
-    	hist(results$late_length, xlab = 'Linear Sequence Length (min)', main='')
+    	hist(results$disassembly_length, xlab = 'Linear Sequence Length (min)', main='')
     
 	    #Plot 3
-    	hist(results$early_slope[results$early_R_sq > 0.9], xlab = 'Slope (/min)', main='')
+    	hist(results$assembly_slope[results$assembly_R_sq > 0.9], xlab = 'Slope (/min)', main='')
 
 	    #Plot 4
-    	hist(results$late_slope[results$late_R_sq > 0.9 & results$exp_props$death_status], xlab = 'Slope (/min)', main='')
+    	hist(results$disassembly_slope[results$disassembly_R_sq > 0.9 & results$exp_props$death_status], xlab = 'Slope (/min)', main='')
     	dev.off()
     }
     
@@ -560,8 +560,8 @@ plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA
 }
 
 exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
-	early_slopes <- c()
-	late_slopes <- c()
+	assembly_slopes <- c()
+	disassembly_slopes <- c()
 	
 	if (! is.null(names(results))) {
 		results = list(results)
@@ -571,63 +571,63 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 		
 		range = 1*(max(res$exp_props$starting_edge_dist) - min(res$exp_props$starting_edge_dist))
 		
-		death_status = res$exp_props$death_status[1:length(res$late_R_sq)]
-		range_status = res$exp_props$starting_edge_dist[1:length(res$late_R_sq)]
+		death_status = res$exp_props$death_status[1:length(res$disassembly_R_sq)]
+		range_status = res$exp_props$starting_edge_dist[1:length(res$disassembly_R_sq)]
 
-		early_slopes <- c(early_slopes, res$early$slope[res$early$R_sq > r_cutoff & ! is.na(res$early$R_sq) & range_status < range])
-		late_slopes  <- c(late_slopes, res$late$slope[res$late$R_sq > r_cutoff & ! is.na(res$late$R_sq) & death_status])
+		assembly_slopes <- c(assembly_slopes, res$assembly$slope[res$assembly$R_sq > r_cutoff & ! is.na(res$assembly$R_sq) & range_status < range])
+		disassembly_slopes  <- c(disassembly_slopes, res$disassembly$slope[res$disassembly$R_sq > r_cutoff & ! is.na(res$disassembly$R_sq) & death_status])
 	}
-	slopes <- list(early = mean(early_slopes),
-				   early_n = length(early_slopes),
-				   early_cv = sd(early_slopes)/mean(early_slopes),
-				   early_sem = sd(early_slopes)/sqrt(length(early_slopes)),
-				   early_sd = sd(early_slopes),
-				   late = mean(late_slopes),
-				   late_n = length(late_slopes),
-				   late_cv = sd(late_slopes)/mean(late_slopes),
-				   late_sem = sd(late_slopes)/sqrt(length(late_slopes)),
-				   late_sd = sd(late_slopes)
+	slopes <- list(assembly = mean(assembly_slopes),
+				   assembly_n = length(assembly_slopes),
+				   assembly_cv = sd(assembly_slopes)/mean(assembly_slopes),
+				   assembly_sem = sd(assembly_slopes)/sqrt(length(assembly_slopes)),
+				   assembly_sd = sd(assembly_slopes),
+				   disassembly = mean(disassembly_slopes),
+				   disassembly_n = length(disassembly_slopes),
+				   disassembly_cv = sd(disassembly_slopes)/mean(disassembly_slopes),
+				   disassembly_sem = sd(disassembly_slopes)/sqrt(length(disassembly_slopes)),
+				   disassembly_sd = sd(disassembly_slopes)
 				  )
 }
 
-plot_ad_seq <- function (results,index,type='early',...) {
+plot_ad_seq <- function (results,index,type='assembly',...) {
 	ad_seq = as.vector(results$exp_data[index,])
 	ad_seq = t(ad_seq[!(is.nan(ad_seq))])
 	
-	if (type == 'early') {
-		this_ad_seq = ad_seq[1:results$early$offset[index]];
+	if (type == 'assembly') {
+		this_ad_seq = ad_seq[1:results$assembly$offset[index]];
 		this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
 		
-		x = c(0,results$early$offset[index]);
-		y = c(results$early$slope[index]*x[1] + results$early$inter[index],
-			  results$early$slope[index]*x[2] + results$early$inter[index])
+		x = c(0,results$assembly$offset[index]);
+		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
+			  results$assembly$slope[index]*x[2] + results$assembly$inter[index])
 		
-		plot(1:results$early$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
+		plot(1:results$assembly$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
 				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
 		lines(x,y,col='red',lwd=2)
-		r_sq_val_str = sprintf('%.3f',results$early$R_sq[index])
-		slope_val_str = sprintf('%.3f',results$early$slope[index])
+		r_sq_val_str = sprintf('%.3f',results$assembly$R_sq[index])
+		slope_val_str = sprintf('%.3f',results$assembly$slope[index])
 		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
 		text(x[1]+3,0.5*max(this_ad_seq), 
-			 paste('R^2 = ',sprintf('%.3f',results$early$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$early$slope[index]),sep=''))
+			 paste('R^2 = ',sprintf('%.3f',results$assembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$assembly$slope[index]),sep=''))
 	}
 
-	if (type == 'late') {
-		this_ad_seq = ad_seq[(length(ad_seq) - results$late$offset[index]) : length(ad_seq)];
+	if (type == 'disassembly') {
+		this_ad_seq = ad_seq[(length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq)];
 		this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
 
-		x = c(length(ad_seq) - results$late$offset[index],length(ad_seq));
-		y = c(results$late$slope[index]*x[1] + results$late$inter[index],
-		   	  results$late$slope[index]*x[2] + results$late$inter[index])
+		x = c(length(ad_seq) - results$disassembly$offset[index],length(ad_seq));
+		y = c(results$disassembly$slope[index]*x[1] + results$disassembly$inter[index],
+		   	  results$disassembly$slope[index]*x[2] + results$disassembly$inter[index])
 		
-		plot((length(ad_seq) - results$late$offset[index]) : length(ad_seq),
+		plot((length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq),
 			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
 		lines(x,y,col='red',lwd=2)
 		text(x[1]+ 3,0.5*max(this_ad_seq), 
-			 paste('R^2 = ',sprintf('%.3f',results$late$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$late$slope[index]),sep=''))
+			 paste('R^2 = ',sprintf('%.3f',results$disassembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$disassembly$slope[index]),sep=''))
 	}
 	
 	if (type == 'overall') {
@@ -645,13 +645,13 @@ plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',
 	library(Hmisc)
 	pdf(file = file.path(dir,file),width=12)
 	par(mfcol=c(1,2))
-	errbar(resid_win$x$early, resid_win$y$early, 
-		   resid_win$y$early - resid_win$err$early, resid_win$y$early + resid_win$err$early, 
+	errbar(resid_win$x$assembly, resid_win$y$assembly, 
+		   resid_win$y$assembly - resid_win$err$assembly, resid_win$y$assembly + resid_win$err$assembly, 
 		   xlab='Scaled Linear Fit Position',ylab='Residuals')
 	lines(c(0,1),c(0,0))
 	
-	errbar(resid_win$x$late, resid_win$y$late, 
-		   resid_win$y$late - resid_win$err$late, resid_win$y$late + resid_win$err$late, 
+	errbar(resid_win$x$disassembly, resid_win$y$disassembly, 
+		   resid_win$y$disassembly - resid_win$err$disassembly, resid_win$y$disassembly + resid_win$err$disassembly, 
 		   xlab='Scaled Linear Fit Position',ylab='Residuals')
 	lines(c(0,1),c(0,0))
 	dev.off()
@@ -661,31 +661,31 @@ gather_exp_residuals <- function(results, min_R_sq = NA) {
 	resid = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
-		for (j in 1:length(res$early$R_sq)) {
-			if (is.na(res$early$R_sq[j])) {	
+		for (j in 1:length(res$assembly$R_sq)) {
+			if (is.na(res$assembly$R_sq[j])) {	
 				next
 			}
-			if (is.numeric(min_R_sq) & (res$early$R_sq[j] < min_R_sq)) {
+			if (is.numeric(min_R_sq) & (res$assembly$R_sq[j] < min_R_sq)) {
 				next
 			}
 
-			resid_list = res$early$residual[j][[1]]
+			resid_list = res$assembly$residual[j][[1]]
 			x = list(seq(0,1,1/(length(resid_list)-1)))
-			resid$y$early = c(resid$y$early,resid_list)
-			resid$x$early = c(resid$x$early,x)
+			resid$y$assembly = c(resid$y$assembly,resid_list)
+			resid$x$assembly = c(resid$x$assembly,x)
 		}
-		for (j in 1:length(res$late$R_sq)) {
-			if (is.na(res$late$R_sq[j])) {
+		for (j in 1:length(res$disassembly$R_sq)) {
+			if (is.na(res$disassembly$R_sq[j])) {
 				next
 			}
-			if (is.numeric(min_R_sq) & (res$late$R_sq[j] < min_R_sq)) {
+			if (is.numeric(min_R_sq) & (res$disassembly$R_sq[j] < min_R_sq)) {
 				next
 			}
 
-			resid_list = res$late$residual[j][[1]]
+			resid_list = res$disassembly$residual[j][[1]]
 			x = list(seq(0,1,1/(length(resid_list)-1)))
-			resid$y$late = c(resid$y$late,resid_list)
-			resid$x$late = c(resid$x$late,x)
+			resid$y$disassembly = c(resid$y$disassembly,resid_list)
+			resid$x$disassembly = c(resid$x$disassembly,x)
 		}
 	}
 	resid
@@ -695,30 +695,30 @@ gather_exp_win_residuals <- function(resid, window) {
 	resid_win = list()
 	for (i in seq(window,1,by=window)) {
 		temp = c()
-		for (j in 1:length(resid$x$early)) {
-			this_resid_x = resid$x$early[[j]]
+		for (j in 1:length(resid$x$assembly)) {
+			this_resid_x = resid$x$assembly[[j]]
 			for (k in 1:length(this_resid_x)) {
 				if (this_resid_x[[k]] <= i & this_resid_x[[k]] >= i - window) {
-					temp = c(temp,resid$y$early[[j]])
+					temp = c(temp,resid$y$assembly[[j]])
 				}
 			}
 		}
-		resid_win$x$early   = c(resid_win$x$early,i-(window/2))
-		resid_win$y$early   = c(resid_win$y$early,mean(temp))
-		resid_win$err$early = c(resid_win$err$early,sd(temp))
+		resid_win$x$assembly   = c(resid_win$x$assembly,i-(window/2))
+		resid_win$y$assembly   = c(resid_win$y$assembly,mean(temp))
+		resid_win$err$assembly = c(resid_win$err$assembly,sd(temp))
 		
 		temp = c()
-		for (j in 1:length(resid$x$late)) {
-			this_resid_x = resid$x$late[[j]]
+		for (j in 1:length(resid$x$disassembly)) {
+			this_resid_x = resid$x$disassembly[[j]]
 			for (k in 1:length(this_resid_x)) {
 				if (this_resid_x[[k]] <= i & this_resid_x[[k]] >= i - window) {
-					temp = c(temp,resid$y$late[[j]])
+					temp = c(temp,resid$y$disassembly[[j]])
 				}
 			}
 		}
-		resid_win$x$late   = c(resid_win$x$late,i-(window/2))
-		resid_win$y$late   = c(resid_win$y$late,mean(temp))
-		resid_win$err$late = c(resid_win$err$late,sd(temp))
+		resid_win$x$disassembly   = c(resid_win$x$disassembly,i-(window/2))
+		resid_win$y$disassembly   = c(resid_win$y$disassembly,mean(temp))
+		resid_win$err$disassembly = c(resid_win$err$disassembly,sd(temp))
 	}
 	resid_win
 }
@@ -760,24 +760,24 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_v
 		corr = corrected[[i]]
 		res = results[[i]]
 
-		assembly_filt = (is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq
-					   & is.finite(corr$early$slope) & is.finite(corr$early$p_val) 
-					   & corr$early$p_val <= needed_p_val)
-		disassembly_filt = (is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq 
-						  & is.finite(corr$late$slope) & is.finite(corr$late$p_val) 
-						  & corr$late$p_val <= needed_p_val)
+		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq > needed_R_sq
+					   & is.finite(corr$assembly$slope) & is.finite(corr$assembly$p_val) 
+					   & corr$assembly$p_val <= needed_p_val)
+		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq > needed_R_sq 
+						  & is.finite(corr$disassembly$slope) & is.finite(corr$disassembly$p_val) 
+						  & corr$disassembly$p_val <= needed_p_val)
 		
 		if (pos_slope) {
-			assembly_filt = assembly_filt & corr$early$slope > 0
-			disassembly_filt = disassembly_filt & corr$late$slope > 0
+			assembly_filt = assembly_filt & corr$assembly$slope > 0
+			disassembly_filt = disassembly_filt & corr$disassembly$slope > 0
 		}				  
 	
-		points$assembly$slope = c(points$assembly$slope, corr$early$slope[assembly_filt])
-		points$disassembly$slope = c(points$disassembly$slope,corr$late$slope[disassembly_filt])
-		points$assembly$R_sq = c(points$assembly$R_sq, corr$early$R_sq[assembly_filt])
-		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$late$R_sq[disassembly_filt])
-		points$assembly$p_val = c(points$assembly$p_val, corr$early$p_val[assembly_filt])
-		points$disassembly$p_val = c(points$disassembly$p_val, corr$late$p_val[disassembly_filt])
+		points$assembly$slope = c(points$assembly$slope, corr$assembly$slope[assembly_filt])
+		points$disassembly$slope = c(points$disassembly$slope,corr$disassembly$slope[disassembly_filt])
+		points$assembly$R_sq = c(points$assembly$R_sq, corr$assembly$R_sq[assembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$disassembly$R_sq[disassembly_filt])
+		points$assembly$p_val = c(points$assembly$p_val, corr$assembly$p_val[assembly_filt])
+		points$disassembly$p_val = c(points$disassembly$p_val, corr$disassembly$p_val[disassembly_filt])
 
 		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
 		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
@@ -830,24 +830,24 @@ filter_mixed_area <- function(area_results, corrected, needed_R_sq=0.9, needed_p
 		corr = corrected[[i]]
 		res = area_results[[i]]
 
-		assembly_filt = (is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq
-					   & is.finite(corr$early$slope) & is.finite(corr$early$p_val) 
-					   & corr$early$p_val <= needed_p_val)
-		disassembly_filt = (is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq 
-						  & is.finite(corr$late$slope) & is.finite(corr$late$p_val) 
-						  & corr$late$p_val <= needed_p_val)
+		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq > needed_R_sq
+					   & is.finite(corr$assembly$slope) & is.finite(corr$assembly$p_val) 
+					   & corr$assembly$p_val <= needed_p_val)
+		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq > needed_R_sq 
+						  & is.finite(corr$disassembly$slope) & is.finite(corr$disassembly$p_val) 
+						  & corr$disassembly$p_val <= needed_p_val)
 		
 		if (pos_slope) {
-			assembly_filt = assembly_filt & corr$early$slope > 0
-			disassembly_filt = disassembly_filt & corr$late$slope > 0
+			assembly_filt = assembly_filt & corr$assembly$slope > 0
+			disassembly_filt = disassembly_filt & corr$disassembly$slope > 0
 		}				  
 
-		points$assembly$slope = c(points$assembly$slope, res$early$slope[assembly_filt])
-		points$disassembly$slope = c(points$disassembly$slope, res$late$slope[disassembly_filt])
-		points$assembly$R_sq = c(points$assembly$R_sq, res$early$R_sq[assembly_filt])
-		points$disassembly$R_sq = c(points$disassembly$R_sq, res$late$R_sq[disassembly_filt])
-		points$assembly$p_val = c(points$assembly$p_val, res$early$p_val[assembly_filt])
-		points$disassembly$p_val = c(points$disassembly$p_val, res$late$p_val[disassembly_filt])
+		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
+		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
+		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
+		points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
+		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
 
 		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
 		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
@@ -933,22 +933,22 @@ trim_args_list <- function(args) {
 	args
 }
 
-write_high_r_rows <- function(result, dir, file=c('early_R_sq.csv','late_R_sq.csv','neg_slope_R_sq.csv'), min_R_sq = 0.9) {
+write_high_r_rows <- function(result, dir, file=c('assembly_R_sq.csv','disassembly_R_sq.csv','neg_slope_R_sq.csv'), min_R_sq = 0.9) {
 	if (! file.exists(dir)) {
 		dir.create(dir,recursive=TRUE)
 	}
 	
-	row_nums = which(is.finite(result$early$R_sq) & result$early$R_sq > min_R_sq)
+	row_nums = which(is.finite(result$assembly$R_sq) & result$assembly$R_sq > min_R_sq)
 	if (! is.null(row_nums)) {
 		write.table(row_nums,file=file.path(dir,file[1]), row.names=FALSE, col.names=FALSE)
 	}
 	
-	row_nums = which(is.finite(result$early$R_sq) & result$late$R_sq > min_R_sq)
+	row_nums = which(is.finite(result$assembly$R_sq) & result$disassembly$R_sq > min_R_sq)
 	if (! is.null(row_nums)) {
 		write.table(row_nums,file=file.path(dir,file[2]), row.names=FALSE, col.names=FALSE)
 	}
 	
-	row_nums = which(is.finite(result$early$R_sq) & result$early$R_sq > min_R_sq & result$early$slope < 0)
+	row_nums = which(is.finite(result$assembly$R_sq) & result$assembly$R_sq > min_R_sq & result$assemblyassemblyassembly$slope < 0)
 	if (! is.null(row_nums)) {
 		write.table(row_nums,file=file.path(dir,file[3]), row.names=FALSE, col.names=FALSE)
 	}
