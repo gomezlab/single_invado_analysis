@@ -754,18 +754,23 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_val = 0.05) {
+filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_val = 0.05, pos_slope = FALSE) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
 		res = results[[i]]
 
 		assembly_filt = (is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq
-					   & is.finite(corr$early$slope) & corr$early$slope > 0
-					   & is.finite(corr$early$p_val) & corr$early$p_val <= needed_p_val)
+					   & is.finite(corr$early$slope) & is.finite(corr$early$p_val) 
+					   & corr$early$p_val <= needed_p_val)
 		disassembly_filt = (is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq 
-						  & is.finite(corr$late$slope) & corr$late$slope > 0
-						  & is.finite(corr$late$p_val) & corr$late$p_val <= needed_p_val)
+						  & is.finite(corr$late$slope) & is.finite(corr$late$p_val) 
+						  & corr$late$p_val <= needed_p_val)
+		
+		if (pos_slope) {
+			assembly_filt = assembly_filt & corr$early$slope > 0
+			disassembly_filt = disassembly_filt & corr$late$slope > 0
+		}				  
 	
 		points$assembly$slope = c(points$assembly$slope, corr$early$slope[assembly_filt])
 		points$disassembly$slope = c(points$disassembly$slope,corr$late$slope[disassembly_filt])
@@ -818,6 +823,77 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_v
 	
 	points
 }
+
+filter_mixed_area <- function(area_results, corrected, needed_R_sq=0.9, needed_p_val = 0.05, pos_slope = FALSE) {
+	points = list()
+	for (i in 1:length(corrected)) {
+		corr = corrected[[i]]
+		res = area_results[[i]]
+
+		assembly_filt = (is.finite(corr$early$R_sq) & corr$early$R_sq > needed_R_sq
+					   & is.finite(corr$early$slope) & is.finite(corr$early$p_val) 
+					   & corr$early$p_val <= needed_p_val)
+		disassembly_filt = (is.finite(corr$late$R_sq) & corr$late$R_sq > needed_R_sq 
+						  & is.finite(corr$late$slope) & is.finite(corr$late$p_val) 
+						  & corr$late$p_val <= needed_p_val)
+		
+		if (pos_slope) {
+			assembly_filt = assembly_filt & corr$early$slope > 0
+			disassembly_filt = disassembly_filt & corr$late$slope > 0
+		}				  
+
+		points$assembly$slope = c(points$assembly$slope, res$early$slope[assembly_filt])
+		points$disassembly$slope = c(points$disassembly$slope, res$late$slope[disassembly_filt])
+		points$assembly$R_sq = c(points$assembly$R_sq, res$early$R_sq[assembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, res$late$R_sq[disassembly_filt])
+		points$assembly$p_val = c(points$assembly$p_val, res$early$p_val[assembly_filt])
+		points$disassembly$p_val = c(points$disassembly$p_val, res$late$p_val[disassembly_filt])
+
+		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
+		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
+		points$assembly$stable_mean = c(points$assembly$stable_mean, res$stable_mean[assembly_filt])
+		points$disassembly$stable_mean = c(points$disassembly$stable_mean, res$stable_mean[disassembly_filt])
+		points$assembly$stable_variance = c(points$assembly$stable_variance, res$stable_variance[assembly_filt])
+		points$disassembly$stable_variance = c(points$disassembly$stable_variance, res$stable_variance[disassembly_filt])
+		
+		points$assembly$stable_cv = c(points$assembly$stable_cv, 
+									  sqrt(res$stable_variance[assembly_filt])/res$stable_mean[assembly_filt])
+		points$disassembly$stable_cv = c(points$disassembly$stable_cv, 
+							  			 sqrt(res$stable_variance[disassembly_filt])/res$stable_mean[disassembly_filt])
+		
+		points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
+		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
+
+		points$assembly$average_speeds = c(points$assembly$average_speeds, res$exp_props$average_speeds[assembly_filt])
+		points$disassembly$average_speeds = c(points$disassembly$average_speeds, res$exp_props$average_speeds[disassembly_filt])
+		
+		if (any(names(res$exp_props) == 'starting_edge_dist')) {
+			points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
+		}
+		
+		if (any(names(res$exp_props) == 'ending_edge_dist')) {
+			points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
+		}
+		
+		points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
+		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
+		
+		points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
+		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir, length(which(disassembly_filt))))
+
+		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
+		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
+		
+		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[assembly_filt & disassembly_filt])
+		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[assembly_filt & disassembly_filt])
+	}
+	points$assembly = as.data.frame(points$assembly)
+	points$disassembly = as.data.frame(points$disassembly)
+	points$joint = as.data.frame(points$joint)
+	
+	points
+}
+
 
 gather_general_props <- function(results) {
 	points = list()

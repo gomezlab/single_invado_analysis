@@ -1,3 +1,4 @@
+rm(list = ls())
 source('linear_regions.R')
 library(lattice)
 
@@ -6,13 +7,13 @@ library(lattice)
 ################################################################################
 results = list()
 corr_results = list()
-shrunk_results = list()
+area = list()
 
 exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/lin_time_series/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 results = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
 corr_results = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
-shrunk_results = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rdata'))
+area = load_results(exp_dirs,file.path('..','area_model.Rdata'))
 
 ################################################################################
 #Result filtering
@@ -20,8 +21,26 @@ shrunk_results = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rd
 general_props = gather_general_props(results)
 
 results_nofilt = filter_mixed_results(results, corr_results, needed_R_sq = -Inf, needed_p_val = 1.1)
+area_nofilt = filter_mixed_area(area, corr_results, needed_R_sq = -Inf, needed_p_val = 1.1)
 
 results_filt = filter_mixed_results(results, corr_results)
+area_filt = filter_mixed_area(results, corr_results)
+
+################################################################################
+#Result loading (6 required time points)
+################################################################################
+exp_dirs <- Sys.glob('../../results/focal_adhesions_6/*/adhesion_props/lin_time_series/')
+exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
+results_6 = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
+corr_results_6 = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
+shrunk_results_6 = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rdata'))
+
+################################################################################
+#Result filtering (10 required time points)
+################################################################################
+results_nofilt_6 = filter_mixed_results(results_6, corr_results_6, needed_R_sq = -Inf, needed_p_val = 1.1)
+
+results_filt_6 = filter_mixed_results(results_6, corr_results_6)
 
 ################################################################################
 #Plotting
@@ -45,6 +64,14 @@ out_folder = '../../doc/publication/figures/'
 #General Properties
 ########################################
 
+########################################
+#Comparing Area/Kinetics
+########################################
+pdf(file.path(out_folder,'area_vs_kinetics.pdf'))
+par(bty='n', mar=c(5,4.2,2,0))
+
+
+graphics.off()
 
 ########################################
 #Kinetics Figure
@@ -78,7 +105,7 @@ layout(rbind(c(1,2),c(3,4),c(5)), width=c(1,1,0.5), height=c(1,1,2))
 start_props = hist(results_filt$a$edge_dist[! is.na(results_filt$a$stable_lifetime)], xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), main = '', ylab = '')
 mtext('A',adj=0,cex=1.5)
 
-hist(results_filt$dis$edge_dist[! is.na(results_filt$dis$stable_lifetime)] ,xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), main = '', ylab = '', breaks = start_props$breaks)
+hist(results_filt$dis$edge_dist[! is.na(results_filt$dis$stable_lifetime)] ,xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), main = '', ylab = '')
 mtext('B',adj=0,cex=1.5)
 
 plot(results_filt$a$edge_dist[! is.na(results_filt$a$stable_lifetime)], results_filt$a$stable_lifetime[! is.na(results_filt$a$stable_lifetime)], ylab='Stable Lifetime (min)',xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), xlim=range(start_props$breaks))
@@ -147,3 +174,4 @@ pdf(file.path(out_folder,'birth_death_corr.pdf'))
 par(bty='n',mar=c(4.2,4.1,2,0.2))
 errbar(corrs$x,corrs$y,corrs$yplus,corrs$yminus, ylab ='Correlation', xlab ='Exp Number')
 graphics.off()
+
