@@ -754,18 +754,18 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_val = 0.05, pos_slope = FALSE) {
+filter_mixed_results <- function(results, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
 		res = results[[i]]
 
-		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq > needed_R_sq
+		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq >= min_R_sq
 					   & is.finite(corr$assembly$slope) & is.finite(corr$assembly$p_val) 
-					   & corr$assembly$p_val <= needed_p_val)
-		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq > needed_R_sq 
+					   & corr$assembly$p_val <= max_p_val)
+		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq >= min_R_sq 
 						  & is.finite(corr$disassembly$slope) & is.finite(corr$disassembly$p_val) 
-						  & corr$disassembly$p_val <= needed_p_val)
+						  & corr$disassembly$p_val <= max_p_val)
 		
 		if (pos_slope) {
 			assembly_filt = assembly_filt & corr$assembly$slope > 0
@@ -778,6 +778,8 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_v
 		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$disassembly$R_sq[disassembly_filt])
 		points$assembly$p_val = c(points$assembly$p_val, corr$assembly$p_val[assembly_filt])
 		points$disassembly$p_val = c(points$disassembly$p_val, corr$disassembly$p_val[disassembly_filt])
+		points$assembly$offset = c(points$assembly$offset, corr$assembly$offset[assembly_filt])
+		points$disassembly$offset = c(points$disassembly$offset, corr$disassembly$offset[disassembly_filt])
 
 		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
 		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
@@ -824,30 +826,32 @@ filter_mixed_results <- function(results, corrected, needed_R_sq=0.9, needed_p_v
 	points
 }
 
-filter_mixed_area <- function(area_results, corrected, needed_R_sq=0.9, needed_p_val = 0.05, pos_slope = FALSE) {
+filter_mixed_area <- function(area, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
-		res = area_results[[i]]
+		res = area[[i]]
 
-		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq > needed_R_sq
+		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq >= min_R_sq
 					   & is.finite(corr$assembly$slope) & is.finite(corr$assembly$p_val) 
-					   & corr$assembly$p_val <= needed_p_val)
-		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq > needed_R_sq 
+					   & corr$assembly$p_val <= max_p_val)
+		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq > min_R_sq 
 						  & is.finite(corr$disassembly$slope) & is.finite(corr$disassembly$p_val) 
-						  & corr$disassembly$p_val <= needed_p_val)
+						  & corr$disassembly$p_val <= max_p_val)
 		
 		if (pos_slope) {
 			assembly_filt = assembly_filt & corr$assembly$slope > 0
 			disassembly_filt = disassembly_filt & corr$disassembly$slope > 0
 		}				  
-
+	
 		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
 		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
 		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
 		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
 		points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
 		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
+		points$assembly$offset = c(points$assembly$offset, res$assembly$offset[assembly_filt])
+		points$disassembly$offset = c(points$disassembly$offset, res$disassembly$offset[disassembly_filt])
 
 		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
 		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
@@ -893,7 +897,6 @@ filter_mixed_area <- function(area_results, corrected, needed_R_sq=0.9, needed_p
 	
 	points
 }
-
 
 gather_general_props <- function(results) {
 	points = list()

@@ -63,13 +63,16 @@ my @available_data_types = &gather_data_types;
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
-print "\n\nCreating Individual Adhesion Property Files\n" if $opt{debug};
+print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 &output_single_adhesion_props;
 @single_ad_props = ();
 undef @single_ad_props;
 
-print "\n\nCreating Adhesion Lineage Property Files\n", if $opt{debug};
+print "\n\nCreating/Outputing Time Series Property Files\n" if $opt{debug};
+&gather_and_output_time_series_properties;
+
+print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
 
 if (not($opt{skip_lin_regions})) {
@@ -80,6 +83,10 @@ if (not($opt{skip_lin_regions})) {
 ###############################################################################
 # Functions
 ###############################################################################
+
+#######################################
+#Raw Data Gathering/Converting
+#######################################
 sub convert_data_to_units {
     my %data_sets = %{ $_[0] };
     my %cfg       = %{ $_[1] };
@@ -170,6 +177,43 @@ sub output_single_adhesion_props {
     my $output_file =
       catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{individual_adhesions_props_file});
     &output_mat_csv(\@single_ad_props, $output_file);
+}
+
+#######################################
+#Time Series Props
+#######################################
+sub gather_and_output_time_series_properties {
+    my @cell_size_sequence = &gather_cell_size_time_series;
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Cell_size.csv");
+    &output_mat_csv(\@cell_size_sequence, $output_file);
+    
+    my @total_ad_size = &gather_total_adhesion_size_time_series;
+    $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Ad_size.csv");
+    &output_mat_csv(\@total_ad_size, $output_file);
+}
+
+sub gather_cell_size_time_series {
+    my @cell_size_sequence;
+    for my $i_num (keys %data_sets) {
+        die "Greater than one entry in the Cell_size field in image number $i_num" 
+          if scalar(@{$data_sets{$i_num}{Cell_size}}) > 1;
+        
+        push @cell_size_sequence, $data_sets{$i_num}{Cell_size}[0];
+    }
+    return @cell_size_sequence;
+}
+
+sub gather_total_adhesion_size_time_series {
+    my @total_ad_size;
+    for my $i_num (keys %data_sets) {
+        my $this_total_size = 0;
+        for my $this_size (@{$data_sets{$i_num}{Area}}) {
+            $this_total_size += $this_size;
+        }
+        
+        push @total_ad_size, $this_total_size;
+    }
+    return @total_ad_size;
 }
 
 #######################################
