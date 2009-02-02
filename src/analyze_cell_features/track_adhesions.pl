@@ -156,10 +156,12 @@ sub make_tracking_mat {
         &check_tracking_mat_integrity;
 
         delete $data_sets{$i_num};
-        unlink(catfile($cfg{individual_results_folder}, $i_num, $opt{input})) if (not $opt{keep_data_files});
-        
+        if (not($opt{keep_data_files})) {
+            unlink(catfile($cfg{individual_results_folder}, $i_num, $opt{input}));
+        }
+
         #Remove the last image's data file, if keep_data_files is not true
-        if (not $opt{keep_data_files} && $_ == ($#data_keys - 1)) { 
+        if (not($opt{keep_data_files}) && ($_ == ($#data_keys - 1))) { 
             unlink(catfile($cfg{individual_results_folder}, $next_i_num, $opt{input}));
         }
     }
@@ -260,29 +262,58 @@ sub track_live_adhesions {
             #centroid distances, most of the time, this matrix will only contain
             #one value, either way, the first entry in this matrix will always
             #be our winner
-            my @close_p_sim_by_dist_indexes = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
+            my @close_p_sim_by_dist = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
             
-            $tracking_guess = $close_p_sim_by_dist_indexes[0];
+            $tracking_guess = $close_p_sim_by_dist[0];
             
             #Now for some additional data collection: detecting split birth
             #events and cases where the adhesion with the best pixel similarity
             #was not selected
-            if (scalar(@p_sim_close_ad_nums) > 1) {
-                foreach my $ad_num (@close_p_sim_by_dist_indexes[1 .. $#close_p_sim_by_dist_indexes]) {
-                    if (exists $tracking_facts{$i_num}{split_birth_quant}[$ad_num]) {
-                        if ($tracking_facts{$i_num}{split_birth_quant}[$ad_num] < $p_sim_to_next_ads[$ad_num]) {
-                            $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
-                            $tracking_facts{$i_num}{split_birth_quant}[$ad_num] = $p_sim_to_next_ads[$ad_num];
-                        }
-                    } else {
-                        $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist_indexes[0];
-                        $tracking_facts{$i_num}{split_birth_quant}[$ad_num] = $p_sim_to_next_ads[$ad_num];
+            
+            #Find adhesions that are close in pixel similiarity to the winning
+            #adhesion, but not close enough to trigger a tracking decision based
+            #on distance. As the variable name implies it will be used to find
+            #split birth events.
+            my @split_birth_p_sim_close = grep {
+                if ($p_sim_to_next_ads[$_] >= $high_p_sim * $prop_indeter_percent * 0.5) {
+                    1;
+                } else {
+                    0;
+                }
+            } (0 .. $#p_sim_to_next_ads);
+            my @split_birth_p_sim_by_dist = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @split_birth_p_sim_close;
+            my $split_length_before = scalar(@split_birth_p_sim_by_dist);
+
+            #Remove the winning adhesion from the split birth distance list, as
+            #it should not be included in split birth decisions
+            @split_birth_p_sim_by_dist = map {
+                if ($close_p_sim_by_dist[0] != $_) {
+                    $_;
+                }
+            } @split_birth_p_sim_by_dist;
+            my $split_length_after = scalar(@split_birth_p_sim_by_dist);
+            
+            die "Problem with removing winning adhesion from split birth list." 
+              if (($split_length_after + 1) == $split_length_before);
+            
+            foreach my $ad_num (@split_birth_p_sim_by_dist) {
+                if (exists $tracking_facts{$i_num}{split_birth_overlap}[$ad_num]) {
+                    if ($tracking_facts{$i_num}{split_birth_overlap}[$ad_num] < $p_sim_to_next_ads[$ad_num]) {
+                        $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist[0];
+                        $tracking_facts{$i_num}{split_birth_overlap}[$ad_num] = $p_sim_to_next_ads[$ad_num];
                     }
+                } else {
+                    $tracking_facts{$i_num}{split_birth}[$ad_num] = $split_birth_p_sim_by_dist[0];
+                    $tracking_facts{$i_num}{split_birth_overlap}[$ad_num] = $p_sim_to_next_ads[$ad_num];
                 }
+            }
+
+            if ($close_p_sim_by_dist[0] != $sorted_p_sim_indexes[0]) {
+                $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
+            }
+
+            if (scalar(@close_p_sim_by_dist) > 0) {
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
-                if ($close_p_sim_by_dist_indexes[0] != $sorted_p_sim_indexes[0]) {
-                    $tracking_facts{$i_num}{best_pix_sim_not_selected}++;
-                }
             }
         } else {
 
