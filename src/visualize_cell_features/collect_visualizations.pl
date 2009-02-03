@@ -45,7 +45,6 @@ our @files;
 find(\&include_in_vis, catdir($cfg{exp_results_folder}, $cfg{tracking_folder}));
 
 my @movie_params = map {
-    my $base_dir = catdir($cfg{exp_results_folder}, $cfg{tracking_folder});
     my $movie_path = $_;
     $movie_path =~ s/(.*)\.csv/$1/;
     {
@@ -75,7 +74,9 @@ foreach (@movie_params) {
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
 
-&FA_job::run_matlab_progam(\@matlab_code,\%opt);
+if (not($opt{config_only})) {
+    &FA_job::run_matlab_progam(\@matlab_code,\%opt);
+}
 
 ###############################################################################
 #Functions
@@ -107,6 +108,8 @@ sub build_matlab_visualization_config {
         $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
     }
 
+    my $single_ad_folder = dirname($params{'movie_path'});
+    
     my $excluded_image_nums = "[" . join(",", @{ $cfg{exclude_image_nums} }) . "]";
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
@@ -130,6 +133,8 @@ sub build_matlab_visualization_config {
 
         "out_path = fullfile(base_results_folder,'$params{movie_path}');",
         "out_prefix = {'" . join("\',\'", @{ $cfg{movie_output_prefix} }) . "'};\n",
+        
+        "out_path_single = fullfile(base_results_folder,'$single_ad_folder');\n",
 
         "excluded_image_nums = $excluded_image_nums;",
         "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');",

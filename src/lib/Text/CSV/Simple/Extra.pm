@@ -39,6 +39,10 @@ sub output_mat_csv {
     my @mat = @{$_[0]};
     my $file = $_[1];
 
+    if (ref($mat[0]) ne "ARRAY") {
+        @mat = [@mat];
+    }
+    
     my $out_hand = new IO::File ">" . $file or die "Unable to create csv file: $file";
     my $csv = Text::CSV->new();
 

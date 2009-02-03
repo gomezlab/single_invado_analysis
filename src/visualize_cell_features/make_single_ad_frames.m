@@ -53,6 +53,15 @@ if (i_p.Results.debug), tracking_seq = tracking_seq(672,:); end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%The bounding matrix will hold the proper ranges to cut out only the
+%relavent area for each adhesion's life cycle. The matrix is initialized
+%with values that will always be replaced and the data is structured like
+%this:
+%   Column 1: top corner left (row)
+%   Column 2: top corner left (column)
+%   Column 3: bottom corner right (row)
+%   Column 4: bottom corner right (column)
 bounding_matrix = [Inf*ones(size(tracking_seq,1),1), Inf*ones(size(tracking_seq,1),1), ...
     -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
 
@@ -169,7 +178,7 @@ for j = 1:max_image_num
         if (all(surrounding_entries <= 0))
             if (size(all_images{i},2) > 0)
                 padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
-                output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
+                output_file = fullfile(out_path_single,'single_ad', ['montage_',padded_num, '.png']);
                 write_montage_image_set(all_images{i},output_file)
                 all_images{i} = cell(0);
             end
@@ -206,7 +215,7 @@ for i = 1:size(all_images,1)
     if (size(all_images{i}, 2) == 0), continue; end
 
     padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
-    output_file = fullfile(out_path,'single_ad', ['montage_',padded_num, '.png']);
+    output_file = fullfile(out_path_single,'single_ad', ['montage_',padded_num, '.png']);
     write_montage_image_set(all_images{i},output_file)
 end
 

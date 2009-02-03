@@ -42,7 +42,13 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 							normed = normed, log.trans = log.trans, 
 							boot.samp = boot.samp, save.exp_data = save.exp_data, debug=debug)
         
-        results[[i]]$exp_dir = dirs[[i]]
+        regex_range = regexpr("time_series_[[:digit:]]",dirs[[i]])
+        if (regex_range[1] == -1) {
+        	results[[i]]$exp_dir = dirs[[i]]
+        } else {
+        	results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
+        }
+        
         if (! is.na(results.file)) {
             this_result = results[[i]]
             save(this_result,file = file.path(dirs[[i]],results.file))
@@ -822,6 +828,40 @@ filter_mixed_results <- function(results, corrected, min_R_sq=0.9, max_p_val = 0
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)
 	points$joint = as.data.frame(points$joint)
+	
+	points
+}
+
+gather_offset_differences <- function(results_long, results_short, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {
+	points = list()
+	for (i in 1:length(results_long)) {
+		long = results_long[[i]]
+		short = results_short[[i]]
+
+		assembly_filt = (is.finite(long$assembly$R_sq) & long$assembly$R_sq >= min_R_sq
+					   & is.finite(long$assembly$slope) & is.finite(long$assembly$p_val) 
+					   & long$assembly$p_val <= max_p_val)
+		disassembly_filt = (is.finite(long$disassembly$R_sq) & long$disassembly$R_sq >= min_R_sq 
+						  & is.finite(long$disassembly$slope) & is.finite(long$disassembly$p_val) 
+						  & long$disassembly$p_val <= max_p_val)
+		
+		if (pos_slope) {
+			assembly_filt = assembly_filt & long$assembly$slope > 0
+			disassembly_filt = disassembly_filt & long$disassembly$slope > 0
+		}				  
+	
+		points$assembly$offset = c(points$assembly$offset, long$a$off[assembly_filt] - short$a$off[assembly_filt])
+		points$disassembly$offset = c(points$disassembly$offset, long$d$off[disassembly_filt] - short$d$off[disassembly_filt])
+		points$assembly$R_sq = c(points$assembly$R_sq, long$a$R_sq[assembly_filt] - short$a$R_sq[assembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, long$d$R_sq[disassembly_filt] - short$d$R_sq[disassembly_filt])
+		
+		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, 
+											long$stable_lifetime[assembly_filt] - short$stable_lifetime[assembly_filt])
+		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, 
+											   long$stable_lifetime[disassembly_filt] - short$stable_lifetime[disassembly_filt])
+	}
+	points$assembly = as.data.frame(points$assembly)
+	points$disassembly = as.data.frame(points$disassembly)
 	
 	points
 }
