@@ -70,7 +70,7 @@ print "\n\nOutputing Tracking Matrix\n" if $opt{debug};
 my $tracking_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
 mkpath(dirname($tracking_output_file));
 &output_mat_csv(\@tracking_mat, $tracking_output_file);
-my $birth_map_output_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{birth_map_output_file});
+my $birth_map_output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{birth_map_output_file});
 &output_mat_csv(\@birth_mat, $birth_map_output_file);
 
 ###############################################################################
