@@ -114,11 +114,6 @@ bounding_matrix(bounding_matrix(:,4) > i_size(1),4) = i_size(1);
 assert(all(all(isnumeric(bounding_matrix))),'Error: part of bounding matrix is not numeric')
 assert(all(all(bounding_matrix >= 1)),'Error: part of bounding matrix is less than 1')
 
-lineage_lengths = zeros(1,size(tracking_seq,1));
-for i = 1:size(tracking_seq,1)
-    lineage_lengths(i) = sum(tracking_seq(i,:) > 0);
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Build Single Ad Image Sequences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

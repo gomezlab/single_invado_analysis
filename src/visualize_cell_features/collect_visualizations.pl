@@ -39,17 +39,15 @@ my %cfg = ParseConfig(\%opt);
 ###############################################################################
 #Main Program
 ###############################################################################
-my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
-
 our @files;
 find(\&include_in_vis, catdir($cfg{exp_results_folder}, $cfg{tracking_folder}));
 
 my @movie_params = map {
-    my $movie_path = $_;
-    $movie_path =~ s/(.*)\.csv/$1/;
+    my $file_name_no_csv = $_;
+    $file_name_no_csv =~ s/(.*)\.csv/$1/;
     {
         tracking_file => $_,
-        movie_path    => catdir($cfg{movie_output_folder}, $movie_path),
+        movie_path    => catdir($cfg{movie_output_folder}, $file_name_no_csv),
     }
 } @files;
 
@@ -65,6 +63,7 @@ foreach (@movie_params) {
     
     &write_matlab_config(%params);
     
+    my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
     push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
         push @matlab_code, "make_single_ad_frames('" . $params{'config_file'} . "'$movie_debug_string)";
@@ -123,6 +122,8 @@ sub build_matlab_visualization_config {
         "base_results_folder = fullfile('" . join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})) .  "', exp_name);\n",
 
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n",
+        
+        "lin_time_series_folder = fullfile(base_results_folder, '$cfg{adhesion_props_folder}', '$cfg{lineage_ts_folder}');\n",
 
         "focal_image = '$cfg{adhesion_image_file}';",
         "adhesions_filename = 'adhesions.png';",
@@ -143,12 +144,15 @@ sub build_matlab_visualization_config {
         "image_padding_min = $cfg{padding_min};",
         "single_image_padding_min = $cfg{single_ad_padding_min};\n",
     );
+    
+    #Add the config file flag for outputing the original images, trimmed with
+    #the bounding box, when the tracking file used in this config file is the
+    #default tracking file
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
         push @config_lines, "output_original_image = 1;";
     } else {
         push @config_lines, "output_original_image = 0;";
     }
-
 
     if (exists($cfg{pixel_size})) {
         push @config_lines, "pixel_size = $cfg{pixel_size};\n";
