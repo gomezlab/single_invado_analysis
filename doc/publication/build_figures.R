@@ -1,46 +1,65 @@
 rm(list = ls())
 source('linear_regions.R')
 library(lattice)
+library(geneplotter)
 
 ################################################################################
 #Result loading
 ################################################################################
-results = list()
-corr_results = list()
-area = list()
-
 exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/lin_time_series/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 results = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
 corr_results = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
 area = load_results(exp_dirs,file.path('..','area_model.Rdata'))
 
-################################################################################
+########################################
 #Result filtering
-################################################################################
+########################################
 general_props = gather_general_props(results)
 
-results_nofilt = filter_mixed_results(results, corr_results, needed_R_sq = -Inf, needed_p_val = 1.1)
-area_nofilt = filter_mixed_area(area, corr_results, needed_R_sq = -Inf, needed_p_val = 1.1)
+results_nofilt = filter_mixed_results(results, corr_results, min_R_sq = -Inf, max_p_val = Inf)
+area_nofilt = filter_mixed_area(area, corr_results, min_R_sq = -Inf, max_p_val = Inf)
 
 results_filt = filter_mixed_results(results, corr_results)
 area_filt = filter_mixed_area(results, corr_results)
 
-################################################################################
+########################################
 #Result loading (6 required time points)
-################################################################################
-exp_dirs <- Sys.glob('../../results/focal_adhesions_6/*/adhesion_props/lin_time_series/')
+########################################
+exp_dirs <- Sys.glob('../../results/lin_region_variation/6/*/adhesion_props/lin_time_series/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 results_6 = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
 corr_results_6 = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
 shrunk_results_6 = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rdata'))
 
-################################################################################
-#Result filtering (10 required time points)
-################################################################################
-results_nofilt_6 = filter_mixed_results(results_6, corr_results_6, needed_R_sq = -Inf, needed_p_val = 1.1)
+########################################
+#Result filtering (6 required time points)
+########################################
+results_nofilt_6 = filter_mixed_results(results_6, corr_results_6, min_R_sq = -Inf, max_p_val = 1.1)
 
 results_filt_6 = filter_mixed_results(results_6, corr_results_6)
+
+########################################
+#Result loading (10 required time points)
+########################################
+exp_dirs <- Sys.glob('../../results/lin_region_variation/10/*/adhesion_props/lin_time_series/')
+exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
+results_10 = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
+corr_results_10 = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
+shrunk_results_10 = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rdata'))
+
+########################################
+#Result filtering (10 required time points)
+########################################
+results_nofilt_10 = filter_mixed_results(results_10, corr_results_10, min_R_sq = -Inf, max_p_val = 1.1)
+
+results_filt_10 = filter_mixed_results(results_10, corr_results_10)
+
+########################################
+#Results Comparisons
+########################################
+offset_comparison = gather_offset_differences(results,results_6);
+
 
 ################################################################################
 #Plotting
@@ -67,10 +86,41 @@ out_folder = '../../doc/publication/figures/'
 ########################################
 #Comparing Area/Kinetics
 ########################################
-pdf(file.path(out_folder,'area_vs_kinetics.pdf'))
-par(bty='n', mar=c(5,4.2,2,0))
+pdf(file.path(out_folder,'area_vs_intensity_rsq.pdf'),height=12)
+layout(rbind(c(1,2),c(3),c(4)), height=c(1,2,2))
 
+par(bty='n', mar=c(5,4.2,2,0.1))
+hist(area_nofilt$a$R, main="Assembling Area R squared", xlab='')
+mtext('A',adj=0,cex=1.5)
+hist(area_nofilt$d$R, main="Dissembling Area R squared", xlab='')
+mtext('B',adj=0,cex=1.5)
 
+plot(results_nofilt$a$R_sq,area_nofilt$a$R, xlab="Assembling Intensity R squared", ylab = "Assembling Area R squared", main='Pearson Correlation (95% Conf): 0.53-0.59')
+mtext('C',adj=0,cex=1.5)
+
+plot(results_nofilt$d$R_sq,area_nofilt$d$R, xlab="Disassembling Intensity R squared", ylab = "Disassembling Area R squared", main='Pearson Correlation (95% Conf): 0.58-0.64')
+mtext('D',adj=0,cex=1.5)
+graphics.off()
+
+pdf(file.path(out_folder,'area_vs_intensity_slope.pdf'))
+layout(rbind(c(1,2),c(3,4)))
+par(bty='n', mar=c(5,4.2,2,0.1))
+
+smoothScatter(results_nofilt$a$sl,area_nofilt$a$sl, xlab='Intensity Slope', ylab='Area Slope', main='Assembly')
+abline(lm(area_nofilt$a$sl~results_nofilt$a$sl), col='red')
+mtext('A',adj=0,cex=1.5)
+
+plot(results_filt$a$sl,area_filt$a$sl, xlab='Filtered Intensity Slope', ylab='Filtered Area Slope', main='Assembly')
+abline(lm(area_filt$a$sl~results_filt$a$sl), col='red')
+mtext('B',adj=0,cex=1.5)
+
+smoothScatter(results_nofilt$d$sl,area_nofilt$d$sl, xlab='Intensity Slope', ylab='Area Slope', main='Disassembly')
+abline(lm(area_nofilt$d$sl~results_nofilt$d$sl), col='red')
+mtext('C',adj=0,cex=1.5)
+
+plot(results_filt$d$sl,area_filt$d$sl, xlab='Filtered Intensity Slope', ylab='Filtered Area Slope', main ='Disassembly')
+abline(lm(area_filt$d$sl~results_filt$d$sl),col='red')
+mtext('D',adj=0,cex=1.5)
 graphics.off()
 
 ########################################
@@ -82,7 +132,7 @@ layout(rbind(c(1,2),c(3,4),c(5)))
 par(bty='n', mar=c(5,4.2,2,0))
 plot_ad_seq(corr_results[[1]],672);
 mtext('A',adj=0,cex=1.5)
-plot_ad_seq(corr_results[[1]],672,type='late');
+plot_ad_seq(corr_results[[1]],672,type='disassembly');
 mtext('B',adj=0,cex=1.5)
 
 par(mar=c(4.5,2.5,2,0))
@@ -94,6 +144,42 @@ mtext('D',adj=0,cex=1.5)
 par(mar=c(2.6,5,2,0))
 boxplot_with_points(list(results_filt$a$slope,results_filt$dis$slope), names=c(paste('Assembly (n=',length(results_filt$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
 mtext('E',adj=0,cex=1.5)
+
+#Required length 6 Kinetics
+par(bty='n', mar=c(5,4.2,2,0))
+plot_ad_seq(corr_results[[1]],672);
+mtext('A',adj=0,cex=1.5)
+plot_ad_seq(corr_results[[1]],672,type='disassembly');
+mtext('B',adj=0,cex=1.5)
+
+par(mar=c(4.5,2.5,2,0))
+hist(results_nofilt_6$a$R, main='Assembly', ylab='', xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_6$a$R_sq),')', sep=''), freq=TRUE)
+mtext('C',adj=0,cex=1.5)
+hist(results_nofilt_6$dis$R,main='Disassembly',ylab='',xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_6$d$R_sq),')', sep=''), freq=TRUE)
+mtext('D',adj=0,cex=1.5)
+
+par(mar=c(2.6,5,2,0))
+boxplot_with_points(list(results_filt_6$a$slope,results_filt_6$dis$slope), names=c(paste('Assembly (n=',length(results_filt_6$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt_6$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
+mtext('E',adj=0,cex=1.5)
+
+
+#Required Length 10 Kinetics
+par(bty='n', mar=c(5,4.2,2,0))
+plot_ad_seq(corr_results[[1]],672);
+mtext('A',adj=0,cex=1.5)
+plot_ad_seq(corr_results[[1]],672,type='disassembly');
+mtext('B',adj=0,cex=1.5)
+
+par(mar=c(4.5,2.5,2,0))
+hist(results_nofilt_10$a$R, main='Assembly', ylab='', xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_10$a$R_sq),')', sep=''), freq=TRUE)
+mtext('C',adj=0,cex=1.5)
+hist(results_nofilt_10$dis$R,main='Disassembly',ylab='',xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_10$d$R_sq),')', sep=''), freq=TRUE)
+mtext('D',adj=0,cex=1.5)
+
+par(mar=c(2.6,5,2,0))
+boxplot_with_points(list(results_filt_10$a$slope,results_filt_10$dis$slope), names=c(paste('Assembly (n=',length(results_filt_10$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt_10$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
+mtext('E',adj=0,cex=1.5)
+
 graphics.off()
 
 ########################################

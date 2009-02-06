@@ -1101,6 +1101,10 @@ if (length(args) != 0) {
 	gather_bilinear_models_from_dirs(args, 
 		data_file='Area.csv', 
 		results.file=file.path('..','area_model.Rdata'))
+
+	gather_bilinear_models_from_dirs(args, 
+		data_file='Box_intensity.csv', 
+		results.file=file.path('..','box_model.Rdata'))
 		
 	write_high_r_rows(ave_results[[1]],file.path(args[1],'..','for_vis'))
 }
