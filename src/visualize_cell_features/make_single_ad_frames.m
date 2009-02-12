@@ -50,26 +50,38 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
-
+tracking_seq_length = size(tracking_seq);
 
 if (   isempty(strmatch('start_row', i_p.UsingDefaults)) ...
     && isempty(strmatch('end_row', i_p.UsingDefaults)))
 
     assert(i_p.Results.start_row <= size(tracking_seq,1));
     assert(i_p.Results.end_row <= size(tracking_seq,1));
-    tracking_seq = tracking_seq(i_p.Results.start_row:i_p.Results.end_row,:);
+    tracking_beginning = zeros(i_p.Results.start_row - 1,size(tracking_seq,2));
+    tracking_middle = tracking_seq(i_p.Results.start_row:i_p.Results.end_row,:);
+    tracking_end = zeros(size(tracking_seq,1) - i_p.Results.end_row, size(tracking_seq,2));
+    
+    tracking_seq = [tracking_beginning; tracking_middle; tracking_end];
     
 elseif (isempty(strmatch('start_row', i_p.UsingDefaults)))
 
     assert(i_p.Results.start_row <= size(tracking_seq,1));
-    tracking_seq = tracking_seq(i_p.Results.start_row:end,:);
+    tracking_beginning = zeros(i_p.Results.start_row - 1,size(tracking_seq,2));
+    tracking_end = tracking_seq(i_p.Results.start_row:end,:);
+    
+    tracking_seq = [tracking_beginning; tracking_end];
     
 elseif (isempty(strmatch('end_row', i_p.UsingDefaults)))
     
     assert(i_p.Results.end_row <= size(tracking_seq,1));
-    tracking_seq = tracking_seq(1:i_p.Results.end_row,:);
+    tracking_beginning = tracking_seq(1:i_p.Results.end_row,:);
+    tracking_end = zeros(size(tracking_seq,1) - i_p.Results.end_row, size(tracking_seq,2));
+    
+    tracking_seq = [tracking_beginning; tracking_end];
     
 end
+assert(all(size(tracking_seq) == tracking_seq_length));
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
@@ -132,9 +144,6 @@ bounding_matrix(:,3:4) = ceil(bounding_matrix(:,3:4));
 bounding_matrix(bounding_matrix(:,3) > i_size(2),3) = i_size(2);
 bounding_matrix(bounding_matrix(:,4) > i_size(1),4) = i_size(1);
 
-assert(all(all(isnumeric(bounding_matrix))),'Error: part of bounding matrix is not numeric')
-assert(all(all(bounding_matrix >= 1)),'Error: part of bounding matrix is less than 1')
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Build Single Ad Image Sequences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,7 +202,7 @@ for j = 1:max_image_num
 
         if (all(surrounding_entries <= 0))
             if (size(all_images{i},2) > 0)
-                padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
+                padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_length(1)))),'d'],i);
                 output_file = fullfile(out_path_single,'single_ad', ['montage_',padded_num, '.png']);
                 write_montage_image_set(all_images{i},output_file)
                 all_images{i} = cell(0);
@@ -230,7 +239,7 @@ end
 for i = 1:size(all_images,1)
     if (size(all_images{i}, 2) == 0), continue; end
 
-    padded_num = sprintf(['%0',num2str(length(num2str(size(all_images,1)))),'d'],i);
+    padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_length(1)))),'d'],i);
     output_file = fullfile(out_path_single,'single_ad', ['montage_',padded_num, '.png']);
     write_montage_image_set(all_images{i},output_file)
 end
