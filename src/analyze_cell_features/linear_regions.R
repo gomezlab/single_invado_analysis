@@ -177,9 +177,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
 
 	#Search the beginning of the sequence for a linear fit
-	assembly_slope_calcudisassemblyd = FALSE;
+	assembly_slope_calculated = FALSE;
 	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status) {
-		assembly_slope_calcudisassemblyd = TRUE;
+		assembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			assembly_subset = this_data_set[1:j,]
 			if (normed) {
@@ -228,9 +228,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	}
 	
 	#Search the end of the sequence for a linear fit
-	disassembly_slope_calcudisassemblyd = FALSE;
+	disassembly_slope_calculated = FALSE;
 	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status) {
-		disassembly_slope_calcudisassemblyd = TRUE;
+		disassembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			disassembly_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
 			if (normed) {
@@ -282,10 +282,10 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	
 	#With the R squared matrix calcudisassemblyd reset the r_sq componenets to NA, if needed since 
 	#there were no fits calcudisassemblyd for them
-	if (! assembly_slope_calcudisassemblyd) {
+	if (! assembly_slope_calculated) {
 		results$assembly$R_sq[1] = NA
 	}	
-	if (! disassembly_slope_calcudisassemblyd) {
+	if (! disassembly_slope_calculated) {
 		results$disassembly$R_sq[1] = NA
 	}
 	
@@ -882,7 +882,7 @@ filter_mixed_area <- function(area, corrected, min_R_sq=0.9, max_p_val = 0.05, p
 		if (pos_slope) {
 			assembly_filt = assembly_filt & corr$assembly$slope > 0
 			disassembly_filt = disassembly_filt & corr$disassembly$slope > 0
-		}				  
+		}
 	
 		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
 		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
