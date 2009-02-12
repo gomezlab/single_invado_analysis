@@ -43,7 +43,9 @@ my %cfg = &ParseConfig(\%opt);
 ###############################################################################
 
 if ($opt{lsf}) {
-    my @command = "$0 -cfg $opt{cfg} -input data.stor";
+    my $extra = "";
+    $extra .= " -keep_data_files" if $opt{keep_data_files};
+    my @command = "$0 -cfg $opt{cfg} -input $opt{input} $extra";
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking');    
     &FA_job::run_general_lsf_program(\@command,\%opt);
     
@@ -275,36 +277,37 @@ sub track_live_adhesions {
             #on distance. As the variable name implies it will be used to find
             #split birth events.
             my @split_birth_p_sim_close = grep {
-                if ($p_sim_to_next_ads[$_] >= $high_p_sim * $prop_indeter_percent * 0.5) {
+                if ($p_sim_to_next_ads[$_] > 0) {
                     1;
                 } else {
                     0;
                 }
             } (0 .. $#p_sim_to_next_ads);
-            my @split_birth_p_sim_by_dist = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @split_birth_p_sim_close;
             my $split_length_before = scalar(@split_birth_p_sim_by_dist);
 
             #Remove the winning adhesion from the split birth distance list, as
             #it should not be included in split birth decisions
-            @split_birth_p_sim_by_dist = map {
+            @split_birth_p_sim_close = map {
                 if ($close_p_sim_by_dist[0] != $_) {
                     $_;
                 }
-            } @split_birth_p_sim_by_dist;
+            } @split_birth_p_sim_close;
             my $split_length_after = scalar(@split_birth_p_sim_by_dist);
             
             die "Problem with removing winning adhesion from split birth list." 
               if (($split_length_after + 1) == $split_length_before);
             
-            foreach my $ad_num (@split_birth_p_sim_by_dist) {
+            foreach my $ad_num (@split_birth_p_sim_close) {
                 if (exists $tracking_facts{$i_num}{split_birth_overlap}[$ad_num]) {
                     if ($tracking_facts{$i_num}{split_birth_overlap}[$ad_num] < $p_sim_to_next_ads[$ad_num]) {
                         $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist[0];
                         $tracking_facts{$i_num}{split_birth_overlap}[$ad_num] = $p_sim_to_next_ads[$ad_num];
+                        $tracking_facts{$i_num}{split_birth_ness}[$ad_num] = $p_sim_to_next_ads[$ad_num]/$high_p_sim;
                     }
                 } else {
                     $tracking_facts{$i_num}{split_birth}[$ad_num] = $split_birth_p_sim_by_dist[0];
                     $tracking_facts{$i_num}{split_birth_overlap}[$ad_num] = $p_sim_to_next_ads[$ad_num];
+                    $tracking_facts{$i_num}{split_birth_ness}[$ad_num] = $p_sim_to_next_ads[$ad_num]/$high_p_sim;
                 }
             }
 
@@ -316,7 +319,7 @@ sub track_live_adhesions {
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
             }
         } else {
-
+            
             #Case 3
             $tracking_guess = $sorted_dist_indexes[0];
         }

@@ -13,7 +13,7 @@ use Data::Dumper;
 ###############################################################################
 # Module Definition
 ###############################################################################
-my %opt = ("queue" => "week", "output_file" => "out.txt", 
+my %opt = ("queue" => "idle", "output_file" => "out.txt", 
            "error_file" => "error.txt", "folder" => "./",
            "runtime" => "24",);
 

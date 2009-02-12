@@ -56,8 +56,9 @@ if ($opt{lsf}) {
         [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
         [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
         [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
+        [ [ "../visualize_cell_features", "./collect_visualizations.pl -only_config" ], ],
+        [ [ "../analyze_cell_features",   "./collect_box_intensity.pl" ], ],
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-        [ [ "../analyze_cell_features",   "./filter_tracking_matrix.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
     );
     if ($opt{skip_vis}) {
@@ -116,7 +117,7 @@ close OUTPUT;
 #######################################
 
 sub wait_till_LSF_jobs_finish {
-    for (1 .. 6) {
+    for (1 .. 3) {
         my $sleep_time = 5;
         do {
             sleep($sleep_time);
