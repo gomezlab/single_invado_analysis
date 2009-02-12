@@ -20,6 +20,8 @@ i_p.FunctionName = 'MAKE_SINGLE_AD_FRAMES';
 
 i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('start_row',1,@(x)x >= 1);
+i_p.addParamValue('end_row',1,@(x)x >= 1);
 
 i_p.parse(cfg_file,varargin{:});
 if (i_p.Results.debug == 1), profile off; profile on; end
@@ -48,7 +50,26 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
-if (i_p.Results.debug), tracking_seq = tracking_seq(672,:); end
+
+
+if (   isempty(strmatch('start_row', i_p.UsingDefaults)) ...
+    && isempty(strmatch('end_row', i_p.UsingDefaults)))
+
+    assert(i_p.Results.start_row <= size(tracking_seq,1));
+    assert(i_p.Results.end_row <= size(tracking_seq,1));
+    tracking_seq = tracking_seq(i_p.Results.start_row:i_p.Results.end_row,:);
+    
+elseif (isempty(strmatch('start_row', i_p.UsingDefaults)))
+
+    assert(i_p.Results.start_row <= size(tracking_seq,1));
+    tracking_seq = tracking_seq(i_p.Results.start_row:end,:);
+    
+elseif (isempty(strmatch('end_row', i_p.UsingDefaults)))
+    
+    assert(i_p.Results.end_row <= size(tracking_seq,1));
+    tracking_seq = tracking_seq(1:i_p.Results.end_row,:);
+    
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices

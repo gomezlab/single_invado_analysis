@@ -16,6 +16,7 @@ use Getopt::Long;
 use Data::Dumper;
 use File::Spec::Functions;
 use Benchmark;
+use POSIX;
 
 use Config::Adhesions qw(ParseConfig);
 use Image::Stack;
@@ -52,6 +53,7 @@ my @movie_params = map {
 } @files;
 
 my @matlab_code;
+my %single_ad_params;
 foreach (@movie_params) {
     my %params = %{$_};
 
@@ -66,9 +68,11 @@ foreach (@movie_params) {
     my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
     push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
-        push @matlab_code, "make_single_ad_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+        %single_ad_params = %params;
     }
 }
+
+push @matlab_code, &build_single_ad_commands(%single_ad_params);
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
@@ -102,10 +106,6 @@ sub write_matlab_config {
 
 sub build_matlab_visualization_config {
     my %params = @_;
-
-    if (not exists $params{'tracking_file'}) {
-        $params{'tracking_file'} = catdir($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
-    }
 
     my $single_ad_folder = dirname($params{'movie_path'});
     
@@ -159,6 +159,25 @@ sub build_matlab_visualization_config {
     }
 
     return @config_lines;
+}
+
+sub build_single_ad_commands {
+    my %single_ad_params = @_;
+    
+
+    open TRACKING_FILE, catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
+    my @tracking_file = <TRACKING_FILE>;
+    my $line_count = scalar(@tracking_file);
+    close TRACKING_FILE;
+
+    my @commands;
+    for (0 .. (ceil($line_count/1000) - 1)) {
+        my $start_row = $_ * 1000 + 1;
+        my $end_row = $start_row + 999;
+        $end_row = $line_count if $end_row > $line_count;
+        push @commands, "make_single_ad_frames('" . $single_ad_params{'config_file'} . "','start_row',$start_row,'end_row',$end_row)";
+    }
+    return @commands;
 }
 
 ###############################################################################
