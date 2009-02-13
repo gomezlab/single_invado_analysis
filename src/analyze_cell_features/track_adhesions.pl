@@ -61,8 +61,11 @@ my %tracking_probs;
 my %tracking_facts;
 &make_tracking_mat;
 
+#&output_mat_csv(\@{$tracking_facts{"no_pix_sim_dist"}}, "no_sim_dist.csv");
+#&output_mat_csv(\@{$tracking_facts{"no_pix_sim_ratio"}}, "no_sim_ratio.csv");
+
 print "\n\nTracking Results\n" if $opt{debug};
-&output_tracking_facts         if $opt{debug};
+#&output_tracking_facts         if $opt{debug};
 print "\n"                     if $opt{debug};
 
 print "\n\nOutputing Tracking Problem Data\n" if $opt{debug};
@@ -187,6 +190,7 @@ sub track_live_adhesions {
 
     my @time_step_dists  = @{ $data_sets{$i_num}{Cent_dist} };
     my @time_step_p_sims = @{ $data_sets{$i_num}{Pix_sim} };
+    my @time_areas = @{ $data_sets{$i_num}{Area} };
 
     my $prop_indeter_percent = 0.8;
     $prop_indeter_percent = $cfg{prop_indeter_percent} if defined $cfg{prop_indeter_percent};
@@ -267,7 +271,7 @@ sub track_live_adhesions {
             my @close_p_sim_by_dist = sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } @p_sim_close_ad_nums;
             
             $tracking_guess = $close_p_sim_by_dist[0];
-            
+
             #Now for some additional data collection: detecting split birth
             #events and cases where the adhesion with the best pixel similarity
             #was not selected
@@ -283,7 +287,7 @@ sub track_live_adhesions {
                     0;
                 }
             } (0 .. $#p_sim_to_next_ads);
-            my $split_length_before = scalar(@split_birth_p_sim_by_dist);
+            my $split_length_before = scalar(@split_birth_p_sim_close);
 
             #Remove the winning adhesion from the split birth distance list, as
             #it should not be included in split birth decisions
@@ -292,7 +296,7 @@ sub track_live_adhesions {
                     $_;
                 }
             } @split_birth_p_sim_close;
-            my $split_length_after = scalar(@split_birth_p_sim_by_dist);
+            my $split_length_after = scalar(@split_birth_p_sim_close);
             
             die "Problem with removing winning adhesion from split birth list." 
               if (($split_length_after + 1) == $split_length_before);
@@ -300,12 +304,12 @@ sub track_live_adhesions {
             foreach my $ad_num (@split_birth_p_sim_close) {
                 if (exists $tracking_facts{$i_num}{split_birth_overlap}[$ad_num]) {
                     if ($tracking_facts{$i_num}{split_birth_overlap}[$ad_num] < $p_sim_to_next_ads[$ad_num]) {
-                        $tracking_facts{$i_num}{split_birth}[$ad_num] = $close_p_sim_by_dist[0];
+                        $tracking_facts{$i_num}{split_birth}[$ad_num] = $tracking_guess;
                         $tracking_facts{$i_num}{split_birth_overlap}[$ad_num] = $p_sim_to_next_ads[$ad_num];
                         $tracking_facts{$i_num}{split_birth_ness}[$ad_num] = $p_sim_to_next_ads[$ad_num]/$high_p_sim;
                     }
                 } else {
-                    $tracking_facts{$i_num}{split_birth}[$ad_num] = $split_birth_p_sim_by_dist[0];
+                    $tracking_facts{$i_num}{split_birth}[$ad_num] = $tracking_guess;
                     $tracking_facts{$i_num}{split_birth_overlap}[$ad_num] = $p_sim_to_next_ads[$ad_num];
                     $tracking_facts{$i_num}{split_birth_ness}[$ad_num] = $p_sim_to_next_ads[$ad_num]/$high_p_sim;
                 }
@@ -319,9 +323,17 @@ sub track_live_adhesions {
                 $tracking_facts{$i_num}{multiple_good_p_sims}++;
             }
         } else {
-            
+
             #Case 3
             $tracking_guess = $sorted_dist_indexes[0];
+            
+
+            if ($dist_to_next_ads[$tracking_guess]/$time_areas[$adhesion_num] >= 5) {
+                $tracking_guess = -1;
+            } else {
+                push @{$tracking_facts{"no_pix_sim_dist"}}, $dist_to_next_ads[$tracking_guess];
+                push @{$tracking_facts{"no_pix_sim_ratio"}}, $dist_to_next_ads[$tracking_guess]/$time_areas[$adhesion_num];
+            }
         }
 
         push @{ $tracking_mat[$i] }, $tracking_guess;
