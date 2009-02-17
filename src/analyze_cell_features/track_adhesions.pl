@@ -204,15 +204,15 @@ sub track_live_adhesions {
     #
     #    Live Tracking Cases:
     #
-    #    1. There is a single pixel similarity value that is much higher than the
-    #       other values, select the adhesion with the best similarity
+    #    1. There is a single pixel similarity value that is much higher than
+    #    the other values, select the adhesion with the best similarity
     #
-    #    2. There are multiple adhesions with close pixel similarity value to the
-    #       current adhesion, select the adhesion with the smallest distance between
-    #       the centriods
+    #    2. There are multiple adhesions with close pixel similarity value to
+    #    the current adhesion, select the adhesion with the smallest distance
+    #    between the centriods
     #
     #    3. There is no pixel similarity to the next adhesion set, select the
-    #       adehsion with the smallest distance between the centriods
+    #    adehsion with the smallest distance between the centriods
     #
     #    Notes:
     #

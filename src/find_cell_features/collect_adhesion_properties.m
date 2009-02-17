@@ -53,7 +53,7 @@ for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Variance_adhesion_signal = var(orig_I(labeled_adhesions == i));
     adhesion_props(i).Max_adhesion_signal = max(orig_I(labeled_adhesions == i));
     adhesion_props(i).Min_adhesion_signal = min(orig_I(labeled_adhesions == i));
-
+    
     this_ad = labeled_adhesions;
     this_ad(labeled_adhesions ~= i) = 0;
     this_ad = logical(this_ad);
@@ -65,7 +65,7 @@ for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Background_adhesion_signal = mean(orig_I(background_region));
     adhesion_props(i).Background_area = sum(background_region(:));
     adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
-
+    
     shrunk_region = logical(imerode(this_ad,strel('disk',1,0)));
     if (sum(shrunk_region(:)) == 0), shrunk_region = this_ad; end
     adhesion_props(i).Shrunk_area = sum(shrunk_region(:));
@@ -87,14 +87,14 @@ if (exist('protrusion_data','var'))
             
             adhesion_props(j).Edge_speed(i,1) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2))));
         end
-    end    
+    end
 end
 
 if (exist('cell_mask','var'))
     [dists, indices] = bwdist(~cell_mask);
     cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
     cell_centroid = cell_centroid.Centroid;
-
+    
     for i=1:max(labeled_adhesions(:))
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid;
@@ -104,8 +104,8 @@ if (exist('cell_mask','var'))
         else
             adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
             [cep_x,cep_y] = ind2sub(size(cell_mask), indices(centroid_pos(2), centroid_pos(1)));
-            adhesion_props(i).Closest_edge_pixel = [cep_x,cep_y]; 
-
+            adhesion_props(i).Closest_edge_pixel = [cep_x,cep_y];
+            
             adhesion_props(i).Centroid_dist_from_center = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
             adhesion_props(i).Angle_to_center = acos((centroid_unrounded(1) - cell_centroid(1))/adhesion_props(i).Centroid_dist_from_center);
             assert(adhesion_props(i).Angle_to_center >= 0 && adhesion_props(i).Angle_to_center <= pi, 'Error: angle to center out of range: %d',adhesion_props(i).Angle_to_center);
@@ -120,9 +120,9 @@ if (exist('cell_mask','var'))
             end
         end
     end
-
+    
     [border_row,border_col] = ind2sub(size(cell_mask),find(bwperim(cell_mask)));
     adhesion_props(1).Border_pix = [border_col,border_row];
-
+    
     adhesion_props(1).Cell_size = sum(cell_mask(:));
 end

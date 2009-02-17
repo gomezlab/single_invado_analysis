@@ -2,6 +2,7 @@ rm(list = ls())
 source('linear_regions.R')
 library(lattice)
 library(geneplotter)
+library(Hmisc)
 
 ################################################################################
 #Result loading
@@ -11,55 +12,20 @@ exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 results = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
 corr_results = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
 area = load_results(exp_dirs,file.path('..','area_model.Rdata'))
+box_results = load_results(exp_dirs,file.path('..','box_model.Rdata'))
 
 ########################################
 #Result filtering
 ########################################
 general_props = gather_general_props(results)
 
-results_nofilt = filter_mixed_results(results, corr_results, min_R_sq = -Inf, max_p_val = Inf)
-area_nofilt = filter_mixed_area(area, corr_results, min_R_sq = -Inf, max_p_val = Inf)
+results_nofilt = filter_mixed_results(results, results, min_R_sq = -Inf, max_p_val = Inf)
+area_nofilt = filter_mixed_area(area, results, min_R_sq = -Inf, max_p_val = Inf)
+box_nofilt = filter_mixed_area(box_results, box_results, min_R_sq = -Inf, max_p_val = Inf)
 
-results_filt = filter_mixed_results(results, corr_results)
-area_filt = filter_mixed_area(results, corr_results)
-
-########################################
-#Result loading (6 required time points)
-########################################
-exp_dirs <- Sys.glob('../../results/lin_region_variation/6/*/adhesion_props/lin_time_series/')
-exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
-results_6 = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
-corr_results_6 = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
-shrunk_results_6 = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rdata'))
-
-########################################
-#Result filtering (6 required time points)
-########################################
-results_nofilt_6 = filter_mixed_results(results_6, corr_results_6, min_R_sq = -Inf, max_p_val = 1.1)
-
-results_filt_6 = filter_mixed_results(results_6, corr_results_6)
-
-########################################
-#Result loading (10 required time points)
-########################################
-exp_dirs <- Sys.glob('../../results/lin_region_variation/10/*/adhesion_props/lin_time_series/')
-exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
-results_10 = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
-corr_results_10 = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
-shrunk_results_10 = load_results(exp_dirs,file.path('..','shrunk_intensity_model.Rdata'))
-
-########################################
-#Result filtering (10 required time points)
-########################################
-results_nofilt_10 = filter_mixed_results(results_10, corr_results_10, min_R_sq = -Inf, max_p_val = 1.1)
-
-results_filt_10 = filter_mixed_results(results_10, corr_results_10)
-
-########################################
-#Results Comparisons
-########################################
-offset_comparison = gather_offset_differences(results,results_6);
-
+results_filt = filter_mixed_results(results, results)
+area_filt = filter_mixed_area(area, results)
+box_filt = filter_mixed_area(box_results, box_results)
 
 ################################################################################
 #Plotting
@@ -82,6 +48,24 @@ out_folder = '../../doc/publication/figures/'
 ########################################
 #General Properties
 ########################################
+test <- read.table('../../results/focal_adhesions/time_series_01/adhesion_props/individual_adhesions.csv', header=TRUE, sep=",");
+filt_by_area = test$Area >= min(test$Area)*3 & test$I_num <= 2
+print(sum(filt_by_area)) 
+
+pdf(file.path(out_folder,'general_props.pdf'))
+
+layout(cbind(c(1,1,2,2,3,3), c(0,4,4,5,5,0)))
+par(bty='n', mar=c(5,4.2,2,0.1))
+hist(test$Area[filt_by_area], main="", )
+mtext('A',adj=0,cex=1.5)
+hist(test$Average_adhesion_signal[filt_by_area], main="")
+hist(test$MajorAxisLength[filt_by_area]/test$MinorAxisLength[filt_by_area], main="")
+
+plot(test$Area[filt_by_area],test$Average_adhesion_signal[filt_by_area])
+mtext('B',adj=0,cex=1.5)
+plot(test$Area[filt_by_area],test$MajorAxisLength[filt_by_area]/test$MinorAxisLength[filt_by_area])
+mtext('C',adj=0,cex=1.5)
+graphics.off()
 
 ########################################
 #Comparing Area/Kinetics
@@ -130,9 +114,9 @@ pdf(file.path(out_folder,'kinetics.pdf'),height=9)
 layout(rbind(c(1,2),c(3,4),c(5)))
 
 par(bty='n', mar=c(5,4.2,2,0))
-plot_ad_seq(corr_results[[1]],672);
+plot_ad_seq(corr_results[[1]],675);
 mtext('A',adj=0,cex=1.5)
-plot_ad_seq(corr_results[[1]],672,type='disassembly');
+plot_ad_seq(corr_results[[1]],675,type='disassembly');
 mtext('B',adj=0,cex=1.5)
 
 par(mar=c(4.5,2.5,2,0))
@@ -145,40 +129,21 @@ par(mar=c(2.6,5,2,0))
 boxplot_with_points(list(results_filt$a$slope,results_filt$dis$slope), names=c(paste('Assembly (n=',length(results_filt$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
 mtext('E',adj=0,cex=1.5)
 
-#Required length 6 Kinetics
-par(bty='n', mar=c(5,4.2,2,0))
-plot_ad_seq(corr_results[[1]],672);
-mtext('A',adj=0,cex=1.5)
-plot_ad_seq(corr_results[[1]],672,type='disassembly');
-mtext('B',adj=0,cex=1.5)
-
-par(mar=c(4.5,2.5,2,0))
-hist(results_nofilt_6$a$R, main='Assembly', ylab='', xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_6$a$R_sq),')', sep=''), freq=TRUE)
-mtext('C',adj=0,cex=1.5)
-hist(results_nofilt_6$dis$R,main='Disassembly',ylab='',xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_6$d$R_sq),')', sep=''), freq=TRUE)
-mtext('D',adj=0,cex=1.5)
-
-par(mar=c(2.6,5,2,0))
-boxplot_with_points(list(results_filt_6$a$slope,results_filt_6$dis$slope), names=c(paste('Assembly (n=',length(results_filt_6$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt_6$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
-mtext('E',adj=0,cex=1.5)
-
-
-#Required Length 10 Kinetics
-par(bty='n', mar=c(5,4.2,2,0))
-plot_ad_seq(corr_results[[1]],672);
-mtext('A',adj=0,cex=1.5)
-plot_ad_seq(corr_results[[1]],672,type='disassembly');
-mtext('B',adj=0,cex=1.5)
-
-par(mar=c(4.5,2.5,2,0))
-hist(results_nofilt_10$a$R, main='Assembly', ylab='', xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_10$a$R_sq),')', sep=''), freq=TRUE)
-mtext('C',adj=0,cex=1.5)
-hist(results_nofilt_10$dis$R,main='Disassembly',ylab='',xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt_10$d$R_sq),')', sep=''), freq=TRUE)
-mtext('D',adj=0,cex=1.5)
-
-par(mar=c(2.6,5,2,0))
-boxplot_with_points(list(results_filt_10$a$slope,results_filt_10$dis$slope), names=c(paste('Assembly (n=',length(results_filt_10$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt_10$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
-mtext('E',adj=0,cex=1.5)
+#par(bty='n', mar=c(5,4.2,2,0))
+#plot_ad_seq(corr_results[[1]],672);
+#mtext('A',adj=0,cex=1.5)
+#plot_ad_seq(corr_results[[1]],672,type='disassembly');
+#mtext('B',adj=0,cex=1.5)
+#
+#par(mar=c(4.5,2.5,2,0))
+#hist(box_nofilt$a$R, main='Assembly', ylab='', xlab=paste('Adjusted R Squared Values (n=',length(box_nofilt$a$R_sq),')', sep=''), freq=TRUE)
+#mtext('C',adj=0,cex=1.5)
+#hist(box_nofilt$dis$R,main='Disassembly',ylab='',xlab=paste('Adjusted R Squared Values (n=',length(box_nofilt$d$R_sq),')', sep=''), freq=TRUE)
+#mtext('D',adj=0,cex=1.5)
+#
+#par(mar=c(2.6,5,2,0))
+#boxplot_with_points(list(box_filt$a$slope,box_filt$dis$slope), names=c(paste('Assembly (n=',length(box_filt$a$R_sq),')', sep=''), paste('Disassembly (n=',length(box_filt$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
+#mtext('E',adj=0,cex=1.5)
 
 graphics.off()
 
@@ -255,9 +220,48 @@ for (i in 1:length(birth_rate)) {
 	corrs$yminus = c(corrs$yminus, temp$conf.int[1])
 }
 
-library(Hmisc)
+
 pdf(file.path(out_folder,'birth_death_corr.pdf'))
 par(bty='n',mar=c(4.2,4.1,2,0.2))
 errbar(corrs$x,corrs$y,corrs$yplus,corrs$yminus, ylab ='Correlation', xlab ='Exp Number')
 graphics.off()
 
+########################################
+#Split Birth Filter ROC Curve
+########################################
+
+sb_thresh = list()
+sb_thresh$level = c(1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.01)
+sb_thresh$no_filt_num = c(2001, 1967, 1885, 1814, 1739, 1642, 1591, 1535, 1496, 1437, 1377)
+sb_thresh$no_filt_neg = c(519, 492, 442, 395, 358, 307, 282, 252, 234, 201, 171)
+sb_thresh$no_filt_pos = sb_thresh$no_filt_num - sb_thresh$no_filt_neg
+sb_thresh$filt_num = c(378, 375, 368, 358, 350, 341, 336, 331, 329, 323, 317)
+sb_thresh$filt_neg = c(39, 36, 30, 23, 22, 17, 15, 12, 12, 8, 5)
+sb_thresh$filt_pos = sb_thresh$filt_num - sb_thresh$filt_neg
+
+no_filt_init_num = 2202;
+no_filt_init_neg = 611;
+filt_init_num = 395;
+filt_init_neg = 44;
+
+true_pos = no_filt_init_neg - sb_thresh$no_filt_neg
+false_pos = no_filt_init_num - no_filt_init_neg - sb_thresh$no_filt_pos
+false_neg = sb_thresh$no_filt_neg
+true_neg = sb_thresh$no_filt_pos
+
+sensitivity = true_pos/(true_pos + false_neg)
+specificity = true_neg/(true_neg + false_pos)
+
+plot(1 - specificity, sensitivity, xlim=c(0,1), ylim=c(0,1), typ='l')
+segments(0,0,1,1)
+
+true_pos_filt = filt_init_neg - sb_thresh$filt_neg
+false_pos_filt = filt_init_num - filt_init_neg - sb_thresh$filt_pos
+false_neg_filt = sb_thresh$filt_neg
+true_neg_filt = sb_thresh$filt_pos
+
+sensitivity = true_pos_filt/(true_pos_filt + false_neg_filt)
+specificity = true_neg_filt/(true_neg_filt + false_pos_filt)
+
+plot(1 - specificity, sensitivity, xlim=c(0,1), ylim=c(0,1))
+segments(0,0,1,1)

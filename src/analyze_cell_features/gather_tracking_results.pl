@@ -134,7 +134,9 @@ sub gather_single_ad_props {
     my @data;
 
     my @possible_data_types =
-      qw(Area Average_adhesion_signal Eccentricity Solidity Centroid_dist_from_edge Centroid_dist_from_center Variance_adhesion_signal);
+      qw(Area Average_adhesion_signal Eccentricity Solidity MajorAxisLength 
+         MinorAxisLength Centroid_dist_from_edge Centroid_dist_from_center 
+         Variance_adhesion_signal);
 
     my @single_ad_data_types = map {
         my $type = $_;
