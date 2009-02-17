@@ -10,6 +10,7 @@ use strict;
 use File::Temp qw/ tempfile tempdir /;
 use File::Spec::Functions;
 use File::Path;
+use File::Basename;
 use Getopt::Long;
 use Data::Dumper;
 use Storable;
@@ -20,7 +21,6 @@ use POSIX;
 use Config::Adhesions qw(ParseConfig);
 use Image::Data::Collection;
 use Text::CSV::Simple::Extra;
-use Math::R;
 use Emerald;
 use FA_job;
 
@@ -666,7 +666,12 @@ sub gather_lineage_summary_data {
 #######################################
 sub run_R_linear_region_code {
     my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder});
-    my $R_cmd = "R CMD BATCH --vanilla --args -$data_dir linear_regions.R";
+    
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis', 'R_out.txt');
+    if (! -e dirname($output_file)) {
+        mkpath(dirname($output_file));
+    }
+    my $R_cmd = "R CMD BATCH --vanilla --args -$data_dir linear_regions.R $output_file";
     system($R_cmd);
 }
 

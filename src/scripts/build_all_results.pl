@@ -71,7 +71,7 @@ if ($opt{lsf}) {
         my @command_seq = @{$_};
         my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
         &execute_command_seq(\@command_seq, $starting_dir);
-        &wait_till_LSF_jobs_finish;
+        &wait_till_LSF_jobs_finish if not($opt{debug});
     }
     find(\&remove_unimportant_errors, ($cfg{results_folder}));
 } else {

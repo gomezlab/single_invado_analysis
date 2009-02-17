@@ -9,6 +9,8 @@ use strict;
 use warnings;
 use IO::File;
 use Text::CSV;
+use File::Basename;
+use File::Path;
 
 our @EXPORT = qw( input_mat_csv output_mat_csv output_hash_csv );
 use Exporter;
@@ -41,6 +43,10 @@ sub output_mat_csv {
 
     if (ref($mat[0]) ne "ARRAY") {
         @mat = [@mat];
+    }
+
+    if (! -e dirname($file)) {
+        mkpath(dirname($file))
     }
     
     my $out_hand = new IO::File ">" . $file or die "Unable to create csv file: $file";
