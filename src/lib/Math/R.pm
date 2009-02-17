@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use File::Path;
 use File::Basename;
-use File::Temp;
+use File::Temp ();
 
 package Math::R;
 

@@ -47,7 +47,7 @@ adhesion_props = regionprops(labeled_adhesions,'all');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-quiv_mat = zeros(max(labeled_adhesions(:)),4);
+
 for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Average_adhesion_signal = mean(orig_I(labeled_adhesions == i));
     adhesion_props(i).Variance_adhesion_signal = var(orig_I(labeled_adhesions == i));
