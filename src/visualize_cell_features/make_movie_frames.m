@@ -50,8 +50,6 @@ i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
 
-ghost_frames_count = Inf;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find edges of image data in adhesion images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +86,7 @@ for i = 1:max_image_num
     if (i_seen + 1 > size(tracking_seq,2))
         continue;
     end
-
+    
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
 
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end

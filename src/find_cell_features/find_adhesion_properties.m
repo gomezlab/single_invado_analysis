@@ -50,7 +50,7 @@ adhesions = imread(adhesions_file);
 
 %check if protrusion_file is specified, read it in if i_num is also
 %specified
-if (not(strmatch('protrusion_file',i_p.UsingDefaults)))
+if (isempty(strmatch('protrusion_file',i_p.UsingDefaults)))
     if (not(strmatch('i_num',i_p.UsingDefaults)))
         warning('AdhesionProps:dataloading','Protrusion file specified, but don''t know which image number to use for this image, not including protrusion data.');
     else

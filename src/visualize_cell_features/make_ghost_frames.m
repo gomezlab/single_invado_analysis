@@ -209,6 +209,8 @@ for i = 1:max_image_num
             this_cmap(these_ad_nums,:) = time_cmap(cmap_nums,:);
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
             highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
+            
+            if(i_p.Results.debug), disp(i_seen); end
         end
         
         ghost_image_dir = fullfile(out_path,'ghost_images');

@@ -14,17 +14,21 @@ corr_results = load_results(exp_dirs,file.path('..','corrected_intensity_model.R
 area = load_results(exp_dirs,file.path('..','area_model.Rdata'))
 box_results = load_results(exp_dirs,file.path('..','box_model.Rdata'))
 
+ind_results <- load_data_file(exp_dirs,file.path('..','individual_adhesions.csv'));
+
 ########################################
 #Result filtering
 ########################################
 general_props = gather_general_props(results)
 
-results_nofilt = filter_mixed_results(results, results, min_R_sq = -Inf, max_p_val = Inf)
-area_nofilt = filter_mixed_area(area, results, min_R_sq = -Inf, max_p_val = Inf)
+results_nofilt = filter_mixed_results(results, corr_results, min_R_sq = -Inf, max_p_val = Inf)
+corr_nofilt = filter_mixed_area(corr_results, corr_results, min_R_sq = -Inf, max_p_val = Inf)
+area_nofilt = filter_mixed_area(area, corr_results, min_R_sq = -Inf, max_p_val = Inf)
 box_nofilt = filter_mixed_area(box_results, box_results, min_R_sq = -Inf, max_p_val = Inf)
 
-results_filt = filter_mixed_results(results, results)
-area_filt = filter_mixed_area(area, results)
+results_filt = filter_mixed_results(results, corr_results)
+corr_filt = filter_mixed_area(corr_results, corr_results)
+area_filt = filter_mixed_area(area, corr_results)
 box_filt = filter_mixed_area(box_results, box_results)
 
 ################################################################################
@@ -48,22 +52,27 @@ out_folder = '../../doc/publication/figures/'
 ########################################
 #General Properties
 ########################################
-test <- read.table('../../results/focal_adhesions/time_series_01/adhesion_props/individual_adhesions.csv', header=TRUE, sep=",");
-filt_by_area = test$Area >= min(test$Area)*3 & test$I_num <= 2
-print(sum(filt_by_area)) 
+plot_ind_data = list()
+
+for (i in 1:length(ind_results)) {
+	res = ind_results[[i]]
+	filt_by_area = res$Area >= min(res$Area)*3 & res$I_num == 1
+	plot_ind_data$Area = c(plot_ind_data$Area, res$Area[filt_by_area]);
+	plot_ind_data$ad_sig = c(plot_ind_data$ad_sig, res$Average_adhesion_signal[filt_by_area]);
+	plot_ind_data$axial_r = c(plot_ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);		
+}
 
 pdf(file.path(out_folder,'general_props.pdf'))
-
 layout(cbind(c(1,1,2,2,3,3), c(0,4,4,5,5,0)))
 par(bty='n', mar=c(5,4.2,2,0.1))
-hist(test$Area[filt_by_area], main="", )
+hist(plot_ind_data$Area, main="", ylab = "Adhesion Count", xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')))
 mtext('A',adj=0,cex=1.5)
-hist(test$Average_adhesion_signal[filt_by_area], main="")
-hist(test$MajorAxisLength[filt_by_area]/test$MinorAxisLength[filt_by_area], main="")
+hist(plot_ind_data$ad_sig, main="", ylab = "Adhesion Count", xlab = "Normalized Average Paxillin Intensity")
+hist(plot_ind_data$ax, main="", ylab = "Adhesion Count",  xlab = "Axial Ratio")
 
-plot(test$Area[filt_by_area],test$Average_adhesion_signal[filt_by_area])
+plot(plot_ind_data$Area, plot_ind_data$ad_sig, xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')), ylab = "Normalized Average Paxillin Intensity", pch=19, cex=0.25)
 mtext('B',adj=0,cex=1.5)
-plot(test$Area[filt_by_area],test$MajorAxisLength[filt_by_area]/test$MinorAxisLength[filt_by_area])
+plot(plot_ind_data$Area,plot_ind_data$ax, xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')), ylab = "Axial Ratio", pch=19, cex=0.25)
 mtext('C',adj=0,cex=1.5)
 graphics.off()
 
@@ -88,9 +97,9 @@ graphics.off()
 
 pdf(file.path(out_folder,'area_vs_intensity_slope.pdf'))
 layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(5,4.2,2,0.1))
+par(bty='n', mar=c(5,4.2,2,1))
 
-smoothScatter(results_nofilt$a$sl,area_nofilt$a$sl, xlab='Intensity Slope', ylab='Area Slope', main='Assembly')
+smoothScatter(results_nofilt$a$sl,area_nofilt$a$sl, nbin=64, xlab='Intensity Slope', ylab='Area Slope', main='Assembly')
 abline(lm(area_nofilt$a$sl~results_nofilt$a$sl), col='red')
 mtext('A',adj=0,cex=1.5)
 
@@ -98,7 +107,7 @@ plot(results_filt$a$sl,area_filt$a$sl, xlab='Filtered Intensity Slope', ylab='Fi
 abline(lm(area_filt$a$sl~results_filt$a$sl), col='red')
 mtext('B',adj=0,cex=1.5)
 
-smoothScatter(results_nofilt$d$sl,area_nofilt$d$sl, xlab='Intensity Slope', ylab='Area Slope', main='Disassembly')
+smoothScatter(results_nofilt$d$sl,area_nofilt$d$sl, nbin=64, xlab='Intensity Slope', ylab='Area Slope', main='Disassembly')
 abline(lm(area_nofilt$d$sl~results_nofilt$d$sl), col='red')
 mtext('C',adj=0,cex=1.5)
 
@@ -181,87 +190,43 @@ text(x_eq_y_point,25,paste('y=',sprintf('%.03f',coef(birth_vs_death_model)[[2]])
 mtext('E',adj=0,cex=1.5)
 graphics.off()
 
-########################################
-#Birth/Death Rates Figure
-########################################
-
-birth_rate = list()
-death_rate = list()
-ad_count = list()
-ad_diff = list()
-for (i in 1:length(results)) {
-	alive_dead_mat = ! is.na(results[[i]]$exp_data)
-	ad_count[[i]] = as.numeric(apply(alive_dead_mat, 2, sum))
-	ad_diff[[i]] = rep(0,length(ad_count[[i]]));
-	for (j in 2:length(ad_count[[i]])) {
-		ad_diff[[i]][j] = ad_count[[i]][j] - ad_count[[i]][j - 1]
-	}
-	
-	birth_rate[[i]] = rep(0,dim(results[[i]]$exp_data)[[2]]);
-	death_rate[[i]] = rep(0,dim(results[[i]]$exp_data)[[2]]);
-	for (j in 1:dim(results[[i]]$exp_data)[[1]]) {
-		birth_time = find_birth_time(alive_dead_mat[j,])
-		if (is.numeric(birth_time)) {
-			birth_rate[[i]][birth_time] = birth_rate[[i]][birth_time] + 1
-		}
-		death_time = find_death_time(alive_dead_mat[j,])
-		if (is.numeric(death_time)) {
-			death_rate[[i]][death_time] = death_rate[[i]][death_time] + 1
-		}		
-	}
-}
-
-corrs = list()
-corrs$x = 1:length(birth_rate)
-for (i in 1:length(birth_rate)) {
-	temp = cor.test(birth_rate[[i]], death_rate[[i]])
-	corrs$y = c(corrs$y, as.numeric(temp$est))
-	corrs$yplus = c(corrs$yplus, temp$conf.int[2])
-	corrs$yminus = c(corrs$yminus, temp$conf.int[1])
-}
-
-
-pdf(file.path(out_folder,'birth_death_corr.pdf'))
-par(bty='n',mar=c(4.2,4.1,2,0.2))
-errbar(corrs$x,corrs$y,corrs$yplus,corrs$yminus, ylab ='Correlation', xlab ='Exp Number')
-graphics.off()
 
 ########################################
 #Split Birth Filter ROC Curve
 ########################################
 
-sb_thresh = list()
-sb_thresh$level = c(1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.01)
-sb_thresh$no_filt_num = c(2001, 1967, 1885, 1814, 1739, 1642, 1591, 1535, 1496, 1437, 1377)
-sb_thresh$no_filt_neg = c(519, 492, 442, 395, 358, 307, 282, 252, 234, 201, 171)
-sb_thresh$no_filt_pos = sb_thresh$no_filt_num - sb_thresh$no_filt_neg
-sb_thresh$filt_num = c(378, 375, 368, 358, 350, 341, 336, 331, 329, 323, 317)
-sb_thresh$filt_neg = c(39, 36, 30, 23, 22, 17, 15, 12, 12, 8, 5)
-sb_thresh$filt_pos = sb_thresh$filt_num - sb_thresh$filt_neg
-
-no_filt_init_num = 2202;
-no_filt_init_neg = 611;
-filt_init_num = 395;
-filt_init_neg = 44;
-
-true_pos = no_filt_init_neg - sb_thresh$no_filt_neg
-false_pos = no_filt_init_num - no_filt_init_neg - sb_thresh$no_filt_pos
-false_neg = sb_thresh$no_filt_neg
-true_neg = sb_thresh$no_filt_pos
-
-sensitivity = true_pos/(true_pos + false_neg)
-specificity = true_neg/(true_neg + false_pos)
-
-plot(1 - specificity, sensitivity, xlim=c(0,1), ylim=c(0,1), typ='l')
-segments(0,0,1,1)
-
-true_pos_filt = filt_init_neg - sb_thresh$filt_neg
-false_pos_filt = filt_init_num - filt_init_neg - sb_thresh$filt_pos
-false_neg_filt = sb_thresh$filt_neg
-true_neg_filt = sb_thresh$filt_pos
-
-sensitivity = true_pos_filt/(true_pos_filt + false_neg_filt)
-specificity = true_neg_filt/(true_neg_filt + false_pos_filt)
-
-plot(1 - specificity, sensitivity, xlim=c(0,1), ylim=c(0,1))
-segments(0,0,1,1)
+#sb_thresh = list()
+#sb_thresh$level = c(1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.01)
+#sb_thresh$no_filt_num = c(2001, 1967, 1885, 1814, 1739, 1642, 1591, 1535, 1496, 1437, 1377)
+#sb_thresh$no_filt_neg = c(519, 492, 442, 395, 358, 307, 282, 252, 234, 201, 171)
+#sb_thresh$no_filt_pos = sb_thresh$no_filt_num - sb_thresh$no_filt_neg
+#sb_thresh$filt_num = c(378, 375, 368, 358, 350, 341, 336, 331, 329, 323, 317)
+#sb_thresh$filt_neg = c(39, 36, 30, 23, 22, 17, 15, 12, 12, 8, 5)
+#sb_thresh$filt_pos = sb_thresh$filt_num - sb_thresh$filt_neg
+#
+#no_filt_init_num = 2202;
+#no_filt_init_neg = 611;
+#filt_init_num = 395;
+#filt_init_neg = 44;
+#
+#true_pos = no_filt_init_neg - sb_thresh$no_filt_neg
+#false_pos = no_filt_init_num - no_filt_init_neg - sb_thresh$no_filt_pos
+#false_neg = sb_thresh$no_filt_neg
+#true_neg = sb_thresh$no_filt_pos
+#
+#sensitivity = true_pos/(true_pos + false_neg)
+#specificity = true_neg/(true_neg + false_pos)
+#
+#plot(1 - specificity, sensitivity, xlim=c(0,1), ylim=c(0,1), typ='l')
+#segments(0,0,1,1)
+#
+#true_pos_filt = filt_init_neg - sb_thresh$filt_neg
+#false_pos_filt = filt_init_num - filt_init_neg - sb_thresh$filt_pos
+#false_neg_filt = sb_thresh$filt_neg
+#true_neg_filt = sb_thresh$filt_pos
+#
+#sensitivity = true_pos_filt/(true_pos_filt + false_neg_filt)
+#specificity = true_neg_filt/(true_neg_filt + false_pos_filt)
+#
+#plot(1 - specificity, sensitivity, xlim=c(0,1), ylim=c(0,1))
+#segments(0,0,1,1)

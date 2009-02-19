@@ -40,22 +40,23 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 		results[[i]] <- gather_bilinear_models(exp_data, exp_props, 
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log.trans = log.trans, 
-							boot.samp = boot.samp, save.exp_data = save.exp_data, debug=debug)
-        
+							boot.samp = boot.samp, save.exp_data = save.exp_data, debug=debug);
+        print("just after")
+		stopifnot(1)
         regex_range = regexpr("time_series_[[:digit:]]",dirs[[i]])
         if (regex_range[1] == -1) {
-        	results[[i]]$exp_dir = dirs[[i]]
+        	results[[i]]$exp_dir = dirs[[i]];
         } else {
         	results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
         }
         
         if (! is.na(results.file)) {
-            this_result = results[[i]]
-            save(this_result,file = file.path(dirs[[i]],results.file))
+            this_result = results[[i]];
+            save(this_result,file = file.path(dirs[[i]],results.file));
         }
 	}
 	
-	results
+	results;
 }
 
 gather_bilinear_models <- function(data_set, props, 
@@ -779,7 +780,7 @@ filter_mixed_results <- function(results, corrected, min_R_sq=0.9, max_p_val = 0
 		}				  
 	
 		points$assembly$slope = c(points$assembly$slope, corr$assembly$slope[assembly_filt])
-		points$disassembly$slope = c(points$disassembly$slope,corr$disassembly$slope[disassembly_filt])
+		points$disassembly$slope = c(points$disassembly$slope, corr$disassembly$slope[disassembly_filt])
 		points$assembly$R_sq = c(points$assembly$R_sq, corr$assembly$R_sq[assembly_filt])
 		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$disassembly$R_sq[disassembly_filt])
 		points$assembly$p_val = c(points$assembly$p_val, corr$assembly$p_val[assembly_filt])
@@ -967,6 +968,20 @@ load_results <- function(dirs,file) {
 	results
 }
 
+load_data_file <- function(dirs,file) {
+	results = list()
+	for (i in 1:length(dirs)) {
+		this_file = file.path(dirs[i],file)
+		if (file.exists(this_file)) {
+			results[[i]] = read.table(file.path(dirs[i],file), header=TRUE, sep=",")
+		}
+	}
+	if (length(results) == 1) {
+		results = results[[1]]
+	}
+	results
+}
+
 trim_args_list <- function(args) {
 	for (i in 1:length(args)) {
 		if (substr(args[i],0,1) == '-') {
@@ -1087,7 +1102,7 @@ args <- commandArgs(TRUE)
 if (length(args) != 0) {
 	args <- trim_args_list(args)
 	
-	ave_results = gather_bilinear_models_from_dirs(args, 
+	intensity_results = gather_bilinear_models_from_dirs(args, 
 		results.file=file.path('..','intensity_model.Rdata'))
 		
 	gather_bilinear_models_from_dirs(args, 
