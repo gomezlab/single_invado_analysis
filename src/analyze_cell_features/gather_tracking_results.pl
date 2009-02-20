@@ -228,13 +228,16 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     if (grep $_ eq "Edge_speed", @available_data_types) {
-        $props{edge_velo_summary} = &gather_overall_edge_velo_summary;
-        &output_mat_csv($props{edge_velo_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_summary.csv"));
+        ($props{pre_birth_summary}, $props{post_death_summary}) = &gather_overall_edge_velo_summary;
+        &output_mat_csv($props{pre_birth_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre.csv"));
+        &output_mat_csv($props{post_death_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post.csv"));
+        die;
     }
 
     #Pure Time Series Props
     my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal
-      Eccentricity Solidity Background_corrected_signal Shrunk_corrected_signal MajorAxisLength MinorAxisLength);
+      Eccentricity Solidity Background_corrected_signal Shrunk_corrected_signal 
+      MajorAxisLength MinorAxisLength);
     foreach (@ts_props) {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, @available_data_types));
@@ -298,66 +301,44 @@ sub gather_overall_edge_velo_summary {
 
     my $default_val = "NA";
     my @pre_birth_data;
-    my @birth_to_death_data;
-    my @post_death_to_end_data;
+    #my @birth_to_death_data;
+    my @post_death_data;
     my @data_keys = sort keys %data_sets;
-
+    
     #Collect all of the closest edge velocities right before birth
     for my $i (0 .. $#tracking_mat) {
         my $first_data_index = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[0];
         my $last_data_index  = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[-1];
 
         #Determine upto birth data points
+
+        #Data structure notes:
+        #   -the Edge_speed variables hold scalar projections between the
+        #   current position of the adhesion in any given time points and the
+        #   closest edge tracking point in EVERY image, so to get all the points
+        #   prior to birth we need only analyze the Edge_speed data from the
+        #   birth image
         my $birth_ad_num = $tracking_mat[$i][$first_data_index];
         die "First pre-birth adhesion number is not valid ($birth_ad_num)." if $birth_ad_num < 0;
-        my $i_num           = $data_keys[$first_data_index];
-        my @birth_velo_data = @{ $data_sets{$i_num}{Edge_speed} };
-        my @this_pre_birth  = @{ $birth_velo_data[$birth_ad_num] }[ 0 .. $first_data_index - 1 ];
+        my $birth_i_num           = $data_keys[$first_data_index];
+        my @birth_velo_data = @{ $data_sets{$birth_i_num}{Edge_speed} };
+        my @this_pre_birth  = @{ $birth_velo_data[$birth_ad_num] }[ 0 .. ($first_data_index - 1) ];
         push @pre_birth_data, \@this_pre_birth;
-
-        #Determine birth to death data points
-        my @this_birth_to_death;
-        for my $j ($first_data_index .. $last_data_index) {
-            my $i_num          = $data_keys[$j];
-            my @time_velo_data = @{ $data_sets{$i_num}{Edge_speed} };
-
-            my $ad_num = $tracking_mat[$i][$j];
-            die "Birth to death adhesion number is not valid ($ad_num)." if $ad_num < 0;
-
-            push @this_birth_to_death, $time_velo_data[$ad_num][$j];
-        }
-        die "No points in birth to death points, expected at least one, got ", scalar(@this_birth_to_death), "."
-          if scalar(@this_birth_to_death) < 1;
-        push @birth_to_death_data, \@this_birth_to_death;
 
         #Determine post death data points
         my $death_ad_num = $tracking_mat[$i][$last_data_index];
         die "Death adhesion number is not valid ($death_ad_num)." if $death_ad_num < 0;
-        $i_num = $data_keys[$last_data_index];
-        my @death_velo_data = @{ $data_sets{$i_num}{Edge_speed} };
+        my $death_i_num = $data_keys[$last_data_index];
+        my @death_velo_data = @{ $data_sets{$death_i_num}{Edge_speed} };
         my @this_post_death = @{ $birth_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $tracking_mat[$i] } ];
-        push @post_death_to_end_data, \@this_post_death;
-    }
-
-    die "Not all data matrices have the same number of data lines (Pre-birth: ", scalar(@pre_birth_data),
-      ", Birth-Death: ", scalar(@birth_to_death_data), ", Post-death: ", scalar(@post_death_to_end_data)
-      if ( scalar(@pre_birth_data) != scalar(@birth_to_death_data)
-        || scalar(@pre_birth_data) != scalar(@post_death_to_end_data));
-
-    my @total_seq_lengths =
-      map scalar(@{ $pre_birth_data[$_] }) +
-      scalar(@{ $birth_to_death_data[$_] }) +
-      scalar(@{ $post_death_to_end_data[$_] }), (0 .. $#pre_birth_data);
-    for (0 .. $#total_seq_lengths) {
-        die
-          "Total sequence lengths not the same in edge summary data collection, ($total_seq_lengths[0]) - ($total_seq_lengths[$_]) - $_"
-          if ($total_seq_lengths[0] != $total_seq_lengths[$_]);
+        push @post_death_data, \@this_post_death;
     }
 
     #Pad the pre-birth data to the longest data set
     my $max_length = &find_longest_row(@pre_birth_data);
+    print "Max birth: $max_length\n";
     for my $i (0 .. $#pre_birth_data) {
-        for (1 .. $max_length - scalar(@{ $pre_birth_data[$i] })) {
+        for (1 .. ($max_length - scalar(@{ $pre_birth_data[$i] }))) {
             unshift @{ $pre_birth_data[$i] }, $default_val;
         }
         die "Padding to longest length failed in pre-birth edge velocity, got ", scalar(@{ $pre_birth_data[$i] }),
@@ -365,48 +346,19 @@ sub gather_overall_edge_velo_summary {
           if scalar(@{ $pre_birth_data[$i] }) != $max_length;
     }
 
-    #Spread the birth to death data set to the length of the longest data set
-    $max_length = &find_longest_row(@birth_to_death_data);
-    for my $i (0 .. $#birth_to_death_data) {
-        my @new_birth_death_line;
-        for (1 .. $max_length) {
-            push @new_birth_death_line, $default_val;
-        }
-        if ($#{ $birth_to_death_data[$i] } == 0) {
-            $new_birth_death_line[0] = $birth_to_death_data[$i][0];
-        } else {
-            my @data_point_positions = map floor(($_ / $#{ $birth_to_death_data[$i] }) * ($max_length - 1)),
-              (0 .. $#{ $birth_to_death_data[$i] });
-            die if $data_point_positions[0] != 0;
-            die if $data_point_positions[-1] != $max_length - 1;
-
-            @new_birth_death_line[@data_point_positions] = @{$birth_to_death_data[$i]};
-        }
-        die "Padding to longest length failed in birth to death edge velocity, got ", scalar(@new_birth_death_line), " expected $max_length"
-          if scalar(@new_birth_death_line) != $max_length;
-
-        $birth_to_death_data[$i] = \@new_birth_death_line;
-    }
-
     #Pad the post-death data to the longest data set
-    $max_length = &find_longest_row(@post_death_to_end_data);
-    for my $i (0 .. $#post_death_to_end_data) {
-        for (1 .. $max_length - scalar(@{ $post_death_to_end_data[$i] })) {
-            push @{ $post_death_to_end_data[$i] }, $default_val;
+    $max_length = &find_longest_row(@post_death_data);
+    print "Max death: $max_length\n";
+    for my $i (0 .. $#post_death_data) {
+        for (1 .. ($max_length - scalar(@{ $post_death_data[$i] }))) {
+            push @{ $post_death_data[$i] }, $default_val;
         }
         die "Padding to longest length failed in post-death edge velocity, got ",
-          scalar(@{ $post_death_to_end_data[$i] }), " expected $max_length"
-          if scalar(@{ $post_death_to_end_data[$i] }) != $max_length;
+          scalar(@{ $post_death_data[$i] }), " expected $max_length"
+          if scalar(@{ $post_death_data[$i] }) != $max_length;
     }
 
-    #Put all the datasets into a single matrix
-    my @all_data;
-    for (0 .. $#birth_to_death_data) {
-        push @{$all_data[$_]}, @{$pre_birth_data[$_]};
-        push @{$all_data[$_]}, @{$birth_to_death_data[$_]};
-        push @{$all_data[$_]}, @{$post_death_to_end_data[$_]};
-    }
-    return \@all_data;
+    return (\@pre_birth_data, \@post_death_data);
 }
 
 sub find_longest_row {
@@ -414,8 +366,11 @@ sub find_longest_row {
 
     my @seq_lengths = map scalar(@{ $data[$_] }), (0 .. $#data);
     my $max_length = 0;
-    foreach (@seq_lengths) {
-        $max_length = $_ if $_ > $max_length;
+    my $row;
+    foreach (0 .. $#seq_lengths) {
+        my $length = $seq_lengths[$_];
+        $row = $_ if $length > $max_length;
+        $max_length = $length if $length > $max_length;
     }
     return $max_length;
 }
