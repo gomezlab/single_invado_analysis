@@ -231,7 +231,6 @@ sub gather_and_output_lineage_properties {
         ($props{pre_birth_summary}, $props{post_death_summary}) = &gather_overall_edge_velo_summary;
         &output_mat_csv($props{pre_birth_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre.csv"));
         &output_mat_csv($props{post_death_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post.csv"));
-        die;
     }
 
     #Pure Time Series Props
@@ -320,7 +319,7 @@ sub gather_overall_edge_velo_summary {
         #   birth image
         my $birth_ad_num = $tracking_mat[$i][$first_data_index];
         die "First pre-birth adhesion number is not valid ($birth_ad_num)." if $birth_ad_num < 0;
-        my $birth_i_num           = $data_keys[$first_data_index];
+        my $birth_i_num     = $data_keys[$first_data_index];
         my @birth_velo_data = @{ $data_sets{$birth_i_num}{Edge_speed} };
         my @this_pre_birth  = @{ $birth_velo_data[$birth_ad_num] }[ 0 .. ($first_data_index - 1) ];
         push @pre_birth_data, \@this_pre_birth;
@@ -328,15 +327,14 @@ sub gather_overall_edge_velo_summary {
         #Determine post death data points
         my $death_ad_num = $tracking_mat[$i][$last_data_index];
         die "Death adhesion number is not valid ($death_ad_num)." if $death_ad_num < 0;
-        my $death_i_num = $data_keys[$last_data_index];
+        my $death_i_num     = $data_keys[$last_data_index];
         my @death_velo_data = @{ $data_sets{$death_i_num}{Edge_speed} };
-        my @this_post_death = @{ $birth_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $tracking_mat[$i] } ];
+        my @this_post_death = @{ $death_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $tracking_mat[$i] } ];
         push @post_death_data, \@this_post_death;
     }
 
     #Pad the pre-birth data to the longest data set
     my $max_length = &find_longest_row(@pre_birth_data);
-    print "Max birth: $max_length\n";
     for my $i (0 .. $#pre_birth_data) {
         for (1 .. ($max_length - scalar(@{ $pre_birth_data[$i] }))) {
             unshift @{ $pre_birth_data[$i] }, $default_val;
@@ -348,7 +346,6 @@ sub gather_overall_edge_velo_summary {
 
     #Pad the post-death data to the longest data set
     $max_length = &find_longest_row(@post_death_data);
-    print "Max death: $max_length\n";
     for my $i (0 .. $#post_death_data) {
         for (1 .. ($max_length - scalar(@{ $post_death_data[$i] }))) {
             push @{ $post_death_data[$i] }, $default_val;
