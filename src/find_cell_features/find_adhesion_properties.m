@@ -30,7 +30,6 @@ i_p.parse(focal_file, adhesions_file);
 i_p.addParamValue('output_dir', fileparts(focal_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
 i_p.addOptional('protrusion_file',0,@(x)exist(x,'file') == 2);
-i_p.addOptional('i_num',0,@(x)isnumeric(x) && x >= 1);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(focal_file, adhesions_file, varargin{:});
@@ -48,14 +47,9 @@ focal_image  = double(focal_image)/scale_factor;
 %read in the labeled adhesions
 adhesions = imread(adhesions_file);
 
-%check if protrusion_file is specified, read it in if i_num is also
-%specified
+%check if protrusion_file is specified, read it in if specified
 if (isempty(strmatch('protrusion_file',i_p.UsingDefaults)))
-    if (not(strmatch('i_num',i_p.UsingDefaults)))
-        warning('AdhesionProps:dataloading','Protrusion file specified, but don''t know which image number to use for this image, not including protrusion data.');
-    else
-        load(i_p.Results.protrusion_file);
-    end
+    load(i_p.Results.protrusion_file);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,13 +58,13 @@ end
 
 if (exist('cell_mask','var'))
     if (exist('protrusion','var'))
-        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'cell_mask',cell_mask,'protrusion_data',protrusion,'i_num',i_p.Results.i_num,'debug',i_p.Results.debug);
+        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'cell_mask',cell_mask,'protrusion_data',protrusion,'debug',i_p.Results.debug);
     else
         adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'cell_mask',cell_mask,'debug',i_p.Results.debug);
     end
 else
     if (exist('protrusion_matrix','var'))
-        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'protrusion_data',protrusion,'i_num',i_p.Results.i_num,'debug',i_p.Results.debug);
+        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'protrusion_data',protrusion,'debug',i_p.Results.debug);
     else
         adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'debug',i_p.Results.debug);
     end

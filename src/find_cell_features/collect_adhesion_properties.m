@@ -28,7 +28,6 @@ i_p.addRequired('labeled_adhesions',@(x)isnumeric(x));
 i_p.addParamValue('cell_mask',0,@(x)isnumeric(x) || islogical(x));
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
 i_p.addParamValue('protrusion_data',0,@(x)iscell(x));
-i_p.addOptional('i_num',0,@(x)isnumeric(x) && x >= 1);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(labeled_adhesions,orig_I,varargin{:});
@@ -76,6 +75,13 @@ for i=1:max(labeled_adhesions(:))
 end
 
 if (exist('protrusion_data','var'))
+    all_data = [];
+    for i=1:size(protrusion_data,2)
+        protrusion_matrix = protrusion_data{i};
+        all_data = [all_data, sqrt(protrusion{i}(:,3).^2 + protrusion{i}(:,4).^2)'];
+        
+    end
+    
     for i=1:size(protrusion_data,2)
         protrusion_matrix = protrusion_data{i};
         for j=1:max(labeled_adhesions(:))
@@ -85,6 +91,7 @@ if (exist('protrusion_data','var'))
             adhesion_to_edge = [protrusion_matrix(best_line_num,1) - adhesion_props(j).Centroid(1), protrusion_matrix(best_line_num,2) - adhesion_props(j).Centroid(2)];
             adhesion_to_edge = adhesion_to_edge / sqrt(adhesion_to_edge(1)^2 + adhesion_to_edge(2)^2);
             edge_vector = protrusion_matrix(best_line_num,3:4);
+            edge_vector = edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2);
             
             adhesion_props(j).Edge_speed(i,1) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2))));
         end

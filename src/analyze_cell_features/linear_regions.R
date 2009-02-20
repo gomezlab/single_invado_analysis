@@ -41,21 +41,20 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log.trans = log.trans, 
 							boot.samp = boot.samp, save.exp_data = save.exp_data, debug=debug);
-        print("just after")
-		stopifnot(1)
         regex_range = regexpr("time_series_[[:digit:]]",dirs[[i]])
         if (regex_range[1] == -1) {
         	results[[i]]$exp_dir = dirs[[i]];
         } else {
         	results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
         }
+
         
         if (! is.na(results.file)) {
             this_result = results[[i]];
             save(this_result,file = file.path(dirs[[i]],results.file));
         }
 	}
-	
+   
 	results;
 }
 
@@ -970,10 +969,13 @@ load_results <- function(dirs,file) {
 
 load_data_file <- function(dirs,file) {
 	results = list()
+	seen_count = 0;
 	for (i in 1:length(dirs)) {
 		this_file = file.path(dirs[i],file)
+		
 		if (file.exists(this_file)) {
-			results[[i]] = read.table(file.path(dirs[i],file), header=TRUE, sep=",")
+			seen_count = seen_count + 1;
+			results[[seen_count]] = read.table(file.path(dirs[i],file), header=TRUE, sep=",")
 		}
 	}
 	if (length(results) == 1) {

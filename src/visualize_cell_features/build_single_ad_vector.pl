@@ -78,6 +78,14 @@ for my $i_num (1 .. $max_image) {
     print $i_num, " " if $opt{debug};
 }
 
+my $output_file = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost_unique.svg");
+open SVG_OUT, ">$output_file";
+print SVG_OUT @svg_header;
+print SVG_OUT @full_svg_file;
+print SVG_OUT "</g>\n";
+print SVG_OUT '</svg>';
+close SVG_OUT;
+
 #my $output_png = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost.png");
 #my $output_png_small = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost_small.png");
 #
@@ -132,7 +140,7 @@ sub convert_using_potrace {
     my @svg_files;
     for (0 .. $#files) {
         my $bmp_file = $files[$_];
-        my $color = $colors[$montage_num[$_]];
+        my $color = $colors[$montage_num[$_] - 1];
         my $svg_file = $bmp_file;
         
         $svg_file =~ s/\.bmp/\.svg/;
