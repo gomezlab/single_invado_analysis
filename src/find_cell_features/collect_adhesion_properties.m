@@ -83,6 +83,7 @@ if (exist('protrusion_data','var'))
             best_line_num = find(dists == min(dists),1,'first');
             
             adhesion_to_edge = [protrusion_matrix(best_line_num,1) - adhesion_props(j).Centroid(1), protrusion_matrix(best_line_num,2) - adhesion_props(j).Centroid(2)];
+            adhesion_to_edge = adhesion_to_edge / sqrt(adhesion_to_edge(1)^2 + adhesion_to_edge(2)^2);
             edge_vector = protrusion_matrix(best_line_num,3:4);
             
             adhesion_props(j).Edge_speed(i,1) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2))));
