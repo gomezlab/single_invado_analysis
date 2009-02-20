@@ -77,10 +77,9 @@ end
 if (exist('protrusion_data','var'))
     all_data = [];
     for i=1:size(protrusion_data,2)
-        protrusion_matrix = protrusion_data{i};
-        all_data = [all_data, sqrt(protrusion{i}(:,3).^2 + protrusion{i}(:,4).^2)'];
-        
+        all_data = [all_data, sqrt(protrusion_data{i}(:,3).^2 + protrusion_data{i}(:,4).^2)']; %#ok<AGROW>
     end
+    median_velo = median(all_data);
     
     for i=1:size(protrusion_data,2)
         protrusion_matrix = protrusion_data{i};
@@ -91,7 +90,9 @@ if (exist('protrusion_data','var'))
             adhesion_to_edge = [protrusion_matrix(best_line_num,1) - adhesion_props(j).Centroid(1), protrusion_matrix(best_line_num,2) - adhesion_props(j).Centroid(2)];
             adhesion_to_edge = adhesion_to_edge / sqrt(adhesion_to_edge(1)^2 + adhesion_to_edge(2)^2);
             edge_vector = protrusion_matrix(best_line_num,3:4);
-            edge_vector = edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2);
+            if (sqrt(edge_vector(1)^2 + edge_vector(2)^2) > (median_velo * 10))
+                edge_vector = (edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2)) * median_velo * 10;
+            end
             
             adhesion_props(j).Edge_speed(i,1) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2))));
         end
