@@ -73,6 +73,7 @@ foreach (@movie_params) {
 }
 
 push @matlab_code, &build_single_ad_commands(%single_ad_params);
+push @matlab_code, &build_single_ad_folder_command(%single_ad_params);
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
@@ -161,9 +162,16 @@ sub build_matlab_visualization_config {
     return @config_lines;
 }
 
+sub build_single_ad_folder_command {
+    my %single_ad_params = @_;
+
+    my @commands;
+    push @commands, "make_single_ad_folders('" . $single_ad_params{'config_file'} . "')";
+    return @commands;
+}
+
 sub build_single_ad_commands {
     my %single_ad_params = @_;
-    
 
     open TRACKING_FILE, catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
     my @tracking_file = <TRACKING_FILE>;
