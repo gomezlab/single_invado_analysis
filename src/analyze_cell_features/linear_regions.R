@@ -967,17 +967,35 @@ load_results <- function(dirs,file) {
 	results
 }
 
-load_data_file <- function(dirs,file) {
+load_data_files <- function(dirs,files) {
 	results = list()
-	seen_count = 0;
+	
+	all_files_present_dirs = c()	
 	for (i in 1:length(dirs)) {
-		this_file = file.path(dirs[i],file)
+		seen_files = 0
+		all_files_present = 1;
+		for (j in 1:length(files)) {
+			this_file = file.path(dirs[i],files[j])
 		
-		if (file.exists(this_file)) {
-			seen_count = seen_count + 1;
-			results[[seen_count]] = read.table(file.path(dirs[i],file), header=TRUE, sep=",")
+			if (! file.exists(this_file)) {
+				all_files_present = 0;
+			}
+		}
+		if (all_files_present) {
+			all_files_present_dirs = c(all_files_present_dirs, dirs[i]);
 		}
 	}
+
+	for (i in 1:length(files)) {
+		results[[i]] = list()
+	}
+	
+	for (i in 1:length(all_files_present_dirs)) {
+		for (j in 1:length(files)) { 
+			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header=TRUE, sep=",")
+		}
+	}
+		
 	if (length(results) == 1) {
 		results = results[[1]]
 	}

@@ -190,6 +190,75 @@ text(x_eq_y_point,25,paste('y=',sprintf('%.03f',coef(birth_vs_death_model)[[2]])
 mtext('E',adj=0,cex=1.5)
 graphics.off()
 
+########################################
+#Edge Velocity
+########################################
+
+library(boot)
+pre_raw <- load_data_files(exp_dirs, c('../edge_velo_pre.csv','../single_lin.csv'));
+lineage_data <- pre_raw[[2]]
+pre_raw <- pre_raw[[1]]
+pre_raw = pre_raw[2:10]
+post_raw <- load_data_files(exp_dirs, '../edge_velo_post.csv');
+post_raw = post_raw[2:10]
+
+pre = list()
+post = list()
+for (i in 1:length(pre_raw)) {
+#for (i in 1:1) {
+	pre$means[[i]] = as.numeric(mean(pre_raw[[i]], na.rm=T))
+	post$means[[i]] = as.numeric(mean(post_raw[[i]], na.rm=T))
+	
+	temp = list()
+	for (j in 1:length(pre_raw[[i]])) {	
+		this_line = pre_raw[[i]][,j];
+		this_line = this_line[! is.na(this_line)]
+		boot_samp = boot(this_line, function(x,y) mean(x[y], na.rm=T), 100)
+		conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
+		temp$l = c(temp$l, conf_int[1])
+		temp$u = c(temp$u, conf_int[2])
+	}
+	pre$upper[[i]] = temp$u
+	pre$lower[[i]] = temp$l
+
+	temp = list()
+	for (j in 1:length(post_raw[[i]])) {	
+		this_line = post_raw[[i]][,j];
+		this_line = this_line[! is.na(this_line)]
+		boot_samp = boot(this_line, function(x,y) mean(x[y]), 100)
+		conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
+		temp$l = c(temp$l, conf_int[1])
+		temp$u = c(temp$u, conf_int[2])
+	}
+	post$upper[[i]] = temp$u
+	post$lower[[i]] = temp$l	
+	
+	pre$unlist[[i]] = unlist(pre_raw[[i]])
+	pre$unlist[[i]] = pre$unlist[[i]][!is.na(pre$unlist[[i]])]
+	temp = t.test(pre$unlist[[i]])
+	pre$all_l[[i]] = temp$conf.int[1]
+	pre$all_u[[i]] = temp$conf.int[2]
+	
+	post$unlist[[i]] = unlist(post_raw[[i]])
+	post$unlist[[i]] = post$unlist[[i]][!is.na(post$unlist[[i]])]
+	temp = t.test(post$unlist[[i]])
+	post$all_l[[i]] = temp$conf.int[1]
+	post$all_u[[i]] = temp$conf.int[2]
+}
+
+pdf('pre_plots.pdf')
+par(mfcol=c(3,3))
+for (i in 1:length(pre$means)) {
+	errbar(0:(length(pre$means[[i]]) - 1), pre$means[[i]], pre$upper[[i]], pre$lower[[i]], ylab = i, xlab = "")
+	segments(0, pre$all_u[[i]], (length(pre$means[[i]]) - 1), pre$all_u[[i]], col='red')
+	segments(0, pre$all_l[[i]], (length(pre$means[[i]]) - 1), pre$all_l[[i]], col='red')
+}
+for (i in 1:length(post$means)) {
+	errbar(0:(length(post$means[[i]]) - 1), post$means[[i]], post$upper[[i]], post$lower[[i]], ylab = i, xlab = "")
+	segments(0, post$all_u[[i]], (length(post$means[[i]]) - 1), post$all_u[[i]], col='red')
+	segments(0, post$all_l[[i]], (length(post$means[[i]]) - 1), post$all_l[[i]], col='red')
+}
+graphics.off()
 
 ########################################
 #Split Birth Filter ROC Curve

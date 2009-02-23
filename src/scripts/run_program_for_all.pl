@@ -43,7 +43,7 @@ my @exp = <$cfg{data_folder}/*/*$cfg_suffix>;
 
 foreach (@exp) {
     next if /config\/default/;
-    if ($opt{run_all_debug}) {
+    if ($opt{debug}) {
         print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
     } else {
         print("$_\n");
@@ -81,9 +81,7 @@ Optional parameter(s):
 
 =over 
 
-=item * run_all_debug: if present do not run the program specified in the program parameter, instead print the commands that would be run
-
-=item * debug or d: if present print debuging information during program execution, including debug information for all subsequent program calls
+=item * debug or d: if present do not run the program specified in the program parameter, instead print the commands that would be run
 
 =back
 

@@ -85,16 +85,25 @@ if (exist('protrusion_data','var'))
         protrusion_matrix = protrusion_data{i};
         for j=1:max(labeled_adhesions(:))
             dists = sqrt((protrusion_matrix(:,1) - adhesion_props(j).Centroid(1)).^2 + (protrusion_matrix(:,2) - adhesion_props(j).Centroid(2)).^2);
-            best_line_num = find(dists == min(dists),1,'first');
+            sorted_dists = sort(dists);
+            best_line_nums = find(dists <= sorted_dists(3), 3,'first');
             
-            adhesion_to_edge = [protrusion_matrix(best_line_num,1) - adhesion_props(j).Centroid(1), protrusion_matrix(best_line_num,2) - adhesion_props(j).Centroid(2)];
-            adhesion_to_edge = adhesion_to_edge / sqrt(adhesion_to_edge(1)^2 + adhesion_to_edge(2)^2);
-            edge_vector = protrusion_matrix(best_line_num,3:4);
-            if (sqrt(edge_vector(1)^2 + edge_vector(2)^2) > (median_velo * 10))
-                edge_vector = (edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2)) * median_velo * 10;
+            edge_speeds = [];
+            for k=1:length(best_line_nums)
+                this_line_num = best_line_nums(k);
+                
+                adhesion_to_edge = [protrusion_matrix(this_line_num,1) - adhesion_props(j).Centroid(1), protrusion_matrix(this_line_num,2) - adhesion_props(j).Centroid(2)];
+                adhesion_to_edge = adhesion_to_edge / sqrt(adhesion_to_edge(1)^2 + adhesion_to_edge(2)^2);
+                edge_vector = protrusion_matrix(this_line_num,3:4);
+                %             if (sqrt(edge_vector(1)^2 + edge_vector(2)^2) > (median_velo * 10))
+                if (sqrt(edge_vector(1)^2 + edge_vector(2)^2) > Inf)
+                    edge_vector = (edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2)) * median_velo * 10;
+                end
+                
+                edge_speeds(k) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2)))); %#ok<AGROW>
             end
             
-            adhesion_props(j).Edge_speed(i,1) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2))));
+            adhesion_props(j).Edge_speed(i,1) = mean(edge_speeds);
         end
     end
 end
