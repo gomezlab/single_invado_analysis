@@ -300,7 +300,6 @@ sub gather_overall_edge_velo_summary {
 
     my $default_val = "NA";
     my @pre_birth_data;
-    #my @birth_to_death_data;
     my @post_death_data;
     my @data_keys = sort keys %data_sets;
     
@@ -329,7 +328,7 @@ sub gather_overall_edge_velo_summary {
         die "Death adhesion number is not valid ($death_ad_num)." if $death_ad_num < 0;
         my $death_i_num     = $data_keys[$last_data_index];
         my @death_velo_data = @{ $data_sets{$death_i_num}{Edge_speed} };
-        my @this_post_death = @{ $death_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $tracking_mat[$i] } ];
+        my @this_post_death = @{ $death_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $death_velo_data[$death_ad_num] } ];
         push @post_death_data, \@this_post_death;
     }
 
