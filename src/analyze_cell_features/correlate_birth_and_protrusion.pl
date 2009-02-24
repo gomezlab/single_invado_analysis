@@ -84,7 +84,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "input|i|input_data_files=s", "lsf|l") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "i|first=i", "n|images=i") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -99,15 +99,15 @@ my $csv=Text::CSV->new();
 ###############################################################################
 
 sub find_nearest_pixel_idx {
-    my @test_pixel = $_[0];
-    my @pixel_mat = $_[1];
-    my $col = $_[2];
-    my $max_dist = $_[3];
+    my @test_pixel = @{ $_[0] };
+    my @pixel_mat =  @{ $_[1] };
+    my $col = $_[2]*2;
     my $nearest_idx;
     my $nearest_dist = 2 << 31;
 
     for (my $idx = 1; $idx < $#pixel_mat; $idx++) {
-        my @pixel = $pixel_mat[$idx][$col];
+	my @row = @{ $pixel_mat[$idx] };
+        my @pixel = @row[$col..$col+1];
         my $dist = sqrt( ($test_pixel[0]-$pixel[0])**2 + ($test_pixel[1]-$pixel[1])**2 );
         if ($dist < $nearest_dist) {
             $nearest_idx = $idx;
@@ -115,15 +115,17 @@ sub find_nearest_pixel_idx {
         }
     }
 
-    return ($nearest_dist <= $max_dist) ? $nearest_idx : -1;
+    return $nearest_idx;
 }
 
 sub normalize_vectors {
     my @vectors = @{ $_[0] };
     my $n_ang = $_[1];
+    my $norm_factor = $_[2];
     my @normalized;
 
-    for (my $i = 2; $i < scalar @vectors; $i+=2) {
+    for (my $i = 2; $i < scalar(@vectors); $i+=2) {
+	next if $vectors[$i] < 0;
         my $vx = $vectors[$i]-$vectors[$i-2];
         my $vy = $vectors[$i+1]-$vectors[$i-1];
         my $v_mag = sqrt($vx**2 + $vy**2);
@@ -143,23 +145,24 @@ sub normalize_vectors {
             
             my $a = $v_ang - $n_ang;
             $v_nrm = $v_mag * sin($a);
-            $v_par = $v_mag * cos($a);
+            $v_par = $v_mag * cos($a) / $norm_factor;
         }
         
-        push @normalized, ($v_nrm, $v_par);
+#        push @normalized, ($v_nrm, $v_par);
+        push @normalized, $v_par;
     }
 
-    return \@normalized;
+    return @normalized;
 }
-
-# protrusion vector history (each row is the vectors between each consecutive pairs of
-# frames for a single marker point on the cell edge)
-my $pr_vectors_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_folder}, $cfg{protrusion_vectors_file});
-my @pr_vectors = input_mat_csv($pr_vectors_file, 2);
 
 # tracking matrix (each row is the ID of a single focal adhesion in each frame)
 my $tracking_mat_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
 my @tracking_mat = input_mat_csv($tracking_mat_file);
+
+# protrusion vector history (each row is the vectors between each consecutive pairs of
+# frames for a single marker point on the cell edge)
+my $pr_vectors_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_folder}, $cfg{protrusion_vectors_file});
+my @pr_vectors = input_mat_csv($pr_vectors_file);
 
 # birth matrix (each row contains the tracking matrix indices of the focal adhesions born 
 # during a single frame)
@@ -172,11 +175,19 @@ my @data_keys = Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
 my @sequential_history;
 my @relative_history;
 
+my $first_img = $opt{i} || 1;
+my $num_frames = ($opt{n} || 0) - 1;
+my $processed = 0;
+
 for (my $frame = 0; <$birth_handle>; $frame++) {
-    next if $frame == 0;
+    next if $frame < $first_img;
+    last if $num_frames > 0 && $processed >= $num_frames;
+    print("frame $frame\r");
+
+    my $row = $_;
 
     # parse the current row of the birth matrix
-    die "could not parse row $frame of $birth_map_file" if (!$csv->parse($_) || scalar($csv->fields) == 0);
+    die "could not parse row $frame of $birth_map_file" if (!$csv->parse($row) || scalar($csv->fields) == 0);
     
     my @tracking_mat_indices = $csv->fields;
 
@@ -188,16 +199,16 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     my $img_data_folder = catfile($cfg{individual_results_folder}, $img_num, $cfg{raw_data_folder});
 
     # get the nearest edge pixels for the focal adhesions in this frame
-    my $nearest_edge_pixel_file = catfile($img_data_folder, 'Nearest_edge_pixel.csv');
-    my $nep_handle = new IO::File $nearest_edge_pixel_file || die "Can't open file $nearest_edge_pixel_file";
-    die "Could not parse $nearest_edge_pixel_file" if (!$csv->parse($nep_handle) || scalar($csv->fields) == 0);
-    my @nearest_edge_pixels = $csv->fields;
-    $nep_handle->close;
+    my $centroid_file = catfile($img_data_folder, 'Centroid.csv');
+    my $centroid_handle = new IO::File $centroid_file || die "Can't open file $centroid_file";
+    die "Could not parse $centroid_file" if (!$csv->parse(<$centroid_handle>) || scalar($csv->fields) == 0);
+    my @centroid_pixels = $csv->fields;
+    $centroid_handle->close;
 
     # get the distance-to-edge for the focal adhesions in this frame
     my $dist_from_edge_file = catfile($img_data_folder, 'Centroid_dist_from_edge.csv');
     my $dfe_handle = new IO::File $dist_from_edge_file || die "Can't open file $dist_from_edge_file";
-    die "Could not parse $dist_from_edge_file" if (!$csv->parse($dfe_handle) || scalar($csv->fields) == 0);
+    die "Could not parse $dist_from_edge_file" if (!$csv->parse(<$dfe_handle>) || scalar($csv->fields) == 0);
     my @dists_from_edge = $csv->fields;
     $dfe_handle->close;
 
@@ -205,7 +216,7 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     # center of the cell in this frame
     my $angle_to_center_file = catfile($img_data_folder, 'Angle_to_center.csv');
     my $atc_handle = new IO::File $angle_to_center_file || die "Can't open file $angle_to_center_file";
-    die "Could not parse $angle_to_center_file" if (!$csv->parse($atc_handle) || scalar($csv->fields) == 0);
+    die "Could not parse $angle_to_center_file" if (!$csv->parse(<$atc_handle>) || scalar($csv->fields) == 0);
     my @angles_to_center = $csv->fields;
     $atc_handle->close;
 
@@ -213,44 +224,54 @@ for (my $frame = 0; <$birth_handle>; $frame++) {
     # adhesions born in this frame
     foreach my $tracking_mat_index (@tracking_mat_indices) {
         my $local_fa_id = $tracking_mat[$tracking_mat_index][$frame];
-        my $nearest_edge_pixel = $nearest_edge_pixels[$local_fa_id];
+	my $centroid_idx = $local_fa_id * 2;
+	my @centroid_pixel = @centroid_pixels[$centroid_idx..$centroid_idx+1];
         my $dist_from_edge = $dists_from_edge[$local_fa_id];
         my $angle_to_center = $angles_to_center[$local_fa_id];
         # find the protrusion vector origin closest to the edge
-        # pixel closest to the FA. We could probably simplify this
-        # by just looking for the protrusion vector origin closest
-        # to the FA.
-        my $pr_pixel_idx = find_nearest_pixel_idx(\$nearest_edge_pixel, \@pr_vectors, $frame, 3);
-
+        # pixel closest to the FA. 
+	my $pr_vectors_idx = $frame - $first_img + 1;
+        my $pr_pixel_idx = find_nearest_pixel_idx(\@centroid_pixel, \@pr_vectors, $pr_vectors_idx);
         # get the sequence of protrusion vectors from the first
         # frame to the current frame
-        my @pr_vector_history = $pr_vectors[$pr_pixel_idx][0,$frame];
+	my @pr_vector_row = @{ $pr_vectors[$pr_pixel_idx] };
+        my @pr_vector_history = @pr_vector_row[0..($pr_vectors_idx*2)+1];
+
         # get only the components of the vectors parallel to this
         # FA's angle from the center of the cell
-        my @normalized_pr_vectors = normalize_vectors(\@pr_vector_history, $angle_to_center);
-        my @seq = ($dist_from_edge);
-        push(@seq, \@normalized_pr_vectors);
-        push(@sequential_history, [ \@seq ]);
+        my @normalized_pr_vectors = normalize_vectors(\@pr_vector_history, $angle_to_center, $dist_from_edge);
+#        my @seq = ($dist_from_edge);
+#        push(@seq, @normalized_pr_vectors);
+        push(@sequential_history, [@normalized_pr_vectors]);
 
         # calculate the growth/shrinkage of each vector relative
         # to the total size of the protrusion
-        my @rel;
-        my $total_mag = 0;
-        for (my $i = 0; $i < scalar @pr_vector_history; $i+=2) {
-            my $vec_mag = $pr_vector_history[$i+1];
-            if ($i == 0) {
-                $total_mag = $vec_mag;
-            }
-            else {
-                my $growth = (($total_mag + $vec_mag) / $total_mag);
-                $total_mag += $vec_mag;
-                push(@rel, $growth);
-            }
-        }
-        my @temp = ($dist_from_edge);
-        push(@temp, reverse(\@rel));
-        push(@relative_history, [ \@temp ]);        
+	my $norm_vec_size = scalar(@normalized_pr_vectors);
+	if ($norm_vec_size > 0) {
+	        my @rel;
+        	my $total_mag = 0;
+	        for (my $i = 0; $i < scalar @normalized_pr_vectors; $i++) {
+        	    my $vec_mag = $normalized_pr_vectors[$i];
+            	    if ($i == 0) {
+                	$total_mag = $vec_mag;
+            	    }
+	            else {
+        	        my $growth = 0;
+			if ($total_mag != 0) {
+				$growth = (($total_mag + $vec_mag) / $total_mag) - 1;
+			}
+        	        $total_mag += $vec_mag;
+                	push(@rel, $growth);
+	            }
+        	}
+#        my @temp = ($dist_from_edge);
+		my @rev = reverse(@rel);
+#        push(@temp, @rev);
+	        push(@relative_history, [@rev]);   
+   	 }
     }
+
+    $processed++;
 }
 
 $birth_handle->close;

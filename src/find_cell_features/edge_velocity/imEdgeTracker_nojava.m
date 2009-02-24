@@ -916,11 +916,18 @@ for time = times
                     % calculate the protrusion based on a mechanical model
                     if length(i_0) > 2
                         c9 = clock;
-                        
-                        [temp1, temp2, i_pos, x_normal, y_normal]=...
-                            prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
-                            'k_S', K_S, 'k_W', K_W);
-                        
+			temp1 = -inf;
+       			temp2 = -inf;
+			i_pos = -inf;
+
+			try         
+                            [temp1, temp2, i_pos, x_normal, y_normal]=...
+                                prGetDispMechFixL(edge_sp_x_last, edge_sp_y_last, edge_sp_x, edge_sp_y, i_nn, i_0, CONTR,...
+                                'k_S', K_S, 'k_W', K_W);
+                        catch ME
+			    fprintf('error calculating mechanical model %s\n', ME.message);
+			end
+
                         c10 = clock;
                         fprintf('mechanical model: %d seconds\n', etime(c10, c9));
                         

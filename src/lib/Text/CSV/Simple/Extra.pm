@@ -22,11 +22,12 @@ our @ISA = qw(Exporter);
 sub input_mat_csv {
     my @mat;
     my $file = $_[0];
+
     my $in_hand = new IO::File $file or die "Unable to create csv file: $file";
     my $csv = Text::CSV->new();
 
     while (<$in_hand>) {
-        if ($csv->parse($in_hand)) {
+        if ($csv->parse($_)) {
             my @row = $csv->fields;
             push(@mat, [@row]);            
         }
