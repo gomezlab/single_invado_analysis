@@ -229,7 +229,7 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     if (grep $_ eq "Edge_speed", @available_data_types) {
-        my %edge_data = &gather_overall_edge_velo_data;
+        my %edge_data = &gather_edge_velo_data;
         &output_mat_csv($edge_data{pre_birth}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre_birth.csv"));
         &output_mat_csv($edge_data{post_birth}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post_birth.csv"));
         &output_mat_csv($edge_data{pre_death}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre_death.csv"));
