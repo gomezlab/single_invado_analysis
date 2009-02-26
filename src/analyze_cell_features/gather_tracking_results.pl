@@ -63,14 +63,14 @@ my @available_data_types = &gather_data_types;
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
-print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
-my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
-&output_single_adhesion_props(@single_ad_props);
-@single_ad_props = ();
-undef @single_ad_props;
-
-print "\n\nCreating/Outputing Time Series Property Files\n" if $opt{debug};
-&gather_and_output_time_series_properties;
+#print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
+#my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
+#&output_single_adhesion_props(@single_ad_props);
+#@single_ad_props = ();
+#undef @single_ad_props;
+#
+#print "\n\nCreating/Outputing Time Series Property Files\n" if $opt{debug};
+#&gather_and_output_time_series_properties;
 
 print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
@@ -234,6 +234,7 @@ sub gather_and_output_lineage_properties {
         &output_mat_csv($edge_data{post_birth}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post_birth.csv"));
         &output_mat_csv($edge_data{pre_death}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre_death.csv"));
         &output_mat_csv($edge_data{post_death}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post_death.csv"));
+        &output_mat_csv($edge_data{null_data}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_null.csv"));
     }
 
     #Pure Time Series Props
@@ -307,6 +308,7 @@ sub gather_edge_velo_data {
     my @post_birth_data;
     my @pre_death_data;
     my @post_death_data;
+    my @null_data;
     my @data_keys = sort keys %data_sets;
     
     #Cycle through each row of the tracking matrix, extracting all the relavent
@@ -314,7 +316,7 @@ sub gather_edge_velo_data {
     for my $i (0 .. $#tracking_mat) {
         my $first_data_index = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[0];
         my $last_data_index  = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[-1];
-
+        
         #Data structure notes:
         #   -the Edge_speed variables hold scalar projections between the
         #   current position of the adhesion in any given time points and the
@@ -322,6 +324,16 @@ sub gather_edge_velo_data {
         #   prior to birth we need only analyze the Edge_speed data from the
         #   birth image
         
+        #Collect the null data from this row
+        for my $this_index ($first_data_index .. $last_data_index) {
+            my $this_i_num = $data_keys[$this_index];
+            my $this_i_num_index = grep $data_keys[$_] == $this_i_num, (0 .. $#data_keys);
+            my $this_ad_num = $tracking_mat[$i][$this_index];
+            my @velo_data = @{ $data_sets{$this_i_num}{Edge_speed} };
+            die if not exists $velo_data[$this_ad_num][$this_i_num_index];
+            push @{$null_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
+        }
+
         #Determine upto birth data points
         my $birth_ad_num = $tracking_mat[$i][$first_data_index];
         die "First pre-birth adhesion number is not valid ($birth_ad_num)." if $birth_ad_num < 0;
@@ -338,13 +350,14 @@ sub gather_edge_velo_data {
             for my $this_index (0 .. $#tracking_mat_indexes) {
                 my $this_data_index = $tracking_mat_indexes[$this_index];
                 my $this_i_num = $data_keys[$this_data_index];
+                my $this_i_num_index = grep $data_keys[$_] == $this_i_num, (0 .. $#data_keys);
                 my $this_ad_num = $tracking_mat[$i][$this_data_index];
                 my @velo_data = @{ $data_sets{$this_i_num}{Edge_speed} };
 
                 if ($this_index <= floor($#tracking_mat_indexes/2)) {
-                    push @{$post_birth_data[$i]}, $velo_data[$this_ad_num][$this_i_num];
+                    push @{$post_birth_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
                 } else {
-                    push @{$pre_death_data[$i]}, $velo_data[$this_ad_num][$this_i_num];
+                    push @{$pre_death_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
                 }
             }
         } else {
@@ -361,6 +374,7 @@ sub gather_edge_velo_data {
         push @post_death_data, \@this_post_death;
     }
 
+    @null_data = &pad_arrays_to_longest(\@null_data, "push");
     @pre_birth_data = &pad_arrays_to_longest(\@pre_birth_data, "unshift");
     @post_birth_data = &pad_arrays_to_longest(\@post_birth_data, "push");
     @pre_death_data = &pad_arrays_to_longest(\@pre_death_data, "unshift");
@@ -369,7 +383,8 @@ sub gather_edge_velo_data {
     return ( pre_birth => \@pre_birth_data, 
              post_birth => \@post_birth_data,
              pre_death => \@pre_death_data,
-             post_death => \@post_death_data
+             post_death => \@post_death_data,
+             null_data => \@null_data,
            );
 }
 
