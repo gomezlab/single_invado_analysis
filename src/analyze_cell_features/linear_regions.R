@@ -967,7 +967,7 @@ load_results <- function(dirs,file) {
 	results
 }
 
-load_data_files <- function(dirs,files) {
+load_data_files <- function(dirs,files,headers) {
 	results = list()
 	
 	all_files_present_dirs = c()	
@@ -989,10 +989,10 @@ load_data_files <- function(dirs,files) {
 	for (i in 1:length(files)) {
 		results[[i]] = list()
 	}
-	
+	print(all_files_present_dirs)
 	for (i in 1:length(all_files_present_dirs)) {
 		for (j in 1:length(files)) { 
-			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header=TRUE, sep=",")
+			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = headers[j], sep=",")
 		}
 	}
 		
@@ -1000,6 +1000,25 @@ load_data_files <- function(dirs,files) {
 		results = results[[1]]
 	}
 	results
+}
+
+find_col_conf_ints <- function(data) {
+	upper = c()
+	lower = c()
+	for (j in 1:dim(data)[[2]]) {
+		this_col = data[,j];
+		this_col = data[! is.na(data)]
+		if (length(this_col) == 0) {
+			upper = c(upper, NA)
+			lower = c(lower, NA)
+		} else {
+			boot_samp = boot(this_col, function(x,y) mean(x[y], na.rm=T), 100)
+			conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
+			lower = c(lower, conf_int[1])
+			upper = c(upper, conf_int[2])
+		}
+	}
+	list(upper = upper, lower = lower)
 }
 
 trim_args_list <- function(args) {

@@ -65,7 +65,7 @@ my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
 print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
-&output_single_adhesion_props;
+&output_single_adhesion_props(@single_ad_props);
 @single_ad_props = ();
 undef @single_ad_props;
 
@@ -174,6 +174,7 @@ sub gather_single_ad_props {
 }
 
 sub output_single_adhesion_props {
+    my @single_ad_props = @_;
     mkpath(catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}));
 
     my $output_file =
@@ -228,9 +229,11 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     if (grep $_ eq "Edge_speed", @available_data_types) {
-        ($props{pre_birth_summary}, $props{post_death_summary}) = &gather_overall_edge_velo_summary;
-        &output_mat_csv($props{pre_birth_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre.csv"));
-        &output_mat_csv($props{post_death_summary}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post.csv"));
+        my %edge_data = &gather_overall_edge_velo_data;
+        &output_mat_csv($edge_data{pre_birth}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre_birth.csv"));
+        &output_mat_csv($edge_data{post_birth}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post_birth.csv"));
+        &output_mat_csv($edge_data{pre_death}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_pre_death.csv"));
+        &output_mat_csv($edge_data{post_death}, catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "edge_velo_post_death.csv"));
     }
 
     #Pure Time Series Props
@@ -241,9 +244,8 @@ sub gather_and_output_lineage_properties {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, @available_data_types));
 
-        $props{$this_result} = &gather_prop_seq($this_result);
-        &output_prop_time_series($props{$this_result}, $this_result);
-        undef $props{$this_result};
+        $this_result = &gather_prop_seq($this_result);
+        &output_prop_time_series($this_result, $this_result);
     }
 
     $props{longevity}               = &gather_longevities;
@@ -295,20 +297,23 @@ sub gather_and_output_lineage_properties {
     %props = ();
 }
 
-sub gather_overall_edge_velo_summary {
+sub gather_edge_velo_data {
     print "\r", " " x 80, "\rGathering Edge Velocities Summaries" if $opt{debug};
 
     my $default_val = "NA";
+    my $min_living_time = 10;
+
     my @pre_birth_data;
+    my @post_birth_data;
+    my @pre_death_data;
     my @post_death_data;
     my @data_keys = sort keys %data_sets;
     
-    #Collect all of the closest edge velocities right before birth
+    #Cycle through each row of the tracking matrix, extracting all the relavent
+    #edge speed data points
     for my $i (0 .. $#tracking_mat) {
         my $first_data_index = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[0];
         my $last_data_index  = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[-1];
-
-        #Determine upto birth data points
 
         #Data structure notes:
         #   -the Edge_speed variables hold scalar projections between the
@@ -316,12 +321,36 @@ sub gather_overall_edge_velo_summary {
         #   closest edge tracking point in EVERY image, so to get all the points
         #   prior to birth we need only analyze the Edge_speed data from the
         #   birth image
+        
+        #Determine upto birth data points
         my $birth_ad_num = $tracking_mat[$i][$first_data_index];
         die "First pre-birth adhesion number is not valid ($birth_ad_num)." if $birth_ad_num < 0;
         my $birth_i_num     = $data_keys[$first_data_index];
         my @birth_velo_data = @{ $data_sets{$birth_i_num}{Edge_speed} };
         my @this_pre_birth  = @{ $birth_velo_data[$birth_ad_num] }[ 0 .. ($first_data_index - 1) ];
         push @pre_birth_data, \@this_pre_birth;
+        
+        #Determine post birth and pre death data points
+        if ($last_data_index - $first_data_index >= $min_living_time) {
+            my @tracking_mat_indexes = ($first_data_index .. $last_data_index);
+            die if scalar(@tracking_mat_indexes) < $min_living_time;
+            
+            for my $this_index (0 .. $#tracking_mat_indexes) {
+                my $this_data_index = $tracking_mat_indexes[$this_index];
+                my $this_i_num = $data_keys[$this_data_index];
+                my $this_ad_num = $tracking_mat[$i][$this_data_index];
+                my @velo_data = @{ $data_sets{$this_i_num}{Edge_speed} };
+
+                if ($this_index <= floor($#tracking_mat_indexes/2)) {
+                    push @{$post_birth_data[$i]}, $velo_data[$this_ad_num][$this_i_num];
+                } else {
+                    push @{$pre_death_data[$i]}, $velo_data[$this_ad_num][$this_i_num];
+                }
+            }
+        } else {
+            push @post_birth_data, [];
+            push @pre_death_data, [];
+        }
 
         #Determine post death data points
         my $death_ad_num = $tracking_mat[$i][$last_data_index];
@@ -332,29 +361,16 @@ sub gather_overall_edge_velo_summary {
         push @post_death_data, \@this_post_death;
     }
 
-    #Pad the pre-birth data to the longest data set
-    my $max_length = &find_longest_row(@pre_birth_data);
-    for my $i (0 .. $#pre_birth_data) {
-        for (1 .. ($max_length - scalar(@{ $pre_birth_data[$i] }))) {
-            unshift @{ $pre_birth_data[$i] }, $default_val;
-        }
-        die "Padding to longest length failed in pre-birth edge velocity, got ", scalar(@{ $pre_birth_data[$i] }),
-          " expected $max_length"
-          if scalar(@{ $pre_birth_data[$i] }) != $max_length;
-    }
-
-    #Pad the post-death data to the longest data set
-    $max_length = &find_longest_row(@post_death_data);
-    for my $i (0 .. $#post_death_data) {
-        for (1 .. ($max_length - scalar(@{ $post_death_data[$i] }))) {
-            push @{ $post_death_data[$i] }, $default_val;
-        }
-        die "Padding to longest length failed in post-death edge velocity, got ",
-          scalar(@{ $post_death_data[$i] }), " expected $max_length"
-          if scalar(@{ $post_death_data[$i] }) != $max_length;
-    }
-
-    return (\@pre_birth_data, \@post_death_data);
+    @pre_birth_data = &pad_arrays_to_longest(\@pre_birth_data, "unshift");
+    @post_birth_data = &pad_arrays_to_longest(\@post_birth_data, "push");
+    @pre_death_data = &pad_arrays_to_longest(\@pre_death_data, "unshift");
+    @post_death_data = &pad_arrays_to_longest(\@post_death_data, "push");
+    
+    return ( pre_birth => \@pre_birth_data, 
+             post_birth => \@post_birth_data,
+             pre_death => \@pre_death_data,
+             post_death => \@post_death_data
+           );
 }
 
 sub find_longest_row {
@@ -369,6 +385,34 @@ sub find_longest_row {
         $max_length = $length if $length > $max_length;
     }
     return $max_length;
+}
+
+sub pad_arrays_to_longest {
+    my @data = @{$_[0]};
+    my $add_style = $_[1];
+    my $default_val = "NA";
+    if (scalar(@_) >= 3) {
+        $default_val = ${$_[2]};
+    }
+
+    if (!($add_style eq "unshift" || $add_style eq "push")) {
+        die "Second parameter to pad_arrays_to_longest must be either unshift or push, got $add_style.\n";
+    }
+
+    my $max_length = &find_longest_row(@data);
+    for my $i (0 .. $#data) {
+        for (1 .. ($max_length - scalar(@{ $data[$i] }))) {
+            if ($add_style eq "unshift") {
+                unshift @{ $data[$i] }, $default_val;
+            } else {
+                push @{ $data[$i] }, $default_val;
+            }
+        }
+        die "Padding to longest length failed in post-death edge velocity, got ",
+          scalar(@{ $data[$i] }), " expected $max_length" if scalar(@{ $data[$i] }) != $max_length;
+    }
+
+    return @data;
 }
 
 sub output_prop_time_series {
