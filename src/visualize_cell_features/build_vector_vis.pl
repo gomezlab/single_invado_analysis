@@ -30,7 +30,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d") or die;
+$opt{min_ad_size} = 5;
+GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -103,7 +104,7 @@ sub convert_using_potrace {
         
         $svg_file =~ s/\.bmp/\.svg/;
         push @svg_files, $svg_file;
-        system "potrace -s --fillcolor=#$color $bmp_file\n";
+        system "potrace -t $opt{min_ad_size} -s --fillcolor=#$color $bmp_file\n";
     }
     return @svg_files;
 }
@@ -272,56 +273,3 @@ sub round {
 ###############################################################################
 #Documentation
 ###############################################################################
-
-=head1 NAME
-
-collect_visualizations.pl - build the visualizations of the focal adhesion
-movies
-
-=head1 SYNOPSIS
-
-collect_mask_set.pl -cfg FA_config
-
-=head1 DESCRIPTION
-
-This program builds a series of movies based on files available in the tracking
-matrices folder. Each file in the tracking matrices folder which ends with
-'.csv' and does not contain 'no_movie' is used to build a visualization of the
-tracked focal adhesions.
-
-Required parameter(s):
-
-=over 
-
-=item * cfg or c: the focal adhesion analysis config file
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: print debuging information during program execution
-
-=item * movie_debug: pass along the debug flag to the MATLAB visualization
-program, causing only a small subset of the tracked adhesions to be visualized
-in a single frame
-
-=item * config_only: only write the MATLAB config files out, do not execute the
-MATLAB program
-
-=item * emerald: build and execute long commands throught the LSF job system
-
-=back
-
-=head1 EXAMPLES
-
-collect_visualizations.pl -cfg FA_config
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 6/30/2008
-
-=cut

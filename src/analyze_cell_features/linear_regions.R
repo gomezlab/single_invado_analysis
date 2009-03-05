@@ -967,7 +967,7 @@ load_results <- function(dirs,file) {
 	results
 }
 
-load_data_files <- function(dirs,files,headers) {
+load_data_files <- function(dirs,files,headers, debug = FALSE) {
 	results = list()
 	
 	all_files_present_dirs = c()	
@@ -989,7 +989,11 @@ load_data_files <- function(dirs,files,headers) {
 	for (i in 1:length(files)) {
 		results[[i]] = list()
 	}
-	print(all_files_present_dirs)
+	
+	if (debug) {
+		print(all_files_present_dirs)
+	}
+
 	for (i in 1:length(all_files_present_dirs)) {
 		for (j in 1:length(files)) { 
 			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = headers[j], sep=",")
@@ -1002,17 +1006,17 @@ load_data_files <- function(dirs,files,headers) {
 	results
 }
 
-find_col_conf_ints <- function(data) {
+find_col_conf_ints <- function(data, boot.samp = 100) {
 	upper = c()
 	lower = c()
 	for (j in 1:dim(data)[[2]]) {
 		this_col = data[,j];
-		this_col = data[! is.na(data)]
+		this_col = this_col[! is.na(this_col)]
 		if (length(this_col) == 0) {
 			upper = c(upper, NA)
 			lower = c(lower, NA)
 		} else {
-			boot_samp = boot(this_col, function(x,y) mean(x[y], na.rm=T), 100)
+			boot_samp = boot(this_col, function(x,y) mean(x[y], na.rm=T), boot.samp)
 			conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
 			lower = c(lower, conf_int[1])
 			upper = c(upper, conf_int[2])
@@ -1028,6 +1032,25 @@ trim_args_list <- function(args) {
 		}
 	}
 	args
+}
+
+write_assembly_disassembly_periods <- function(result, dir) {
+	if (! file.exists(dir)) {
+		dir.create(dir,recursive=TRUE)
+	}
+	
+	row_nums = which(! is.na(result$assembly$offset))
+	if (! is.null(row_nums)) {
+		rows_and_offset = cbind(row_nums, result$assembly$offset[row_nums]);
+		write.table(rows_and_offset,file=file.path(dir,'assembly_rows_offsets.csv'), row.names=FALSE, col.names=FALSE)
+	}
+	
+	row_nums = which(! is.na(result$disassembly$offset))
+	if (! is.null(row_nums)) {
+		rows_and_offset = cbind(row_nums, result$disassembly$offset[row_nums]);
+		write.table(rows_and_offset,file=file.path(dir,'disassembly_rows_offsets.csv'), row.names=FALSE, col.names=FALSE)
+	}
+		
 }
 
 write_high_r_rows <- function(result, dir, file=c('assembly_R_sq.csv','disassembly_R_sq.csv','neg_slope_R_sq.csv'), min_R_sq = 0.9) {

@@ -14,7 +14,7 @@ corr_results = load_results(exp_dirs,file.path('..','corrected_intensity_model.R
 area = load_results(exp_dirs,file.path('..','area_model.Rdata'))
 box_results = load_results(exp_dirs,file.path('..','box_model.Rdata'))
 
-ind_results <- load_data_file(exp_dirs,file.path('..','individual_adhesions.csv'));
+ind_results <- load_data_files(exp_dirs,file.path('..','individual_adhesions.csv'), T);
 
 ########################################
 #Result filtering
@@ -59,7 +59,9 @@ for (i in 1:length(ind_results)) {
 	filt_by_area = res$Area >= min(res$Area)*3 & res$I_num == 1
 	plot_ind_data$Area = c(plot_ind_data$Area, res$Area[filt_by_area]);
 	plot_ind_data$ad_sig = c(plot_ind_data$ad_sig, res$Average_adhesion_signal[filt_by_area]);
-	plot_ind_data$axial_r = c(plot_ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);		
+	plot_ind_data$axial_r = c(plot_ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);
+	
+	plot_ind_data$cent_dist = c(plot_ind_data$cent_dist, res$Centroid_dist_from_edge[filt_by_area]);
 }
 
 pdf(file.path(out_folder,'general_props.pdf'))
@@ -70,9 +72,14 @@ mtext('A',adj=0,cex=1.5)
 hist(plot_ind_data$ad_sig, main="", ylab = "Adhesion Count", xlab = "Normalized Average Paxillin Intensity")
 hist(plot_ind_data$ax, main="", ylab = "Adhesion Count",  xlab = "Axial Ratio")
 
-plot(plot_ind_data$Area, plot_ind_data$ad_sig, xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')), ylab = "Normalized Average Paxillin Intensity", pch=19, cex=0.25)
+#plot(plot_ind_data$cent_dist, plot_ind_data$ad_sig, xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')), ylab = "Normalized Average Paxillin Intensity", pch=19, cex=0.25)
+#mtext('B',adj=0,cex=1.5)
+#plot(plot_ind_data$cent_dist,plot_ind_data$ax, xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')), ylab = "Axial Ratio", pch=19, cex=0.25)
+
+smoothScatter(plot_ind_data$cent_dist, plot_ind_data$ad_sig, xlab = expression(paste('Distance from Cell Edge (', symbol("m"), 'm)',sep='')), ylab = "Normalized Average Paxillin Intensity", nrpoints = 0)
 mtext('B',adj=0,cex=1.5)
-plot(plot_ind_data$Area,plot_ind_data$ax, xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')), ylab = "Axial Ratio", pch=19, cex=0.25)
+smoothScatter(plot_ind_data$cent_dist,plot_ind_data$ax, xlab = expression(paste('Distance from Cell Edge (', symbol("m"), 'm)',sep='')), ylab = "Axial Ratio", nrpoints = 0)
+
 mtext('C',adj=0,cex=1.5)
 graphics.off()
 
@@ -195,69 +202,241 @@ graphics.off()
 ########################################
 
 library(boot)
-pre_raw <- load_data_files(exp_dirs, c('../edge_velo_pre.csv','../single_lin.csv'));
-lineage_data <- pre_raw[[2]]
-pre_raw <- pre_raw[[1]]
-pre_raw = pre_raw[2:10]
-post_raw <- load_data_files(exp_dirs, '../edge_velo_post.csv');
-post_raw = post_raw[2:10]
 
-pre = list()
-post = list()
-for (i in 1:length(pre_raw)) {
-#for (i in 1:1) {
-	pre$means[[i]] = as.numeric(mean(pre_raw[[i]], na.rm=T))
-	post$means[[i]] = as.numeric(mean(post_raw[[i]], na.rm=T))
+files_to_load = c('../single_lin.csv', '../edge_velo_pre_birth.csv', 
+				  '../edge_velo_post_birth.csv', '../edge_velo_null.csv', 
+				  '../edge_velo_post_birth.csv', '../edge_velo_pre_death.csv')
+
+raw <- load_data_files(exp_dirs, files_to_load, c(T,F,F,F, F, F), debug=T);
+raw <- lapply(raw, function(x) x[2:10])
+
+lineage_data <- raw[[1]]
+pre_birth_raw <- raw[[2]]
+post_death_raw <- raw[[3]]
+null_raw <- raw[[4]]
+post_birth_raw <- raw[[5]]
+pre_death_raw <- raw[[6]]
+
+pdf(file.path(out_folder,'ring_plots.pdf'),height=9, width=9)
+par(mfcol=c(3,3),bty='n',oma=c(0,0,2,0), mar=c(4.2,4.1,2,0.2))
+
+for (k in 1:10) {
+	pre_birth_rings = list()
+	pre_birth_ring_values = c(k,k)
+
+	for (i in 1:length(pre_birth_raw)) {
+		pre_birth_rings[[i]] = list()
+		for (j in 1:length(pre_birth_ring_values)) {
+			this_pre_birth = pre_birth_raw[[i]];
+		
+			birth_filt = ! lineage_data[[i]]$split_birth_status &
+						 ! is.na(this_pre_birth[,length(this_pre_birth)]) &
+						 lineage_data[[i]]$longevity > 0
+			if (j == 1) {
+				birth_filt = birth_filt & lineage_data[[i]]$starting_edge_dist < pre_birth_ring_values[j]
+			}
+			if (j == length(pre_birth_ring_values)) {
+				birth_filt = birth_filt & lineage_data[[i]]$starting_edge_dist >= pre_birth_ring_values[j]
+			} 
+			if (j != 1 & j != length(pre_birth_ring_values)) {
+				birth_filt = birth_filt & 
+							 lineage_data[[i]]$starting_edge_dist > pre_birth_ring_values[j] &
+							 lineage_data[[i]]$starting_edge_dist <= pre_birth_ring_values[j + 1]
+			}
 	
-	temp = list()
-	for (j in 1:length(pre_raw[[i]])) {	
-		this_line = pre_raw[[i]][,j];
-		this_line = this_line[! is.na(this_line)]
-		boot_samp = boot(this_line, function(x,y) mean(x[y], na.rm=T), 100)
-		conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
-		temp$l = c(temp$l, conf_int[1])
-		temp$u = c(temp$u, conf_int[2])
+			this_pre_birth = this_pre_birth[birth_filt,]
+			
+			pre_birth_rings[[i]]$means[[j]] = as.numeric(mean(this_pre_birth, na.rm=T))
+	
+			temp = find_col_conf_ints(this_pre_birth, boot.samp=100)
+			pre_birth_rings[[i]]$upper[[j]] = temp$u
+			pre_birth_rings[[i]]$lower[[j]] = temp$l
+		}
 	}
-	pre$upper[[i]] = temp$u
-	pre$lower[[i]] = temp$l
 
-	temp = list()
-	for (j in 1:length(post_raw[[i]])) {	
-		this_line = post_raw[[i]][,j];
-		this_line = this_line[! is.na(this_line)]
-		boot_samp = boot(this_line, function(x,y) mean(x[y]), 100)
-		conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
-		temp$l = c(temp$l, conf_int[1])
-		temp$u = c(temp$u, conf_int[2])
+	cols = rainbow(length(pre_birth_rings$means))
+	cols = c("red", "green")
+	for (i in 1:length(pre_birth_rings)) {
+		ylims = c(0,0)
+		ylims[1] = min(unlist(pre_birth_rings[[i]]$lower), na.rm=T)
+		ylims[2] = max(unlist(pre_birth_rings[[i]]$upper), na.rm=T)	
+		for (j in 1:length(pre_birth_rings[[i]]$means)) {
+		
+			add_status = F;
+			if (j > 1) {
+				add_status = T;
+			}
+		
+			errbar(1:length(pre_birth_rings[[i]]$means[[j]]), 				   pre_birth_rings[[i]]$means[[j]], 
+		     	   pre_birth_rings[[i]]$upper[[j]], 
+			       pre_birth_rings[[i]]$lower[[j]], 
+			       col = cols[j], add = add_status, ylab='',xlab='', ylim=ylims)
+			if (j == 1) {
+				mtext(paste('Red < ',k,'; Green >= ',k, sep=''), outer =T)
+			}
+		}
 	}
-	post$upper[[i]] = temp$u
-	post$lower[[i]] = temp$l	
+}
+graphics.off()
+
+
+
+pre_birth = list()
+post_birth = list()
+pre_death = list()
+post_death = list()
+null = list()
+for (i in 1:length(pre_birth_raw)) {
+	this_pre_birth = pre_birth_raw[[i]];
+	this_post_death = post_death_raw[[i]];
+	this_null_raw = null_raw[[i]];
+	this_post_birth = post_birth_raw[[i]];
+	this_pre_death = pre_death_raw[[i]];
 	
-	pre$unlist[[i]] = unlist(pre_raw[[i]])
-	pre$unlist[[i]] = pre$unlist[[i]][!is.na(pre$unlist[[i]])]
-	temp = t.test(pre$unlist[[i]])
-	pre$all_l[[i]] = temp$conf.int[1]
-	pre$all_u[[i]] = temp$conf.int[2]
+	birth_filt = ! lineage_data[[i]]$split_birth_status & 
+					 !is.na(this_pre_birth[,length(this_pre_birth)]) & 
+					 lineage_data[[i]]$starting_edge_dist < Inf
 	
-	post$unlist[[i]] = unlist(post_raw[[i]])
-	post$unlist[[i]] = post$unlist[[i]][!is.na(post$unlist[[i]])]
-	temp = t.test(post$unlist[[i]])
-	post$all_l[[i]] = temp$conf.int[1]
-	post$all_u[[i]] = temp$conf.int[2]
+	death_filt = as.logical(lineage_data[[i]]$death_status) 
+	
+	this_pre_birth = this_pre_birth[birth_filt,]
+	pre_birth$data[[i]] = this_pre_birth
+	this_post_birth = this_post_birth[birth_filt,]
+	post_birth$data[[i]] = this_post_birth
+	this_pre_death = this_pre_death[death_filt,] 
+	pre_death$data[[i]] = this_pre_death
+	this_post_death = this_post_death[death_filt,] 
+	post_death$data[[i]] = this_post_death
+
+	pre_birth$means[[i]] = as.numeric(mean(this_pre_birth, na.rm=T))
+	post_birth$means[[i]] = as.numeric(mean(this_post_birth, na.rm=T))
+	pre_death$means[[i]] = as.numeric(mean(this_pre_death, na.rm=T))
+	post_death$means[[i]] = as.numeric(mean(this_post_death, na.rm=T))
+	
+	temp = find_col_conf_ints(this_pre_birth)
+	pre_birth$upper[[i]] = temp$u
+	pre_birth$lower[[i]] = temp$l
+
+	temp = find_col_conf_ints(this_post_birth)
+	post_birth$upper[[i]] = temp$u
+	post_birth$lower[[i]] = temp$l
+
+	temp = find_col_conf_ints(this_pre_death)
+	pre_death$upper[[i]] = temp$u
+	pre_death$lower[[i]] = temp$l
+
+	temp = find_col_conf_ints(this_post_death)
+	post_death$upper[[i]] = temp$u
+	post_death$lower[[i]] = temp$l
+
+	pre_birth$unlist[[i]] = unlist(this_pre_birth)
+	pre_birth$unlist[[i]] = pre_birth$unlist[[i]][!is.na(pre_birth$unlist[[i]])]
+	temp = t.test(pre_birth$unlist[[i]])
+	pre_birth$all_l[[i]] = temp$conf.int[1]
+	pre_birth$all_u[[i]] = temp$conf.int[2]
+
+	post_birth$unlist[[i]] = unlist(this_post_birth)
+	post_birth$unlist[[i]] = post_birth$unlist[[i]][!is.na(post_birth$unlist[[i]])]
+	temp = t.test(post_birth$unlist[[i]])
+	post_birth$all_l[[i]] = temp$conf.int[1]
+	post_birth$all_u[[i]] = temp$conf.int[2]
+
+	pre_death$unlist[[i]] = unlist(this_pre_death)
+	pre_death$unlist[[i]] = pre_death$unlist[[i]][!is.na(pre_death$unlist[[i]])]
+	temp = t.test(pre_death$unlist[[i]])
+	pre_death$all_l[[i]] = temp$conf.int[1]
+	pre_death$all_u[[i]] = temp$conf.int[2]
+	
+	post_death$unlist[[i]] = unlist(this_post_death)
+	post_death$unlist[[i]] = post_death$unlist[[i]][!is.na(post_death$unlist[[i]])]
+	temp = t.test(post_death$unlist[[i]])
+	post_death$all_l[[i]] = temp$conf.int[1]
+	post_death$all_u[[i]] = temp$conf.int[2]
+	
+	null$unlist[[i]] = unlist(this_null_raw)
+	null$unlist[[i]] = null$unlist[[i]][!is.na(null$unlist[[i]])]
+	temp = t.test(null$unlist[[i]])
+	null$all_l[[i]] = temp$conf.int[1]
+	null$all_u[[i]] = temp$conf.int[2]
 }
 
-pdf('pre_plots.pdf')
-par(mfcol=c(3,3))
-for (i in 1:length(pre$means)) {
-	errbar(0:(length(pre$means[[i]]) - 1), pre$means[[i]], pre$upper[[i]], pre$lower[[i]], ylab = i, xlab = "")
-	segments(0, pre$all_u[[i]], (length(pre$means[[i]]) - 1), pre$all_u[[i]], col='red')
-	segments(0, pre$all_l[[i]], (length(pre$means[[i]]) - 1), pre$all_l[[i]], col='red')
+pdf(file.path(out_folder,'edge_experiment_plots.pdf'))
+par(mfcol=c(3,3),bty='n',mar=c(4.2,4.1,2,0.2), oma=c(0,0,2,0))
+for (i in 1:length(pre_birth$means)) {
+	errbar(1:length(pre_birth$means[[i]]), pre_birth$means[[i]], pre_birth$upper[[i]], pre_birth$lower[[i]], ylab = i, xlab = "")
+
+#	segments(1, null$all_u[[i]], length(pre_birth$means[[i]]), null$all_u[[i]], col='red')
+#	segments(1, null$all_l[[i]], length(pre_birth$means[[i]]), null$all_l[[i]], col='red')
+
+	segments(1, pre_birth$all_u[[i]], length(pre_birth$means[[i]]), pre_birth$all_u[[i]], col='green')
+	segments(1, pre_birth$all_l[[i]], length(pre_birth$means[[i]]), pre_birth$all_l[[i]], col='green')
+	
+	if (i == 1) {	
+		mtext('Pre-birth', outer=T)
+	}
 }
-for (i in 1:length(post$means)) {
-	errbar(0:(length(post$means[[i]]) - 1), post$means[[i]], post$upper[[i]], post$lower[[i]], ylab = i, xlab = "")
-	segments(0, post$all_u[[i]], (length(post$means[[i]]) - 1), post$all_u[[i]], col='red')
-	segments(0, post$all_l[[i]], (length(post$means[[i]]) - 1), post$all_l[[i]], col='red')
+
+for (i in 1:length(post_birth$means)) {
+	errbar(1:length(post_birth$means[[i]]), post_birth$means[[i]], post_birth$upper[[i]], post_birth$lower[[i]], ylab = i, xlab = "")
+	
+#	segments(1, null$all_u[[i]], length(post_birth$means[[i]]), null$all_u[[i]], col='red')
+#	segments(1, null$all_l[[i]], length(post_birth$means[[i]]), null$all_l[[i]], col='red')
+
+	segments(1, post_birth$all_u[[i]], length(post_birth$means[[i]]), post_birth$all_u[[i]], col='green')
+	segments(1, post_birth$all_l[[i]], length(post_birth$means[[i]]), post_birth$all_l[[i]], col='green')
+	if (i == 1) {
+		mtext('Post-birth', outer=T)
+	}
 }
+
+for (i in 1:length(pre_death$means)) {
+	errbar(1:length(pre_death$means[[i]]), pre_death$means[[i]], pre_death$upper[[i]], pre_death$lower[[i]], ylab = i, xlab = "")
+	
+#	segments(1, null$all_u[[i]], length(pre_death$means[[i]]), null$all_u[[i]], col='red')
+#	segments(1, null$all_l[[i]], length(pre_death$means[[i]]), null$all_l[[i]], col='red')
+
+	segments(1, pre_death$all_u[[i]], length(pre_birth$means[[i]]), pre_death$all_u[[i]], col='green')
+	segments(1, pre_death$all_l[[i]], length(pre_birth$means[[i]]), pre_death$all_l[[i]], col='green')
+
+	if (i == 1) {
+		mtext('Pre-death', outer=T)
+	}
+}
+
+for (i in 1:length(post_death$means)) {
+	errbar(1:length(post_death$means[[i]]), post_death$means[[i]], post_death$upper[[i]], post_death$lower[[i]], ylab = i, xlab = "")
+
+#	segments(1, null$all_u[[i]], length(post_death$means[[i]]), null$all_u[[i]], col='red')
+#	segments(1, null$all_l[[i]], length(post_death$means[[i]]), null$all_l[[i]], col='red')
+
+	segments(1, post_death$all_u[[i]], length(pre_birth$means[[i]]), post_death$all_u[[i]], col='green')
+	segments(1, post_death$all_l[[i]], length(pre_birth$means[[i]]), post_death$all_l[[i]], col='green')
+	
+	if (i == 1) {
+		mtext('Post-death', outer=T)
+	}
+}
+
+#for (i in 1:length(pre_birth$means)) {
+#	errbar(1:10, 
+#		pre_birth$means[[i]][(length(pre_birth$means[[i]]) - 9):length(pre_birth$means[[i]])], 
+#		pre_birth$upper[[i]][(length(pre_birth$means[[i]]) - 9):length(pre_birth$means[[i]])], 
+#		pre_birth$lower[[i]][(length(pre_birth$means[[i]]) - 9):length(pre_birth$means[[i]])],
+#		ylab = i, xlab = "")
+#	segments(1, null$all_u[[i]], length(pre_birth$means[[i]]), null$all_u[[i]], col='red')
+#	segments(1, null$all_l[[i]], length(pre_birth$means[[i]]), null$all_l[[i]], col='red')
+#}
+#
+#for (i in 1:length(post_death$means)) {
+#	errbar(1:10, post_death$means[[i]][1:10], post_death$upper[[i]][1:10], post_death$lower[[i]][1:10], ylab = i, xlab = "")
+#	segments(1, null$all_u[[i]], length(post_death$means[[i]]), null$all_u[[i]], col='red')
+#	segments(1, null$all_l[[i]], length(post_death$means[[i]]), null$all_l[[i]], col='red')
+#}
+
+for (i in 1:length(pre_birth$unlist)) {
+	hist(pre_birth$unlist[[i]], main=i,xlab='Projected Edge Velocity')
+}
+
 graphics.off()
 
 ########################################

@@ -145,7 +145,7 @@ sub convert_using_potrace {
         
         $svg_file =~ s/\.bmp/\.svg/;
         push @svg_files, $svg_file;
-        system "potrace -s --fillcolor=#$color $bmp_file\n";
+        system "potrace -t 0 -s --fillcolor=#$color $bmp_file\n";
     }
     return @svg_files;
 }
