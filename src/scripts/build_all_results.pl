@@ -21,12 +21,12 @@ use Config::Adhesions qw(ParseConfig);
 my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
-                  "only_vis|only_visualization", "exp_filter=s") or die;
+                  "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
-die "The visualization options (skip_vis or only_vis) can't be specified without the emerald option (emerald)"
-  if ($opt{skip_vis} || $opt{only_vis}) && not($opt{emerald});
+die "The visualization options can't be specified without the lsf option (lsf)"
+  if ($opt{skip_vis} || $opt{only_vis}) && not($opt{lsf});
 
 die "Only one of the options skip_vis or only_vis can be selected."
   if $opt{skip_vis} && $opt{only_vis};
@@ -41,7 +41,6 @@ $t1 = new Benchmark;
 $|  = 1;
 
 my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
-@config_files = ($config_files[0]) if $opt{debug};
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
@@ -71,9 +70,14 @@ if ($opt{lsf}) {
         my @command_seq = @{$_};
         my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
         &execute_command_seq(\@command_seq, $starting_dir);
-        &wait_till_LSF_jobs_finish if not($opt{debug});
+        if (not($opt{debug})) {
+            &wait_till_LSF_jobs_finish;
+        }
     }
-    find(\&remove_unimportant_errors, ($cfg{results_folder}));
+
+    my @error_dirs = <$cfg{results_folder}/*/$cfg{errors_folder}>;
+
+    find(\&remove_unimportant_errors, @error_dirs);
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
