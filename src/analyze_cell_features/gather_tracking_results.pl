@@ -245,8 +245,8 @@ sub gather_and_output_lineage_properties {
         my $this_result = $_;
         next if (not(grep $this_result eq $_, @available_data_types));
 
-        $this_result = &gather_prop_seq($this_result);
-        &output_prop_time_series($this_result, $this_result);
+        my $this_data = &gather_prop_seq($this_result);
+        &output_prop_time_series($this_data, $this_result);
     }
 
     $props{longevity}               = &gather_longevities;
