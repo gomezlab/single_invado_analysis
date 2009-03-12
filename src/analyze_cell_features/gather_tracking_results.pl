@@ -63,14 +63,14 @@ my @available_data_types = &gather_data_types;
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
-#print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
-#my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
-#&output_single_adhesion_props(@single_ad_props);
-#@single_ad_props = ();
-#undef @single_ad_props;
-#
-#print "\n\nCreating/Outputing Time Series Property Files\n" if $opt{debug};
-#&gather_and_output_time_series_properties;
+print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
+my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
+&output_single_adhesion_props(@single_ad_props);
+@single_ad_props = ();
+undef @single_ad_props;
+
+print "\n\nCreating/Outputing Time Series Property Files\n" if $opt{debug};
+&gather_and_output_time_series_properties;
 
 print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;

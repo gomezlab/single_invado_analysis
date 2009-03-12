@@ -23,6 +23,10 @@ $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
                   "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
+chomp(my $lsf_check = `which bjobs`);
+die "LSF appear to be installed on this machine, don't you want to use it?" 
+  if ($lsf_check && not $opt{lsf});
+
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
 die "The visualization options can't be specified without the lsf option (lsf)"
