@@ -1,4 +1,4 @@
-function gather_box_intensity_file(cfg_file,varargin)
+function find_box_intensity(cfg_file,varargin)
 %MAKE_SINGLE_AD_FRAMES    Builds single image montages that track single
 %                         adhesions through their entire lifecycle,
 %                         including frames immediately preceding and
@@ -47,6 +47,8 @@ max_image_num = find_max_image_num(I_folder);
 folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
+%Add one to the tracking matrix to conpensate for matrix indexing beginning
+%at zero in perl
 tracking_seq = load(tracking_seq_file) + 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,10 +137,9 @@ for j = 1:max_image_num
     scale_factor = double(intmax(class(orig_i)));
     orig_i = double(orig_i)/scale_factor;
 
-    %Gather the ad label image
-    ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
-
-    %Cycle through each row of the tracking matrix
+    %Each row of the track matrix holds the adhesion number sequence that
+    %defines an adhesion's life cycle, cycle through this for the current
+    %image number, extracting the box intensity at each point
     for i = 1:size(tracking_seq,1)
         
         %we skip these entries because they indicate dead or yet to be
