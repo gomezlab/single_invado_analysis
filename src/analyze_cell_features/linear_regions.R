@@ -47,15 +47,14 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
         } else {
         	results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
         }
-
         
         if (! is.na(results.file)) {
             this_result = results[[i]];
             save(this_result,file = file.path(dirs[[i]],results.file));
         }
 	}
-   
-	results;
+
+	return(results);
 }
 
 gather_bilinear_models <- function(data_set, props, 
@@ -1164,7 +1163,8 @@ args <- commandArgs(TRUE)
 if (length(args) != 0) {
 	args <- trim_args_list(args)
 	
-	intensity_results = gather_bilinear_models_from_dirs(args, 
+	gather_bilinear_models_from_dirs(args,
+		data_file='Average_adhesion_signal.csv',
 		results.file=file.path('..','intensity_model.Rdata'))
 		
 	gather_bilinear_models_from_dirs(args, 
