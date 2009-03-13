@@ -1162,25 +1162,27 @@ args <- commandArgs(TRUE)
 
 if (length(args) != 0) {
 	args <- trim_args_list(args)
-	
-	gather_bilinear_models_from_dirs(args,
+    
+    #each of the outputs of the following commands are saved to temp to avoid
+    #writing the entire results contents to STDOUT, very useful when debugging
+    #runs from the command line
+	temp = gather_bilinear_models_from_dirs(args,
 		data_file='Average_adhesion_signal.csv',
 		results.file=file.path('..','intensity_model.Rdata'))
 		
-	gather_bilinear_models_from_dirs(args, 
+	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
 		results.file=file.path('..','corrected_intensity_model.Rdata'))
 
-	gather_bilinear_models_from_dirs(args, 
+	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Shrunk_corrected_signal.csv', 
 		results.file=file.path('..','shrunk_intensity_model.Rdata'))
 
-	gather_bilinear_models_from_dirs(args, 
+	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Area.csv', 
 		results.file=file.path('..','area_model.Rdata'))
 	
-    gather_bilinear_models_from_dirs(args, 
+    temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Box_intensity.csv', 
 		results.file=file.path('..','box_model.Rdata'))
-		
 }
