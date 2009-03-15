@@ -1169,6 +1169,8 @@ if (length(args) != 0) {
 	temp = gather_bilinear_models_from_dirs(args,
 		data_file='Average_adhesion_signal.csv',
 		results.file=file.path('..','intensity_model.Rdata'))
+	
+	write_assembly_disassembly_periods(temp[[1]],file.path(args,'..'))
 		
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
