@@ -186,12 +186,14 @@ sub output_single_adhesion_props {
 #Time Series Props
 #######################################
 sub gather_and_output_time_series_properties {
-    my @cell_size_sequence = &gather_cell_size_time_series;
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Cell_size.csv");
-    &output_mat_csv(\@cell_size_sequence, $output_file);
+    if (grep $_ eq "Cell_size", @available_data_types) {
+        my @cell_size_sequence = &gather_cell_size_time_series;
+        my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Cell_size.csv");
+        &output_mat_csv(\@cell_size_sequence, $output_file);
+    }
     
     my @total_ad_size = &gather_total_adhesion_size_time_series;
-    $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Ad_size.csv");
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Ad_size.csv");
     &output_mat_csv(\@total_ad_size, $output_file);
 }
 

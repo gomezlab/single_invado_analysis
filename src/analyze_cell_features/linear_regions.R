@@ -49,8 +49,12 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
         }
         
         if (! is.na(results.file)) {
+        	this_file = file.path(dirs[[i]],results.file)
+        	if (! file.exists(dirname(this_file))) {
+				dir.create(dirname(this_file),recursive=TRUE)
+			}
             this_result = results[[i]];
-            save(this_result,file = file.path(dirs[[i]],results.file));
+            save(this_result,file = this_file);
         }
 	}
 
@@ -1166,25 +1170,25 @@ if (length(args) != 0) {
     #each of the outputs of the following commands are saved to temp to avoid
     #writing the entire results contents to STDOUT, very useful when debugging
     #runs from the command line
-	temp = gather_bilinear_models_from_dirs(args,
+	average_model = gather_bilinear_models_from_dirs(args,
 		data_file='Average_adhesion_signal.csv',
-		results.file=file.path('..','intensity_model.Rdata'))
+		results.file=file.path('..','models','intensity_model.Rdata'))
 	
-	write_assembly_disassembly_periods(temp[[1]],file.path(args,'..'))
+	write_assembly_disassembly_periods(average_model[[1]],file.path(args,'..'))
 		
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
-		results.file=file.path('..','corrected_intensity_model.Rdata'))
+		results.file=file.path('..','models','corrected_intensity_model.Rdata'))
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Shrunk_corrected_signal.csv', 
-		results.file=file.path('..','shrunk_intensity_model.Rdata'))
+		results.file=file.path('..','models','shrunk_intensity_model.Rdata'))
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Area.csv', 
-		results.file=file.path('..','area_model.Rdata'))
+		results.file=file.path('..','models','area_model.Rdata'))
 	
     temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Box_intensity.csv', 
-		results.file=file.path('..','box_model.Rdata'))
+		results.file=file.path('..','models','box_model.Rdata'))
 }
