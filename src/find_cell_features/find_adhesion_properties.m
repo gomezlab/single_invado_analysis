@@ -160,7 +160,7 @@ if (exist('protrusion_data','var'))
     for i=1:size(protrusion_data,2)
         all_data = [all_data, sqrt(protrusion_data{i}(:,3).^2 + protrusion_data{i}(:,4).^2)']; %#ok<AGROW>
     end
-    median_velo = median(all_data);
+    median_velo = median(all_data); %#ok<NASGU>
     
     for i=1:size(protrusion_data,2)
         protrusion_matrix = protrusion_data{i};
@@ -169,7 +169,8 @@ if (exist('protrusion_data','var'))
             sorted_dists = sort(dists);
             best_line_nums = find(dists <= sorted_dists(5), 5,'first');
             
-            edge_speeds = [];
+            edge_projection = [];
+            edge_speed = [];
             for k=1:length(best_line_nums)
                 this_line_num = best_line_nums(k);
                 
@@ -180,10 +181,11 @@ if (exist('protrusion_data','var'))
                     edge_vector = (edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2))  * 10;
                 end
                 
-                edge_speeds(k) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2)))); %#ok<AGROW>
+                edge_projection(k) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2)))); %#ok<AGROW>
+                edge_speed(k) = sqrt(sum(edge_vector.^2));
             end
-            
-            adhesion_props(j).Edge_speed(i,1) = mean(edge_speeds);
+            adhesion_props(j).Edge_projection(i,1) = mean(edge_projection);
+            adhesion_props(j).Edge_speed(i,1) = mean(edge_speed);
         end
     end
 end

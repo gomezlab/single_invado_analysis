@@ -31,7 +31,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{min_ad_size} = 5;
-GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s") or die;
+GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -134,10 +134,12 @@ sub build_full_svg_file {
     
     my @svg_path_data;
 
-    for (@svg_files) {
+    for (0 .. $#svg_files) {
+        my $file = $svg_files[$_];
+        my $opacity = ($#svg_files - $_)/$#svg_files;
         my $path_count = 0;
         my $out_of_path = 0;
-        open SVG_FILE, $_;
+        open SVG_FILE, $file;
         for my $line (<SVG_FILE>) {
             if ($line =~ /\<path/) {
                 $path_count++;
@@ -146,6 +148,9 @@ sub build_full_svg_file {
                 $out_of_path = 1;
             }
             if ($path_count > 1 && not($out_of_path)) {
+                if ($opt{opacity}) {
+                    $line =~ s/fill/opacity="$opacity" fill/;
+                }
                 push @svg_path_data, $line;
             }
         }

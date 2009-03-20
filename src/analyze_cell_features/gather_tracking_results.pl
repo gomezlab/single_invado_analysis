@@ -91,7 +91,7 @@ sub convert_data_to_units {
     my %data_sets = %{ $_[0] };
     my %cfg       = %{ $_[1] };
 
-    my $lin_conv_factor = $cfg{pixel_size} / $cfg{target_unit_size};
+    my $lin_conv_factor = $cfg{pixel_size};
     my $sq_conv_factor  = $lin_conv_factor**2;
 
     my @no_conversion =
@@ -104,7 +104,7 @@ sub convert_data_to_units {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
-            } elsif ($data_type eq "Edge_speed") {
+            } elsif ($data_type eq "Edge_speed" || $data_type eq "Edge_projection") {
                 foreach (0 .. $#{ $data_sets{$time}{$data_type} }) {
                     @{ $data_sets{$time}{$data_type}[$_] } = map $lin_conv_factor * $_,
                       @{ $data_sets{$time}{$data_type}[$_] };
@@ -302,6 +302,11 @@ sub gather_and_output_lineage_properties {
 
 sub gather_edge_velo_data {
     print "\r", " " x 80, "\rGathering Edge Velocities Summaries" if $opt{debug};
+    
+    my $edge_type = "Edge_projection";
+    if (scalar(@_) > 0) {
+        $edge_type = $_[0];
+    }
 
     my $default_val = "NA";
     my $min_living_time = 10;
@@ -320,10 +325,10 @@ sub gather_edge_velo_data {
         my $last_data_index  = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[-1];
         
         #Data structure notes:
-        #   -the Edge_speed variables hold scalar projections between the
+        #   -the $edge_type variables hold scalar projections between the
         #   current position of the adhesion in any given time points and the
         #   closest edge tracking point in EVERY image, so to get all the points
-        #   prior to birth we need only analyze the Edge_speed data from the
+        #   prior to birth we need only analyze the $edge_type data from the
         #   birth image
         
         #Collect the null data from this row
@@ -331,7 +336,7 @@ sub gather_edge_velo_data {
             my $this_i_num = $data_keys[$this_index];
             my $this_i_num_index = grep $data_keys[$_] == $this_i_num, (0 .. $#data_keys);
             my $this_ad_num = $tracking_mat[$i][$this_index];
-            my @velo_data = @{ $data_sets{$this_i_num}{Edge_speed} };
+            my @velo_data = @{ $data_sets{$this_i_num}{$edge_type} };
             die if not exists $velo_data[$this_ad_num][$this_i_num_index];
             push @{$null_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
         }
@@ -340,7 +345,7 @@ sub gather_edge_velo_data {
         my $birth_ad_num = $tracking_mat[$i][$first_data_index];
         die "First pre-birth adhesion number is not valid ($birth_ad_num)." if $birth_ad_num < 0;
         my $birth_i_num     = $data_keys[$first_data_index];
-        my @birth_velo_data = @{ $data_sets{$birth_i_num}{Edge_speed} };
+        my @birth_velo_data = @{ $data_sets{$birth_i_num}{$edge_type} };
         my @this_pre_birth  = @{ $birth_velo_data[$birth_ad_num] }[ 0 .. ($first_data_index - 1) ];
         push @pre_birth_data, \@this_pre_birth;
         
@@ -354,7 +359,7 @@ sub gather_edge_velo_data {
                 my $this_i_num = $data_keys[$this_data_index];
                 my $this_i_num_index = grep $data_keys[$_] == $this_i_num, (0 .. $#data_keys);
                 my $this_ad_num = $tracking_mat[$i][$this_data_index];
-                my @velo_data = @{ $data_sets{$this_i_num}{Edge_speed} };
+                my @velo_data = @{ $data_sets{$this_i_num}{$edge_type} };
 
                 if ($this_index <= floor($#tracking_mat_indexes/2)) {
                     push @{$post_birth_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
@@ -371,7 +376,7 @@ sub gather_edge_velo_data {
         my $death_ad_num = $tracking_mat[$i][$last_data_index];
         die "Death adhesion number is not valid ($death_ad_num)." if $death_ad_num < 0;
         my $death_i_num     = $data_keys[$last_data_index];
-        my @death_velo_data = @{ $data_sets{$death_i_num}{Edge_speed} };
+        my @death_velo_data = @{ $data_sets{$death_i_num}{$edge_type} };
         my @this_post_death = @{ $death_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $death_velo_data[$death_ad_num] } ];
         push @post_death_data, \@this_post_death;
     }
