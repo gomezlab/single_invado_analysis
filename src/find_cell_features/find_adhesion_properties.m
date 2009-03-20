@@ -167,7 +167,7 @@ if (exist('protrusion_data','var'))
         for j=1:max(labeled_adhesions(:))
             dists = sqrt((protrusion_matrix(:,1) - adhesion_props(j).Centroid(1)).^2 + (protrusion_matrix(:,2) - adhesion_props(j).Centroid(2)).^2);
             sorted_dists = sort(dists);
-            best_line_nums = find(dists <= sorted_dists(1), 1,'first');
+            best_line_nums = find(dists <= sorted_dists(5), 5,'first');
             
             edge_speeds = [];
             for k=1:length(best_line_nums)
