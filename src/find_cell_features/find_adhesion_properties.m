@@ -182,7 +182,7 @@ if (exist('protrusion_data','var'))
                 end
                 
                 edge_projection(k) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2)))); %#ok<AGROW>
-                edge_speed(k) = sqrt(sum(edge_vector.^2));
+                edge_speed(k) = sqrt(sum(edge_vector.^2)); %#ok<AGROW>
             end
             adhesion_props(j).Edge_projection(i,1) = mean(edge_projection);
             adhesion_props(j).Edge_speed(i,1) = mean(edge_speed);
@@ -262,7 +262,7 @@ end
 
 to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage', ...
     'PixelIdxList', 'PixelList', 'SubarrayIdx', 'Border_pix', ...
-    'Edge_speed'};
+    'Edge_speed', 'Edge_projection'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -290,11 +290,12 @@ for i = 1:size(field_names,1)
     fclose(file_handle);
 end
 
-print_strings = struct('PixelIdxList','%0.f','Edge_speed','%f');
+print_strings = struct('PixelIdxList','%0.f','Edge_speed','%f','Edge_projection','%f');
 
 for i = 1:size(field_names,1)
     if (not(isempty(strmatch(field_names(i),'PixelIdxList'))) || ...
-            not(isempty(strmatch(field_names(i),'Edge_speed'))))
+        not(isempty(strmatch(field_names(i),'Edge_speed')))   || ...
+        not(isempty(strmatch(field_names(i),'Edge_projection'))))
         num_ad = size(S,1);
         
         file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
@@ -314,3 +315,6 @@ for i = 1:size(field_names,1)
         csvwrite(fullfile(out_dir,[cell2mat(field_names(i)),'.csv']),[S.(cell2mat(field_names(i)))]);
     end
 end
+
+% function convert_struct_data_to_mat(S,varargin)
+
