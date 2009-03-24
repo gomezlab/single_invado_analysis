@@ -116,10 +116,6 @@ sub gather_data_from_matlab_file {
         @data = map ${$_}[0], @data;
     }
 
-    if (scalar(@data) == 1) {
-        @data = @{ $data[0] };
-    }
-    
     #PixelIdxList is supposed to be an array of arrayes containing the pixel id
     #numbers, when only a single adhesion is present in the image, then the
     #parser returns just an array, not an array of arrays, this checks for that
