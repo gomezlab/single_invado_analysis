@@ -66,10 +66,12 @@ sub gather_data_sets {
 
             if (-e "$file_matches[0]" && -f "$file_matches[0]" && -r "$file_matches[0]") {
                 @{ $data_sets{$i_num}{$file} } = &gather_data_from_matlab_file("$file_matches[0]");
+                #all the centroid data is stored in a single file, by default,
+                #but we want to split it out for use tracking data matrix
+                #building
                 if ($file eq "Centroid") {
-                    my %split_centroid_data = &process_centroid_positions(@{ $data_sets{$i_num}{$file} });
-                    @{ $data_sets{$i_num}{ "Centroid_x" } } = @{$split_centroid_data{"x"}};
-                    @{ $data_sets{$i_num}{ "Centroid_y" } } = @{$split_centroid_data{"y"}};
+                    @{ $data_sets{$i_num}{ "Centroid_x" } } = map @{$_}[1], @{ $data_sets{$i_num}{$file} };
+                    @{ $data_sets{$i_num}{ "Centroid_y" } } = map @{$_}[0], @{ $data_sets{$i_num}{$file} };
                     
                     delete $data_sets{$i_num}{"Centroid"};
                 }
@@ -104,6 +106,15 @@ sub gather_data_from_matlab_file {
 
     my $parser = Text::CSV::Simple->new;
     my @data   = $parser->read_file($file);
+    
+    #For most of the files matlab produces, we will see a property with a single
+    #value for each adhesion. In this case, we want to collapse the array of
+    #arrays produced by Text::CSV::Simple into a single array of numbers. So we
+    #check to make sure there are only one entry in each array in each row of
+    #the @data variable, them collapse each entry into a single array.
+    if (scalar(grep scalar(@{$_}) == 1, @data) == scalar(@data)) {
+        @data = map ${$_}[0], @data;
+    }
 
     if (scalar(@data) == 1) {
         @data = @{ $data[0] };
@@ -116,7 +127,6 @@ sub gather_data_from_matlab_file {
     if ($file =~ /PixelIdxList/ && !(ref($data[0]) eq "ARRAY")) {
         @data = [@data];
     }
-
     return @data;
 }
 
