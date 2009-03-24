@@ -261,8 +261,7 @@ if (not(exist(out_dir,'dir')))
 end
 
 to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage', ...
-    'PixelIdxList', 'PixelList', 'SubarrayIdx', 'Border_pix', ...
-    'Edge_speed', 'Edge_projection'};
+    'PixelList', 'SubarrayIdx', 'Border_pix', 'Extrema'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -270,51 +269,65 @@ to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage', ...
 
 field_names = fieldnames(S);
 
+ad_props_cell = struct2cell(S);
+
+print_strings = struct('PixelIdxList','%0.f');
+
 for i = 1:size(field_names,1)
     
     if(strmatch(field_names(i),to_exclude))
         continue;
     end
     
-    data = [S.(cell2mat(field_names(i)))];
+    format_string = '%f';
+    if(strmatch(field_names(i),fieldnames(print_strings)))
+        format_string = print_strings.(field_names{i});
+    end    
     
     file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
-    file_handle = fopen(file_out,'wt');
-    for j = 1:size(data,2)
-        if (j < size(data,2))
-            fprintf(file_handle,'%f,',data(j));
+    
+    data = ad_props_cell(i,:);
+    output_CSV_from_cell(data, file_out, 'format', format_string);
+end
+
+
+function output_CSV_from_cell(data, out_file, varargin)
+% output_CSV_from_cell    writes a provided cell data structure to a CSV
+%                         file
+%
+%   write_struct_data(D,OF) writes the data in cell 'D' to file 'DF', using
+%   fprintf format '%f'
+%
+%   Options:
+%       -format: specify the string passed to fprintf for number conversion
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+i_p = inputParser;
+i_p.FunctionName = 'output_CSV_from_cell';
+
+i_p.addRequired('data',@iscell);
+i_p.addRequired('out_file', @(x) exist(fileparts(x),'dir') == 7 );
+
+i_p.addParamValue('format','%f',@ischar);
+
+i_p.parse(data,out_file,varargin{:});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+file_handle = fopen(i_p.Results.out_file,'wt');
+for i = 1:max(size(data))
+    for j = 1:max(size(data{i}))
+        assert(any(size(data{i}) == 1))
+        if (j < max(size(data{i})))
+            fprintf(file_handle,[i_p.Results.format,','],data{i}(j));
         else
-            fprintf(file_handle,'%f',data(j));
-        end
-    end
-    fclose(file_handle);
-end
-
-print_strings = struct('PixelIdxList','%0.f','Edge_speed','%f','Edge_projection','%f');
-
-for i = 1:size(field_names,1)
-    if (not(isempty(strmatch(field_names(i),'PixelIdxList'))) || ...
-        not(isempty(strmatch(field_names(i),'Edge_speed')))   || ...
-        not(isempty(strmatch(field_names(i),'Edge_projection'))))
-        num_ad = size(S,1);
-        
-        file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
-        file_handle = fopen(file_out,'wt');
-        for j = 1:num_ad
-            data = S(j).(field_names{i})';
-            for k = 1:size(data,2)
-                if (k < size(data,2))
-                    fprintf(file_handle,[print_strings.(field_names{i}),','],data(k));
-                else
-                    fprintf(file_handle,[print_strings.(field_names{i}),'\n'],data(k));
-                end
-            end
-        end
-        fclose(file_handle);
-    elseif (strmatch(field_names(i),'Border_pix'))
-        csvwrite(fullfile(out_dir,[cell2mat(field_names(i)),'.csv']),[S.(cell2mat(field_names(i)))]);
+            fprintf(file_handle,[i_p.Results.format,'\n'],data{i}(j));
+        end        
     end
 end
-
-% function convert_struct_data_to_mat(S,varargin)
-
+fclose(file_handle);
