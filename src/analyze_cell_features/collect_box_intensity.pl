@@ -37,9 +37,11 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 # Main Program
 ################################################################################
-our @files;
-find(\&include_in_vis, catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}));
+my $tracking_folder = $cfg{tracking_output_file};
+$tracking_folder =~ s/(.*)\.csv/$1/;
 
+our @files;
+find(\&include_in_vis, catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}, $tracking_folder));
 my @matlab_code = "find_box_intensity('$files[0]')";
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'Box_intensity');
@@ -95,22 +97,9 @@ Optional parameter(s):
 
 =item * debug or d: print debuging information during program execution
 
-=item * emerald: submit jobs through the emerald queuing system
+=item * lsf: submit jobs through the emerald queuing system
 
 =back
-
-=head1 EXAMPLES
-
-collect_fa_image_set.pl -cfg FA_config
-
-OR
-
-collect_fa_image_set.pl -cfg FA_config -d
-
-=head1 SEE ALSO
-
-collect_mask_set.pl: similar program designed to collect the binary mask that
-locates the intracellular area
 
 =head1 AUTHORS
 

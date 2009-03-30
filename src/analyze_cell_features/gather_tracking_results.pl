@@ -313,7 +313,7 @@ sub gather_and_output_lineage_properties {
 sub gather_edge_velo_data {
     print "\r", " " x 80, "\rGathering Edge Velocities Summaries" if $opt{debug};
     
-    my $edge_type = "Edge_projection";
+    my $edge_type = "Edge_speed";
     if (scalar(@_) > 0) {
         $edge_type = $_[0];
     }
@@ -700,7 +700,7 @@ sub run_R_linear_region_code {
     if (! -e dirname($output_file)) {
         mkpath(dirname($output_file));
     }
-    my $R_cmd = "R CMD BATCH --vanilla --args -$data_dir linear_regions.R $output_file";
+    my $R_cmd = "R CMD BATCH --vanilla --args -$data_dir FA_analysis_lib.R $output_file";
     system($R_cmd);
 }
 
