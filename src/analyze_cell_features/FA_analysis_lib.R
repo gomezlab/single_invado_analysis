@@ -16,7 +16,10 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 	
 	for (i in 1:length(dirs)) {
 		if (is.na(dirs[[i]])) {
-			next
+			next;
+		}
+		if (! file.exists(file.path(dirs[[i]],data_file))) {
+			next;
 		}
 		
 		if (debug) {
@@ -1187,7 +1190,7 @@ if (length(args) != 0) {
 		data_file='Average_adhesion_signal.csv',
 		results.file=file.path('..','models','intensity_model.Rdata'))
 	
-	write_assembly_disassembly_periods(average_model[[1]],file.path(args,'..'))
+	write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))
 		
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
