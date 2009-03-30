@@ -970,9 +970,10 @@ load_results <- function(dirs,file) {
 	results
 }
 
-load_data_files <- function(dirs,files,headers, debug = FALSE) {
+load_data_files <- function(dirs, files, headers, debug = FALSE) {
 	results = list()
 	
+	exp_names = list()
 	all_files_present_dirs = c()	
 	for (i in 1:length(dirs)) {
 		seen_files = 0
@@ -986,8 +987,16 @@ load_data_files <- function(dirs,files,headers, debug = FALSE) {
 		}
 		if (all_files_present) {
 			all_files_present_dirs = c(all_files_present_dirs, dirs[i]);
+			
+			regex_range = regexpr("time_series_[[:digit:]]",dirs[[i]])
+	        if (regex_range[1] == -1) {
+        		exp_names[[length(all_files_present_dirs)]] = dirs[[i]];
+	        } else {
+    	    	exp_names[[length(all_files_present_dirs)]] = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
+        	}
 		}
 	}
+	print(exp_names)
 
 	for (i in 1:length(files)) {
 		results[[i]] = list()
@@ -1002,6 +1011,7 @@ load_data_files <- function(dirs,files,headers, debug = FALSE) {
 			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = headers[j], sep=",")
 		}
 	}
+	results[[length(files) + 1]] = exp_names
 		
 	if (length(results) == 1) {
 		results = results[[1]]
@@ -1012,20 +1022,23 @@ load_data_files <- function(dirs,files,headers, debug = FALSE) {
 find_col_conf_ints <- function(data, boot.samp = 100) {
 	upper = c()
 	lower = c()
+	mean_vals = c()
 	for (j in 1:dim(data)[[2]]) {
 		this_col = data[,j];
 		this_col = this_col[! is.na(this_col)]
 		if (length(this_col) == 0) {
 			upper = c(upper, NA)
 			lower = c(lower, NA)
+			mean_vals = c(mean_vals, NA)
 		} else {
 			boot_samp = boot(this_col, function(x,y) mean(x[y], na.rm=T), boot.samp)
 			conf_int = as.numeric(quantile(boot_samp$t, c(0.025,0.975)))
 			lower = c(lower, conf_int[1])
 			upper = c(upper, conf_int[2])
+			mean_vals = c(mean_vals, mean(this_col, na.rm=T))
 		}
 	}
-	list(upper = upper, lower = lower)
+	list(upper = upper, lower = lower, mean_vals = mean_vals)
 }
 
 trim_args_list <- function(args) {
