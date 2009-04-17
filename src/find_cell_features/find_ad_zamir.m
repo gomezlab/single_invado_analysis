@@ -50,12 +50,34 @@ ad_nums = unique(ad_zamir);
 assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
 for i = 2:length(ad_nums)
     this_num = ad_nums(i);
+    
+    %first make a binary image of the current adhesion and then run imfill
+    %to fill any holes present
     this_ad = zeros(size(ad_zamir));
     this_ad(ad_zamir == this_num) = 1;
     filled_ad = imfill(this_ad);
-    filled_pix = find(and(filled_ad > 0, not(this_ad)));
-    for j = 1:length(filled_pix)
-        ad_zamir = add_single_pixel(ad_zamir,filled_pix(j),i_p.Results.min_pixel_size);
+    
+    %to determine which pixels were filled in by imfill, use find to
+    %determine the linear indexes of the pixels there not in the original
+    %adhesion, but are presented in the filled adhesion
+    pix_to_add = find(and(filled_ad > 0, not(this_ad)));
+    if (this_num == 79) 
+        1;
+    end
+    for j = 1:length(pix_to_add)
+        %First we deal with the unlikely, but possible, case where one
+        %identified adhesion lives in a hole formed by another adhesion.
+        %To deal with this unlikely case, we ask if the pixel being used to
+        %fill the hole is already assigned. If so, then it was part of
+        %another adhesion, but contained inside the current adhesion. So we
+        %force the hole adhesion to become part of the enclosing adhesion.
+        %Otherwise, add the adhesion pixel using the same rules as the
+        %Zamir, 1999 paper
+        if (ad_zamir(pix_to_add(j)) ~= 0)
+            ad_zamir(pix_to_add(j)) = this_num;
+        else
+            ad_zamir = add_single_pixel(ad_zamir,pix_to_add(j),i_p.Results.min_pixel_size);
+        end
     end
 end
 
