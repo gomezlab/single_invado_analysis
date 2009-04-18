@@ -1,5 +1,5 @@
 rm(list = ls())
-source('linear_regions.R')
+source('FA_analysis_lib.R')
 library(lattice)
 library(geneplotter)
 library(Hmisc)
@@ -7,26 +7,37 @@ library(Hmisc)
 ################################################################################
 #Result loading
 ################################################################################
-exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/lin_time_series/')
+exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
-results = load_results(exp_dirs,file.path('..','intensity_model.Rdata'))
-corr_results = load_results(exp_dirs,file.path('..','corrected_intensity_model.Rdata'))
-area = load_results(exp_dirs,file.path('..','area_model.Rdata'))
-box_results = load_results(exp_dirs,file.path('..','box_model.Rdata'))
+results = load_results(exp_dirs,file.path('intensity_model.Rdata'))
+corr_results = load_results(exp_dirs,file.path('corrected_intensity_model.Rdata'))
+area = load_results(exp_dirs,file.path('area_model.Rdata'))
+box_results = load_results(exp_dirs,file.path('box_model.Rdata'))
 
-ind_results <- load_data_files(exp_dirs,file.path('..','individual_adhesions.csv'), T);
+ind_results <- load_data_files(exp_dirs,file.path('..','individual_adhesions.csv'), T, debug=FALSE, inc_exp_names=FALSE);
+
+exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
+exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
+results_S = load_results(exp_dirs_S,file.path('intensity_model.Rdata'))
+corr_results_S = load_results(exp_dirs_S,file.path('corrected_intensity_model.Rdata'))
+area_S = load_results(exp_dirs_S,file.path('area_model.Rdata'))
+box_results_S = load_results(exp_dirs_S,file.path('box_model.Rdata'))
+
+ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), T, debug=FALSE, inc_exp_names=FALSE);
 
 ########################################
 #Result filtering
 ########################################
 general_props = gather_general_props(results)
 
-results_nofilt = filter_mixed_results(results, corr_results, min_R_sq = -Inf, max_p_val = Inf)
+results_nofilt = filter_mixed_results(results, results, min_R_sq = -Inf, max_p_val = Inf)
+results_S_nofilt = filter_mixed_results(results_S, results_S, min_R_sq = -Inf, max_p_val = Inf)
 corr_nofilt = filter_mixed_area(corr_results, corr_results, min_R_sq = -Inf, max_p_val = Inf)
 area_nofilt = filter_mixed_area(area, corr_results, min_R_sq = -Inf, max_p_val = Inf)
 box_nofilt = filter_mixed_area(box_results, box_results, min_R_sq = -Inf, max_p_val = Inf)
 
-results_filt = filter_mixed_results(results, corr_results)
+results_filt = filter_mixed_results(results, results)
+results_S_filt = filter_mixed_results(results_S, results_S)
 corr_filt = filter_mixed_area(corr_results, corr_results)
 area_filt = filter_mixed_area(area, corr_results)
 box_filt = filter_mixed_area(box_results, box_results)
@@ -35,6 +46,52 @@ box_filt = filter_mixed_area(box_results, box_results)
 #Plotting
 ################################################################################
 out_folder = '../../doc/publication/figures/'
+
+########################################
+#Comparing S178A to Wild-type
+########################################
+pdf(file.path(out_folder,'S178A_vs_wild-type.pdf'))
+
+layout(rbind(c(1,2),c(3,4)))
+par(bty='n', mar=c(5,4.2,2,0.1))
+
+boxplot_with_points(list(results_filt$as$slope,results_S_filt$as$slope), 
+				    names=c('Wild-type','S178A'),					ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
+
+boxplot_with_points(list(results_filt$dis$slope,results_S_filt$dis$slope), 
+				    names=c('Wild-type','S178A'), 					ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
+
+boxplot_with_points(list(results_filt$as$edge_dist,results_S_filt$as$edge_dist), 
+					names=c('Wild-type','S178A'), 
+					ylab=expression(paste('Distance from Edge at Birth (',mu,'m)',sep='')))
+
+boxplot_with_points(list(results_filt$dis$edge_dist,results_S_filt$dis$edge_dist), 
+					names=c('Wild-type','S178A'), 
+					ylab=expression(paste('Distance from Edge at Death (',mu,'m)',sep='')))
+
+graphics.off()
+
+pdf(file.path(out_folder,'unfilt_S178A_vs_wild-type.pdf'))
+
+layout(rbind(c(1,2),c(3,4)))
+par(bty='n', mar=c(5,4.2,2,0.1))
+
+boxplot_with_points(list(results_nofilt$as$slope,results_S_nofilt$as$slope), inc.points = FALSE,
+				    names=c('Wild-type','S178A'),					ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
+
+boxplot_with_points(list(results_nofilt$dis$slope,results_S_nofilt$dis$slope), inc.points = FALSE,
+				    names=c('Wild-type','S178A'), 					ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
+
+boxplot_with_points(list(results_nofilt$as$edge_dist,results_S_nofilt$as$edge_dist), inc.points = FALSE,
+					names=c('Wild-type','S178A'), 
+					ylab=expression(paste('Distance from Edge at Birth (',mu,'m)',sep='')))
+
+boxplot_with_points(list(results_nofilt$dis$edge_dist,results_S_nofilt$dis$edge_dist), inc.points = FALSE,
+					names=c('Wild-type','S178A'), 
+					ylab=expression(paste('Distance from Edge at Death (',mu,'m)',sep='')))
+
+graphics.off()
+
 
 ########################################
 #All by all plots

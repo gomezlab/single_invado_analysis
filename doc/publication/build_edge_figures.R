@@ -10,7 +10,10 @@ library(Hmisc)
 exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/lin_time_series/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 
-out_folder = '../../doc/publication/figures/'
+out_folder = '../../doc/publication/figures/edge/'
+if (! file_test('-d', out_folder)) {
+	dir.create(out_folder, recursive=TRUE)
+}
 
 library(boot)
 
@@ -29,6 +32,17 @@ pre_death_raw <- raw[[5]]
 post_death_raw <- raw[[6]]
 
 exp_names <- raw[[length(raw)]]
+
+#all_up = c()
+#all_down = c()
+#for (i in 1:100) {
+#	sample_data <- matrix(sample(data_temp,10*526), nrow = 10, ncol = 526); 
+#	sample_conf = find_col_conf_ints(sample_data);
+#	
+#	all_up = c(all_up, length(which(sample_conf$upper > 0 & sample_conf$lower > 0))/length(sample_conf$lower))
+#
+#	all_down = c(all_down, length(which(sample_conf$upper < 0 & sample_conf$lower < 0))/length(sample_conf$lower))
+#}
 
 ########################################
 #Velocity Rings
@@ -114,13 +128,28 @@ for (i in 1:length(pre_birth_raw)) {
 	this_post_birth = post_birth_raw[[i]];
 	this_pre_death = pre_death_raw[[i]];
 	
+	#Birth and death filters
 	birth_filt = ! lineage_data[[i]]$split_birth_status & 
 				 ! is.na(this_pre_birth[,length(this_pre_birth)]) & 
-				 lineage_data[[i]]$starting_edge_dist < Inf
-	print(sum(birth_filt)/length(lineage_data[[i]]$starting_edge_dist))
+				 lineage_data[[i]]$starting_edge_dist < 2
 
+	birth_filt_alt = ! lineage_data[[i]]$split_birth_status & 
+				 ! is.na(this_pre_birth[,length(this_pre_birth)]) & 
+				 lineage_data[[i]]$starting_edge_dist >= 2
+
+	birth_filt_nl = ! lineage_data[[i]]$split_birth_status & 
+				 ! is.na(this_pre_birth[,length(this_pre_birth)])
+	
+#	longev_filt = ! is.na(lineage_data[[i]]$longevity) & lineage_data[[i]]$longevity > 20
+#	birth_filt = birth_filt & longev_filt
+				 
+#	print(sum(birth_filt)/length(lineage_data[[i]]$starting_edge_dist))
+	
 	death_filt = as.logical(lineage_data[[i]]$death_status) 
 	
+	pre_birth$birth_filt[[i]] = birth_filt
+	pre_birth$birth_filt_alt[[i]] = birth_filt_alt
+	pre_birth$birth_filt_nl[[i]] = birth_filt_nl		
 	this_pre_birth = this_pre_birth[birth_filt,]
 	pre_birth$data[[i]] = this_pre_birth
 	this_post_birth = this_post_birth[birth_filt,]
@@ -130,29 +159,41 @@ for (i in 1:length(pre_birth_raw)) {
 	this_post_death = this_post_death[death_filt,] 
 	post_death$data[[i]] = this_post_death
 	
-	all_pre_birth = rbind(all_pre_birth, as.matrix(this_pre_birth[,(dim(this_pre_birth)[[2]] - 19):dim(this_pre_birth)[[2]]]))
+#	all_pre_birth = rbind(all_pre_birth, as.matrix(this_pre_birth[,(dim(this_pre_birth)[[2]] - 9):dim(this_pre_birth)[[2]]]))
 	
-	pre_birth$means[[i]] = as.numeric(mean(this_pre_birth, na.rm=T))
-	post_birth$means[[i]] = as.numeric(mean(this_post_birth, na.rm=T))
-	pre_death$means[[i]] = as.numeric(mean(this_pre_death, na.rm=T))
-	post_death$means[[i]] = as.numeric(mean(this_post_death, na.rm=T))
+	pre_birth$variances[[i]] = apply(pre_birth$data[[i]], 2, function(x) var(x, na.rm=T))
 	
+	temp = find_col_conf_ints(abs(this_pre_birth))
+	pre_birth$abs_means[[i]] = temp$mean_vals
+	pre_birth$abs_upper[[i]] = temp$u
+	pre_birth$abs_lower[[i]] = temp$l	
+
+	post_birth$abs_means[[i]] = apply(post_birth$data[[i]], 2, function(x) mean(abs(x), na.rm=T))
+
+	post_death$abs_means[[i]] = apply(post_death$data[[i]], 2, function(x) mean(abs(x), na.rm=T))
+	
+	#find confidence interverals for all the data types collected
 	temp = find_col_conf_ints(this_pre_birth)
+	pre_birth$means[[i]] = temp$mean_vals
 	pre_birth$upper[[i]] = temp$u
 	pre_birth$lower[[i]] = temp$l
 
 	temp = find_col_conf_ints(this_post_birth)
+	post_birth$means[[i]] = temp$mean_vals	
 	post_birth$upper[[i]] = temp$u
 	post_birth$lower[[i]] = temp$l
 
 	temp = find_col_conf_ints(this_pre_death)
+	pre_death$means[[i]] = temp$mean_vals	
 	pre_death$upper[[i]] = temp$u
 	pre_death$lower[[i]] = temp$l
 
 	temp = find_col_conf_ints(this_post_death)
+	post_death$means[[i]] = temp$mean_vals	
 	post_death$upper[[i]] = temp$u
 	post_death$lower[[i]] = temp$l
 
+	#Pull apart all 
 	pre_birth$unlist[[i]] = unlist(this_pre_birth)
 	pre_birth$unlist[[i]] = pre_birth$unlist[[i]][!is.na(pre_birth$unlist[[i]])]
 	temp = t.test(pre_birth$unlist[[i]])
@@ -182,9 +223,12 @@ for (i in 1:length(pre_birth_raw)) {
 	temp = t.test(null$unlist[[i]])
 	null$all_l[[i]] = temp$conf.int[1]
 	null$all_u[[i]] = temp$conf.int[2]
-
-	rows_to_include = apply(this_pre_birth, 1, function(x) all(x[(length(x) - 2):length(x)] < 0))
-	rows_to_include[is.na(rows_to_include)] = FALSE
+	
+	rows_to_include = ! vector(length = dim(pre_birth$data[[i]])[[1]]);
+	for (j in (dim(pre_birth$data[[i]])[[2]] - 2):dim(pre_birth$data[[i]])[[2]]) {
+		rows_to_include = rows_to_include & pre_birth$lower[[i]][j] > pre_birth$data[[i]][,j]
+		print(length(which(rows_to_include))/dim(pre_birth$data[[i]])[[1]])
+	}
 	
 	temp = find_col_conf_ints(this_pre_birth[rows_to_include,])
 	pre_birth$protrude_upper[[i]] = temp$u
@@ -214,12 +258,12 @@ for (i in 1:length(pre_birth$means)) {
 		   pre_birth$means[[i]][x_range], 
 		   pre_birth$upper[[i]][x_range], 
 		   pre_birth$lower[[i]][x_range], 
-		   main = exp_names[[i]], ylab = "", xlab = "")
+		   main = exp_names[[i]], ylab = "", xlab = "", ylim = y_range)
 
 #	segments(1, pre_birth$all_u[[i]], length(pre_birth$means[[i]]), pre_birth$all_u[[i]], col='green')
 #	segments(1, pre_birth$all_l[[i]], length(pre_birth$means[[i]]), pre_birth$all_l[[i]], col='green')
 #	
-#	errbar(1:length(pre_birth$means[[i]]), pre_birth$protrude_means[[i]], pre_birth$protrude_upper[[i]], pre_birth$protrude_lower[[i]], col='red', add=T)
+	errbar(1:length(pre_birth$means[[i]]), pre_birth$protrude_means[[i]], pre_birth$protrude_upper[[i]], pre_birth$protrude_lower[[i]], col='red', add=T)
 
 	if (i == 1) {	
 		mtext('Pre-birth', outer=T)
@@ -237,7 +281,7 @@ for (i in 1:length(post_birth$means)) {
 		   post_birth$means[[i]][x_range], 
 		   post_birth$upper[[i]][x_range], 
 		   post_birth$lower[[i]][x_range], 
-		   ylab = i, xlab = "", ylim=y_range)
+		   main = exp_names[[i]], ylab = i, xlab = "", ylim=y_range)
 
 	segments(1, post_birth$all_u[[i]], length(post_birth$means[[i]]), post_birth$all_u[[i]], col='green')
 	segments(1, post_birth$all_l[[i]], length(post_birth$means[[i]]), post_birth$all_l[[i]], col='green')
@@ -254,15 +298,14 @@ for (i in 1:length(post_birth$means)) {
 	}
 }
 
-for (i in 1:length(pre_death$means)) {
-	
+for (i in 1:length(pre_death$means)) {		
 	x_range = (length(pre_death$means[[i]])- 9):length(pre_death$means[[i]]);
 
 	errbar(x_range, 
 		   pre_death$means[[i]][x_range], 
 		   pre_death$upper[[i]][x_range], 
 		   pre_death$lower[[i]][x_range], 
-		   ylab = i, xlab = "")
+		   main = exp_names[[i]], ylab = i, xlab = "")
 
 	segments(1, pre_death$all_u[[i]], length(pre_birth$means[[i]]), pre_death$all_u[[i]], col='green')
 	segments(1, pre_death$all_l[[i]], length(pre_birth$means[[i]]), pre_death$all_l[[i]], col='green')
@@ -280,7 +323,7 @@ for (i in 1:length(post_death$means)) {
 		   post_death$means[[i]][x_range], 
 		   post_death$upper[[i]][x_range], 
 		   post_death$lower[[i]][x_range], 
-		   ylab = i, xlab = "")
+		   main = exp_names[[i]], ylab = i, xlab = "")
 		   
 	segments(1, post_death$all_u[[i]], length(pre_birth$means[[i]]), post_death$all_u[[i]], col='green')
 	segments(1, post_death$all_l[[i]], length(pre_birth$means[[i]]), post_death$all_l[[i]], col='green')
@@ -291,7 +334,7 @@ for (i in 1:length(post_death$means)) {
 }
 
 for (i in 1:length(pre_birth$unlist)) {
-	hist(pre_birth$unlist[[i]], main=i,xlab='Projected Edge Velocity')
+	hist(pre_birth$unlist[[i]], main = exp_names[[i]], xlab='Projected Edge Velocity')
 	if (i == 1) {
 		mtext('Pre-birth Data Sets', outer=T)
 	}	

@@ -737,13 +737,22 @@ gather_exp_win_residuals <- function(resid, window) {
 
 boxplot_with_points <- function(data, 
 	colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), 
-	notch=F, names, range=1.5, ...) {
+	notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, ...) {
 		
+	
+	if (inc.n.counts) {
+		for (i in 1:length(data)) {
+			names[i] = paste(names[i], ' (n=', length(data[[i]]), ')', sep ='');
+		}
+	}
+	
 	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range,...)
-	for (i in 1:length(data)) {
-		this_data = data[[i]]
-		temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
-		points(jitter(array(0,dim=c(1,length(temp_data))),10)+i,temp_data,col=colors[[i]])
+	if (inc.points) {
+		for (i in 1:length(data)) {
+			this_data = data[[i]]
+			temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
+			points(jitter(array(0,dim=c(1,length(temp_data))),10)+i,temp_data,col=colors[[i]])
+		}
 	}
 }
 
@@ -766,7 +775,7 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-filter_mixed_results <- function(results, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {
+filter_mixed_results <- function(results, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
@@ -973,7 +982,7 @@ load_results <- function(dirs,file) {
 	results
 }
 
-load_data_files <- function(dirs, files, headers, debug = FALSE) {
+load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = FALSE) {
 	results = list()
 	
 	exp_names = list()
@@ -999,22 +1008,25 @@ load_data_files <- function(dirs, files, headers, debug = FALSE) {
         	}
 		}
 	}
-	print(exp_names)
-
-	for (i in 1:length(files)) {
-		results[[i]] = list()
-	}
 	
 	if (debug) {
 		print(all_files_present_dirs)
 	}
+	
+	for (i in 1:length(files)) {
+		results[[i]] = list()
+	}
+	
+	header_array = array(headers, dim=c(1,length(all_files_present_dirs)))
 
 	for (i in 1:length(all_files_present_dirs)) {
 		for (j in 1:length(files)) { 
-			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = headers[j], sep=",")
+			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[j], sep=",")
 		}
 	}
-	results[[length(files) + 1]] = exp_names
+	if (inc_exp_names) {
+		results[[length(files) + 1]] = exp_names
+	}
 		
 	if (length(results) == 1) {
 		results = results[[1]]
