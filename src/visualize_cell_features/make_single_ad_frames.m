@@ -22,6 +22,8 @@ i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('start_row',1,@(x)x >= 1);
 i_p.addParamValue('end_row',1,@(x)x >= 1);
+i_p.addParamValue('adhesion_file',@(x)exist(x,'file') == 2);
+i_p.addParamValue('output_folder','',@ischar);
 
 i_p.parse(cfg_file,varargin{:});
 if (i_p.Results.debug == 1), profile off; profile on; end
@@ -50,7 +52,7 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
 tracking_seq = load(tracking_seq_file) + 1;
-tracking_seq_length = size(tracking_seq);
+tracking_seq_size = size(tracking_seq);
 
 %Filter the tracking matrix according to 'start_row' and 'end_row' rules
 %provided via command parameters.
@@ -82,7 +84,15 @@ elseif (isempty(strmatch('end_row', i_p.UsingDefaults)))
     tracking_seq = [tracking_beginning; tracking_end];
     
 end
-assert(all(size(tracking_seq) == tracking_seq_length));
+assert(all(size(tracking_seq) == tracking_seq_size));
+
+if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
+    ad_to_include = csvread(i_p.Results.adhesion_file);
+    
+    temp_tracking_mat = zeros(tracking_seq_size);
+    temp_tracking_mat(ad_to_include(:,1),:) = tracking_seq(ad_to_include(:,1),:);
+    tracking_seq = temp_tracking_mat;
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,7 +180,7 @@ for j = 1:max_image_num
     %calculations on the images which don't contain any rendered adhesions,
     %so we find the columns surrounding the current column in the tracking
     %matrix and ask if this columns contain any numbers greater than 0
-    %indicating the precense of an adhesion or an adhesion in the next or
+    %indicating the presense of an adhesion or an adhesion in the next or
     %prior frame
     surrounding_cols = zeros(size(tracking_seq,1),3);
     surrounding_cols(:,2) = tracking_seq(:,i_seen);
@@ -204,8 +214,8 @@ for j = 1:max_image_num
 
         if (all(surrounding_entries <= 0))
             if (size(all_images{i},2) > 0)
-                padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_length(1)))),'d'],i);
-                output_file = fullfile(out_path_single,'single_ad', ['montage_',padded_num, '.png']);
+                padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],i);
+                output_file = fullfile(out_path_single, i_p.Results.output_folder, ['montage_',padded_num, '.png']);
                 write_montage_image_set(all_images{i},output_file)
                 all_images{i} = cell(0);
             end
@@ -241,8 +251,8 @@ end
 for i = 1:size(all_images,1)
     if (size(all_images{i}, 2) == 0), continue; end
 
-    padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_length(1)))),'d'],i);
-    output_file = fullfile(out_path_single,'single_ad', ['montage_',padded_num, '.png']);
+    padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],i);
+    output_file = fullfile(out_path_single, i_p.Results.output_folder, ['montage_',padded_num, '.png']);;
     write_montage_image_set(all_images{i},output_file)
 end
 

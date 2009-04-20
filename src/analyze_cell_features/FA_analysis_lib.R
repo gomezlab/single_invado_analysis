@@ -1073,13 +1073,13 @@ write_assembly_disassembly_periods <- function(result, dir) {
 	row_nums = which(! is.na(result$assembly$offset))
 	if (! is.null(row_nums)) {
 		rows_and_offset = cbind(row_nums, result$assembly$offset[row_nums]);
-		write.table(rows_and_offset,file=file.path(dir,'assembly_rows_offsets.csv'), row.names=FALSE, col.names=FALSE)
+		write.table(rows_and_offset,file=file.path(dir,'assembly_rows_offsets.csv'), sep=',', row.names=FALSE, col.names=FALSE)
 	}
 	
 	row_nums = which(! is.na(result$disassembly$offset))
 	if (! is.null(row_nums)) {
 		rows_and_offset = cbind(row_nums, result$disassembly$offset[row_nums]);
-		write.table(rows_and_offset,file=file.path(dir,'disassembly_rows_offsets.csv'), row.names=FALSE, col.names=FALSE)
+		write.table(rows_and_offset,file=file.path(dir,'disassembly_rows_offsets.csv'), sep=',', row.names=FALSE, col.names=FALSE)
 	}
 		
 }

@@ -31,7 +31,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only|only_config", 
-                  "lsf|l") or die;
+                  "lsf|l", "single_ad_folders") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -48,7 +48,7 @@ my @movie_params = map {
     $file_name_no_csv =~ s/(.*)\.csv/$1/;
     {
         tracking_file => $_,
-        movie_path    => catdir($cfg{movie_output_folder}, $file_name_no_csv),
+        movie_path    => $file_name_no_csv,
     }
 } @files;
 
@@ -58,7 +58,7 @@ foreach (@movie_params) {
     my %params = %{$_};
 
     if (not exists $params{'config_file'}) {
-        $params{'config_file'} = catfile($cfg{exp_results_folder}, $params{movie_path}, $cfg{vis_config_file});
+        $params{'config_file'} = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, $params{movie_path}, $cfg{vis_config_file});
     }
 
     mkpath(dirname($params{'config_file'}));
@@ -73,7 +73,9 @@ foreach (@movie_params) {
 }
 
 push @matlab_code, &build_single_ad_commands(%single_ad_params);
-push @matlab_code, &build_single_ad_folder_command(%single_ad_params);
+if ($opt{single_ad_folders}) {
+    push @matlab_code, &build_single_ad_folder_command(%single_ad_params);
+}
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
@@ -108,8 +110,6 @@ sub write_matlab_config {
 sub build_matlab_visualization_config {
     my %params = @_;
 
-    my $single_ad_folder = dirname($params{'movie_path'});
-    
     my $excluded_image_nums = "[" . join(",", @{ $cfg{exclude_image_nums} }) . "]";
 
     my ($sec, $min, $hour, $day, $mon, $year, $wday, $yday, $isdst) = localtime time;
@@ -121,6 +121,7 @@ sub build_matlab_visualization_config {
         "%General Parameters",
         "exp_name = '$cfg{exp_name}';",
         "base_results_folder = fullfile('" . join("\',\'", split($cfg{folder_divider}, $cfg{results_folder})) .  "', exp_name);\n",
+        "vis_folder = fullfile(base_results_folder,'$cfg{movie_output_folder}');\n",
 
         "I_folder = fullfile(base_results_folder, '$cfg{single_image_folder}');\n",
         
@@ -133,11 +134,11 @@ sub build_matlab_visualization_config {
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
 
-        "out_path = fullfile(base_results_folder,'$params{movie_path}');",
+        "out_path = fullfile(vis_folder,'$params{movie_path}');",
         "out_prefix = {'" . join("\',\'", @{ $cfg{movie_output_prefix} }) . "'};\n",
         
-        "out_path_single = fullfile(base_results_folder,'$single_ad_folder');\n",
-
+        "out_path_single = fullfile(vis_folder,'single_ad');",
+    
         "excluded_image_nums = $excluded_image_nums;",
         "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');",
         "path_folders = '$cfg{path_folders}';\n",
@@ -177,13 +178,29 @@ sub build_single_ad_commands {
     my @tracking_file = <TRACKING_FILE>;
     my $line_count = scalar(@tracking_file);
     close TRACKING_FILE;
-
+    
+    my $ad_per_run = 250;
     my @commands;
-    for (0 .. (ceil($line_count/1000) - 1)) {
-        my $start_row = $_ * 1000 + 1;
-        my $end_row = $start_row + 999;
-        $end_row = $line_count if $end_row > $line_count;
-        push @commands, "make_single_ad_frames('" . $single_ad_params{'config_file'} . "','start_row',$start_row,'end_row',$end_row)";
+    my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'assembly_rows_offsets.csv');
+    if (-e $assembly_file) {
+        my $assembly_option = "'adhesion_file','$assembly_file','output_folder','assembly'";
+        for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
+            my $start_row = $_ * $ad_per_run + 1;
+            my $end_row = $start_row + $ad_per_run - 1;
+            $end_row = $line_count if $end_row > $line_count;
+            push @commands, "make_single_ad_frames('" . $single_ad_params{'config_file'} . "','start_row',$start_row,'end_row',$end_row,$assembly_option)";
+        }
+    }
+    
+    my $disassembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'disassembly_rows_offsets.csv');
+    if (-e $disassembly_file) {
+        my $disassembly_option = "'adhesion_file','$disassembly_file','output_folder','disassembly'";
+        for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
+            my $start_row = $_ * $ad_per_run + 1;
+            my $end_row = $start_row + $ad_per_run - 1;
+            $end_row = $line_count if $end_row > $line_count;
+            push @commands, "make_single_ad_frames('" . $single_ad_params{'config_file'} . "','start_row',$start_row,'end_row',$end_row,$disassembly_option)";
+        }
     }
     return @commands;
 }
