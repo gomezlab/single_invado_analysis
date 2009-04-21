@@ -140,7 +140,7 @@ sub build_matlab_visualization_config {
         "out_path_single = fullfile(vis_folder,'single_ad');",
     
         "excluded_image_nums = $excluded_image_nums;",
-        "bounding_box_file = fullfile(base_results_folder,'$params{movie_path}','$cfg{bounding_box_file}');",
+        "bounding_box_file = fullfile(vis_folder,'$params{movie_path}','$cfg{bounding_box_file}');",
         "path_folders = '$cfg{path_folders}';\n",
 
         "image_padding_min = $cfg{padding_min};",
