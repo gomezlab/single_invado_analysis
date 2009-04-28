@@ -962,9 +962,27 @@ gather_general_props <- function(results) {
 		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
 		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
 		points$largest_area = c(points$largest_area, res$exp_props$largest_area)
+		points$ad_sig = c(points$ad_sig, res$exp_props$ad_sig)
 	}	
 	points = as.data.frame(points)
 	points
+}
+
+gather_single_image_props <- function(ind_results) {
+	
+	ind_data = list();
+	
+	for (i in 1:length(ind_results)) {
+		res = ind_results[[i]]
+		filt_by_area = res$Area >= min(res$Area)*3 & res$I_num == 1
+		ind_data$Area = c(ind_data$Area, res$Area[filt_by_area]);
+		ind_data$ad_sig = c(ind_data$ad_sig, res$Average_adhesion_signal[filt_by_area]);
+		ind_data$axial_r = c(ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);
+	
+		ind_data$cent_dist = c(ind_data$cent_dist, res$Centroid_dist_from_edge[filt_by_area]);
+	}
+	
+	ind_data
 }
 
 load_results <- function(dirs,file) {
