@@ -95,11 +95,13 @@ sub convert_data_to_units {
     my $sq_conv_factor  = $lin_conv_factor**2;
 
     my @no_conversion =
-      qw(Class Eccentricity Solidity Background_corrected_signal Angle_to_center Orientation Shrunk_corrected_signal);
+      qw(Class Centroid_x Centroid_y Eccentricity Solidity 
+         Background_corrected_signal Angle_to_center Orientation 
+         Shrunk_corrected_signal);
 
     for my $time (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
-            if (grep $data_type eq $_, qw(Centroid_x Centroid_y Centroid_dist_from_edge Centroid_dist_from_center MajorAxisLength 
+            if (grep $data_type eq $_, qw(Centroid_dist_from_edge Centroid_dist_from_center MajorAxisLength 
                                           MinorAxisLength)) {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
