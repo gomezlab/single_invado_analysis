@@ -273,9 +273,16 @@ sub gather_and_output_lineage_properties {
     undef $props{Average_adhesion_signal};
     
     $props{Centroid_x} = &gather_prop_seq("Centroid_x");
+    $props{start_x} = &gather_first_entry($props{Centroid_x});
+    $props{end_x} = &gather_last_entry($props{Centroid_x});
+    $props{birth_i_num} = &gather_birth_i_num($props{Centroid_x});
+    $props{death_i_num} = &gather_death_i_num($props{Centroid_x});
     &output_prop_time_series($props{Centroid_x}, "Centroid_x");
     undef $props{Centroid_x};
+
     $props{Centroid_y} = &gather_prop_seq("Centroid_y");
+    $props{start_y} = &gather_first_entry($props{Centroid_y});
+    $props{end_y} = &gather_last_entry($props{Centroid_y});
     &output_prop_time_series($props{Centroid_y}, "Centroid_y");
     undef $props{Centroid_y};
 
@@ -522,6 +529,41 @@ sub gather_largest_entry {
     return \@largest_data;
 }
 
+sub gather_birth_i_num {
+    my @data = @{ $_[0] };
+
+    print "\r", " " x 80, "\rGathering Birth Image Number" if $opt{debug};
+    my @starting_data;
+    for my $i (0 .. $#data) {
+        my $first_data_index = (grep $data[$i][$_] ne "NaN", (0 .. $#{ $data[$i] }))[0];
+
+        if ($first_data_index == 0) {
+            $starting_data[$i] = "NA";
+        } else {
+            $starting_data[$i] = $first_data_index;
+        }
+    }
+    return \@starting_data;
+}
+
+sub gather_death_i_num {
+    my @data = @{ $_[0] };
+
+    print "\r", " " x 80, "\rGathering Death Image Number" if $opt{debug};
+    my @ending_data;
+
+    my $max_index = $#{$data[0]};
+    for my $i (0 .. $#data) {
+        my $last_data_index = (grep $data[$i][$_] ne "NaN", (0 .. $#{ $data[$i] }))[-1];
+        if ($last_data_index == $max_index) {
+            $ending_data[$i] = "NA";
+        } else {
+            $ending_data[$i] = $last_data_index;
+        }
+    }
+    return \@ending_data;
+}
+
 sub gather_first_entry {
     my @data = @{ $_[0] };
 
@@ -674,8 +716,10 @@ sub gather_split_birth_status {
 
 sub gather_lineage_summary_data {
     my %props          = %{ $_[0] };
-    my @possible_props = qw(longevity largest_area starting_edge_dist ending_edge_dist
-      starting_center_dist ending_center_dist merge_count death_status split_birth_status average_speeds max_speeds ad_sig);
+    my @possible_props = qw(longevity largest_area starting_edge_dist 
+      ending_edge_dist starting_center_dist ending_center_dist merge_count 
+      death_status split_birth_status average_speeds max_speeds ad_sig 
+      birth_i_num start_x start_y death_i_num end_x end_y);
 
     my @lin_summary_data;
     for (@possible_props) {
