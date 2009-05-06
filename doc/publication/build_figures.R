@@ -13,17 +13,15 @@ exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 results = load_results(exp_dirs,file.path('intensity_model.Rdata'))
 area = load_results(exp_dirs,file.path('area_model.Rdata'))
-
-ind_results <- load_data_files(exp_dirs,file.path('..','individual_adhesions.csv'), T, debug=FALSE, inc_exp_names=FALSE);
+ind_results <- load_data_files(exp_dirs,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
-#exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/6/*/adhesion_props/models/')
+exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/6/*/adhesion_props/models/')
 #exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/8/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
 results_S = load_results(exp_dirs_S,file.path('intensity_model.Rdata'))
 area_S = load_results(exp_dirs_S,file.path('area_model.Rdata'))
-
-ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), T, debug=FALSE, inc_exp_names=FALSE);
+ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 print('Done Loading Data')
 
 ########################################
@@ -31,14 +29,14 @@ print('Done Loading Data')
 ########################################
 results_props = gather_general_props(results)
 ind_exp_filt = gather_single_image_props(ind_results)
-results_nofilt = filter_mixed_results(results, results, min_R_sq = -Inf, max_p_val = Inf)
-results_S_nofilt = filter_mixed_results(results_S, results_S, min_R_sq = -Inf, max_p_val = Inf)
+results_nofilt = filter_results(results, min_R_sq = -Inf, max_p_val = Inf)
+results_S_nofilt = filter_results(results_S, min_R_sq = -Inf, max_p_val = Inf)
 area_nofilt = filter_mixed_area(area, results, min_R_sq = -Inf, max_p_val = Inf)
 
 results_S_props = gather_general_props(results_S)
 ind_exp_filt_S = gather_single_image_props(ind_results_S)
-results_filt = filter_mixed_results(results, results)
-results_S_filt = filter_mixed_results(results_S, results_S)
+results_filt = filter_results(results)
+results_S_filt = filter_results(results_S)
 area_filt = filter_mixed_area(area, results)
 print('Done Filtering Data')
 
@@ -112,7 +110,6 @@ mtext('D',adj=0,cex=1.5)
 
 graphics.off()
 print('Done Mutant Comparison Figures')
-stopifnot(FALSE)
 
 ########################################
 #All by all plots
@@ -130,7 +127,6 @@ stopifnot(FALSE)
 ########################################
 #General Properties
 ########################################
-
 pdf(file.path(out_folder,'general_props.pdf'))
 layout(cbind(c(1,1,2,2,3,3), c(0,4,4,5,5,0)))
 par(bty='n', mar=c(5,4.2,2,0.1))
@@ -150,6 +146,7 @@ smoothScatter(ind_exp_filt$cent_dist,ind_exp_filt$ax, xlab = expression(paste('D
 
 mtext('C',adj=0,cex=1.5)
 graphics.off()
+print('Done with Static Properties')
 
 ########################################
 #Comparing Area/Kinetics
@@ -190,6 +187,7 @@ plot(results_filt$d$sl,area_filt$d$sl, xlab='Filtered Intensity Slope', ylab='Fi
 abline(lm(area_filt$d$sl~results_filt$d$sl),col='red')
 mtext('D',adj=0,cex=1.5)
 graphics.off()
+print('Done with Area Properties')
 
 ########################################
 #Kinetics Figure
@@ -200,20 +198,22 @@ layout(rbind(c(1,2),c(3,4),c(5)))
 par(bty='n', mar=c(5,4.2,2,0))
 plot_ad_seq(results[[1]],675);
 mtext('A',adj=0,cex=1.5)
+
 plot_ad_seq(results[[1]],675,type='disassembly');
 mtext('B',adj=0,cex=1.5)
 
 par(mar=c(4.5,2.5,2,0))
 hist(results_nofilt$a$R, main='Assembly', ylab='', xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt$a$R_sq),')', sep=''), freq=TRUE)
 mtext('C',adj=0,cex=1.5)
+
 hist(results_nofilt$dis$R,main='Disassembly',ylab='',xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt$d$R_sq),')', sep=''), freq=TRUE)
 mtext('D',adj=0,cex=1.5)
 
 par(mar=c(2.6,5,2,0))
 boxplot_with_points(list(results_filt$a$slope,results_filt$dis$slope), names=c(paste('Assembly (n=',length(results_filt$a$R_sq),')', sep=''), paste('Disassembly (n=',length(results_filt$dis$R_sq),')', sep='')), boxwex=0.6, ylab=expression(paste('Rate (',min^-1,')',sep='')))
 mtext('E',adj=0,cex=1.5)
-
 graphics.off()
+print('Done with Kinetics')
 
 ########################################
 #Spacial Figure
@@ -221,30 +221,56 @@ graphics.off()
 pdf(file.path(out_folder,'spacial.pdf'), height=9)
 par(bty='n',mar=c(4.2,4.1,2,0.2))
 layout(rbind(c(1,2),c(3,4),c(5)), width=c(1,1,0.5), height=c(1,1,2))
-start_props = hist(results_filt$a$edge_dist[! is.na(results_filt$a$stable_lifetime)], xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), main = '', ylab = '')
+
+
+start_props = hist(results_filt$a$edge_dist[! is.na(results_filt$a$stable_lifetime)], 				   xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), 
+				   main = '', ylab = '')
 mtext('A',adj=0,cex=1.5)
 
-hist(results_filt$dis$edge_dist[! is.na(results_filt$dis$stable_lifetime)] ,xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), main = '', ylab = '')
+
+hist(results_filt$dis$edge_dist[! is.na(results_filt$dis$stable_lifetime)],
+     xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), 
+     main = '', ylab = '')
 mtext('B',adj=0,cex=1.5)
 
-plot(results_filt$a$edge_dist[! is.na(results_filt$a$stable_lifetime)], results_filt$a$stable_lifetime[! is.na(results_filt$a$stable_lifetime)], ylab='Stable Lifetime (min)',xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), xlim=range(start_props$breaks))
+plot(results_filt$a$edge_dist[! is.na(results_filt$a$stable_lifetime)], 
+	 results_filt$a$stable_lifetime[! is.na(results_filt$a$stable_lifetime)], 
+	 ylab='Stable Lifetime (min)',
+	 xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), 
+	 xlim=range(start_props$breaks))
 mtext('C',adj=0,cex=1.5)
 
-plot(results_filt$dis$edge_dist[! is.na(results_filt$dis$stable_lifetime)], results_filt$dis$stable_lifetime[! is.na(results_filt$dis$stable_lifetime)], ylab='Stable Lifetime (min)', xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), xlim=range(start_props$breaks))
+
+plot(results_filt$dis$edge_dist[! is.na(results_filt$dis$stable_lifetime)], 
+     results_filt$dis$stable_lifetime[! is.na(results_filt$dis$stable_lifetime)], 
+     ylab='Stable Lifetime (min)', 
+     xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), 
+     xlim=range(start_props$breaks))
 mtext('D',adj=0,cex=1.5)
 
-plot(results_nofilt$j$b, results_nofilt$j$d, xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')), ylab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), pch=20, cex=0.75)
+plot(results_nofilt$j$b, results_nofilt$j$d, 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')),
+     ylab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')), 
+     pch=20, cex=0.75)
+
+#points(results_S_nofilt$j$b, results_S_nofilt$j$d, col='red', pch=20, cex=0.5)
+
 birth_vs_death_model <- lm(death_dist ~ birth_dist, data=results_nofilt$joint)
-abline(birth_vs_death_model, col='green', lwd = 2)
+abline(birth_vs_death_model, col='green', lwd = 3)
 model_summary <- summary(birth_vs_death_model)
 x_data <- data.frame(birth_dist = seq(min(results_nofilt$j$b),max(results_nofilt$j$b),by=0.01))
 conf_int = predict(birth_vs_death_model, x_data, interval="confidence", level=0.95)
-lines(x_data$birth_dist, conf_int[,2], col='red', lty=2, lwd = 2)
-lines(x_data$birth_dist, conf_int[,3], col='red', lty=2, lwd = 2)
-segments(0,0,max(results_nofilt$j$b),max(results_nofilt$j$b), col='blue', lty=4, lwd = 2)
+lines(x_data$birth_dist, conf_int[,2], col='red', lty=2, lwd = 3)
+lines(x_data$birth_dist, conf_int[,3], col='red', lty=2, lwd = 3)
 
-x_eq_y_point = coef(birth_vs_death_model)[[1]]/(1-coef(birth_vs_death_model)[[2]])
-#segments(x_eq_y_point,0,x_eq_y_point,x_eq_y_point, col='blue')
-text(x_eq_y_point,25,paste('y=',sprintf('%.03f',coef(birth_vs_death_model)[[2]]),'x + ',sprintf('%.03f',coef(birth_vs_death_model)[[1]])), srt=atan(coef(birth_vs_death_model)[[2]])*(360/(2*pi)), cex=1.5)
-mtext('E',adj=0,cex=1.5)
+segments(0,0,max(results_nofilt$j$b),max(results_nofilt$j$b), col='blue', lty=4, lwd = 3)
+
+#x_eq_y_point = coef(birth_vs_death_model)[[1]]/(1-coef(birth_vs_death_model)[[2]])
+#text(x_eq_y_point,25,
+#	 paste('y=',sprintf('%.03f',coef(birth_vs_death_model)[[2]]),'x + ',sprintf('%.03f',coef(birth_vs_death_model)[[1]])), 
+#	 srt=atan(coef(birth_vs_death_model)[[2]])*(360/(2*pi)), 
+#	 cex=1.5)
+#mtext('E',adj=0,cex=1.5)
+
 graphics.off()
+print('Done with Spacial')

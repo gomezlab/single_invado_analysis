@@ -775,32 +775,31 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-filter_mixed_results <- function(results, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE) {
+filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE) {
 	points = list()
-	for (i in 1:length(corrected)) {
-		corr = corrected[[i]]
+	for (i in 1:length(results)) {
 		res = results[[i]]
 
-		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq >= min_R_sq
-					   & is.finite(corr$assembly$slope) & is.finite(corr$assembly$p_val) 
-					   & corr$assembly$p_val <= max_p_val)
-		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq >= min_R_sq 
-						  & is.finite(corr$disassembly$slope) & is.finite(corr$disassembly$p_val) 
-						  & corr$disassembly$p_val <= max_p_val)
+		assembly_filt = (is.finite(res$assembly$R_sq) & res$assembly$R_sq >= min_R_sq
+					   & is.finite(res$assembly$slope) & is.finite(res$assembly$p_val) 
+					   & res$assembly$p_val <= max_p_val)
+		disassembly_filt = (is.finite(res$disassembly$R_sq) & res$disassembly$R_sq >= min_R_sq 
+						  & is.finite(res$disassembly$slope) & is.finite(res$disassembly$p_val) 
+						  & res$disassembly$p_val <= max_p_val)
 		
 		if (pos_slope) {
-			assembly_filt = assembly_filt & corr$assembly$slope > 0
-			disassembly_filt = disassembly_filt & corr$disassembly$slope > 0
+			assembly_filt = assembly_filt & res$assembly$slope > 0
+			disassembly_filt = disassembly_filt & res$disassembly$slope > 0
 		}				  
 	
-		points$assembly$slope = c(points$assembly$slope, corr$assembly$slope[assembly_filt])
-		points$disassembly$slope = c(points$disassembly$slope, corr$disassembly$slope[disassembly_filt])
-		points$assembly$R_sq = c(points$assembly$R_sq, corr$assembly$R_sq[assembly_filt])
-		points$disassembly$R_sq = c(points$disassembly$R_sq, corr$disassembly$R_sq[disassembly_filt])
-		points$assembly$p_val = c(points$assembly$p_val, corr$assembly$p_val[assembly_filt])
-		points$disassembly$p_val = c(points$disassembly$p_val, corr$disassembly$p_val[disassembly_filt])
-		points$assembly$offset = c(points$assembly$offset, corr$assembly$offset[assembly_filt])
-		points$disassembly$offset = c(points$disassembly$offset, corr$disassembly$offset[disassembly_filt])
+		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
+		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
+		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
+		points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
+		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
+		points$assembly$offset = c(points$assembly$offset, res$assembly$offset[assembly_filt])
+		points$disassembly$offset = c(points$disassembly$offset, res$disassembly$offset[disassembly_filt])
 
 		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
 		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
@@ -881,7 +880,7 @@ gather_offset_differences <- function(results_long, results_short, min_R_sq=0.9,
 	points
 }
 
-filter_mixed_area <- function(area, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {
+filter_mixed_area <- function(area, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE) {
 	points = list()
 	for (i in 1:length(corrected)) {
 		corr = corrected[[i]]
@@ -974,7 +973,7 @@ gather_single_image_props <- function(ind_results) {
 	
 	for (i in 1:length(ind_results)) {
 		res = ind_results[[i]]
-		filt_by_area = res$Area >= min(res$Area)*3 & res$I_num == 1
+		filt_by_area = res$Area >= min(res$Area)# & res$I_num == 1
 		ind_data$Area = c(ind_data$Area, res$Area[filt_by_area]);
 		ind_data$ad_sig = c(ind_data$ad_sig, res$Average_adhesion_signal[filt_by_area]);
 		ind_data$axial_r = c(ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);
@@ -982,7 +981,7 @@ gather_single_image_props <- function(ind_results) {
 		ind_data$cent_dist = c(ind_data$cent_dist, res$Centroid_dist_from_edge[filt_by_area]);
 	}
 	
-	ind_data
+	as.data.frame(ind_data)
 }
 
 load_results <- function(dirs,file) {
