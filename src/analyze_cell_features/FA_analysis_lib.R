@@ -50,6 +50,9 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
         } else {
         	results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
         }
+        results[[i]]$parameters$normed = normed
+        results[[i]]$parameters$min_length = min_length
+        results[[i]]$parameters$log.trans = log.trans
         
         if (! is.na(results.file)) {
         	this_file = file.path(dirs[[i]],results.file)
@@ -250,7 +253,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			summary <- summary(model);
 			
 			results$disassembly$R_sq[j] = summary$adj.r.squared
-			#dealing with a degerate case, where lm produce NaN for the R squared 
+			#dealing with a degerate case, where lm produces NaN for the R squared 
 			#value when the data set is a flat line, see:
 			#	>data <- data.frame(x = c(1,2,3), y = c(1,1,1))
 			#	>summary(lm(y ~ x, data=data))
@@ -286,8 +289,8 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 
 	best_indexes = find_best_offset_combination(results, min_length = min_length)
 	
-	#With the R squared matrix calcudisassemblyd reset the r_sq componenets to NA, if needed since 
-	#there were no fits calcudisassemblyd for them
+	#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
+	#there were no fits calculated for them
 	if (! assembly_slope_calculated) {
 		results$assembly$R_sq[1] = NA
 	}	
@@ -602,13 +605,17 @@ exp_set_slope_estimate <- function(results,r_cutoff=0.9) {
 				  )
 }
 
-plot_ad_seq <- function (results,index,type='assembly',...) {
+plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 	ad_seq = as.vector(results$exp_data[index,])
 	ad_seq = t(ad_seq[!(is.nan(ad_seq))])
 	
 	if (type == 'assembly') {
 		this_ad_seq = ad_seq[1:results$assembly$offset[index]];
-		this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
+		if (log.trans) {
+			this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
+		} else {
+			this_ad_seq = this_ad_seq/this_ad_seq[1];
+		}
 		
 		x = c(0,results$assembly$offset[index]);
 		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
@@ -621,30 +628,39 @@ plot_ad_seq <- function (results,index,type='assembly',...) {
 		r_sq_val_str = sprintf('%.3f',results$assembly$R_sq[index])
 		slope_val_str = sprintf('%.3f',results$assembly$slope[index])
 		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
-		text(x[1]+3,0.5*max(this_ad_seq), 
-			 paste('R^2 = ',sprintf('%.3f',results$assembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$assembly$slope[index]),sep=''))
+#		text(x[1]+3,0.5*max(this_ad_seq), 
+#			 expression(paste(R^2,' = 0.949 \n test')))
+			 #expression(paste(R^2,' = ', sprintf('%.3f',results$assembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$assembly$slope[index]),sep='')))
+
 	}
 
 	if (type == 'disassembly') {
 		this_ad_seq = ad_seq[(length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq)];
-		this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
+		this_ad_seq = this_ad_seq[1]/this_ad_seq;
 
 		x = c(length(ad_seq) - results$disassembly$offset[index],length(ad_seq));
+		print(x)
 		y = c(results$disassembly$slope[index]*x[1] + results$disassembly$inter[index],
 		   	  results$disassembly$slope[index]*x[2] + results$disassembly$inter[index])
-		
+		print(y)	
 		plot((length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq),
 			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
 		lines(x,y,col='red',lwd=2)
-		text(x[1]+ 3,0.5*max(this_ad_seq), 
-			 paste('R^2 = ',sprintf('%.3f',results$disassembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$disassembly$slope[index]),sep=''))
+#		text(x[1]+ 3,0.5*max(this_ad_seq), 
+#			 paste('R^2 = ',sprintf('%.3f',results$disassembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$disassembly$slope[index]),sep=''))
 	}
 	
 	if (type == 'overall') {
-		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Intensity',
-			 ylim=c(0,1))
+
+		x = c(0,results$assembly$offset[index]);
+		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
+			  results$assembly$slope[index]*x[2] + results$assembly$inter[index])
+		
+		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Intensity')
+			 
+#		segments(x[1],y[1],x[2],y[2])
 	}
 }
 
