@@ -183,7 +183,7 @@ sub build_single_ad_commands {
     my @commands;
     my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'assembly_rows_offsets.csv');
     if (-e $assembly_file) {
-        my $assembly_option = "'adhesion_file','$assembly_file','output_folder','assembly'";
+        my $assembly_option = "'adhesion_file','$assembly_file'";
         for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
             my $start_row = $_ * $ad_per_run + 1;
             my $end_row = $start_row + $ad_per_run - 1;
@@ -194,7 +194,7 @@ sub build_single_ad_commands {
     
     my $disassembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'disassembly_rows_offsets.csv');
     if (-e $disassembly_file) {
-        my $disassembly_option = "'adhesion_file','$disassembly_file','output_folder','disassembly'";
+        my $disassembly_option = "'adhesion_file','$disassembly_file'";
         for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
             my $start_row = $_ * $ad_per_run + 1;
             my $end_row = $start_row + $ad_per_run - 1;

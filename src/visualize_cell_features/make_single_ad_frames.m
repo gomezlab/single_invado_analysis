@@ -23,7 +23,6 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('start_row',1,@(x)x >= 1);
 i_p.addParamValue('end_row',1,@(x)x >= 1);
 i_p.addParamValue('adhesion_file',@(x)exist(x,'file') == 2);
-i_p.addParamValue('output_folder','',@ischar);
 
 i_p.parse(cfg_file,varargin{:});
 if (i_p.Results.debug == 1), profile off; profile on; end
@@ -123,13 +122,13 @@ for j = 1:max_image_num
     i_seen = i_seen + 1;
 
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
-
+    
     bounds = regionprops(ad_label,'BoundingBox');
 
     for i = 1:size(tracking_seq,1)
         tracking_row = tracking_seq(i,:);
         if (tracking_row(i_seen) <= 0), continue; end
-
+                
         ad_num = tracking_row(i_seen);
 
         corners = [bounds(ad_num).BoundingBox(1), bounds(ad_num).BoundingBox(2)];
@@ -203,6 +202,8 @@ for j = 1:max_image_num
     end
 
     for i = 1:size(tracking_seq,1)
+        padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],i);
+        
         tracking_row = tracking_seq(i,:);
 
         %now we do a check to see if there is an adhesion in the next
@@ -213,12 +214,33 @@ for j = 1:max_image_num
         try surrounding_entries(3) = tracking_row(i_seen + 1); end %#ok<TRYNC>
 
         if (all(surrounding_entries <= 0))
-            if (size(all_images{i},2) > 0)
-                padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],i);
-                output_file = fullfile(out_path_single, i_p.Results.output_folder, ['montage_',padded_num, '.png']);
-                write_montage_image_set(all_images{i},output_file)
-                all_images{i} = cell(0);
+            if (size(all_images{i}, 2) == 0), continue; end
+            
+            if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
+                offset_row_num = find(ad_to_include(:,1) == i);
+                image_counts = ad_to_include(offset_row_num,2); %#ok<FNDSB>
+                if (isempty(all_images{i}{1}))
+                    image_counts = image_counts + 1;
+                elseif (tracking_row(i_seen) <= 0)
+                    image_counts = image_counts + 1;
+                end
+                
+                [folder, ad_file_name] = fileparts(i_p.Results.adhesion_file);
+                if (not(isempty(regexpi(ad_file_name,'disassembly'))))
+                    offset_type = 'disassembly';
+                elseif (not(isempty(regexpi(ad_file_name,'assembly'))))
+                    offset_type = 'assembly';
+                else
+                    warning('FA:fileName','Expected to find either disassembly or assembly in adhesion_file parameter.')
+                end
+                
+                output_file = fullfile(out_path_single, offset_type, [padded_num, '.png']);
+                write_montage_image_set(all_images{i},output_file,'phase',offset_type,'num_images',image_counts)
             end
+            
+            output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
+            write_montage_image_set(all_images{i},output_file)
+            all_images{i} = cell(0);
             continue;
         end
 
@@ -250,10 +272,33 @@ end
 
 for i = 1:size(all_images,1)
     if (size(all_images{i}, 2) == 0), continue; end
-
-    padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],i);
-    output_file = fullfile(out_path_single, i_p.Results.output_folder, ['montage_',padded_num, '.png']);;
+    if (size(all_images{i}, 2) == 0), continue; end
+    
+    if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
+        offset_row_num = find(ad_to_include(:,1) == i);
+        image_counts = ad_to_include(offset_row_num,2); %#ok<FNDSB>
+        if (isempty(all_images{i}{1}))
+            image_counts = image_counts + 1;
+        elseif (tracking_row(i_seen) <= 0)
+            image_counts = image_counts + 1;
+        end
+        
+        [folder, ad_file_name] = fileparts(i_p.Results.adhesion_file);
+        if (not(isempty(regexpi(ad_file_name,'disassembly'))))
+            offset_type = 'disassembly';
+        elseif (not(isempty(regexpi(ad_file_name,'assembly'))))
+            offset_type = 'assembly';
+        else
+            warning('FA:fileName','Expected to find either disassembly or assembly in adhesion_file parameter.')
+        end
+        
+        output_file = fullfile(out_path_single, offset_type, [padded_num, '.png']);
+        write_montage_image_set(all_images{i},output_file,'phase',offset_type,'num_images',image_counts)
+    end
+    
+    output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
     write_montage_image_set(all_images{i},output_file)
+    continue;
 end
 
 profile off;

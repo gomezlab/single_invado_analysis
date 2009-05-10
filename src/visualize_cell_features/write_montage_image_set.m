@@ -11,12 +11,28 @@ i_p.FunctionName = 'WRITE_MONTAGE_IMAGE_SET';
 i_p.addRequired('image_set',@iscell);
 i_p.addRequired('output_file',@ischar);
 i_p.addOptional('num_cols',0,@isnumeric);
+i_p.addOptional('num_images',0,@isnumeric);
+i_p.addOptional('phase','none',@ischar);
 
 i_p.parse(image_set,output_file,varargin{:});
 
 %The image set may start when many empty cells, first we clear all those
 %out
 while isempty(image_set{1}), image_set = image_set(2:end); end
+
+if (isempty(strmatch('num_images', i_p.UsingDefaults)))
+    if (isempty(strmatch('phase', i_p.UsingDefaults)))
+        if (strcmpi(i_p.Results.phase, 'assembly'))
+            image_set = image_set(1:i_p.Results.num_images);
+        elseif (strcmpi(i_p.Results.phase, 'disassembly'))
+            image_set = image_set((size(image_set,2) - i_p.Results.num_images):end);
+        else
+            warning('FA:phaseType','Expected assembly or disassembly for phase parameter, got %s',i_p.Results.phase)
+        end
+    else
+        warning('FA:adCount','When num_images parameter specified, expected phase parameter to be set to either assembly or disassembly.')
+    end
+end
 
 total_images = size(image_set,2);
 
