@@ -108,7 +108,7 @@ svg(file.path(out_folder,'kinetics','kinetics.svg'),height=9)
 #pdf(file.path(out_folder,'kinetics','kinetics.pdf'),height=9)
 layout(rbind(c(1,2),c(3,4),c(5,5)))
 
-par(bty='n', mar=c(5,4.2,2,0))
+par(bty='n', mar=c(4,4.2,2,0))
 
 plot_ad_seq(results[[1]],675, main = 'Assembly');
 text(3,0.65,pos=3,expression(paste(R^2,' = 0.949')))
@@ -126,11 +126,16 @@ mtext('C',adj=-.17,side=3,line=-0.5,cex=1.5)
 hist(results_nofilt$dis$R,main='Disassembly', xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt$d$R_sq),')', sep=''), freq=TRUE, ylab='# of Focal Adhesions')
 mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
 
-#par(mar=c(2.6,5,2,0))
+par(bty='n', mar=c(2.1,4.2,2,0))
 
 boxplot_with_points(list(results_filt$a$slope,results_filt$dis$slope), 
 					names=c('Assembly', 'Disassembly'), boxwex=0.6, 
 					ylab=expression(paste('Rate (',min^-1,')',sep='')))
+#95% confidence intervals on the mean from Webb 2004
+#segments(1.4,0.04,1.4,0.2,lwd=2)
+#segments(1.35,0.12,1.45,0.12,lwd=2)
+#segments(2.4,0.08,2.4,.088+0.004*2,lwd=2)
+#segments(2.35,0.088,2.45,.088,lwd=2)
 mtext('E',adj=-0.075,side=3,line=-0.5,cex=1.5)
 
 graphics.off()
@@ -206,9 +211,9 @@ print('Done with Spacial')
 #Comparing S178A to Wild-type
 ########################################
 svg(file.path(out_folder,'S178A','S178A_vs_wild-type.svg'))
-
+#pdf(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf'))
 layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(5,4.2,2,0.1))
+par(bty='n', mar=c(2,4,2,0.1))
 
 #boxplot_with_points(list(ind_exp_filt$Area,ind_exp_filt_S$Area), inc.points = FALSE,
 #				    names=c('Wild-type','S178A'),
@@ -222,22 +227,22 @@ par(bty='n', mar=c(5,4.2,2,0.1))
 
 boxplot_with_points(list(results_filt$as$slope,results_S_filt$as$slope), 
 				    names=c('Wild-type','S178A'),					ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
-mtext('A',adj=0,cex=1.5)				    
+mtext('A',adj=-.25,side=3,line=-0.5,cex=1.5)	    
 
 boxplot_with_points(list(results_filt$dis$slope,results_S_filt$dis$slope), 
 				    names=c('Wild-type','S178A'), 
 				    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
-mtext('B',adj=0,cex=1.5)
+mtext('B',adj=-.25,side=3,line=-0.5,cex=1.5)	    
 
 boxplot_with_points(list(results_filt$as$edge_dist,results_S_filt$as$edge_dist), 
 					names=c('Wild-type','S178A'), 
 					ylab=expression(paste('Distance from Edge at Birth (',mu,'m)',sep='')))
-mtext('C',adj=0,cex=1.5)					
+mtext('C',adj=-.25,side=3,line=-0.5,cex=1.5)	    
 
 boxplot_with_points(list(results_filt$dis$edge_dist,results_S_filt$dis$edge_dist), 
 					names=c('Wild-type','S178A'), 
 					ylab=expression(paste('Distance from Edge at Death (',mu,'m)',sep='')))
-mtext('D',adj=0,cex=1.5)					
+mtext('D',adj=-.25,side=3,line=-0.5,cex=1.5)	    
 
 graphics.off()
 
