@@ -49,6 +49,9 @@ offset_standard = 0.03;
 
 bar_width = round(bar_size/pixel_size);
 bar_height = round(0.01*image_height);
+if (bar_height < 2)
+    bar_height = 2;
+end
 
 if (isa(image_no_bar,'double'))
     bar = ones(bar_height,bar_width);

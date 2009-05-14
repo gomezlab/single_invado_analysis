@@ -624,7 +624,7 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 		plot(1:results$assembly$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
 				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
-		lines(x,y,col='red',lwd=2)
+		lines(x,y,col='green',lwd=2)
 		r_sq_val_str = sprintf('%.3f',results$assembly$R_sq[index])
 		slope_val_str = sprintf('%.3f',results$assembly$slope[index])
 		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
@@ -636,13 +636,16 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 
 	if (type == 'disassembly') {
 		this_ad_seq = ad_seq[(length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq)];
-		this_ad_seq = this_ad_seq[1]/this_ad_seq;
+		if (log.trans) {
+			this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
+		} else {
+			this_ad_seq = this_ad_seq[1]/this_ad_seq;
+		}
 
 		x = c(length(ad_seq) - results$disassembly$offset[index],length(ad_seq));
-		print(x)
 		y = c(results$disassembly$slope[index]*x[1] + results$disassembly$inter[index],
 		   	  results$disassembly$slope[index]*x[2] + results$disassembly$inter[index])
-		print(y)	
+		   	  
 		plot((length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq),
 			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
@@ -658,7 +661,8 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
 			  results$assembly$slope[index]*x[2] + results$assembly$inter[index])
 		
-		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Intensity')
+		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Intensity',type="o")
+		lines(lowess(0:(length(ad_seq)-1), ad_seq, f=1/3), col='red')
 			 
 #		segments(x[1],y[1],x[2],y[2])
 	}
@@ -752,7 +756,7 @@ gather_exp_win_residuals <- function(resid, window) {
 }
 
 boxplot_with_points <- function(data, 
-	colors=c('red','green','yellow','blue','pink','cyan','gray','orange','brown','purple'), 
+	colors=c('green','red','yellow','blue','pink','cyan','gray','orange','brown','purple'), 
 	notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, ...) {
 		
 	
@@ -807,6 +811,7 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 			assembly_filt = assembly_filt & res$assembly$slope > 0
 			disassembly_filt = disassembly_filt & res$disassembly$slope > 0
 		}				  
+		joint_filt = assembly_filt & disassembly_filt
 	
 		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
 		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
@@ -852,8 +857,17 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
 		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
 		
-		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[assembly_filt & disassembly_filt])
-		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[assembly_filt & disassembly_filt])
+		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt])
+		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[joint_filt])
+		
+		points$joint$lin_num = c(points$joint$lin_num, which(joint_filt))
+		points$joint$exp_num = c(points$joint$exp_num, rep(i,length(which(joint_filt))))
+		
+		points$joint$assembly = c(points$joint$assembly, res$assembly$slope[joint_filt])
+		points$joint$disassembly = c(points$joint$disassembly, res$disassembly$slope[joint_filt])
+		
+		points$joint$assembly_offset = c(points$joint$assembly_offset, res$assembly$offset[joint_filt])
+		points$joint$disassembly_offset = c(points$joint$disassembly_offset, res$dis$offset[joint_filt])
 	}
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)

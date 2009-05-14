@@ -30,7 +30,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_lin_regions", "lsf|l") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_lin_regions|skip_linear_regions", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 

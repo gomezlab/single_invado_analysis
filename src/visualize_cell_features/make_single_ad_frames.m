@@ -93,6 +93,11 @@ if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
     tracking_seq = temp_tracking_mat;
 end
 
+rows_to_examine = zeros(size(tracking_seq,1),1);
+for i=1:size(tracking_seq)
+    rows_to_examine(i) = any(tracking_seq(i,:) > 0);
+end
+rows_to_examine = find(rows_to_examine);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
@@ -168,25 +173,13 @@ i_seen = 0;
 %each row will hold the images from each lineages, where the columns will
 %hold all the frames from each time point
 all_images = cell(size(tracking_seq,1), 1);
+
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
 
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
 
     i_seen = i_seen + 1;
-    %we want to include the frames immediately before and after the deaths
-    %of the adhesions and we also want to skip the process of reading and doing
-    %calculations on the images which don't contain any rendered adhesions,
-    %so we find the columns surrounding the current column in the tracking
-    %matrix and ask if this columns contain any numbers greater than 0
-    %indicating the presense of an adhesion or an adhesion in the next or
-    %prior frame
-    surrounding_cols = zeros(size(tracking_seq,1),3);
-    surrounding_cols(:,2) = tracking_seq(:,i_seen);
-    try surrounding_cols(:,1) = tracking_seq(:,i_seen - 1); end %#ok<TRYNC>
-    try surrounding_cols(:,3) = tracking_seq(:,i_seen + 1); end %#ok<TRYNC>
-
-    if (all(all(surrounding_cols <= 0))), continue; end
 
     %Gather and scale the input adhesion image
     orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
@@ -200,11 +193,13 @@ for j = 1:max_image_num
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
     end
-
-    for i = 1:size(tracking_seq,1)
-        padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],i);
+    
+    for i = 1:size(rows_to_examine,1)
+        row_num = rows_to_examine(i);
         
-        tracking_row = tracking_seq(i,:);
+        padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],row_num);
+        
+        tracking_row = tracking_seq(row_num,:);
 
         %now we do a check to see if there is an adhesion in the next
         %image or the image before, because we also want to render the
@@ -212,14 +207,40 @@ for j = 1:max_image_num
         surrounding_entries = [0, tracking_row(i_seen), 0];
         try surrounding_entries(1) = tracking_row(i_seen - 1); end %#ok<TRYNC>
         try surrounding_entries(3) = tracking_row(i_seen + 1); end %#ok<TRYNC>
-
-        if (all(surrounding_entries <= 0))
-            if (size(all_images{i}, 2) == 0), continue; end
+        
+        if (any(surrounding_entries > 0))
+            ad_num = tracking_row(i_seen);
+            if (ad_num <= 0); ad_num = -Inf; end
+            bounded_ad_label_perim = ad_label_perim(bounding_matrix(row_num,2):bounding_matrix(row_num,4), ...
+                bounding_matrix(row_num,1):bounding_matrix(row_num,3));
             
-            if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
-                offset_row_num = find(ad_to_include(:,1) == i);
+            this_ad = zeros(size(bounded_ad_label_perim));
+            this_ad(bounded_ad_label_perim == ad_num) = 1;
+            
+            not_this_ad = xor(im2bw(bounded_ad_label_perim,0),this_ad);
+            assert(sum(sum(not_this_ad)) + sum(sum(this_ad)) == sum(sum(im2bw(bounded_ad_label_perim,0))))
+            
+            highlighted_image = orig_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+            highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,1,0]);
+            highlighted_image = create_highlighted_image(highlighted_image,not_this_ad,'color_map',[0,0,1]);
+            if (exist('cell_edge','var'))
+                bounded_edge = cell_edge(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+                highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0]);
+            end
+            
+            all_images{row_num}{i_seen} = highlighted_image;
+        end
+        
+        if (all(surrounding_entries <= 0) || j == max_image_num)
+            
+            %exit out of this loop through the tracking matrix if all the
+            %current image set is empty, we have yet to hit the adhesions
+            if (size(all_images{row_num}, 2) == 0), continue; end
+            
+            if (exist('ad_to_include','var') && size(ad_to_include,2) == 2)
+                offset_row_num = find(ad_to_include(:,1) == row_num);
                 image_counts = ad_to_include(offset_row_num,2); %#ok<FNDSB>
-                if (isempty(all_images{i}{1}))
+                if (isempty(all_images{row_num}{1}))
                     image_counts = image_counts + 1;
                 elseif (tracking_row(i_seen) <= 0)
                     image_counts = image_counts + 1;
@@ -234,71 +255,35 @@ for j = 1:max_image_num
                     warning('FA:fileName','Expected to find either disassembly or assembly in adhesion_file parameter.')
                 end
                 
+                
                 output_file = fullfile(out_path_single, offset_type, [padded_num, '.png']);
-                write_montage_image_set(all_images{i},output_file,'phase',offset_type,'num_images',image_counts)
+                %Draw the scale bar
+                if (exist('pixel_size','var'))
+                    write_montage_image_set(all_images{row_num},output_file, ...
+                        'phase',offset_type,'num_images',image_counts, ...
+                        'pixel_size',pixel_size,'bar_size',5)
+                else
+                    write_montage_image_set(all_images{row_num},output_file, ...
+                        'phase',offset_type,'num_images',image_counts) 
+                end 
             end
             
             output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
-            write_montage_image_set(all_images{i},output_file)
-            all_images{i} = cell(0);
+            if (exist('pixel_size','var'))
+                write_montage_image_set(all_images{row_num},output_file, ...
+                    'pixel_size',pixel_size,'bar_size',5);
+            else
+                write_montage_image_set(all_images{row_num},output_file);
+            end
+            
+            all_images{row_num} = cell(0);
             continue;
         end
-
-        ad_num = tracking_row(i_seen);
-        if (ad_num <= 0); ad_num = -Inf; end
-        bounded_ad_label_perim = ad_label_perim(bounding_matrix(i,2):bounding_matrix(i,4), ...
-            bounding_matrix(i,1):bounding_matrix(i,3));
-
-        this_ad = zeros(size(bounded_ad_label_perim));
-        this_ad(bounded_ad_label_perim == ad_num) = 1;
-
-        not_this_ad = xor(im2bw(bounded_ad_label_perim,0),this_ad);
-        assert(sum(sum(not_this_ad)) + sum(sum(this_ad)) == sum(sum(im2bw(bounded_ad_label_perim,0))))
-
-        highlighted_image = orig_i(bounding_matrix(i,2):bounding_matrix(i,4), bounding_matrix(i,1):bounding_matrix(i,3));
-        highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,1,0],'mix_percent',0.5);
-        highlighted_image = create_highlighted_image(highlighted_image,not_this_ad,'color_map',[0,0,1],'mix_percent',0.5);
-        if (exist('cell_edge','var'))
-            bounded_edge = cell_edge(bounding_matrix(i,2):bounding_matrix(i,4), bounding_matrix(i,1):bounding_matrix(i,3));
-            highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0],'mix_percent',0.5);
-        end
-
-        all_images{i}{i_seen} = highlighted_image;
+        
     end
     if (mod(j,1) == 0 && i_p.Results.debug)
         disp(['Highlight image: ',num2str(i_seen)]);
     end
-end
-
-for i = 1:size(all_images,1)
-    if (size(all_images{i}, 2) == 0), continue; end
-    if (size(all_images{i}, 2) == 0), continue; end
-    
-    if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
-        offset_row_num = find(ad_to_include(:,1) == i);
-        image_counts = ad_to_include(offset_row_num,2); %#ok<FNDSB>
-        if (isempty(all_images{i}{1}))
-            image_counts = image_counts + 1;
-        elseif (tracking_row(i_seen) <= 0)
-            image_counts = image_counts + 1;
-        end
-        
-        [folder, ad_file_name] = fileparts(i_p.Results.adhesion_file);
-        if (not(isempty(regexpi(ad_file_name,'disassembly'))))
-            offset_type = 'disassembly';
-        elseif (not(isempty(regexpi(ad_file_name,'assembly'))))
-            offset_type = 'assembly';
-        else
-            warning('FA:fileName','Expected to find either disassembly or assembly in adhesion_file parameter.')
-        end
-        
-        output_file = fullfile(out_path_single, offset_type, [padded_num, '.png']);
-        write_montage_image_set(all_images{i},output_file,'phase',offset_type,'num_images',image_counts)
-    end
-    
-    output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
-    write_montage_image_set(all_images{i},output_file)
-    continue;
 end
 
 profile off;

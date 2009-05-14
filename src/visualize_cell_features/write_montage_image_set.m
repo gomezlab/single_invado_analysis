@@ -13,6 +13,8 @@ i_p.addRequired('output_file',@ischar);
 i_p.addOptional('num_cols',0,@isnumeric);
 i_p.addOptional('num_images',0,@isnumeric);
 i_p.addOptional('phase','none',@ischar);
+i_p.addOptional('pixel_size',-Inf,@(x)isnumeric(x) & x > 0);
+i_p.addOptional('bar_size',10,@(x)isnumeric(x) & x > 0);
 
 i_p.parse(image_set,output_file,varargin{:});
 
@@ -31,6 +33,13 @@ if (isempty(strmatch('num_images', i_p.UsingDefaults)))
         end
     else
         warning('FA:adCount','When num_images parameter specified, expected phase parameter to be set to either assembly or disassembly.')
+    end
+end
+
+%convert all images in set to 3 layers, if not already three layers
+for i = 1:size(image_set,2)
+    if (length(size(image_set{i})) < 3)
+        image_set{i} = cat(3,image_set{i},image_set{i},image_set{i});
     end
 end
 
@@ -68,9 +77,9 @@ for j = 1:images_per_side(1)
     for k = 1:images_per_side(2)
         i_index = (j-1)*images_per_side(2) + k;
 
-        if (i_index > total_images), continue; end
+        if (i_index > total_images), continue; end 
         if (isempty(image_set{i_index})), continue; end
-
+        
         montage((j-1)*image_size(1) + j:(j)*image_size(1) + j - 1, ...
             (k-1)*image_size(2) + k:(k)*image_size(2) + k - 1, ...
             1:3) = image_set{i_index};
@@ -78,5 +87,10 @@ for j = 1:images_per_side(1)
 end
 
 output_folder = fileparts(output_file);
-if (not(exist(output_folder,'dir'))), mkdir(output_folder); end
+if (not(isempty(output_folder)) && not(exist(output_folder,'dir'))), mkdir(output_folder); end
+
+if (isempty(strmatch('pixel_size', i_p.UsingDefaults)))
+    montage = draw_scale_bar(montage,i_p.Results.pixel_size, 'bar_size', i_p.Results.bar_size,'position_code',1);
+end
+
 imwrite(montage, output_file);
