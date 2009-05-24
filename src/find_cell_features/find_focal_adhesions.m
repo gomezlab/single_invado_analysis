@@ -51,6 +51,9 @@ focal_image  = imread(I_file);
 scale_factor = double(intmax(class(focal_image)));
 focal_image  = double(focal_image)/scale_factor;
 
+%Add the folder with all the scripts used in this master program
+addpath('matlab_scripts');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,6 +70,9 @@ if (exist('cell_mask','var'))
     [row_indexes,col_indexes] = ind2sub(size(focal_image),find(cell_mask));
     threshed_image = bwselect(threshed_image,col_indexes,row_indexes,4);
 end
+1;
+%identify and remove adhesions on the immediate edge of the image
+threshed_image = remove_edge_adhesions(threshed_image);
 
 min_pixel_size = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
 

@@ -12,13 +12,16 @@ i_p = inputParser;
 i_p.FunctionName = 'FIND_CELL_MASK';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('out_file',@(x)exist(fileparts(x),'dir') == 7);
+i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
 
 i_p.parse(I_file,out_file);
 
 mask_image   = imread(I_file);
 scale_factor = double(intmax(class(mask_image)));
 mask_image   = double(mask_image)/scale_factor;
+
+%Add the folder with all the scripts used in this master program
+addpath('matlab_scripts');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
