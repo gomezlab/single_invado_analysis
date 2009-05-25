@@ -34,15 +34,7 @@ if (max(size(imfinfo(I_file))) > 1)
     if (any(strcmp('I_num',i_p.UsingDefaults)))
         error(['ERROR: ',i_p.FunctionName,' - Image file specified has more than one image embedded, must specify an ''I_num'' parameter']);
     end
-    I_num = i_p.Results.I_num;
-else
-    I_num = 1;
-end
-
-input_image_info = imfinfo(I_file);
-
-if (size(input_image_info,2) > 1)
-    input_image = imread(I_file,I_num);
+    input_image = imread(I_file,i_p.Results.I_num);
 else
     input_image = imread(I_file);
 end
