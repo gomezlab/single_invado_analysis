@@ -70,7 +70,7 @@ if (exist('cell_mask','var'))
     [row_indexes,col_indexes] = ind2sub(size(focal_image),find(cell_mask));
     threshed_image = bwselect(threshed_image,col_indexes,row_indexes,4);
 end
-1;
+
 %identify and remove adhesions on the immediate edge of the image
 threshed_image = remove_edge_adhesions(threshed_image);
 
