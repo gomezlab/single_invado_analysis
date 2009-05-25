@@ -30,7 +30,7 @@ i_p.parse(I_file,out_file,varargin{:});
 
 %Determine if the image file specified has more than one image embedded, if
 %so, make sure there is a 'I_num' parameter
-if (size(imfinfo(I_file),2) > 1)
+if (max(size(imfinfo(I_file))) > 1)
     if (any(strcmp('I_num',i_p.UsingDefaults)))
         error(['ERROR: ',i_p.FunctionName,' - Image file specified has more than one image embedded, must specify an ''I_num'' parameter']);
     end
