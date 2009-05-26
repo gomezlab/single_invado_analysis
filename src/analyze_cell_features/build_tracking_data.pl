@@ -116,7 +116,7 @@ sub make_comp_matices {
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2, $data_sets{$key_1}{Cent_dist});
-        @{ $data_sets{$key_1}{Recip_Pix_sim} } = &calc_pix_sim(\@pix_id2, \@pix_id1);
+        @{ $data_sets{$key_1}{Recip_pix_sim} } = &calc_pix_sim(\@pix_id2, \@pix_id1);
        
         if ($opt{debug}) {
             @{ $data_sets{$key_1}{Pix_sim_f} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
