@@ -868,12 +868,57 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		
 		points$joint$assembly_offset = c(points$joint$assembly_offset, res$assembly$offset[joint_filt])
 		points$joint$disassembly_offset = c(points$joint$disassembly_offset, res$dis$offset[joint_filt])
+		
+		points$stable_lifetime = c(points$stable_lifetime, na.omit(res$stable_lifetime))
+		points$stable_mean = c(points$stable_mean, na.omit(res$stable_mean))
 	}
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)
 	points$joint = as.data.frame(points$joint)
 	
 	points
+}
+
+gather_stage_lengths <- function(results_filt, results_S_filt) {
+	
+	require(boot)
+	bar_lengths = matrix(0,3,2)
+	errors = matrix(0,6,4)
+
+	#Wild-type
+	boot_samp = boot(results_filt$a$offset, function(data,indexes) mean(data[indexes]),1000)
+	boot_conf = boot.ci(boot_samp,type="perc")
+	errors[1,3:4] = boot_conf$perc[4:5]
+	bar_lengths[1,1] = boot_conf$t0
+
+	boot_samp = boot(results_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_conf = boot.ci(boot_samp,type="perc")
+	errors[2,3:4] = boot_conf$perc[4:5] + bar_lengths[1,1]
+	bar_lengths[2,1] = boot_conf$t0
+	
+	boot_samp = boot(results_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_conf = boot.ci(boot_samp,type="perc")
+	errors[3,3:4] = boot_conf$perc[4:5] + bar_lengths[1,1] + bar_lengths[2,1]
+	bar_lengths[3,1] = boot_conf$t0
+
+	#S178A
+	boot_samp = boot(results_S_filt$a$offset, function(data,indexes) mean(data[indexes]),1000)
+	boot_conf = boot.ci(boot_samp,type="perc")
+	errors[4,3:4] = boot_conf$perc[4:5]
+	bar_lengths[1,2] = boot_conf$t0
+
+	boot_samp = boot(results_S_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_conf = boot.ci(boot_samp,type="perc")
+	errors[5,3:4] = boot_conf$perc[4:5] + bar_lengths[1,2]
+	bar_lengths[2,2] = boot_conf$t0
+
+	boot_samp = boot(results_S_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_conf = boot.ci(boot_samp,type="perc")
+	errors[6,3:4] = boot_conf$perc[4:5] + bar_lengths[1,2] + bar_lengths[2,2]
+	bar_lengths[3,2] = boot_conf$t0
+
+	return_data <- list(bar_lengths = bar_lengths, errors = errors)
+	return_data
 }
 
 gather_offset_differences <- function(results_long, results_short, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {

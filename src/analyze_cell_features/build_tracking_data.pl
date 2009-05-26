@@ -59,7 +59,7 @@ if ($opt{lsf}) {
     
     &FA_job::run_general_lsf_program(\@commands,\%opt);
 
-    exit;
+    exit(0);
 } else {
     print "\n\nGathering Data Files\n" if $opt{debug};
 
@@ -116,13 +116,16 @@ sub make_comp_matices {
         my @pix_id1 = @{ $data_sets{$key_1}{PixelIdxList} };
         my @pix_id2 = @{ $data_sets{$key_2}{PixelIdxList} };
         @{ $data_sets{$key_1}{Pix_sim} } = &calc_pix_sim(\@pix_id1, \@pix_id2, $data_sets{$key_1}{Cent_dist});
-        
-        if ($cfg{debug}) {
-            @{ $data_sets{$key_1}{Pix_sim_f} } = &calc_pix_sim_old(\@pix_id1, \@pix_id2, $data_sets{$key_1}{Cent_dist});
+        @{ $data_sets{$key_1}{Recip_Pix_sim} } = &calc_pix_sim(\@pix_id2, \@pix_id1);
+       
+        if ($opt{debug}) {
+            @{ $data_sets{$key_1}{Pix_sim_f} } = &calc_pix_sim(\@pix_id1, \@pix_id2);
             my $mat_1 = new Math::Matrix @{$data_sets{$key_1}{Pix_sim}};
             my $mat_2 = new Math::Matrix @{$data_sets{$key_1}{Pix_sim_f}};
-            die "Problem with new pixel sim calc method\n", join(" ", $mat_1->size), "  ",join(" ", $mat_2->size) if not $mat_1->equal($mat_2);
+            die "Problem with new pixel sim calc method\n", join(" ", $mat_1->size), 
+                "  ",join(" ", $mat_2->size) if not $mat_1->equal($mat_2);
         }
+
 
         delete $data_sets{$key_1}{PixelIdxList};
         print "Pix_sim Collected" if $opt{debug};
@@ -142,20 +145,23 @@ sub make_dist_mat {
     my @x2 = @$ref_3;
     my @y2 = @$ref_4;
 
-    my @diff_mat;
+    my @dist_mat;
 
     for my $i (0 .. $#x1) {
         for my $j (0 .. $#x2) {
-            $diff_mat[$i][$j] = sqrt(($x1[$i] - $x2[$j])**2 + ($y1[$i] - $y2[$j])**2);
+            $dist_mat[$i][$j] = sqrt(($x1[$i] - $x2[$j])**2 + ($y1[$i] - $y2[$j])**2);
         }
     }
-    return @diff_mat;
+    return @dist_mat;
 }
 
 sub calc_pix_sim {
     my @pix_id1 = @{ $_[0] };
     my @pix_id2 = @{ $_[1] };
-    my @cent_dists = @{ $_[2] };
+    my @cent_dists;
+    if (scalar(@_) > 2) {
+       @cent_dists = @{ $_[2] };
+    }
 
     my @sim_percents;
     for my $i (0 .. $#pix_id1) {
@@ -163,11 +169,17 @@ sub calc_pix_sim {
         my $current_pix_list_length = scalar(@current_pix_list);
         
         die "$i" if not $current_pix_list_length;
-
-        my @dist_to_next_ads = @{$cent_dists[$i]};
-        my @sorted_ads = sort {$dist_to_next_ads[$a] <=> $dist_to_next_ads[$b]} (0 .. $#dist_to_next_ads);
         
-        for my $j (@sorted_ads) {
+        my @search_order;
+        if (scalar(@_) > 2) {
+            my @dist_to_next_ads = @{$cent_dists[$i]};
+            @search_order = sort {$dist_to_next_ads[$a] <=> $dist_to_next_ads[$b]} (0 .. $#dist_to_next_ads);
+        } else {
+            @search_order = (0 .. $#pix_id2);
+        }
+
+        for my $j (@search_order) {
+            die "$i\n\n", Dumper(\@pix_id2) if (not($pix_id2[$j]));
             my @next_pix_list = @{ $pix_id2[$j] };
             my $match_count = 0;
             for (0 .. $#current_pix_list) {
@@ -181,31 +193,6 @@ sub calc_pix_sim {
             }
             $sim_percents[$i][$j] = $match_count / $current_pix_list_length;
         }
-    }
-    return @sim_percents;
-}
-
-sub calc_pix_sim_old {
-    my @pix_id1 = @{ $_[0] };
-    my @pix_id2 = @{ $_[1] };
-
-    my @sim_percents;
-    for my $i (0 .. $#pix_id1) {
-        my @temp_sim;
-        my @pix_list = @{ $pix_id1[$i] };
-        for my $j (0 .. $#pix_id2) {
-            my @matching_list = @{ $pix_id2[$j] };
-            my $match_count   = grep {
-                my $poss_match = $_;
-                my $a = grep $poss_match == $_, @pix_list;
-                if ($a > 1) {
-                    die;
-                }
-                $a;
-            } @matching_list;
-            push @temp_sim, $match_count / scalar(@pix_list);
-        }
-        push @sim_percents, \@temp_sim;
     }
     return @sim_percents;
 }
