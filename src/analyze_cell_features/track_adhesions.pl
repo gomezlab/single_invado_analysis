@@ -236,6 +236,7 @@ sub track_live_adhesions {
         my $adhesion_num      = ${ $tracking_mat[$i] }[$cur_step];
         my @dist_to_next_ads  = @{ $dists[$adhesion_num] };
         my @p_sim_to_next_ads = @{ $p_sims[$adhesion_num] };
+        my @recip_p_sims      = map $recip_p_sims[$_][$adhesion_num], (0 .. $#dist_to_next_ads);
 
         my @sorted_dist_indexes =
           sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } (0 .. $#dist_to_next_ads);
@@ -244,7 +245,6 @@ sub track_live_adhesions {
           sort { $p_sim_to_next_ads[$b] <=> $p_sim_to_next_ads[$a] } (0 .. $#p_sim_to_next_ads);
 
         my $high_p_sim = $p_sim_to_next_ads[ $sorted_p_sim_indexes[0] ];
-        my $recip_high_p_sim = $recip_p_sims[ $sorted_p_sim_indexes[0] ][$adhesion_num];
 
         if ($sorted_p_sim_indexes[0] != $sorted_dist_indexes[0] && $high_p_sim > 0) {
             $tracking_facts{$i_num}{dist_p_sim_guess_diff}++;
@@ -255,7 +255,7 @@ sub track_live_adhesions {
         #Cases 1 and 2
         #Check if the highest pixel sim (p_sim) is above zero, indicating that
         #this adhesion overlaps with at least one adhesion in the next image
-        if ($high_p_sim > 0 && $high_p_sim >= $prop_indeter_percent * $recip_high_p_sim) {
+        if ($high_p_sim > 0) {
 
             #Find how many adhesions in the next image overlap with this
             #adhesion
@@ -329,7 +329,6 @@ sub track_live_adhesions {
 
             #Case 3
             $tracking_guess = $sorted_dist_indexes[0];
-            
 
             if ($dist_to_next_ads[$tracking_guess]/$areas[$adhesion_num] >= 5) {
                 $tracking_guess = -1;
