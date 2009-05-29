@@ -69,11 +69,6 @@ if (b_box(2) <= 0), b_box(2) = 1; end
 if (b_box(3) > i_size(2)), b_box(3) = i_size(2); end
 if (b_box(4) > i_size(1)), b_box(4) = i_size(1); end
 
-edge_cmap = jet(size(tracking_seq,2));
-%define the edge image here because the edge image will be added to each
-%image loop, so the image should be global
-edge_image_ad = ones(i_size(1),i_size(2),3);
-
 max_live_adhesions = find_max_live_adhesions(tracking_seq);
 
 lineage_cmap = jet(max_live_adhesions);
@@ -85,23 +80,11 @@ birth_time_to_cmap = zeros(size(tracking_seq,1),1);
 i_seen = 0;
 
 for i = 1:max_image_num
-    if (i_seen + 1 > size(tracking_seq,2))
-        continue;
-    end
-
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
 
     if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
 
     i_seen = i_seen + 1;
-    padded_i_seen = sprintf(['%0',num2str(folder_char_length),'d'],i_seen);
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather and scale the input adhesion image
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
-    scale_factor = double(intmax(class(orig_i)));
-    orig_i = double(orig_i)/scale_factor;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
@@ -149,7 +132,7 @@ for i = 1:max_image_num
             try
                 lineage_to_cmap(j) = find(taken_dists == max(taken_dists),1,'first');
             catch
-                assert(isempty(find(taken_dists == max(taken_dists),1,'first')), 'Error: could not find a possible color number in image number %d',padded_i_num);
+                assert(~(any(taken_dists == max(taken_dists),1,'first')), 'Error: could not find a possible color number in image number %d',padded_i_num);
             end
         end
     end
@@ -180,11 +163,14 @@ for i = 1:max_image_num
 
     %Draw the ghost images
     if (i_seen == size(tracking_seq,2))
-        highlighted_ghost_unique = zeros(i_size);
-        highlighted_ghost_time = zeros(i_size);
+        highlighted_ghost_unique = ones(i_size);
+        highlighted_ghost_time = ones(i_size);
 
-        highlighted_ghost_unique_filled = zeros(i_size);
-        highlighted_ghost_time_filled = zeros(i_size);
+        highlighted_ghost_unique_filled = ones(i_size);
+        highlighted_ghost_time_filled = ones(i_size);
+        
+        if(i_p.Results.debug), disp('Building Images'); end
+        
         for m=size(labels,2):-1:1
             this_i_num = i_seen - m + 1;
             this_ad_perim = labels(m).ad_perim;
@@ -193,6 +179,7 @@ for i = 1:max_image_num
             these_ad_nums = tracking_seq(tracking_seq(:,this_i_num) > 0,this_i_num);
 
             mix_percent = (size(labels,2) - m + 1)/size(labels,2);
+            mix_percent = 1;
 
             %Unique colored adhesion lineage image drawing
             cmap_nums = lineage_to_cmap(tracking_seq(:,this_i_num) > 0);
@@ -210,11 +197,13 @@ for i = 1:max_image_num
             highlighted_ghost_time = create_highlighted_image(highlighted_ghost_time,this_ad_perim,'color_map',this_cmap,'mix_percent',mix_percent);
             highlighted_ghost_time_filled = create_highlighted_image(highlighted_ghost_time_filled,this_ad_filled,'color_map',this_cmap,'mix_percent',mix_percent);
             
-            if(i_p.Results.debug), disp(i_seen); end
+            if(i_p.Results.debug), disp(this_i_num); end
         end
         
         ghost_image_dir = fullfile(out_path,'ghost_images');
-        try mkdir(fullfile(out_path,'ghost_images')); end %#ok<TRYNC>
+        if (not(exist(ghost_image_dir,'dir')))
+            mkdir(fullfile(out_path,'ghost_images')); 
+        end
         
         %Apply the bounding box
         highlighted_ghost_unique = highlighted_ghost_unique(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);

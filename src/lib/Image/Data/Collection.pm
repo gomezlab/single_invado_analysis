@@ -30,6 +30,10 @@ sub gather_data_sets {
     my %data_sets;
 
     my @folders = <$cfg{individual_results_folder}/*/$cfg{raw_data_folder}>;
+      
+    #Will hold a list of data files seen in other images, if a discrepency is
+    #noticed in list on scanning a folder, an error will be raised.
+    my @data_files_found;
 
     foreach my $this_folder (@folders) {
         my $i_num;
@@ -55,12 +59,17 @@ sub gather_data_sets {
             my @file_matches = <$this_folder/$file.*>;
 
             if (scalar(@file_matches) > 1) {
-                warn(
-                    "Multiple data files for file name: $file\n",
-                    "Found in folder: $this_folder\n",
-                    "Extracting data from only the first file: $file_matches[0]\n\n"
-                );
+                die "Multiple data files for file name: $file\n", "Found in folder: $this_folder\n",
+            } elsif (scalar(@file_matches) == 0) {
+                if (grep $file eq $_, @data_files_found) {
+                    die "Expected to find data file: $file\nIn folder: $this_folder\nBased on presence in other raw data folders",
+                }
+            } else {
+                if (not(grep $file eq $_, ("test"))) {
+                    push @data_files_found, $file;
+                }
             }
+
 
             next if (scalar(@file_matches) == 0);
 
@@ -133,6 +142,7 @@ sub check_data_set_lengths {
     for my $key (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$key} }) {
             next if ($data_type eq "Cell_size");
+            next if ($data_type eq "Mean_intensity");
             $data_sets_length{$key}{$data_type} = scalar(@{ $data_sets{$key}{$data_type} });
         }
     }

@@ -63,14 +63,15 @@ my @available_data_types = &gather_data_types;
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
+print "\n\nCreating/Outputing Overall Cell Property Files\n" if $opt{debug};
+&gather_and_output_overall_cell_properties;
+
 print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
 my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 &output_single_adhesion_props(@single_ad_props);
 @single_ad_props = ();
 undef @single_ad_props;
 
-print "\n\nCreating/Outputing Time Series Property Files\n" if $opt{debug};
-&gather_and_output_time_series_properties;
 
 print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
@@ -97,7 +98,7 @@ sub convert_data_to_units {
     my @no_conversion =
       qw(Class Centroid_x Centroid_y Eccentricity Solidity 
          Background_corrected_signal Angle_to_center Orientation 
-         Shrunk_corrected_signal);
+         Shrunk_corrected_signal Mean_intensity);
 
     for my $time (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -187,11 +188,17 @@ sub output_single_adhesion_props {
 #######################################
 #Time Series Props
 #######################################
-sub gather_and_output_time_series_properties {
+sub gather_and_output_overall_cell_properties {
     if (grep $_ eq "Cell_size", @available_data_types) {
-        my @cell_size_sequence = &gather_cell_size_time_series;
+        my @cell_size_sequence = &gather_single_number_time_series("Cell_size");
         my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Cell_size.csv");
         &output_mat_csv(\@cell_size_sequence, $output_file);
+    }
+
+    if (grep $_ eq "Mean_intensity", @available_data_types) {
+        my @sequence = &gather_single_number_time_series("Mean_intensity");
+        my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Mean_intensity.csv");
+        &output_mat_csv(\@sequence, $output_file);
     }
     
     my @total_ad_size = &gather_total_adhesion_size_time_series;
@@ -199,15 +206,17 @@ sub gather_and_output_time_series_properties {
     &output_mat_csv(\@total_ad_size, $output_file);
 }
 
-sub gather_cell_size_time_series {
-    my @cell_size_sequence;
+sub gather_single_number_time_series {
+    my $prop = shift @_;
+
+    my @sequence;
     for my $i_num (keys %data_sets) {
         die "Greater than one entry in the Cell_size field in image number $i_num" 
-          if scalar(@{$data_sets{$i_num}{Cell_size}}) > 1;
+          if scalar(@{$data_sets{$i_num}{$prop}}) > 1;
         
-        push @cell_size_sequence, $data_sets{$i_num}{Cell_size}[0];
+        push @sequence, $data_sets{$i_num}{$prop}[0];
     }
-    return @cell_size_sequence;
+    return @sequence;
 }
 
 sub gather_total_adhesion_size_time_series {

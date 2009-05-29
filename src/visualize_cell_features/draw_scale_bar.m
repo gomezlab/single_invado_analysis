@@ -30,6 +30,7 @@ i_p.addRequired('pixel_size',@(x)isnumeric(x) && x > 0);
 
 i_p.addParamValue('bar_size',10,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('position_code',2,@(x)isnumeric(x) && x > 0 && x < 4);
+i_p.addParamValue('bar_color',1,@(x)isnumeric(x) && x >= 0 && x <=1 );
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(image_no_bar,pixel_size,varargin{:});
@@ -54,9 +55,9 @@ if (bar_height < 2)
 end
 
 if (isa(image_no_bar,'double'))
-    bar = ones(bar_height,bar_width);
+    bar = ones(bar_height,bar_width)*i_p.Results.bar_color;
 else 
-    bar = double(intmax(class(image_no_bar)))*ones(bar_height,bar_width);
+    bar = double(intmax(class(image_no_bar)))*ones(bar_height,bar_width)*i_p.Results.bar_color;
 end
 bar_size = size(bar);
 

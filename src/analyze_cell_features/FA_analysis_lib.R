@@ -26,9 +26,9 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 			print(dirs[[i]])
 		}
 			
-		exp_data <- as.matrix(read.table(file.path(dirs[[i]],data_file),header = FALSE, sep  = ','));
+		exp_data <- as.matrix(read.table(file.path(dirs[[i]],data_file),header = FALSE, sep = ','));
 
-		exp_props <- read.table(file.path(dirs[[i]],'../single_lin.csv'), header = TRUE, sep=',');
+		exp_props <- read.table(file.path(dirs[[i]],'../single_lin.csv'), header = TRUE, sep = ',');
 		
 		#process the col_lim parameter passed in if values were passed in
 		this_col_lim = NA 
@@ -893,12 +893,12 @@ gather_stage_lengths <- function(results_filt, results_S_filt) {
 
 	boot_samp = boot(results_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T),1000)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[2,3:4] = boot_conf$perc[4:5] + bar_lengths[1,1]
+	errors[2,3:4] = boot_conf$perc[4:5]
 	bar_lengths[2,1] = boot_conf$t0
 	
 	boot_samp = boot(results_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T),1000)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[3,3:4] = boot_conf$perc[4:5] + bar_lengths[1,1] + bar_lengths[2,1]
+	errors[3,3:4] = boot_conf$perc[4:5]
 	bar_lengths[3,1] = boot_conf$t0
 
 	#S178A
@@ -909,12 +909,12 @@ gather_stage_lengths <- function(results_filt, results_S_filt) {
 
 	boot_samp = boot(results_S_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T),1000)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[5,3:4] = boot_conf$perc[4:5] + bar_lengths[1,2]
+	errors[5,3:4] = boot_conf$perc[4:5]
 	bar_lengths[2,2] = boot_conf$t0
 
 	boot_samp = boot(results_S_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T),1000)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[6,3:4] = boot_conf$perc[4:5] + bar_lengths[1,2] + bar_lengths[2,2]
+	errors[6,3:4] = boot_conf$perc[4:5]
 	bar_lengths[3,2] = boot_conf$t0
 
 	return_data <- list(bar_lengths = bar_lengths, errors = errors)

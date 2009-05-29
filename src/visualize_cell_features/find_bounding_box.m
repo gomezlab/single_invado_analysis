@@ -12,7 +12,7 @@ function bbox = find_bounding_box(I)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 i_p = inputParser;
-i_p.addRequired('I',@(x)isnumeric(x));
+i_p.addRequired('I',@(x)isnumeric(x) || islogical(x));
 
 i_p.parse(I);
 
@@ -23,7 +23,12 @@ i_p.parse(I);
 bbox = [Inf, Inf, -Inf, -Inf];
 
 for i = 1:size(I,3)
-    this_binary_layer = im2bw(I(:,:,i),0);
+    if (isnumeric(I))
+        this_binary_layer = im2bw(I(:,:,i),0);
+    else
+        this_binary_layer = I;
+    end
+    
     this_bounding_set = find_binary_bounding_box(this_binary_layer);
     if (this_bounding_set(1) < bbox(1)), bbox(1) = this_bounding_set(1); end
     if (this_bounding_set(2) < bbox(2)), bbox(2) = this_bounding_set(2); end
