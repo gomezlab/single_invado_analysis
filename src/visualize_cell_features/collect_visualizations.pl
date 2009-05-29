@@ -67,6 +67,7 @@ foreach (@movie_params) {
     
     my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
     push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+    push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "'$movie_debug_string)";
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
         %single_ad_params = %params;
     }
