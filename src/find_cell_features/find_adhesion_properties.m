@@ -225,6 +225,8 @@ if (exist('cell_mask','var'))
     adhesion_props(1).Border_pix = [border_col,border_row];
     
     adhesion_props(1).Cell_size = sum(cell_mask(:));
+    
+    adhesion_props(1).Mean_intensity = sum(sum(orig_I(cell_mask)))/adhesion_props(1).Cell_size;
 end
 
 function write_adhesion_data(S,varargin)
