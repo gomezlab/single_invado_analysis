@@ -15,12 +15,14 @@ i_p.addOptional('num_images',0,@isnumeric);
 i_p.addOptional('phase','none',@ischar);
 i_p.addOptional('pixel_size',-Inf,@(x)isnumeric(x) & x > 0);
 i_p.addOptional('bar_size',10,@(x)isnumeric(x) & x > 0);
+i_p.addOptional('bar_position',1,@(x)isnumeric(x) & x > 0);
 
 i_p.parse(image_set,output_file,varargin{:});
 
 %The image set may start when many empty cells, first we clear all those
 %out
 while isempty(image_set{1}), image_set = image_set(2:end); end
+while isempty(image_set{end}), image_set = image_set(1:(end-1)); end
 
 if (isempty(strmatch('num_images', i_p.UsingDefaults)))
     if (isempty(strmatch('phase', i_p.UsingDefaults)))
@@ -90,7 +92,8 @@ output_folder = fileparts(output_file);
 if (not(isempty(output_folder)) && not(exist(output_folder,'dir'))), mkdir(output_folder); end
 
 if (isempty(strmatch('pixel_size', i_p.UsingDefaults)))
-    montage = draw_scale_bar(montage,i_p.Results.pixel_size, 'bar_size', i_p.Results.bar_size,'position_code',1);
+    montage = draw_scale_bar(montage,i_p.Results.pixel_size, 'bar_size', ...
+        i_p.Results.bar_size,'position_code',i_p.Results.bar_position);
 end
 
 imwrite(montage, output_file);

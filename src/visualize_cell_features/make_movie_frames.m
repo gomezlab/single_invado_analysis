@@ -115,8 +115,6 @@ for i = 1:max_image_num
     ad_label = temp_ad_label;
     ad_label_perim = temp_ad_label_perim;
     
-    
-    
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename))); %#ok<NASGU>
     end
@@ -144,8 +142,8 @@ for i = 1:max_image_num
 
             try
                 lineage_to_cmap(j) = find(taken_dists == max(taken_dists),1,'first');
-            catch
-                assert(isempty(find(taken_dists == max(taken_dists),1,'first')), 'Error: could not find a possible color number in image number %d',padded_i_num);
+            catch map_error %#ok<NASGU>
+                assert(~any(taken_dists == max(taken_dists)), 'Error: could not find a possible color number in image number %d',padded_i_num);
             end
         end
     end

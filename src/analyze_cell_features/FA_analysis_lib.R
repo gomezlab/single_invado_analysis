@@ -109,24 +109,21 @@ gather_bilinear_models <- function(data_set, props,
 		temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
 			min_length = min_length, log.trans = log.trans)
 
-		results$assembly$offset[i] = temp_results$assembly$offset
-		results$assembly$R_sq[i]   = temp_results$assembly$R_sq
-		results$assembly$p_val[i]   = temp_results$assembly$p_val
-		results$assembly$inter[i]  = temp_results$assembly$inter
-		results$assembly$slope[i]  = temp_results$assembly$slope
-		results$assembly$fold_change[i]  = temp_results$assembly$fold_change
-		results$assembly$residual[i]  = temp_results$assembly$residual
+		if (is.na(charmatch("assembly", names(results)))) {
+			results$assembly = temp_results$assembly;
+		} else {
+			results$assembly = rbind(results$assembly, temp_results$assembly);
+		}
 		
-		results$disassembly$offset[i]  = temp_results$disassembly$offset
-		results$disassembly$R_sq[i]    = temp_results$disassembly$R_sq
-		results$disassembly$p_val[i]    = temp_results$disassembly$p_val
-		results$disassembly$inter[i]   = temp_results$disassembly$inter
-		results$disassembly$slope[i]   = temp_results$disassembly$slope
-		results$disassembly$fold_change[i]  = temp_results$disassembly$fold_change
-		results$disassembly$residual[i]   = temp_results$disassembly$residual
+		if (is.na(charmatch("disassembly", names(results)))) {
+			results$disassembly = temp_results$disassembly;
+		} else {
+			results$disassembly = rbind(results$disassembly, temp_results$disassembly);
+		}
+		
 		
 		#if either of the offset values are NA, then we weren't able 
-		#to get a fit for one side of the data, don't calcudisassembly a 
+		#to get a fit for one side of the data, don't calculate a 
 		#stable lifetime because we don't know how long the adhesion 
 		#was around before the movie starts or after it ends
 		if (! is.na(results$disassembly$offset[i]) && ! is.na(results$assembly$offset[i])) {
@@ -142,7 +139,6 @@ gather_bilinear_models <- function(data_set, props,
 	}
 	
 	results <- pad_results_to_row_length(results, rows)
-
 	if (is.numeric(boot.samp)) {
 		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
 			col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp)
@@ -152,26 +148,28 @@ gather_bilinear_models <- function(data_set, props,
 }
 
 pad_results_to_row_length <- function(results, desired_length) {
-	if (length(results$assembly) > 0) {
-		for (i in 1:length(results$assembly)) {
-			for (j in (length(results$assembly[[i]]) + 1):desired_length) {
-				results$assembly[[i]][j] = NA
-			}
-		}
+
+	stopifnot(dim(results$assembly)[[1]] <= desired_length)
+	while (dim(results$assembly)[[1]] != desired_length) {
+		results$assembly = rbind(results$assembly, rep(NA, length(results$assembly[1,])));
 	}
-	if (length(results$disassembly) > 0) {
-		for (i in 1:length(results$disassembly)) {
-			for (j in (length(results$disassembly[[i]]) + 1):desired_length) {
-				results$disassembly[[i]][j] = NA
-			}
-		}
+
+	stopifnot(dim(results$disassembly)[[1]] <= desired_length)
+	while (dim(results$disassembly)[[1]] != desired_length) {
+		results$disassembly = rbind(results$disassembly, rep(NA, length(results$disassembly[1,])));
 	}
-	for (i in (length(results$stable_lifetime) + 1):desired_length) {
-		results$stable_lifetime[i] = NA
-		results$stable_data_set[i] = NA
-		results$stable_variance[i] = NA
-		results$stable_mean[i] = NA		
+	
+	stopifnot(length(results$stable_lifetime) == length(results$stable_data_set))
+	stopifnot(length(results$stable_lifetime) == length(results$stable_variance))
+	stopifnot(length(results$stable_lifetime) == length(results$stable_mean))
+	stopifnot(length(results$stable_lifetime) <= desired_length)
+	while (length(results$stable_lifetime) != desired_length) {
+		results$stable_lifetime = rbind(results$stable_lifetime, NA);
+		results$stable_data_set = rbind(results$stable_lifetime, NA);
+		results$stable_variance = rbind(results$stable_lifetime, NA);
+		results$stable_mean = rbind(results$stable_mean, NA);
 	}
+
 	results
 }
 
@@ -197,7 +195,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			if (log.trans) {
 				assembly_subset$y = log(assembly_subset$y)
 			}
-				
+
 			model <- lm(y ~ x, data = assembly_subset)
 			summary <- summary(model);
 			
@@ -212,7 +210,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			
 			results$assembly$p_val[j] = summary$coefficients[2,4]
 			results$assembly$length[j] = dim(assembly_subset)[[1]]
-			results$assembly$offset[j] = j
+			results$assembly$offset[j] = length(assembly_subset$y)
 			results$assembly$inter[j] = coef(model)[[1]]
 			results$assembly$slope[j] = coef(model)[[2]]
 
@@ -263,7 +261,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			
 			results$disassembly$p_val[j] = summary$coefficients[2,4]
 			results$disassembly$length[j] = dim(disassembly_subset)[[1]]
-			results$disassembly$offset[j] = j
+			results$disassembly$offset[j] = length(disassembly_subset$y)
 			results$disassembly$inter[j] = coef(model)[[1]]
 			results$disassembly$slope[j] = coef(model)[[2]]
 
@@ -286,7 +284,6 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 
 		resid$disassembly[[1]] = NA	
 	}
-
 	best_indexes = find_best_offset_combination(results, min_length = min_length)
 	
 	#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
@@ -611,17 +608,18 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 	
 	if (type == 'assembly') {
 		this_ad_seq = ad_seq[1:results$assembly$offset[index]];
+		stopifnot(results$assembly$offset[index] == length(this_ad_seq))
 		if (log.trans) {
 			this_ad_seq = log(this_ad_seq/this_ad_seq[1]);
 		} else {
 			this_ad_seq = this_ad_seq/this_ad_seq[1];
 		}
 		
-		x = c(0,results$assembly$offset[index]);
+		x = c(1,results$assembly$offset[index]);
 		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
 			  results$assembly$slope[index]*x[2] + results$assembly$inter[index])
 		
-		plot(1:results$assembly$offset[index],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
+		plot(x[1]:x[2],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
 				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
 		lines(x,y,col='green',lwd=2)
@@ -635,18 +633,21 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 	}
 
 	if (type == 'disassembly') {
-		this_ad_seq = ad_seq[(length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq)];
+		this_ad_seq = ad_seq[(length(ad_seq) - results$disassembly$offset[index] + 1) : length(ad_seq)];
+		stopifnot(results$disassembly$offset[index] == length(this_ad_seq))
 		if (log.trans) {
 			this_ad_seq = log(this_ad_seq[1]/this_ad_seq);
 		} else {
 			this_ad_seq = this_ad_seq[1]/this_ad_seq;
 		}
-
-		x = c(length(ad_seq) - results$disassembly$offset[index],length(ad_seq));
+		
+		x = c(length(ad_seq) - results$disassembly$offset[index] - 1,length(ad_seq));
 		y = c(results$disassembly$slope[index]*x[1] + results$disassembly$inter[index],
 		   	  results$disassembly$slope[index]*x[2] + results$disassembly$inter[index])
-		   	  
-		plot((length(ad_seq) - results$disassembly$offset[index]) : length(ad_seq),
+		
+		x = c(1,results$disassembly$offset[index])
+		
+		plot(x[1]:x[2],
 			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
@@ -661,7 +662,7 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
 			  results$assembly$slope[index]*x[2] + results$assembly$inter[index])
 		
-		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Intensity',type="o")
+		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Normalized Intensity',type="o")
 		lines(lowess(0:(length(ad_seq)-1), ad_seq, f=1/3), col='red')
 			 
 #		segments(x[1],y[1],x[2],y[2])
