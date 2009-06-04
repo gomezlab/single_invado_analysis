@@ -162,10 +162,10 @@ pad_results_to_row_length <- function(results, desired_length) {
 		
 	stopifnot(length(results$stable_lifetime) <= desired_length)
 	while (length(results$stable_lifetime) < desired_length) {
-		results$stable_lifetime = rbind(results$stable_lifetime, NA);
-		results$stable_data_set = rbind(results$stable_data_set, NA);
-		results$stable_variance = rbind(results$stable_variance, NA);
-		results$stable_mean = rbind(results$stable_mean, NA);
+		results$stable_lifetime = c(results$stable_lifetime, NA);
+		results$stable_data_set = c(results$stable_data_set, NA);
+		results$stable_variance = c(results$stable_variance, NA);
+		results$stable_mean = c(results$stable_mean, NA);
 	}
 	results
 }
@@ -210,6 +210,12 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			results$assembly$offset[j] = length(assembly_subset$y)
 			results$assembly$inter[j] = coef(model)[[1]]
 			results$assembly$slope[j] = coef(model)[[2]]
+			stopifnot(results$assembly$length[j] >= min_length)			
+			t_crit_point = qt(0.025,results$assembly$length[j] - 2,lower.tail=FALSE)
+			margin_of_error = t_crit_point*summary$coefficients[2,2]
+			
+			results$assembly$slope_conf_lower[j] = results$assembly$slope[j] - margin_of_error
+			results$assembly$slope_conf_upper[j] = results$assembly$slope[j] + margin_of_error
 
 			if (log.trans) {
 				results$assembly$fold_change[j] = max(assembly_subset$y)
@@ -227,6 +233,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		results$assembly$inter[1] = NA
 		results$assembly$slope[1] = NA
 		results$assembly$fold_change[1] = NA
+	
+		results$assembly$slope_conf_lower[j] = NA
+		results$assembly$slope_conf_upper[j] = NA
 
 		resid$assembly[[1]] = NA
 	}
@@ -261,6 +270,13 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			results$disassembly$offset[j] = length(disassembly_subset$y)
 			results$disassembly$inter[j] = coef(model)[[1]]
 			results$disassembly$slope[j] = coef(model)[[2]]
+			stopifnot(results$disassembly$length[j] >= min_length)
+
+			t_crit_point = qt(0.025,results$disassembly$length[j] - 2,lower.tail=FALSE)
+			margin_of_error = t_crit_point*summary$coefficients[2,2]
+			
+			results$disassembly$slope_conf_lower[j] = results$disassembly$slope[j] - margin_of_error
+			results$disassembly$slope_conf_upper[j] = results$disassembly$slope[j] + margin_of_error
 
 			if (log.trans) {
 				results$disassembly$fold_change[j] = max(disassembly_subset$y)
@@ -278,6 +294,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		results$disassembly$inter[1] = NA
 		results$disassembly$slope[1] = NA
 		results$disassembly$fold_change[1] = NA
+		
+		results$disassembly$slope_conf_lower[j] = NA
+		results$disassembly$slope_conf_upper[j] = NA
 
 		resid$disassembly[[1]] = NA	
 	}
@@ -362,6 +381,7 @@ find_best_offset_combination <- function(results, min_length = 10) {
 			}
 		}
 	}
+	
 	best_indexes	
 }
 
@@ -801,68 +821,63 @@ hist_with_percents <- function(data, ...) {
 ########################################
 #Misc functions
 ########################################
-filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE) {
+filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE, primary_filter_results = NA) {
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
 
-		assembly_filt = (is.finite(res$assembly$R_sq) & res$assembly$R_sq >= min_R_sq
-					   & is.finite(res$assembly$slope) & is.finite(res$assembly$p_val) 
-					   & res$assembly$p_val <= max_p_val)
-		disassembly_filt = (is.finite(res$disassembly$R_sq) & res$disassembly$R_sq >= min_R_sq 
-						  & is.finite(res$disassembly$slope) & is.finite(res$disassembly$p_val) 
-						  & res$disassembly$p_val <= max_p_val)
+		if (all(is.na(primary_filter_results))) {
+			for_filter = res
+		} else {
+			for_filter = primary_filter_results[[i]]
+		}	
+
+		assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
+					   & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
+					   & for_filter$assembly$p_val <= max_p_val)
+		disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
+						  & is.finite(for_filter$disassembly$slope) & is.finite(for_filter$disassembly$p_val) 
+						  & for_filter$disassembly$p_val <= max_p_val)
 		
 		if (pos_slope) {
-			assembly_filt = assembly_filt & res$assembly$slope > 0
-			disassembly_filt = disassembly_filt & res$disassembly$slope > 0
+			assembly_filt = assembly_filt & for_filter$assembly$slope > 0
+			disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
 		}				  
 		joint_filt = assembly_filt & disassembly_filt
-	
+		
+		desired_names = c("slope","R_sq", "p_val", "offset")
+				
 		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
-		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
 		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
-		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
 		points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
-		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
 		points$assembly$offset = c(points$assembly$offset, res$assembly$offset[assembly_filt])
-		points$disassembly$offset = c(points$disassembly$offset, res$disassembly$offset[disassembly_filt])
-
-		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
-		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
-		points$assembly$stable_mean = c(points$assembly$stable_mean, res$stable_mean[assembly_filt])
-		points$disassembly$stable_mean = c(points$disassembly$stable_mean, res$stable_mean[disassembly_filt])
-		points$assembly$stable_variance = c(points$assembly$stable_variance, res$stable_variance[assembly_filt])
-		points$disassembly$stable_variance = c(points$disassembly$stable_variance, res$stable_variance[disassembly_filt])
-		
-		points$assembly$stable_cv = c(points$assembly$stable_cv, 
-									  sqrt(res$stable_variance[assembly_filt])/res$stable_mean[assembly_filt])
-		points$disassembly$stable_cv = c(points$disassembly$stable_cv, 
-							  			 sqrt(res$stable_variance[disassembly_filt])/res$stable_mean[disassembly_filt])
-		
 		points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
-		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
-
-		points$assembly$average_speeds = c(points$assembly$average_speeds, res$exp_props$average_speeds[assembly_filt])
-		points$disassembly$average_speeds = c(points$disassembly$average_speeds, res$exp_props$average_speeds[disassembly_filt])
-		
+		points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
+		points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
+		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
 		if (any(names(res$exp_props) == 'starting_edge_dist')) {
 			points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
 		}
+				
+		for (i in names(points$assembly)) {
+			stopifnot(length(points$assembly[[1]]) == length(points$assembly[[i]]))
+		}
 		
+		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
+		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
+		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
+		points$disassembly$offset = c(points$disassembly$offset, res$disassembly$offset[disassembly_filt])
+		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
+		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
+		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir, length(which(disassembly_filt))))
+		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
 		if (any(names(res$exp_props) == 'ending_edge_dist')) {
 			points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
 		}
-		
-		points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
-		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
-		
-		points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
-		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir, length(which(disassembly_filt))))
+		for (i in names(points$disassembly)) {
+			stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[i]]))
+		}
 
-		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
-		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
-		
 		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt])
 		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[joint_filt])
 		
@@ -878,6 +893,7 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		points$stable_lifetime = c(points$stable_lifetime, na.omit(res$stable_lifetime))
 		points$stable_mean = c(points$stable_mean, na.omit(res$stable_mean))
 	}
+	
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)
 	points$joint = as.data.frame(points$joint)
@@ -906,7 +922,7 @@ gather_stage_lengths <- function(results_filt, results_S_filt) {
 	boot_conf = boot.ci(boot_samp,type="perc")
 	errors[3,3:4] = boot_conf$perc[4:5]
 	bar_lengths[3,1] = boot_conf$t0
-
+	
 	#S178A
 	boot_samp = boot(results_S_filt$a$offset, function(data,indexes) mean(data[indexes]),1000)
 	boot_conf = boot.ci(boot_samp,type="perc")
@@ -922,7 +938,7 @@ gather_stage_lengths <- function(results_filt, results_S_filt) {
 	boot_conf = boot.ci(boot_samp,type="perc")
 	errors[6,3:4] = boot_conf$perc[4:5]
 	bar_lengths[3,2] = boot_conf$t0
-
+	
 	return_data <- list(bar_lengths = bar_lengths, errors = errors)
 	return_data
 }
@@ -957,78 +973,6 @@ gather_offset_differences <- function(results_long, results_short, min_R_sq=0.9,
 	}
 	points$assembly = as.data.frame(points$assembly)
 	points$disassembly = as.data.frame(points$disassembly)
-	
-	points
-}
-
-filter_mixed_area <- function(area, corrected, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE) {
-	points = list()
-	for (i in 1:length(corrected)) {
-		corr = corrected[[i]]
-		res = area[[i]]
-
-		assembly_filt = (is.finite(corr$assembly$R_sq) & corr$assembly$R_sq >= min_R_sq
-					   & is.finite(corr$assembly$slope) & is.finite(corr$assembly$p_val) 
-					   & corr$assembly$p_val <= max_p_val)
-		disassembly_filt = (is.finite(corr$disassembly$R_sq) & corr$disassembly$R_sq > min_R_sq 
-						  & is.finite(corr$disassembly$slope) & is.finite(corr$disassembly$p_val) 
-						  & corr$disassembly$p_val <= max_p_val)
-		
-		if (pos_slope) {
-			assembly_filt = assembly_filt & corr$assembly$slope > 0
-			disassembly_filt = disassembly_filt & corr$disassembly$slope > 0
-		}
-	
-		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
-		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
-		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
-		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
-		points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
-		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
-		points$assembly$offset = c(points$assembly$offset, res$assembly$offset[assembly_filt])
-		points$disassembly$offset = c(points$disassembly$offset, res$disassembly$offset[disassembly_filt])
-
-		points$assembly$stable_lifetime = c(points$assembly$stable_lifetime, res$stable_lifetime[assembly_filt])
-		points$disassembly$stable_lifetime = c(points$disassembly$stable_lifetime, res$stable_lifetime[disassembly_filt])
-		points$assembly$stable_mean = c(points$assembly$stable_mean, res$stable_mean[assembly_filt])
-		points$disassembly$stable_mean = c(points$disassembly$stable_mean, res$stable_mean[disassembly_filt])
-		points$assembly$stable_variance = c(points$assembly$stable_variance, res$stable_variance[assembly_filt])
-		points$disassembly$stable_variance = c(points$disassembly$stable_variance, res$stable_variance[disassembly_filt])
-		
-		points$assembly$stable_cv = c(points$assembly$stable_cv, 
-									  sqrt(res$stable_variance[assembly_filt])/res$stable_mean[assembly_filt])
-		points$disassembly$stable_cv = c(points$disassembly$stable_cv, 
-							  			 sqrt(res$stable_variance[disassembly_filt])/res$stable_mean[disassembly_filt])
-		
-		points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
-		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
-
-		points$assembly$average_speeds = c(points$assembly$average_speeds, res$exp_props$average_speeds[assembly_filt])
-		points$disassembly$average_speeds = c(points$disassembly$average_speeds, res$exp_props$average_speeds[disassembly_filt])
-		
-		if (any(names(res$exp_props) == 'starting_edge_dist')) {
-			points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
-		}
-		
-		if (any(names(res$exp_props) == 'ending_edge_dist')) {
-			points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
-		}
-		
-		points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
-		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
-		
-		points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
-		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir, length(which(disassembly_filt))))
-
-		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
-		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
-		
-		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[assembly_filt & disassembly_filt])
-		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[assembly_filt & disassembly_filt])
-	}
-	points$assembly = as.data.frame(points$assembly)
-	points$disassembly = as.data.frame(points$disassembly)
-	points$joint = as.data.frame(points$joint)
 	
 	points
 }
