@@ -210,13 +210,8 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			results$assembly$offset[j] = length(assembly_subset$y)
 			results$assembly$inter[j] = coef(model)[[1]]
 			results$assembly$slope[j] = coef(model)[[2]]
-			stopifnot(results$assembly$length[j] >= min_length)			
-			t_crit_point = qt(0.025,results$assembly$length[j] - 2,lower.tail=FALSE)
-			margin_of_error = t_crit_point*summary$coefficients[2,2]
+			stopifnot(results$assembly$length[j] >= min_length)
 			
-			results$assembly$slope_conf_lower[j] = results$assembly$slope[j] - margin_of_error
-			results$assembly$slope_conf_upper[j] = results$assembly$slope[j] + margin_of_error
-
 			if (log.trans) {
 				results$assembly$fold_change[j] = max(assembly_subset$y)
 			} else {				
@@ -234,9 +229,6 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		results$assembly$slope[1] = NA
 		results$assembly$fold_change[1] = NA
 	
-		results$assembly$slope_conf_lower[j] = NA
-		results$assembly$slope_conf_upper[j] = NA
-
 		resid$assembly[[1]] = NA
 	}
 	
@@ -272,12 +264,6 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			results$disassembly$slope[j] = coef(model)[[2]]
 			stopifnot(results$disassembly$length[j] >= min_length)
 
-			t_crit_point = qt(0.025,results$disassembly$length[j] - 2,lower.tail=FALSE)
-			margin_of_error = t_crit_point*summary$coefficients[2,2]
-			
-			results$disassembly$slope_conf_lower[j] = results$disassembly$slope[j] - margin_of_error
-			results$disassembly$slope_conf_upper[j] = results$disassembly$slope[j] + margin_of_error
-
 			if (log.trans) {
 				results$disassembly$fold_change[j] = max(disassembly_subset$y)
 			} else {						
@@ -295,9 +281,6 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		results$disassembly$slope[1] = NA
 		results$disassembly$fold_change[1] = NA
 		
-		results$disassembly$slope_conf_lower[j] = NA
-		results$disassembly$slope_conf_upper[j] = NA
-
 		resid$disassembly[[1]] = NA	
 	}
 	
@@ -644,7 +627,7 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 		y = c(results$assembly$slope[index]*x[1] + results$assembly$inter[index],
 			  results$assembly$slope[index]*x[2] + results$assembly$inter[index])
 		
-		plot(x[1]:x[2],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/First Intensity)',
+		plot(x[1]:x[2],this_ad_seq,xlab='Time (minutes)',ylab='ln(Intensity/Initial Intensity)',
 				 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
 		lines(x,y,col='green',lwd=2)
@@ -673,7 +656,7 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE,...) {
 		x = c(1,results$disassembly$offset[index])
 		
 		plot(x[1]:x[2],
-			 this_ad_seq, xlab='Time (minutes)', ylab='ln(First Intensity/Intensity)',
+			 this_ad_seq, xlab='Time (minutes)', ylab='ln(Initial Intensity/Intensity)',
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)))
 		
 		lines(x,y,col='red',lwd=2)
