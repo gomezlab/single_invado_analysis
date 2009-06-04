@@ -10,7 +10,7 @@
 gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
 	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
-	save.exp_data = TRUE, debug = FALSE) {
+	debug = FALSE) {
 	
 	results = list()
 	
@@ -43,7 +43,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 		results[[i]] <- gather_bilinear_models(exp_data, exp_props, 
 							min_length = min_length, col_lims = this_col_lim, 
 							normed = normed, log.trans = log.trans, 
-							boot.samp = boot.samp, save.exp_data = save.exp_data, debug=debug);
+							boot.samp = boot.samp, debug=debug);
         regex_range = regexpr("time_series_[[:digit:]]",dirs[[i]])
         if (regex_range[1] == -1) {
         	results[[i]]$exp_dir = dirs[[i]];
@@ -69,7 +69,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 
 gather_bilinear_models <- function(data_set, props, 
 	min_length = 10, col_lims = NA, normed = TRUE, 
-	log.trans = TRUE, boot.samp = NA, save.exp_data = TRUE, debug = FALSE) {
+	log.trans = TRUE, boot.samp = NA, debug = FALSE) {
 		
 	if (is.numeric(col_lims) && length(col_lims) == 2) {
 		data_set = data_set[,col_lims[1]:col_lims[2]];
@@ -81,29 +81,20 @@ gather_bilinear_models <- function(data_set, props,
 	results <- list()
 	results$exp_props = props
 	
-	if (save.exp_data) {
-		results$exp_data = data_set;
-	}
+	results$exp_data = data_set;
+
 	results$stable_data_set = list();
 	for (i in 1:rows) {
 		if (i > 500) {
 			#next
 		}
 		
-		this_data_set = as.vector(data_set[i,])
-		numeric_data_set = this_data_set[! is.nan(this_data_set)]
-		if (length(numeric_data_set) == 0) {
-			next
+		if (i %% 100 == 0 & debug) {
+			print(sprintf('%.02f',i/rows))
 		}
 
-		if (i %% 100 == 0 & debug) {
-			print(i)
-		}
+		this_data_set = as.vector(data_set[i,])
 		
-		#Skip over adhesions which don't live long enough
-		if (length(numeric_data_set) < (min_length * 2)) {
-			next
-		}
 		these_exp_props = results$exp_props[i,]
 		
 		temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
@@ -114,19 +105,25 @@ gather_bilinear_models <- function(data_set, props,
 		} else {
 			results$assembly = rbind(results$assembly, temp_results$assembly);
 		}
+		if (dim(results$assembly)[[1]] != i) {
+			print(paste("Problem with row count in row number:", i))
+			stop()
+		}
 		
 		if (is.na(charmatch("disassembly", names(results)))) {
 			results$disassembly = temp_results$disassembly;
 		} else {
 			results$disassembly = rbind(results$disassembly, temp_results$disassembly);
 		}
-		
+		stopifnot(dim(results$disassembly)[[1]] == i)
 		
 		#if either of the offset values are NA, then we weren't able 
 		#to get a fit for one side of the data, don't calculate a 
 		#stable lifetime because we don't know how long the adhesion 
 		#was around before the movie starts or after it ends
 		if (! is.na(results$disassembly$offset[i]) && ! is.na(results$assembly$offset[i])) {
+			numeric_data_set = this_data_set[! is.nan(this_data_set)]
+			
 			results$stable_data_set[[i]] = numeric_data_set[results$assembly$offset[i]:(length(numeric_data_set) - results$disassembly$offset[i])]
 			
 			results$stable_lifetime[i] = length(results$stable_data_set[[i]])
@@ -143,49 +140,49 @@ gather_bilinear_models <- function(data_set, props,
 		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
 			col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp)
 	}
-	
 	results
 }
 
 pad_results_to_row_length <- function(results, desired_length) {
-
+	
 	stopifnot(dim(results$assembly)[[1]] <= desired_length)
 	while (dim(results$assembly)[[1]] != desired_length) {
 		results$assembly = rbind(results$assembly, rep(NA, length(results$assembly[1,])));
+		stopifnot(dim(results$assembly)[[1]] <= desired_length)
 	}
-
+	
 	stopifnot(dim(results$disassembly)[[1]] <= desired_length)
 	while (dim(results$disassembly)[[1]] != desired_length) {
 		results$disassembly = rbind(results$disassembly, rep(NA, length(results$disassembly[1,])));
 	}
-	
+
 	stopifnot(length(results$stable_lifetime) == length(results$stable_data_set))
 	stopifnot(length(results$stable_lifetime) == length(results$stable_variance))
 	stopifnot(length(results$stable_lifetime) == length(results$stable_mean))
+		
 	stopifnot(length(results$stable_lifetime) <= desired_length)
-	while (length(results$stable_lifetime) != desired_length) {
+	while (length(results$stable_lifetime) < desired_length) {
 		results$stable_lifetime = rbind(results$stable_lifetime, NA);
-		results$stable_data_set = rbind(results$stable_lifetime, NA);
-		results$stable_variance = rbind(results$stable_lifetime, NA);
+		results$stable_data_set = rbind(results$stable_data_set, NA);
+		results$stable_variance = rbind(results$stable_variance, NA);
 		results$stable_mean = rbind(results$stable_mean, NA);
 	}
-
 	results
 }
 
 find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 10, log.trans = TRUE) {
 
 	results = list(initial_data_set = initial_data_set)
-	resid = list(assembly = list(), disassembly = list())	
+	resid = list(assembly = list(), disassembly = list())
+	
 	results$filt_init = initial_data_set[! is.nan(initial_data_set)]
-	if (length(results$filt_init) == 0) {
-		return(c(NA, NA))
-	}
+	stopifnot(length(results$filt_init) != 0)
+	
 	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
 
 	#Search the beginning of the sequence for a linear fit
 	assembly_slope_calculated = FALSE;
-	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status) {
+	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status & length(results$filt_init) >= (min_length * 2)) {
 		assembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			assembly_subset = this_data_set[1:j,]
@@ -236,7 +233,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	
 	#Search the end of the sequence for a linear fit
 	disassembly_slope_calculated = FALSE;
-	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status) {
+	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status & length(results$filt_init) >= (min_length * 2)) {
 		disassembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			disassembly_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
@@ -284,15 +281,23 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 
 		resid$disassembly[[1]] = NA	
 	}
-	best_indexes = find_best_offset_combination(results, min_length = min_length)
 	
-	#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
-	#there were no fits calculated for them
-	if (! assembly_slope_calculated) {
+	best_indexes = c()
+	if (! any(assembly_slope_calculated, disassembly_slope_calculated)) {
 		results$assembly$R_sq[1] = NA
-	}	
-	if (! disassembly_slope_calculated) {
 		results$disassembly$R_sq[1] = NA
+		best_indexes = c(1,1);
+	} else {
+		best_indexes = find_best_offset_combination(results, min_length = min_length)
+	
+		#With the R squared matrix calculated reset the r_sq componenets to NA, if needed since 
+		#there were no fits calculated for them
+		if (! assembly_slope_calculated) {
+			results$assembly$R_sq[1] = NA
+		}	
+		if (! disassembly_slope_calculated) {
+			results$disassembly$R_sq[1] = NA
+		}
 	}
 	
 	best_results = list()
