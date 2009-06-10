@@ -25,7 +25,7 @@ while isempty(image_set{1}), image_set = image_set(2:end); end
 while isempty(image_set{end}), image_set = image_set(1:(end-1)); end
 
 if (isempty(strmatch('num_images', i_p.UsingDefaults)))
-    assert(size(image_set,2) > i_p.Results.num_images, ...
+    assert(size(image_set,2) >= i_p.Results.num_images, ...
            'Problem with number of images requested: image_set:%d Requested Number:%d',size(image_set,2), i_p.Results.num_images)
     if (isempty(strmatch('phase', i_p.UsingDefaults)))
         if (strcmpi(i_p.Results.phase, 'assembly'))
