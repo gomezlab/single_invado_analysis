@@ -176,7 +176,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	resid = list(assembly = list(), disassembly = list())
 	
 	results$filt_init = initial_data_set[! is.nan(initial_data_set)]
-	stopifnot(length(results$filt_init) != 0)
+	if (length(results$filt_init) == 0) {
+		stop('Length of data set is equal to zero, check to make sure each line has data in it')
+	}
 	
 	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
 
@@ -884,45 +886,45 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 	points
 }
 
-gather_stage_lengths <- function(results_filt, results_S_filt) {
+gather_stage_lengths <- function(results_filt, results_S_filt, bootstrap.rep = 50000) {
 	
 	require(boot)
 	bar_lengths = matrix(0,3,2)
-	errors = matrix(0,6,4)
+	conf_ints = matrix(0,6,4)
 
 	#Wild-type
-	boot_samp = boot(results_filt$a$offset, function(data,indexes) mean(data[indexes]),1000)
+	boot_samp = boot(results_filt$a$offset, function(data,indexes) mean(data[indexes]), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[1,3:4] = boot_conf$perc[4:5]
+	conf_ints[1,3:4] = boot_conf$perc[4:5]
 	bar_lengths[1,1] = boot_conf$t0
 
-	boot_samp = boot(results_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_samp = boot(results_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[2,3:4] = boot_conf$perc[4:5]
+	conf_ints[2,3:4] = boot_conf$perc[4:5]
 	bar_lengths[2,1] = boot_conf$t0
 	
-	boot_samp = boot(results_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_samp = boot(results_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[3,3:4] = boot_conf$perc[4:5]
+	conf_ints[3,3:4] = boot_conf$perc[4:5]
 	bar_lengths[3,1] = boot_conf$t0
 	
 	#S178A
-	boot_samp = boot(results_S_filt$a$offset, function(data,indexes) mean(data[indexes]),1000)
+	boot_samp = boot(results_S_filt$a$offset, function(data,indexes) mean(data[indexes]), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[4,3:4] = boot_conf$perc[4:5]
+	conf_ints[4,3:4] = boot_conf$perc[4:5]
 	bar_lengths[1,2] = boot_conf$t0
 
-	boot_samp = boot(results_S_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_samp = boot(results_S_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[5,3:4] = boot_conf$perc[4:5]
+	conf_ints[5,3:4] = boot_conf$perc[4:5]
 	bar_lengths[2,2] = boot_conf$t0
 
-	boot_samp = boot(results_S_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T),1000)
+	boot_samp = boot(results_S_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
-	errors[6,3:4] = boot_conf$perc[4:5]
+	conf_ints[6,3:4] = boot_conf$perc[4:5]
 	bar_lengths[3,2] = boot_conf$t0
 	
-	return_data <- list(bar_lengths = bar_lengths, errors = errors)
+	return_data <- list(bar_lengths = bar_lengths, conf_ints = conf_ints)
 	return_data
 }
 
