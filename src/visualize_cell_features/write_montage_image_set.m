@@ -31,7 +31,7 @@ if (isempty(strmatch('num_images', i_p.UsingDefaults)))
         if (strcmpi(i_p.Results.phase, 'assembly'))
             image_set = image_set(1:i_p.Results.num_images);
         elseif (strcmpi(i_p.Results.phase, 'disassembly'))
-            image_set = image_set((size(image_set,2) - i_p.Results.num_images):end);
+            image_set = image_set((size(image_set,2) - i_p.Results.num_images + 1):end);
         else
             warning('FA:phaseType','Expected assembly or disassembly for phase parameter, got %s',i_p.Results.phase)
         end
