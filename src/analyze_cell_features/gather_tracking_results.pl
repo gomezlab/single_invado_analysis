@@ -72,7 +72,6 @@ my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
 @single_ad_props = ();
 undef @single_ad_props;
 
-
 print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
 
@@ -94,13 +93,12 @@ sub convert_data_to_units {
 
     my $lin_conv_factor = $cfg{pixel_size};
     my $sq_conv_factor  = $lin_conv_factor**2;
-
     my @no_conversion =
       qw(Class Centroid_x Centroid_y Eccentricity Solidity 
          Background_corrected_signal Angle_to_center Orientation 
          Shrunk_corrected_signal Mean_intensity);
 
-    for my $time (keys %data_sets) {
+    for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
             if (grep $data_type eq $_, qw(Centroid_dist_from_edge Centroid_dist_from_center MajorAxisLength 
                                           MinorAxisLength)) {
@@ -126,7 +124,7 @@ sub convert_data_to_units {
 }
 
 sub gather_data_types {
-    my $first_key = (keys %data_sets)[0];
+    my $first_key = (sort keys %data_sets)[0];
     return (keys %{ $data_sets{$first_key} });
 }
 
@@ -186,7 +184,7 @@ sub output_single_adhesion_props {
 }
 
 #######################################
-#Time Series Props
+#Overall Props
 #######################################
 sub gather_and_output_overall_cell_properties {
     if (grep $_ eq "Cell_size", @available_data_types) {
@@ -210,7 +208,7 @@ sub gather_single_number_time_series {
     my $prop = shift @_;
 
     my @sequence;
-    for my $i_num (keys %data_sets) {
+    for my $i_num (sort keys %data_sets) {
         die "Greater than one entry in the Cell_size field in image number $i_num" 
           if scalar(@{$data_sets{$i_num}{$prop}}) > 1;
         
@@ -221,12 +219,11 @@ sub gather_single_number_time_series {
 
 sub gather_total_adhesion_size_time_series {
     my @total_ad_size;
-    for my $i_num (keys %data_sets) {
+    for my $i_num (sort keys %data_sets) {
         my $this_total_size = 0;
         for my $this_size (@{$data_sets{$i_num}{Area}}) {
             $this_total_size += $this_size;
         }
-        
         push @total_ad_size, $this_total_size;
     }
     return @total_ad_size;
