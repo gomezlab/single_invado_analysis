@@ -51,7 +51,6 @@ if (exists($opt{exp_filter})) {
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
 if ($opt{lsf}) {
-    my $starting_dir        = getcwd;
     my @overall_command_seq = (
         [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
         [ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
@@ -70,6 +69,7 @@ if ($opt{lsf}) {
         @overall_command_seq = @overall_command_seq[-1];
     }
 
+    my $starting_dir        = getcwd;
     for (@overall_command_seq) {
         my @command_seq = @{$_};
         my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
@@ -80,8 +80,9 @@ if ($opt{lsf}) {
     }
 
     my @error_dirs = <$cfg{results_folder}/*/$cfg{errors_folder}>;
-
-    find(\&remove_unimportant_errors, @error_dirs);
+    if (@error_dirs) {
+        find(\&remove_unimportant_errors, @error_dirs);
+    }
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
@@ -149,15 +150,23 @@ sub execute_command_seq {
     foreach my $set (@command_seq) {
         my $dir     = $set->[0];
         my $command = $set->[1];
-        foreach (@config_files) {
-            my $config_command = "$command -cfg $_";
+        foreach my $cfg_file (@config_files) {
+            my $config_command = "$command -cfg $cfg_file";
             chdir $dir;
+            my $return_code = 0;
             if ($opt{debug}) {
                 print $config_command, "\n";
             } else {
-                system $config_command;
+                $return_code = system $config_command;
             }
             chdir $starting_dir;
+
+            #if the return code was any number beside zero, indicating a problem
+            #with the program exit, remove that config file from the run and
+            #continue
+            if ($return_code) {
+                @config_files = grep $cfg_file ne $_, @config_files;
+            }
         }
     }
 }
