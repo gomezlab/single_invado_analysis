@@ -1,4 +1,4 @@
-*.DS_Store*
+**.DS_Store**
 data/config*
 data/raw_data*
 data/excluded_experiments*
@@ -7,3 +7,4 @@ results/hold*
 doc*
 src*
 README.txt
+**.svn**
