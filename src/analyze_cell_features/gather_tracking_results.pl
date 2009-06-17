@@ -47,7 +47,7 @@ if ($opt{lsf}) {
     $command[0] .= " -skip_lin_regions" if $opt{skip_lin_regions};
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis');
 
-    &FA_job::run_general_lsf_program(\@command,\%opt);
+    &FA_job::send_general_lsf_program(\@command,\%opt);
     
     exit;
 }

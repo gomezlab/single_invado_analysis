@@ -79,7 +79,6 @@ foreach (@image_sets) {
     }
 
     push @matlab_code, &create_matlab_code(\@image_files, $folder, $out_file);
-
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
@@ -99,14 +98,14 @@ sub create_matlab_code {
     my $out_file    = $_[2];
 
     my @image_stack_count = map { Image::Stack::get_image_stack_number($_) } @image_files;
-
+    
     my @matlab_code;
     if (grep { $_ > 1 } @image_stack_count) {
         if (scalar(@image_files) > 1) {
             die "Found more than one image stack in: ", join(", ", @image_files), "\n",
               "Expected single image stack or multiple non-stacked files\n";
         }
-        @matlab_code = &create_matlab_code_stack(\@image_files, $out_file);
+        @matlab_code = &create_matlab_code_stack($image_files[0], $out_file);
     } else {
         @matlab_code = &create_matlab_code_single(\@image_files, $out_file);
     }
@@ -114,21 +113,23 @@ sub create_matlab_code {
 }
 
 sub create_matlab_code_stack {
-    my @image_files = @{ $_[0] };
-    my $out_file    = $_[1];
+    my $image_file = $_[0];
+    my $out_file   = $_[1];
 
     my @matlab_code;
 
-    my $total_stack_images = Image::Stack::get_image_stack_number($image_files[0]);
+    my $total_stack_images = Image::Stack::get_image_stack_number($image_file);
     foreach my $i_num (1 .. $total_stack_images) {
         next if grep $i_num == $_, @{ $cfg{exclude_image_nums} };
 
         my $padded_num = sprintf("%0" . length($total_stack_images) . "d", $i_num);
 
         my $output_path = catdir($cfg{individual_results_folder}, $padded_num);
-        mkpath($output_path);
+        if (! -e $output_path) {
+            mkpath($output_path);
+        }
         my $final_out_file = catfile($output_path, $out_file);
-        $matlab_code[0] .= "write_normalized_image('$image_files[0]','$final_out_file','I_num',$i_num);\n";
+        $matlab_code[0] .= "write_normalized_image('$image_file','$final_out_file','I_num',$i_num);\n";
     }
     return @matlab_code;
 }

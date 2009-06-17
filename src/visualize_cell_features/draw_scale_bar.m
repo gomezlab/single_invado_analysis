@@ -40,7 +40,7 @@ debug = i_p.Results.debug;
 bar_size = i_p.Results.bar_size;
 position_code = round(i_p.Results.position_code);
 
-offset_standard = 0.005;
+offset_standard = 0.02;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program

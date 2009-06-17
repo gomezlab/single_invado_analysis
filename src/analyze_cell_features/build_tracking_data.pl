@@ -57,7 +57,7 @@ if ($opt{lsf}) {
     
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking_data');
     
-    &FA_job::run_general_lsf_program(\@commands,\%opt);
+    &FA_job::send_general_lsf_program(\@commands,\%opt);
 
     exit(0);
 } else {

@@ -47,7 +47,7 @@ if ($opt{lsf}) {
     $extra .= " -keep_data_files" if $opt{keep_data_files};
     my @command = "$0 -cfg $opt{cfg} -input $opt{input} $extra";
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking');    
-    &FA_job::run_general_lsf_program(\@command,\%opt);
+    &FA_job::send_general_lsf_program(\@command,\%opt);
     
     exit;
 }

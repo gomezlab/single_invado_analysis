@@ -45,7 +45,7 @@ sub run_matlab_progam {
     }
 }
 
-sub run_general_lsf_program {
+sub send_general_lsf_program {
     my @commands = @{$_[0]};
     my %opt = %{$_[1]};
 
