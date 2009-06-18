@@ -2,13 +2,11 @@ digraph flow {
     margin = 0
     fontname="Bitstream Vera Sans"
 
-    raw [label = "Collect Adhesion Images", shape = box]
-    id [label = "Identify Adhesions/Cell Edge", shape = box]
     init [label = "Initialize Lineages", shape = box]
     track [label = "Track Live Adhesions", shape = box]
     mdevents [label = "Detect Merge/Death Events", shape = box]
     birth [label = "Start New Lineages/Birth", shape = box]
     analysis [label = "Lineage Analysis", shape = box] 
 
-    raw->id->init->track->mdevents->birth->{track analysis}
+    init->track->mdevents->birth->{track analysis}
 }
