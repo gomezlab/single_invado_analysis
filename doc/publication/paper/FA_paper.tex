@@ -1,0 +1,208 @@
+% Template for PLoS
+% Version 1.0 January 2009
+%
+% To compile to pdf, run:
+% latex plos.template
+% bibtex plos.template
+% latex plos.template
+% latex plos.template
+% dvipdf plos.template
+
+\documentclass[10pt,draft]{article}
+
+% amsmath package, useful for mathematical formulas
+\usepackage{amsmath}
+% amssymb package, useful for mathematical symbols
+\usepackage{amssymb}
+
+% graphicx package, useful for including eps and pdf graphics
+% include graphics with the command \includegraphics
+\usepackage{graphicx}
+
+% cite package, to clean up citations in the main text. Do not remove.
+\usepackage{cite}
+
+\usepackage{color} 
+
+% Use doublespacing - comment out for single spacing
+%\usepackage{setspace} 
+%\doublespacing
+
+
+% Text layout
+\topmargin 0.0cm
+\oddsidemargin 0.5cm
+\evensidemargin 0.5cm
+\textwidth 16cm 
+\textheight 21cm
+
+% Bold the 'Figure #' in the caption and separate it with a period
+% Captions will be left justified
+\usepackage[labelfont=bf,labelsep=period,justification=raggedright]{caption}
+
+% Use the PLoS provided bibtex style
+\bibliographystyle{plos2009}
+
+% Remove brackets from numbering in List of References
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad#1.}
+\makeatother
+
+% Leave date blank
+\date{}
+
+\pagestyle{myheadings}
+%% ** EDIT HERE **
+%% Please insert a running head of 30 characters or less.  
+%% Include it twice, once between each set of braces
+\markboth{Quantifying FA Dynamics}{Quantifying FA Dynamics}
+
+
+%% ** EDIT HERE **
+%% PLEASE INCLUDE ALL MACROS BELOW
+
+%% END MACROS SECTION
+
+\usepackage{setspace}
+\doublespace
+
+\begin{document}
+
+% Title must be 150 words or less
+\begin{flushleft}
+{\Large
+\textbf{Automated Identification and Tracking of Focal Adhesions Reveals Phosphorylation of Paxillin at Serine 178 is a Key Regulatory Mechanism of Adhesion Assembly}
+}
+% Insert Author names, affiliations and corresponding author email.
+\\
+Matthew E. Berginski$^{1,\dagger}$, 
+Eric Vitriol$^{2,\dagger}$, 
+Klaus Hahn$^{3,\ast}$
+Shawn M. Gomez$^{1,\ast}$
+\\
+\bf{1} Department of Biomedical Engineering, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
+\\
+\bf{2} Department of Cell and Developmental Biology, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
+\\
+\bf{3} Department of Pharmacology, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
+\\
+$\dagger$ These authors contributed equally to this work.
+\\
+$\ast$ To whom correspondence should be addressed. E-mail: smgomez@unc.edu (SMG); khahn@med.unc.edu (KH)
+\end{flushleft}
+
+% Please keep the abstract between 250 and 300 words
+\section*{Abstract}
+
+Focal adhesions are macromolecular complexes that provide a linkage from a cell to its external environment. In a motile cell they form, enlarge, and disassemble; these processes are essential to and govern cell migration. To better understand the dynamic regulation of focal adhesions during cell motility we have developed software for the automated detection, tracking, and data extraction of these structures using Total Internal Reflection Fluorescence Microscopy (TIR-FM) image sets of fluorescently tagged adhesion components. Utilizing this software we are able to obtain information about the size, shape, intensity, and position of every adhesion present in a living cell. Moreover we can follow how these properties change over time to assess adhesion lifetime and turnover rates. Here we analyze the adhesion component Paxillin in migrating NIH 3T3 fibroblasts. We also show how a single point mutation in Paxillin at the Jun-kinase phosporylation site Serine 178 changes focal adhesion size, distribution, and rate of assembly. We present this software as a generally applicable tool that will advance the understanding of how focal adhesions are dynamically regulated in living cells.
+
+% Please keep the Author Summary between 150 and 200 words
+% Use first person. PLoS ONE authors please skip this step. 
+% Author Summary not valid for PLoS ONE submissions.   
+\section*{Author Summary}
+
+We have generated software that extracts high content information from TIR-FM image sets of focal adhesions.  Using it we have identified phosphorylation of Paxillin at Serine 178 as a key regulatory mechanism of adhesion assembly in migrating cells.
+
+\section*{Introduction}
+
+Focal adhesions (FAs) are sophisticated protein complexes that play a central role in cellular adhesion, motility, and survival. As points of integration for both mechanical and chemical signaling, characterizing adhesion dynamics is essential for understanding processes such as cell migration - a dynamic multistep process requiring the continuous assembly and disassembly of adhesions. In the course of cell movement lamellipodial protrusions are formed, with new adhesions born at the cell edge, further assembled and then often disassembled at the base of the protrusion. Other longer-lived adhesions are disassembled within retractions that are formed in the tails of migrating cells. In this and other FA-relevant processes, FA dynamics is recognized as being highly regulated, with alterations in the balance of regulating factors playing a key role in adhesion turnover essential for normal cell function.
+
+Microscopic imaging of focal adhesions has driven a significant portion of our current understanding of adhesion dynamics, with methods such as total internal reflection fluorescence microscopy (TIF-FM) providing high-resolution images capable of being quantitatively analyzed. However, challenges in image capture and downstream analysis has generally led to the characterization of only a relatively small number of hand-picked adhesions within any given cell \cite{Webb2004}. Recent technological and methodological improvements have led to the automated detection and characterization of focal adhesions in the application of high-throughput screening. For instance, Paran and colleagues have reported on the use of a high-throughput high-resolution imaging system to screen a plant extract library for effects on adhesion morphology and distribution. Similarly, the same high-throughput imaging system was used to perform multicolor analysis on various adhesion components \cite{Zamir2008}. In this instance, they were able to obtain molecular signatures of protein components within focal adhesions as well as resolve sub-domains within adhesions. These studies demonstrate the power of being able to identify and characterize all adhesions present within a cell. However, as these approaches rely on cell fixation, critical aspects of focal adhesion biology are lost including spatiotemporal adhesion dynamics.
+
+Here we describe a novel system for the quantification of focal adhesion spatiotemporal dynamics. This approach utilizes time-series high-resolution (60x, oil-immersion) images of living cells generated with TIR-FM. Image sequences are then processed through an analysis system that identifies each individual adhesion, tracks their movement through time and collects associated properties concerning the location, shape, size and intensity. As the birth, lifetime and death of each adhesion is quantified in this approach, a thorough picture of global adhesion behavior is captured.
+
+To demonstrate the power of this approach, we focus on the molecular scaffold protein paxillin which is a core constituent of focal adhesions. Through direct interactions with both structural and regulatory components, paxillin serves as a platform for adhesion signal transduction. A principal regulatory mechanism of paxillin is phosphorylation with over 40 phosphorylated sites currently identified, several of which show strong effects on cell migration. One of these is the Jun-kinase (JNK) phosphorylation site Serine 178 (S178). Mutation of this residue or inhibition of JNK signaling inhibits cell motility (Jacobsen ref). More recently, it has been shown that phosphorylation of S178 enhances paxillin's interaction with FAK and Tyrosine phosphorylation at residues 31 and 118 (ref). Expression of the phosphomimetic Y31D/Y118D paxillin can rescue the S178A mutant phenotype. This and related work hints that JNK phosphorylation of paxillin is an early step in adhesion formation. 
+
+In this study we use our imaging analysis system to characterize focal adhesions tagged with EGFP-paxillin, generating high-resolution and high-content data sets of focal adhesion distribution, morphology, and turnover in migrating NIH 3T3 fibroblasts. Results indicate that we can characterize adhesions in an unbiased manner, with typically $10^3-10^4$ adhesions characterized per cell. We further show that we can detect subtle alterations in adhesion spatiotemporal properties such as site formation, size and assembly rates in response to S178 mutation. In addition, we find that rates of of disassembly are unaffected by this mutation. These results further improve our understanding of JNK regulation of paxillin dynamics as well as demonstrating the utility of appropriately designed image analysis systems in the characterization of high-content data sets.
+
+% Results and Discussion can be combined.
+\section*{Results}
+
+
+
+\section*{Discussion}
+
+% You may title this section "Methods" or "Models". 
+% "Models" is not a valid title for PLoS ONE authors. However, PLoS ONE
+% authors may use "Analysis" 
+\section*{Materials and Methods}
+
+\subsection*{TIRF Microscopy}
+
+This part is all Eric.
+
+\subsection*{Image Processing}
+
+Methods to identify the FA were adapted from a prior publication \cite{Zamir1999}, with some modification. Briefly, each image taken during an experiment was high pass filtered, using a round averaging filter with a radius of 11 pixels (4.95 $\mu$m diameter). The high pass filtered images were thresholded by an empirically determined value set to identify adhesion pixels. The water segmentation method was used as described, but with the following modifications. When a pixel acts as bridge between two large adhesions, where large is defined as 40 or more pixels (1.85 $\mu$m$^2$), the bridge pixel is assigned to the adhesion whose centroid is closest to the bridge pixel. Also, following addition of all pixels whose high passed image value was above threshold, pixels surrounded by adhesions were identified and added to adhesion map using the same water algorithm. Between 200 and 600 adhesions were found in each image from the experimental data. With each focal adhesion identified all the collected images, many static adhesion properties are collected (Table \ref{prop_table}).
+
+\subsection*{FA Tracking}
+
+With the focal adhesions identified in each image of the experimental data set, another series of algorithms were designed to track the focal adhesions through each sequential image. The tracking algorithm is based on a birth-death model of a FA lifetime. In each sequential image a FA can either be born, continue into the next time step, merge or die. The birth-death-merge processes are detected by examining the properties extracted from the segmented adhesions. The results of this tracking algorithm are assignments of the FA identified in each image into lineages that track the development of the FA during the course of the experiment.
+
+The tracking algorithm is initialized with all the adhesions detected in the first frame of the image sequence. The first step of the tracking algorithm attempts to locate FA which correspond in the next time step of the experimental data (Figure Supplemental Tracking Flow Chart). This first step assumes that if a focal adhesion overlaps with a focal adhesion in the following frame, that these overlapping adhesions correspond to one another. When an adhesion overlaps with more than one adhesion in the following frame, the adhesion with the greatest percentage of overlap is assigned as the match in the next frame. If a FA does not overlap with any of the FA in the following image, the FA closest to that adhesion in terms of the euclidian distance between each adhesion's centroid is assigned as a match. Adhesions in the next frame that are not selected via either of these methods, but still overlap with an adhesion in the current frame are marked as being created via a split birth event. Adhesion births that are the result of split events are dealt with in later filtering steps. All of the living focal adhesions are assigned a corresponding FA in the following image by these two rules.
+
+This process of assigning live adhesions to corresponding adhesions in the following frame produces sets of adhesions that are predicted to merge. Some of these merge events are true merge events where one adhesion has joined with another, while others are adhesions which die, but are erroneously assigned as merge events. When a FA does not overlap with the FA it is predicted to become, this FA is assumed to have died and its lineage is ended. These adhesions are also marked as having undergone a death, which will be used in later filtering steps. For the remaining merge events where more than one adhesion has been predicted to merge in the next frame, one of the merging FA lineages is selected to continue, while the other FA lineage is predicted to end. When the adhesions predicted to merge differ in size by at least 10\%, the larger adhesion's lineage is continued. If the merging FAs sizes do not differ by at least 10\%, the lineage whose current centroid is closer to the adhesion centroid in the following image is predicted to continue. By this sequences of rules, each merge event is resolved so that corresponding FA in adjacent experimental data images are collected.
+
+Following tracking live adhesions and resolving the merge and death events, there remain FA in the following image which are not assigned to any of the current lineages. The unassociated FA are assigned into new lineages. This process of tracking the live adhesions, resolving merge and death events and starting new lineages is repeated for each image in the experimental data sequence until adhesion data from all the images has been included.
+
+\subsection*{Calculating Assembly and Disassembly Rates}
+
+With the adhesions tracked through each experiment, the static properties determined for each adhesion in each frame of the time-lapse movie can be collected into a set of time series representing the properties of each adhesion through time. One type of time series follows the mean intensity of Paxillin through time, making it possible to estimate the rates of assembly and disassembly of Paxillin for each adhesion. An automated method to estimate the rates of assembly and disassembly was developed. This program automatically fits linear models to the log-transformed time series of Paxillin intensity values for both the assembly and disassembly phases of the FA life cycle. 
+
+In the first part of the algorithm, linear models are fit to all the possible assembly and disassembly phases of at least a user specified length. The assembly phase is assumed to occur at the beginning of the time series, whereas the disassembly phase is assumed to end with the last point in the time series. Each of the fits collected were normalized by the either first or last point in the time series and log-transformed, as described \cite{Webb2004}.
+
+In the second part of the algorithm, the optimum lengths of the assembly and disassembly phases were determined via a simple search for the maximum sum of adjusted R$^2$ values for the fits. It was assumed that the assembly and disassembly phases did not overlap. In the rare cases where there are multiple combinations of assembly and disassembly times that produce the highest sum of adjusted R$^2$ values, the combination with the longest combined assembly and disassembly times is selected.
+
+\subsection*{Results Filtering}
+
+Several filters are used to analyze the data sets collected with these analysis methods. When determining the assembly and disassembly rates, only adhesions with at least 20 Paxillin intensity time points were analyzed. This ensured that there was sufficient data available to correctly detect assembly and disassembly rates. Adhesions whose birth was the result of a split event were also excluded from the assembly rate calculations, while adhesions whose lineage ended with a merge event were excluded from the disassembly rate calculation. Assembly and disassembly fits whose linear model p-values were above 0.05 were also excluded from the data set. Several figures only include data from the assembly or disassembly fits whose linear models fit with an R$^2$ value of 0.9 or greater.
+
+A separate set of filters were used to compile the stability phase of the adhesion lifetime data. In order to estimate the length of time an adhesion spends in the stability phase, both the assembly and disassembly phases have to be observed. There are few adhesions where both the assembly and disassembly phases fit log-linear models with high R$^2$ values (above 0.9), so the filtering criteria were loosened to include adhesions where both log-linear model p-values were below 0.05.
+
+% Do NOT remove this, even if you are not including acknowledgments
+\section*{Acknowledgments}
+
+\section*{References}
+% The bibtex filename
+\bibliography{all_literature}
+
+\section*{Figures}
+%\begin{figure}[!ht]
+%\begin{center}
+%%\includegraphics[width=4in]{figure_name.2.eps}
+%\end{center}
+%\caption{
+%{\bf Bold the first sentence.}  Rest of figure 2  caption.  Caption 
+%should be left justified, as specified by the options to the caption 
+%package.
+%}
+%\label{Figure_label}
+%\end{figure}
+
+%\input{figures.tex}
+
+\section*{Tables}
+\begin{table}[!ht]
+\caption{
+\bf{Properties Extracted}}
+\begin{tabular}{cc|c}
+Property Class & Name & Description\\
+\hline
+Static & FA Area & Total area covered by adhesion ($\mu$m$^2$)\\
+ & FA Axial Ratio & Ratio between long and short axis of ellipsoid fit to the binary FA\\
+ &Centroid Position & Location of binary adhesion centroid\\
+ & Mean Fluorescence Intensity & Average normalized value of fluorescence intensity of each FA \\
+ & Cell Area & Total area covered by cell ($\mu$m$^2$)\\
+ & Distance from Cell Edge & Distance from nearest cell edge to adhesion centroid\\
+\hline
+Dynamic & Assembly Rate & Slope of normalized fluorescence intensity on a log scale versus time \\
+ & Disassembly Rate & \\
+ & Birth Position & Location where FA lineage starts\\
+ & Length of Lifecycle Phases & Length of time spent in assembly, stability and disassembly\\
+\end{tabular}
+%\begin{flushleft}Table caption
+%\end{flushleft}
+\label{prop_table}
+\end{table}
+
+\end{document}
