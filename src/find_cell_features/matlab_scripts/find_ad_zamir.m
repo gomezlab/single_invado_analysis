@@ -22,8 +22,9 @@ if (i_p.Results.debug == 1), profile on; end
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_zamir = zeros(size(high_passed_image));
+filled_binary = imfill(i_p.Results.binary_image);
 
-pix_vals = high_passed_image(i_p.Results.binary_image);
+pix_vals = high_passed_image(filled_binary);
 sorted_pix_vals = sort(unique(pix_vals),'descend');
 
 count = 0;
@@ -61,9 +62,6 @@ for i = 2:length(ad_nums)
     %determine the linear indexes of the pixels there not in the original
     %adhesion, but are presented in the filled adhesion
     pix_to_add = find(and(filled_ad > 0, not(this_ad)));
-    if (this_num == 79) 
-        1;
-    end
     for j = 1:length(pix_to_add)
         %First we deal with the unlikely, but possible, case where one
         %identified adhesion lives in a hole formed by another adhesion.

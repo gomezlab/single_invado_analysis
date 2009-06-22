@@ -30,7 +30,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-$opt{min_ad_size} = 5;
+$opt{min_ad_size} = 0;
 GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};

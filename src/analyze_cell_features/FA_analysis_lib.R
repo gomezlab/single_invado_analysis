@@ -819,18 +819,16 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 
 		assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
 					   & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
-					   & for_filter$assembly$p_val <= max_p_val)
+					   & for_filter$assembly$p_val < max_p_val)
 		disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
 						  & is.finite(for_filter$disassembly$slope) & is.finite(for_filter$disassembly$p_val) 
-						  & for_filter$disassembly$p_val <= max_p_val)
+						  & for_filter$disassembly$p_val < max_p_val)
 		
 		if (pos_slope) {
 			assembly_filt = assembly_filt & for_filter$assembly$slope > 0
 			disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
 		}				  
 		joint_filt = assembly_filt & disassembly_filt
-		
-		desired_names = c("slope","R_sq", "p_val", "offset")
 				
 		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
 		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
@@ -842,10 +840,9 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
 		if (any(names(res$exp_props) == 'starting_edge_dist')) {
 			points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
-		}
-				
-		for (i in names(points$assembly)) {
-			stopifnot(length(points$assembly[[1]]) == length(points$assembly[[i]]))
+		}		
+		for (j in names(points$assembly)) {
+			stopifnot(length(points$assembly[[1]]) == length(points$assembly[[j]]))
 		}
 		
 		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
@@ -854,13 +851,13 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		points$disassembly$offset = c(points$disassembly$offset, res$disassembly$offset[disassembly_filt])
 		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
 		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
-		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir, length(which(disassembly_filt))))
+		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))))
 		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
 		if (any(names(res$exp_props) == 'ending_edge_dist')) {
 			points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
 		}
-		for (i in names(points$disassembly)) {
-			stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[i]]))
+		for (j in names(points$disassembly)) {
+			stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[j]]))
 		}
 
 		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt])
@@ -874,9 +871,14 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		
 		points$joint$assembly_offset = c(points$joint$assembly_offset, res$assembly$offset[joint_filt])
 		points$joint$disassembly_offset = c(points$joint$disassembly_offset, res$dis$offset[joint_filt])
+		points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt])
+		for (j in names(points$joint)) {
+			stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
+		}
 		
-		points$stable_lifetime = c(points$stable_lifetime, na.omit(res$stable_lifetime))
-		points$stable_mean = c(points$stable_mean, na.omit(res$stable_mean))
+		points$stable$lifetime = c(points$stable$lifetime, na.omit(res$stable_lifetime))
+		points$stable$exp_num = c(points$stable$exp_num, rep(i,length(na.omit(res$stable_lifetime))))
+		points$stable$mean = c(points$stable$mean, na.omit(res$stable_mean))
 	}
 	
 	points$assembly = as.data.frame(points$assembly)
@@ -886,47 +888,137 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 	points
 }
 
-gather_stage_lengths <- function(results_filt, results_S_filt, bootstrap.rep = 50000) {
+gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, debug=FALSE) {
 	
 	require(boot)
-	bar_lengths = matrix(0,3,2)
-	conf_ints = matrix(0,6,4)
-
+	bar_lengths = matrix(NA,3,2)
+	conf_ints = matrix(NA,6,4)
+	p_vals = rep(NA,3)
+	counts = matrix(NA,3,2)
+	
 	#Wild-type
-	boot_samp = boot(results_filt$a$offset, function(data,indexes) mean(data[indexes]), bootstrap.rep)
+	boot_samp = boot(results_1$a$offset, function(data,indexes) mean(data[indexes]), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
 	conf_ints[1,3:4] = boot_conf$perc[4:5]
+	conf_ints[1,2] = boot_conf$t0
 	bar_lengths[1,1] = boot_conf$t0
+	counts[1,1] = length(results_1$a$offset)
+	if (debug) {
+		print('Done 1');
+	}
+	
+	boot_samp_2 = boot(results_2$a$offset, function(data,indexes) mean(data[indexes]), bootstrap.rep)
+	boot_conf = boot.ci(boot_samp_2,type="perc")
+	conf_ints[4,3:4] = boot_conf$perc[4:5]
+	conf_ints[4,2] = boot_conf$t0
+	bar_lengths[1,2] = boot_conf$t0
+	counts[1,2] = length(results_2$a$offset)
+	if (debug) {
+		print('Done 2');
+	}
+	p_vals[1] = find_p_val_from_bootstrap(boot_samp,boot_samp_2)
 
-	boot_samp = boot(results_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
+	boot_samp = boot(results_1$joint$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
 	conf_ints[2,3:4] = boot_conf$perc[4:5]
+	conf_ints[2,2] = boot_conf$t0
 	bar_lengths[2,1] = boot_conf$t0
+	counts[2,1] = length(results_1$joint$stable_lifetime)
+	if (debug) {
+		print('Done 3');
+	}
+
+	boot_samp_2 = boot(results_2$joint$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
+	boot_conf = boot.ci(boot_samp_2,type="perc")
+	conf_ints[5,3:4] = boot_conf$perc[4:5]
+	conf_ints[5,2] = boot_conf$t0
+	bar_lengths[2,2] = boot_conf$t0
+	counts[2,2] = length(results_2$joint$stable_lifetime)
+	if (debug) {
+		print('Done 4');
+	}
+	p_vals[2] = find_p_val_from_bootstrap(boot_samp,boot_samp_2)
 	
-	boot_samp = boot(results_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
+	boot_samp = boot(results_1$d$offset, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
 	boot_conf = boot.ci(boot_samp,type="perc")
 	conf_ints[3,3:4] = boot_conf$perc[4:5]
+	conf_ints[3,2] = boot_conf$t0
 	bar_lengths[3,1] = boot_conf$t0
-	
-	#S178A
-	boot_samp = boot(results_S_filt$a$offset, function(data,indexes) mean(data[indexes]), bootstrap.rep)
-	boot_conf = boot.ci(boot_samp,type="perc")
-	conf_ints[4,3:4] = boot_conf$perc[4:5]
-	bar_lengths[1,2] = boot_conf$t0
+	counts[3,1] = length(results_1$d$offset)
+	if (debug) {
+		print('Done 5');
+	}
 
-	boot_samp = boot(results_S_filt$stable_lifetime, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
-	boot_conf = boot.ci(boot_samp,type="perc")
-	conf_ints[5,3:4] = boot_conf$perc[4:5]
-	bar_lengths[2,2] = boot_conf$t0
-
-	boot_samp = boot(results_S_filt$d$offset, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
-	boot_conf = boot.ci(boot_samp,type="perc")
+	boot_samp_2 = boot(results_2$d$offset, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep)
+	boot_conf = boot.ci(boot_samp_2,type="perc")
 	conf_ints[6,3:4] = boot_conf$perc[4:5]
+	conf_ints[6,2] = boot_conf$t0
 	bar_lengths[3,2] = boot_conf$t0
+	counts[3,2] = length(results_2$d$offset)
+	if (debug) {
+		print('Done 6');
+	}
+	p_vals[3] = find_p_val_from_bootstrap(boot_samp,boot_samp_2)
+		
+	rm(boot_samp, boot_samp_2)
+	gc()
 	
-	return_data <- list(bar_lengths = bar_lengths, conf_ints = conf_ints)
+	return_data <- list(bar_lengths = bar_lengths, conf_ints = conf_ints, p_vals = p_vals, counts = counts)
 	return_data
 }
+
+find_p_val_from_bootstrap <- function(boot_one, boot_two, 
+	p_vals_to_test = c(0.05,1E-2,1E-3,1E-4,1E-5)) {
+	
+	stopifnot(class(boot_one) == "boot")
+	stopifnot(class(boot_two) == "boot")
+	
+	overlap_region = c()
+	for (this_val in p_vals_to_test) {
+		if (any(overlap_region)) {
+			next;
+		}
+		conf_int_one = boot.ci(boot_one, type="perc", conf=(1-this_val))
+		conf_int_two = boot.ci(boot_two, type="perc", conf=(1-this_val))
+				
+		if (ranges_overlap(conf_int_one$perc[4:5], conf_int_two$perc[4:5])) {
+			overlap_region = c(overlap_region, TRUE)
+		} else {
+			overlap_region = c(overlap_region, FALSE)
+		}
+	}
+	
+	overlap_indexes = which(overlap_region)
+	if (length(overlap_indexes) == 0) {
+		return(p_vals_to_test[length(p_vals_to_test)])
+	} else if (overlap_indexes[1] == 1) {
+		return(NA);
+	} else {
+		return(p_vals_to_test[overlap_indexes[1] - 1])
+	}	
+}
+
+ranges_overlap <- function(range_1, range_2) {
+	stopifnot(length(range_1) == 2)
+	stopifnot(length(range_2) == 2)
+	
+	if (range_1[1] < range_2[1] & range_1[2] > range_2[1]) {
+		return(TRUE);
+	} else if (range_1[1] > range_2[1] & range_1[1] < range_2[2]) {
+		return(TRUE);
+	}
+	return(FALSE);
+}
+stopifnot(! ranges_overlap(c(0,1),c(-0.5,-0.01)))
+stopifnot(ranges_overlap(c(0,1),c(-0.5,0.01)))
+stopifnot(ranges_overlap(c(0,1),c(0.5,0.9)))
+stopifnot(! ranges_overlap(c(0,1),c(1.01,1.2)))
+
+stopifnot(! ranges_overlap(c(-0.5,-0.01),c(0,1)))
+stopifnot(ranges_overlap(c(-0.5,0.01),c(0,1)))
+stopifnot(ranges_overlap(c(0.5,0.9),c(0,1)))
+stopifnot(! ranges_overlap(c(1.01,1.2),c(0,1)))
+
 
 gather_offset_differences <- function(results_long, results_short, min_R_sq=0.9, max_p_val = 0.05, pos_slope = FALSE) {
 	points = list()
@@ -1083,15 +1175,6 @@ find_col_conf_ints <- function(data, boot.samp = 100) {
 	list(upper = upper, lower = lower, mean_vals = mean_vals)
 }
 
-trim_args_list <- function(args) {
-	for (i in 1:length(args)) {
-		if (substr(args[i],0,1) == '-') {
-			args[i] = substring(args[i],2)
-		}
-	}
-	args
-}
-
 write_assembly_disassembly_periods <- function(result, dir) {
 	if (! file.exists(dir)) {
 		dir.create(dir,recursive=TRUE)
@@ -1183,6 +1266,11 @@ find_death_time <- function(alive_dead) {
 	}
 	death_time
 }
+stopifnot(is.na(find_death_time(c(F,T,T,T))))
+stopifnot(find_death_time(c(T,T,F,F)) == 3)
+stopifnot(find_death_time(c(F,T,F,F)) == 3)
+stopifnot(find_death_time(c(F,T,T,F)) == 4)
+
 
 find_birth_time <- function(alive_dead) {
 	#alive_dead should be a sequence of T/F values, where T is alive and F is dead
@@ -1198,20 +1286,17 @@ find_birth_time <- function(alive_dead) {
 	}
 	birth_time
 }
-
-########################################
-#Tests
-########################################
-
-#Birth/Death Rates
-stopifnot(is.na(find_death_time(c(F,T,T,T))))
-stopifnot(find_death_time(c(T,T,F,F)) == 3)
-stopifnot(find_death_time(c(F,T,F,F)) == 3)
-stopifnot(find_death_time(c(F,T,T,F)) == 4)
-
 stopifnot(is.na(find_birth_time(c(T,T,T,F))))
 stopifnot(find_birth_time(c(F,T,F,F)) == 2)
 
+trim_args_list <- function(args) {
+	for (i in 1:length(args)) {
+		if (substr(args[i],0,1) == '-') {
+			args[i] = substring(args[i],2)
+		}
+	}
+	args
+}
 
 ################################################################################
 # Main Program
