@@ -128,6 +128,10 @@ adhesion_props = regionprops(labeled_adhesions,'all');
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Properites Always Extracted
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 for i=1:max(labeled_adhesions(:))
     adhesion_props(i).Average_adhesion_signal = mean(orig_I(labeled_adhesions == i));
     adhesion_props(i).Variance_adhesion_signal = var(orig_I(labeled_adhesions == i));
@@ -154,6 +158,13 @@ for i=1:max(labeled_adhesions(:))
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(labeled_adhesions(:)))]); end
 end
+
+adhesion_mask = im2bw(labeled_adhesions,0);
+adhesion_props(1).Adhesion_mean_intensity = sum(sum(orig_I(adhesion_mask)))/sum(sum(adhesion_mask));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Properites Extracted If Protrusion Data Available
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (exist('protrusion_data','var'))
     all_data = [];
@@ -189,6 +200,10 @@ if (exist('protrusion_data','var'))
         end
     end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Properites Extracted If Cell Mask Available
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (exist('cell_mask','var'))
     [dists, indices] = bwdist(~cell_mask);
@@ -226,7 +241,13 @@ if (exist('cell_mask','var'))
     
     adhesion_props(1).Cell_size = sum(cell_mask(:));
     
-    adhesion_props(1).Mean_intensity = sum(sum(orig_I(cell_mask)))/adhesion_props(1).Cell_size;
+    adhesion_props(1).Cell_mean_intensity = sum(sum(orig_I(cell_mask)))/adhesion_props(1).Cell_size;
+    
+    cell_not_ad_mask = cell_mask & not(adhesion_mask);
+    adhesion_props(1).Cell_not_ad_mean_intensity = sum(sum(orig_I(cell_not_ad_mask)))/sum(sum(cell_not_ad_mask));
+    
+    not_cell_mask = not(cell_mask);
+    adhesion_props(1).Outside_mean_intensity = sum(sum(orig_I(not_cell_mask)))/sum(sum(not_cell_mask));
 end
 
 function write_adhesion_data(S,varargin)
