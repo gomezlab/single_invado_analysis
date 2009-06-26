@@ -94,9 +94,10 @@ sub convert_data_to_units {
     my $lin_conv_factor = $cfg{pixel_size};
     my $sq_conv_factor  = $lin_conv_factor**2;
     my @no_conversion =
-      qw(Class Centroid_x Centroid_y Eccentricity Solidity 
-         Background_corrected_signal Angle_to_center Orientation 
-         Shrunk_corrected_signal Mean_intensity);
+	  qw(Class Centroid_x Centroid_y Eccentricity Solidity
+	  Background_corrected_signal Angle_to_center Orientation
+	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
+	  Cell_not_ad_mean_intensity);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -187,20 +188,18 @@ sub output_single_adhesion_props {
 #Overall Props
 #######################################
 sub gather_and_output_overall_cell_properties {
-    if (grep $_ eq "Cell_size", @available_data_types) {
-        my @cell_size_sequence = &gather_single_number_time_series("Cell_size");
-        my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Cell_size.csv");
-        &output_mat_csv(\@cell_size_sequence, $output_file);
-    }
+	my @single_props = qw(Cell_size Cell_mean_intensity Outside_mean_intensity Cell_not_ad_mean_intensity);
 
-    if (grep $_ eq "Mean_intensity", @available_data_types) {
-        my @sequence = &gather_single_number_time_series("Mean_intensity");
-        my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Mean_intensity.csv");
-        &output_mat_csv(\@sequence, $output_file);
-    }
+	foreach my $data_type (@single_props) {
+        next if (not(grep $data_type eq $_, @available_data_types));
+		
+        my @prop_sequence = &gather_single_number_time_series("$data_type");
+        my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder},"single_props", $data_type . ".csv");
+        &output_mat_csv(\@prop_sequence, $output_file);
+	}
     
     my @total_ad_size = &gather_total_adhesion_size_time_series;
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Ad_size.csv");
+    my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "single_props", "Ad_size.csv");
     &output_mat_csv(\@total_ad_size, $output_file);
 }
 
@@ -261,12 +260,11 @@ sub gather_and_output_lineage_properties {
     my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal
       Eccentricity Solidity Background_corrected_signal Shrunk_corrected_signal 
       MajorAxisLength MinorAxisLength);
-    foreach (@ts_props) {
-        my $this_result = $_;
-        next if (not(grep $this_result eq $_, @available_data_types));
+    foreach my $data_type (@ts_props) {
+        next if (not(grep $data_type eq $_, @available_data_types));
 
-        my $this_data = &gather_prop_seq($this_result);
-        &output_prop_time_series($this_data, $this_result);
+        my $this_data = &gather_prop_seq($data_type);
+        &output_prop_time_series($this_data, $data_type);
     }
 
     $props{longevity}               = &gather_longevities;
