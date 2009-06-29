@@ -97,7 +97,7 @@ sub convert_data_to_units {
 	  qw(Class Centroid_x Centroid_y Eccentricity Solidity
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
-	  Cell_not_ad_mean_intensity);
+	  Cell_not_ad_mean_intensity Adhesion_mean_intensity);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -188,7 +188,8 @@ sub output_single_adhesion_props {
 #Overall Props
 #######################################
 sub gather_and_output_overall_cell_properties {
-	my @single_props = qw(Cell_size Cell_mean_intensity Outside_mean_intensity Cell_not_ad_mean_intensity);
+	my @single_props = qw(Cell_size Cell_mean_intensity Outside_mean_intensity
+	Cell_not_ad_mean_intensity Adhesion_mean_intensity);
 
 	foreach my $data_type (@single_props) {
         next if (not(grep $data_type eq $_, @available_data_types));

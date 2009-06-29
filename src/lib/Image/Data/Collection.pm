@@ -142,7 +142,10 @@ sub check_data_set_lengths {
     for my $key (keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$key} }) {
             next if ($data_type eq "Cell_size");
-            next if ($data_type eq "Mean_intensity");
+            next if ($data_type eq "Cell_mean_intensity");
+            next if ($data_type eq "Cell_not_ad_mean_intensity");
+            next if ($data_type eq "Outside_mean_intensity");
+            next if ($data_type eq "Adhesion_mean_intensity");
             $data_sets_length{$key}{$data_type} = scalar(@{ $data_sets{$key}{$data_type} });
         }
     }
