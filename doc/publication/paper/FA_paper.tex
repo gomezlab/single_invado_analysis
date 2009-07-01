@@ -8,7 +8,7 @@
 % latex plos.template
 % dvipdf plos.template
 
-\documentclass[10pt,draft]{article}
+\documentclass[10pt]{article}
 
 % amsmath package, useful for mathematical formulas
 \usepackage{amsmath}
@@ -25,9 +25,8 @@
 \usepackage{color} 
 
 % Use doublespacing - comment out for single spacing
-%\usepackage{setspace} 
-%\doublespacing
-
+\usepackage{setspace} 
+\doublespacing
 
 % Text layout
 \topmargin 0.0cm
@@ -63,9 +62,6 @@
 
 %% END MACROS SECTION
 
-\usepackage{setspace}
-\doublespace
-
 \begin{document}
 
 % Title must be 150 words or less
@@ -99,6 +95,7 @@ Focal adhesions are macromolecular complexes that provide a linkage from a cell 
 % Please keep the Author Summary between 150 and 200 words
 % Use first person. PLoS ONE authors please skip this step. 
 % Author Summary not valid for PLoS ONE submissions.   
+
 \section*{Author Summary}
 
 We have generated software that extracts high content information from TIR-FM image sets of focal adhesions.  Using it we have identified phosphorylation of Paxillin at Serine 178 as a key regulatory mechanism of adhesion assembly in migrating cells.
@@ -118,22 +115,44 @@ In this study we use our imaging analysis system to characterize focal adhesions
 % Results and Discussion can be combined.
 \section*{Results}
 
+%\subsection*{Quantitative Time-lapse Micrscopy of Focal Adhesions}
 
+%We used TIRF microscopy and a set of computational algorithms to identify and track FA in order to quantify the static and dynamic properties of FAs (Figure \ref{method_flow}). 
+
+%\subsection*{Static Properties of FA}
+
+%\subsection*{Dynamic Properties of FA}
+
+%\subsection*{Paxillin S178A Mutant Perturbation}
 
 \section*{Discussion}
+
+%We have described the development of a set of computational tools suitable for assessing the results of perturbing the signaling networks which control FA development. The S178A mutation was presented as case study for applying the tools to analyzing complex FA phenotypes. 
 
 % You may title this section "Methods" or "Models". 
 % "Models" is not a valid title for PLoS ONE authors. However, PLoS ONE
 % authors may use "Analysis" 
 \section*{Materials and Methods}
 
-\subsection*{TIRF Microscopy}
+\subsection*{Cell Culture}
 
-This part is all Eric.
+NIH 3T3 fibroblasts (MEFs) and 293 LinXE ecotropic packaging cells were cultured in 5\% CO2 at 37°C in Dulbecco’s modified Eagle’s medium (DMEM, Mediatech) supplemented with 10\% fetal calf serum, 1 \% L-Glutamine, and 1\% penicillinstreptomycin. Fibroblasts were imaged in Ham’s F-12K medium without phenol red (SAFC Biosciences) with 2\% fetal bovine serum, 15mM HEPES, 1\% L-Glutamine, and 1\% penicillinstreptomycin. 
+
+To make stable cell lines, retroviral vectors were transfected into 293 LinXE cells plated in 6cm dishes with Fugene 6 (Roche) according to the manufacturer’s protocol (using 18$\mu$L Fugene 6 and 8$\mu$g of DNA). The media was replaced after 12 hours. Viral supernatant was harvested 48 hours after media replacement, passed through a .45$\mu$m syringe filter and then added to MEFs plated at subconfluent densities at a ratio of 1:3 (viral supernatant/normal media). Cells were simultaneously infected with virus containing myr-mRFP and the appropriate EGFP-Paxillin construct and went through 5-8 rounds of infection to reach expression levels sufficient for live cell imaging.
+
+\subsection*{Microscopy}
+
+Prior to imaging, MEFs were plated onto coverslips coated with 5$\mu$g/mL Fibronectin (Sigma) for 30min. Fibroblasts expressing EGFP- Pax$_{\text{S187A}}$ required 2-3 hours to adhere to the coverslips due to a spreading defect. Immediately before being transferred to a sealed imaging chamber, complete culture media was replaced with imaging media. 
+
+Imaging was performed on an Olympus IX81 motorized inverted microscope equipped with ZDC focus drift compensator and TIRFM illuminator, a 60X 1.45 NA PlanApoN TIRFM objective, a cooled digital 12-bit CCD camera (CoolSnap, Roper Scientific), a 100W Mercury arc lamp, and MetaMorph imaging software. The 488nm laser line from a Krypton-Argon ion laser (Series 43, Omnichrome) was controlled with a custom laser launch/AOTF (LSM Technologies).  
+
+TIRF images of EGFP and epifluorescence images of RFP were acquired using an 80/20 (TIRF / Epifluorescence) splitter mirror, a custom dichoic mirror (Chroma) and the following band-pass filters: EGFP (HQ 525/50); RFP (HQ580/30, HQ 630/40). Images were acquired with 2 x 2 binning. Illumination intensity was controlled with either the AOTF (TIRF excitation) or neutral density filters (epifluorescence excitation) until 300-1000ms exposures satisfied the dynamic range of the camera without saturation. 
 
 \subsection*{Image Processing}
 
 Methods to identify the FA were adapted from a prior publication \cite{Zamir1999}, with some modification. Briefly, each image taken during an experiment was high pass filtered, using a round averaging filter with a radius of 11 pixels (4.95 $\mu$m diameter). The high pass filtered images were thresholded by an empirically determined value set to identify adhesion pixels. The water segmentation method was used as described, but with the following modifications. When a pixel acts as bridge between two large adhesions, where large is defined as 40 or more pixels (1.85 $\mu$m$^2$), the bridge pixel is assigned to the adhesion whose centroid is closest to the bridge pixel. Also, following addition of all pixels whose high passed image value was above threshold, pixels surrounded by adhesions were identified and added to adhesion map using the same water algorithm. Between 200 and 600 adhesions were found in each image from the experimental data. With each focal adhesion identified all the collected images, many static adhesion properties are collected (Table \ref{prop_table}).
+
+Average local background fluorescence was subtracted from the average fluorescence of each adhesion to give the background correct fluorescence intensity. The local background region for a single adhesion was defined as the region within 10 pixels of the adhesion border. Pixels outside the cell, inside another another adhesion or the adhesion itself were excluded from the average background fluorescence calculation.
 
 \subsection*{FA Tracking}
 
@@ -179,7 +198,7 @@ A separate set of filters were used to compile the stability phase of the adhesi
 %\label{Figure_label}
 %\end{figure}
 
-%\input{figures.tex}
+\include{figure_code}
 
 \section*{Tables}
 \begin{table}[!ht]

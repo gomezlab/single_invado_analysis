@@ -8,6 +8,7 @@ library(Hmisc)
 #Result loading
 ################################################################################
 raw_data <- list()
+single_props <- list()
 
 exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
 #exp_dirs <- Sys.glob('../../results/lin_region_variation/FA/6/*/adhesion_props/models/')
@@ -16,20 +17,32 @@ exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 raw_data$results = load_results(exp_dirs,file.path('intensity_model.Rdata'))
 raw_data$area = load_results(exp_dirs,file.path('area_model.Rdata'))
-raw_data$ind_results <- load_data_files(exp_dirs,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
+raw_data$ind_results <- load_data_files(exp_dirs, file.path('..','individual_adhesions.csv'), 						headers=T, debug=FALSE, inc_exp_names=FALSE);
 
-exp_dirs <- Sys.glob('../../results/all_merge/focal_adhesions/*/adhesion_props/models/')
-raw_data$all_merge_results = load_results(exp_dirs,file.path('intensity_model.Rdata'))
-
-cell_area <- load_data_files(exp_dirs,file.path('..','Cell_size.csv'), headers=F, debug=FALSE, inc_exp_names=FALSE);
-ad_area <- load_data_files(exp_dirs,file.path('..','Ad_size.csv'), headers=F, debug=FALSE, inc_exp_names=FALSE);
-mean_int <- load_data_files(exp_dirs,file.path('..','Mean_intensity.csv'), headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$cell_area <- load_data_files(exp_dirs, 
+	file.path('..','single_props','Cell_size.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$ad_area <- load_data_files(exp_dirs,
+	file.path('..','single_props','Ad_size.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$cell_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Cell_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$ad_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Adhesion_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$not_ad_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$outside_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Outside_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 #exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/6/*/adhesion_props/models/')
 #exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/8/*/adhesion_props/models/')
 #exp_dirs <- Sys.glob('../../results/lin_region_variation/S178A/no_log_trans/*/adhesion_props/models/')
-raw_data$exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
+exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
 raw_data$results_S = load_results(exp_dirs_S,file.path('intensity_model.Rdata'))
 raw_data$area_S = load_results(exp_dirs_S,file.path('area_model.Rdata'))
 raw_data$ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
@@ -87,29 +100,32 @@ make_pdfs = FALSE;
 ########################################
 #General Properties
 ########################################
-svg(file.path(out_folder,'statics','statics.svg'),width=12)
+svg(file.path(out_folder,'statics','statics.svg'))
 if (make_pdfs) {
-	pdf(file.path(out_folder,'statics','statics.pdf'),width=12)
+	pdf(file.path(out_folder,'statics','statics.pdf'),width=8)
 }
-layout(rbind(c(1,2,3),c(4,5,6)),heights=c(1,0.5))
+layout(rbind(c(1,1,2,2,3,3),c(4,4,4,5,5,5),c(6,6,6,7,7,7)),heights=c(1,0.85,0.85))
+par(bty='n', mar=c(0,4,1.6,0))
+
+plot.new()
+mtext('A',adj=-.31,side=3,line=0,cex=1.5)
+
+plot.new()
+mtext('B',adj=-.31,side=3,line=0,cex=1.5)
+
+plot.new()
+mtext('C',adj=-.31,side=3,line=0,cex=1.5)
+
 par(bty='n', mar=c(5,4.2,2,0.1))
-
-plot.new()
-mtext('A',adj=-.15,side=3,line=-0.5,cex=1.5)
-
-plot.new()
-mtext('B',adj=-.15,side=3,line=-0.5,cex=1.5)
-
-plot.new()
-mtext('C',adj=-.15,side=3,line=-0.5,cex=1.5)
-
 area_data = ind_exp_filt$Area[ind_exp_filt$Area < 5];
-hist_props = hist(area_data,plot=FALSE);
 
-hist(area_data, main="", ylab = "Adhesion Count", xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')))
-mtext('D',adj=-.15,side=3,line=-0.5,cex=1.5)
+hist(area_data, main="", ylab = "Adhesion Count", 
+	 xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')))
+mtext('D',adj=-.2,side=3,line=-0.25,cex=1.5)
 hist(ind_exp_filt$ad_sig, main="", ylab = "Adhesion Count", xlab = "Normalized Average Paxillin Intensity")
 hist(ind_exp_filt$ax[ind_exp_filt$ax < 8], main="", ylab = "Adhesion Count",  xlab = "Axial Ratio")
+hist(ind_exp_filt$cent_dist, main="", ylab = "Adhesion Count",  
+	 xlab = expression(paste("Distance from Edge (", symbol("m"), m, ')',sep='')))
 
 graphics.off()
 print('Done with Static Properties')
@@ -123,25 +139,27 @@ if (make_pdfs) {
 }
 layout(rbind(c(1,2),c(3,4),c(5,5)))
 
-exp_one_only = load_results(exp_dirs[[1]],'intensity_model.Rdata')
+exp_one_only = load_results(exp_dirs[[1]],'corrected_intensity_model.Rdata')
 
 par(bty='n', mar=c(4,4.2,1.1,0))
 
 plot.new()
-mtext('A',adj=-.17,side=3,line=-0.5,cex=1.5)
+mtext('A',adj=-.19,side=3,line=-0.5,cex=1.5)
 
-plot_ad_seq(exp_one_only,675,type='overall')
-mtext('B',adj=-.17,side=3,line=-0.5,cex=1.5)
+ad_num = 675
+plot_ad_seq(exp_one_only,ad_num,type='overall', 
+	phase_lengths=c(exp_one_only$assembly$length[ad_num],exp_one_only$disassembly$length[ad_num]))
+mtext('B',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 plot_ad_seq(exp_one_only,675, main = 'Assembly');
 text(3,0.65,pos=3,expression(paste(R^2,' = 0.949')))
 text(3,0.6,pos=3,adj=0,'Slope = 0.106')
-mtext('C',adj=-.17,side=3,line=-0.5,cex=1.5)
+mtext('C',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 plot_ad_seq(exp_one_only,675,type='disassembly', main = 'Disassembly')
 text(3,0.33,pos=3,expression(paste(R^2,' = 0.961')))
 text(3,0.3,pos=3,adj=0,'Slope = 0.035')
-mtext('D',adj=-.17,side=3,line=-0.5,cex=1.5)
+mtext('D',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 par(bty='n', mar=c(2.1,4.2,1.1,0))
 
@@ -153,7 +171,7 @@ boxplot_with_points(list(results_filt$a$slope,results_filt$dis$slope),
 #segments(1.35,0.12,1.45,0.12,lwd=2)
 #segments(2.4,0.08,2.4,.088+0.004*2,lwd=2)
 #segments(2.35,0.088,2.45,.088,lwd=2)
-mtext('E',adj=-0.075,side=3,line=-0.5,cex=1.5)
+mtext('E',adj=-0.085,side=3,line=-0.5,cex=1.5)
 
 graphics.off()
 
@@ -215,9 +233,9 @@ plot(results_filt$d$edge_dist,
 mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
 graphics.off()
 
-########################################
+####################
 #Supplemental
-########################################
+####################
 svg(file.path(out_folder,'supplemental','spacial_nofilt.svg'))
 if (make_pdfs) {
 	pdf(file.path(out_folder,'supplemental','spacial_nofilt.pdf'))
@@ -290,8 +308,6 @@ cors_S = c()
 for (i in 1:length(cell_area_S)) {	
 	cors_S = c(cors_S, cor(as.numeric(ad_area_S[[i]]/cell_area_S[[i]]), as.numeric(mean_int_S[[i]])))
 }
-
-
 
 stage_data <- gather_stage_lengths(results_onlysignif, results_S_onlysignif, debug=TRUE)
 #stage_data_filt <- gather_stage_lengths(results_filt, results_S_filt, debug=TRUE)
