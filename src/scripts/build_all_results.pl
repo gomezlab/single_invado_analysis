@@ -21,7 +21,7 @@ use Config::Adhesions qw(ParseConfig);
 my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
-                  "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
+        "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
 chomp(my $lsf_check = `which bjobs`);
 die "LSF appear to be installed on this machine, don't you want to use it?" 
@@ -83,6 +83,7 @@ if ($opt{lsf}) {
     if (@error_dirs) {
         find(\&remove_unimportant_errors, @error_dirs);
     }
+    system("bsub -F \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
