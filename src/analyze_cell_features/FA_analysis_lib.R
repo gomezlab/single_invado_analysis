@@ -85,12 +85,12 @@ gather_bilinear_models <- function(data_set, props,
 
 	results$stable_data_set = list();
 	for (i in 1:rows) {
-		if (i > 500) {
-			#next
+		if (i > 100 & debug) {
+			#next()
 		}
 		
 		if (i %% 100 == 0 & debug) {
-			print(sprintf('%.02f',i/rows))
+			print(sprintf('%d %d %.02f',i,rows,i/rows))
 		}
 
 		this_data_set = as.vector(data_set[i,])
@@ -103,6 +103,7 @@ gather_bilinear_models <- function(data_set, props,
 		if (is.na(charmatch("assembly", names(results)))) {
 			results$assembly = temp_results$assembly;
 		} else {
+			stopifnot(length(temp_results$assembly) == dim(results$assembly)[[2]])
 			results$assembly = rbind(results$assembly, temp_results$assembly);
 		}
 		if (dim(results$assembly)[[1]] != i) {
@@ -113,6 +114,7 @@ gather_bilinear_models <- function(data_set, props,
 		if (is.na(charmatch("disassembly", names(results)))) {
 			results$disassembly = temp_results$disassembly;
 		} else {
+			stopifnot(length(temp_results$disassembly) == dim(results$disassembly)[[2]])
 			results$disassembly = rbind(results$disassembly, temp_results$disassembly);
 		}
 		stopifnot(dim(results$disassembly)[[1]] == i)
@@ -132,25 +134,41 @@ gather_bilinear_models <- function(data_set, props,
 		}
 	}
 	
-	results <- pad_results_to_row_length(results, rows)
+	if (debug) {
+		print('Done with gathering bilinear models-Starting to Pad Results')
+	}
+	results <- pad_results_to_row_length(results, rows, debug=debug)
+	if (debug) {
+		print('Done with Padding Results')
+	}
+	
 	if (is.numeric(boot.samp)) {
 		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
 			col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp)
 	}
+	
 	results
 }
 
-pad_results_to_row_length <- function(results, desired_length) {
+pad_results_to_row_length <- function(results, desired_length, debug=FALSE) {
 	
+	print(dim(results$assembly)[[1]])
+	print(desired_length)
 	stopifnot(dim(results$assembly)[[1]] <= desired_length)
 	while (dim(results$assembly)[[1]] != desired_length) {
 		results$assembly = rbind(results$assembly, rep(NA, length(results$assembly[1,])));
-		stopifnot(dim(results$assembly)[[1]] <= desired_length)
+	}
+	stopifnot(desired_length == dim(results$assembly)[[1]])
+	if (debug) {
+		print('Done with assembly padding')
 	}
 	
 	stopifnot(dim(results$disassembly)[[1]] <= desired_length)
 	while (dim(results$disassembly)[[1]] != desired_length) {
 		results$disassembly = rbind(results$disassembly, rep(NA, length(results$disassembly[1,])));
+	}
+	if (debug) {
+		print('Done with disassembly padding')
 	}
 
 	stopifnot(length(results$stable_lifetime) == length(results$stable_data_set))
@@ -164,12 +182,16 @@ pad_results_to_row_length <- function(results, desired_length) {
 		results$stable_variance = c(results$stable_variance, NA);
 		results$stable_mean = c(results$stable_mean, NA);
 	}
+	if (debug) {
+		print('Done with stability padding')
+	}
+
 	results
 }
 
 find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 10, log.trans = TRUE) {
 
-	results = list(initial_data_set = initial_data_set)
+	results = list()
 	resid = list(assembly = list(), disassembly = list())
 	
 	results$filt_init = initial_data_set[! is.nan(initial_data_set)]
@@ -185,6 +207,8 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		assembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			assembly_subset = this_data_set[1:j,]
+			stopifnot(length(assembly_subset$y) >= min_length)
+			stopifnot(length(assembly_subset$y) == j)
 			if (normed) {
 				assembly_subset$y = assembly_subset$y/assembly_subset$y[1]
 			}
@@ -208,13 +232,9 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			results$assembly$length[j] = dim(assembly_subset)[[1]]
 			results$assembly$inter[j] = coef(model)[[1]]
 			results$assembly$slope[j] = coef(model)[[2]]
-			stopifnot(results$assembly$length[j] >= min_length)
+			results$assembly$first_point[j] = assembly_subset$y[1]
+			results$assembly$fold_change[j] = max(assembly_subset$y)/min(assembly_subset$y)
 			
-			if (log.trans) {
-				results$assembly$fold_change[j] = max(assembly_subset$y)
-			} else {				
-				results$assembly$fold_change[j] = max(assembly_subset$y)/min(assembly_subset$y)
-			}
 			resid$assembly[[j]] = as.numeric(resid(model))
 		}
 	} else {
@@ -224,6 +244,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		results$assembly$length[1] = NA
 		results$assembly$inter[1] = NA
 		results$assembly$slope[1] = NA
+		results$assembly$first_point[1] = NA
 		results$assembly$fold_change[1] = NA
 	
 		resid$assembly[[1]] = NA
@@ -234,7 +255,17 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status & length(results$filt_init) >= (min_length * 2)) {
 		disassembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
-			disassembly_subset = this_data_set[(dim(this_data_set)[[1]]-j):dim(this_data_set)[[1]],]
+			disassembly_subset = this_data_set[(dim(this_data_set)[[1]]-j+1):dim(this_data_set)[[1]],]
+#			stopifnot(length(disassembly_subset$y) >= min_length)
+#			stopifnot(length(disassembly_subset$y) == j)
+			if (!(length(disassembly_subset$y) == j)) {
+				browser()
+			}
+			if (!(length(disassembly_subset$y) >= min_length)) {
+				browser()
+			}
+			
+			
 			if (normed) {
 				disassembly_subset$y = disassembly_subset$y[1]/disassembly_subset$y
 			}
@@ -258,13 +289,8 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 			results$disassembly$length[j] = dim(disassembly_subset)[[1]]
 			results$disassembly$inter[j] = coef(model)[[1]]
 			results$disassembly$slope[j] = coef(model)[[2]]
-			stopifnot(results$disassembly$length[j] >= min_length)
-
-			if (log.trans) {
-				results$disassembly$fold_change[j] = max(disassembly_subset$y)
-			} else {						
-				results$disassembly$fold_change[j] = max(disassembly_subset$y)/min(disassembly_subset$y)
-			}
+			results$disassembly$first_point[j] = disassembly_subset$y[1]
+			results$disassembly$fold_change[j] = max(disassembly_subset$y)/min(disassembly_subset$y)
 			resid$disassembly[[j]] = as.numeric(resid(model))
 		}
 	} else {
@@ -274,6 +300,7 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 		results$disassembly$length[1] = NA
 		results$disassembly$inter[1] = NA
 		results$disassembly$slope[1] = NA
+		results$disassembly$first_point[1] = NA
 		results$disassembly$fold_change[1] = NA
 		
 		resid$disassembly[[1]] = NA	
@@ -791,7 +818,13 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 ########################################
 #Data Summary functions
 ########################################
-filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = TRUE, primary_filter_results = NA) {
+filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, 
+	pos_slope = TRUE, primary_filter_results = NA, background_corrections = NA) {
+	
+	stopifnot(is.na(primary_filter_results) | length(results) == length(primary_filter_results))
+	stopifnot(is.na(background_corrections) | length(results) == length(background_corrections))
+	
+	
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
@@ -860,6 +893,10 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, pos_slope = 
 		points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt])
 		points$joint$stable_mean = c(points$joint$stable_mean, res$stable_mean[joint_filt])
 		points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt])
+		if (! all(is.na(background_corrections))) {
+			corrected_means = apply_per_image_correction(res, background_corrections[[i]])
+			points$joint$corr_stable_mean = c(points$joint$corr_stable_mean, corrected_means[joint_filt])
+		}
 		for (j in names(points$joint)) {
 			stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
 		}
@@ -1035,21 +1072,35 @@ gather_single_image_props <- function(ind_results) {
 	as.data.frame(ind_data)
 }
 
-apply_per_image_correction <- function(result, correction_data) {
-	mean_val_lineages = which(!is.na(result$assembly$length) & !is.na(result$disassembly$length))
+apply_per_image_correction <- function(result, correction_data, debug = FALSE) {
+	mean_val_lineages = which(! is.na(result$stable_lifetime))
+	if (debug) {
+		print(result$exp_dir)
+	}
 	
-	total_longevities = result$exp_props$longevity[mean_val_lineages];
-	assembly_lengths = result$assembly$length[mean_val_lineages];
-	disassembly_lengths = result$disassembly$length[mean_val_lineages];	
-	for (i in 1:length(mean_val_lineages)) {
-		lin_num = mean_val_lineages[i]
+	total_longevities = result$exp_props$longevity;
+	assembly_lengths = result$assembly$length;
+	disassembly_lengths = result$disassembly$length;	
+	stable_means = rep(NA, length(result$stable_lifetime))
+	for (lin_num in 1:length(result$stable_lifetime)) {
+		if (is.na(result$stable_lifetime[lin_num])) {
+			next;
+		}
 		
 		this_lin_data = result$exp_data[lin_num,]
-		this_lin_data = na.omit(this_lin_data)
-		stopifnot(length(this_lin_data) == total_longevities[i])
-		browser()
-		stopifnot(total_longevities[i] == assembly_lengths[i] + disassembly_lengths[i] + result$stable_lifetime[lin_num])
+		stopifnot(length(na.omit(this_lin_data)) == total_longevities[lin_num])
+		stopifnot(total_longevities[lin_num] == assembly_lengths[lin_num] + disassembly_lengths[lin_num] + result$stable_lifetime[lin_num])
+		
+		corrected_data = this_lin_data - as.numeric(correction_data);
+		
+		stable_data = na.omit(corrected_data)
+		stable_data = stable_data[(assembly_lengths[lin_num] + 1):(length(stable_data) - disassembly_lengths[lin_num])];
+		stopifnot(length(stable_data) == result$stable_lifetime[lin_num])
+		
+		stable_means[lin_num] = mean(stable_data)
 	}
+	
+	return(stable_means)
 }
 
 
