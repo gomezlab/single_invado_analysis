@@ -141,7 +141,7 @@ for i=1:max(labeled_adhesions(:))
     this_ad = labeled_adhesions;
     this_ad(labeled_adhesions ~= i) = 0;
     this_ad = logical(this_ad);
-    background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size + 1,0)));
+    background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
     background_region = and(background_region,not(labeled_adhesions));
     if (exist('cell_mask','var'))
         background_region = and(background_region,cell_mask);
@@ -210,6 +210,19 @@ if (exist('cell_mask','var'))
     cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
     cell_centroid = cell_centroid.Centroid;
     
+    [border_row,border_col] = ind2sub(size(cell_mask),find(bwperim(cell_mask)));
+    adhesion_props(1).Border_pix = [border_col,border_row];
+    
+    adhesion_props(1).Cell_size = sum(cell_mask(:));
+    
+    adhesion_props(1).Cell_mean_intensity = sum(sum(orig_I(cell_mask)))/adhesion_props(1).Cell_size;
+    
+    cell_not_ad_mask = cell_mask & not(adhesion_mask);
+    adhesion_props(1).Cell_not_ad_mean_intensity = sum(sum(orig_I(cell_not_ad_mask)))/sum(sum(cell_not_ad_mask));
+    
+    not_cell_mask = not(cell_mask);
+    adhesion_props(1).Outside_mean_intensity = sum(sum(orig_I(not_cell_mask)))/sum(sum(not_cell_mask));
+    
     for i=1:max(labeled_adhesions(:))
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid;
@@ -234,20 +247,8 @@ if (exist('cell_mask','var'))
                 end
             end
         end
+        adhesion_props(i).CB_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(1).Cell_not_ad_mean_intensity;
     end
-    
-    [border_row,border_col] = ind2sub(size(cell_mask),find(bwperim(cell_mask)));
-    adhesion_props(1).Border_pix = [border_col,border_row];
-    
-    adhesion_props(1).Cell_size = sum(cell_mask(:));
-    
-    adhesion_props(1).Cell_mean_intensity = sum(sum(orig_I(cell_mask)))/adhesion_props(1).Cell_size;
-    
-    cell_not_ad_mask = cell_mask & not(adhesion_mask);
-    adhesion_props(1).Cell_not_ad_mean_intensity = sum(sum(orig_I(cell_not_ad_mask)))/sum(sum(cell_not_ad_mask));
-    
-    not_cell_mask = not(cell_mask);
-    adhesion_props(1).Outside_mean_intensity = sum(sum(orig_I(not_cell_mask)))/sum(sum(not_cell_mask));
 end
 
 function write_adhesion_data(S,varargin)
