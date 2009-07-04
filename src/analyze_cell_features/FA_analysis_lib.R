@@ -1245,12 +1245,12 @@ if (length(args) != 0) {
 	write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))
 		
 	temp = gather_bilinear_models_from_dirs(args, 
-		data_file='Background_corrected_signal.csv', 
+		data_file='CB_corrected_signal.csv', 
 		results.file=file.path('..','models','corrected_intensity_model.Rdata'))
 
 	temp = gather_bilinear_models_from_dirs(args, 
-		data_file='Shrunk_corrected_signal.csv', 
-		results.file=file.path('..','models','shrunk_intensity_model.Rdata'))
+		data_file='Background_corrected_signal.csv', 
+		results.file=file.path('..','models','CB_intensity_model.Rdata'))
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Area.csv', 

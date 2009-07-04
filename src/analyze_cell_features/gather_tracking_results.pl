@@ -97,7 +97,7 @@ sub convert_data_to_units {
 	  qw(Class Centroid_x Centroid_y Eccentricity Solidity
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
-	  Cell_not_ad_mean_intensity Adhesion_mean_intensity);
+	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -258,9 +258,9 @@ sub gather_and_output_lineage_properties {
     }
 
     #Pure Time Series Props
-    my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal
-      Eccentricity Solidity Background_corrected_signal Shrunk_corrected_signal 
-      MajorAxisLength MinorAxisLength);
+	my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal
+		Background_corrected_signal Shrunk_corrected_signal MajorAxisLength
+		MinorAxisLength CB_corrected_signal);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
