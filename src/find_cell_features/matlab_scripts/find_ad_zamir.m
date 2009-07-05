@@ -22,9 +22,8 @@ if (i_p.Results.debug == 1), profile on; end
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_zamir = zeros(size(high_passed_image));
-filled_binary = imfill(i_p.Results.binary_image);
 
-pix_vals = high_passed_image(filled_binary);
+pix_vals = high_passed_image(i_p.Results.binary_image);
 sorted_pix_vals = sort(unique(pix_vals),'descend');
 
 count = 0;
@@ -32,7 +31,6 @@ total_pixels = sum(sum(i_p.Results.binary_image));
 
 %Cycle through all pixels of image
 for i = 1:length(sorted_pix_vals)
-
     lin_ind = find(high_passed_image == sorted_pix_vals(i));
 
     for j = 1:length(lin_ind)

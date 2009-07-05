@@ -1240,23 +1240,23 @@ if (length(args) != 0) {
     #runs from the command line
 	average_model = gather_bilinear_models_from_dirs(args,
 		data_file='Average_adhesion_signal.csv',
-		results.file=file.path('..','models','intensity_model.Rdata'))
+		results.file=file.path('..','models','intensity.Rdata'))
 	
 	write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))
 		
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='CB_corrected_signal.csv', 
-		results.file=file.path('..','models','corrected_intensity_model.Rdata'))
+		results.file=file.path('..','models','CB_corrected.Rdata'))
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
-		results.file=file.path('..','models','CB_intensity_model.Rdata'))
+		results.file=file.path('..','models','local_corrected.Rdata'))
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Area.csv', 
-		results.file=file.path('..','models','area_model.Rdata'))
+		results.file=file.path('..','models','area.Rdata'))
 	
     temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Box_intensity.csv', 
-		results.file=file.path('..','models','box_model.Rdata'))
+		results.file=file.path('..','models','box.Rdata'))
 }
