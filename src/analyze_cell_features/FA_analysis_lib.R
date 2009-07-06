@@ -89,7 +89,7 @@ gather_bilinear_models <- function(data_set, props,
 			#next()
 		}
 		
-		if (i %% 100 == 0 & debug) {
+		if ((i %% 100 == 0 | i < -300) & debug) {
 			print(sprintf('%d %d %.02f',i,rows,i/rows))
 		}
 
@@ -189,7 +189,10 @@ pad_results_to_row_length <- function(results, desired_length, debug=FALSE) {
 	results
 }
 
-find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE, min_length = 10, log.trans = TRUE) {
+################################################################################
+
+find_optimum_bilinear_fit <- function(initial_data_set, exp_props, 
+	normed = TRUE, min_length = 10, log.trans = TRUE) {
 
 	results = list()
 	resid = list(assembly = list(), disassembly = list())
@@ -200,7 +203,19 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props, normed = TRUE
 	}
 	
 	this_data_set = data.frame(y = results$filt_init, x = 1:length(results$filt_init))
-
+	#When building models with the overall cell background corrected intensity data, there 
+	#is occasionally an entry in a lineage that is below zero. Taking the log of 
+	#a negative number causes problems, so I'll search for negative entries in the 
+	#lineage and replace them with the smallest number in the data set that is greater 
+	#than zero. If none of the data entries are greater than zero, set the negative 
+	#entires to a small number.
+	if (length(this_data_set$y[this_data_set$y > 0]) == 0) {
+		min_entry = 0.00001;
+	} else {
+		min_entry = min(this_data_set$y[this_data_set$y > 0])
+	}
+	this_data_set$y[this_data_set$y <= 0] = min_entry;
+	
 	#Search the beginning of the sequence for a linear fit
 	assembly_slope_calculated = FALSE;
 	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status & length(results$filt_init) >= (min_length * 2)) {
