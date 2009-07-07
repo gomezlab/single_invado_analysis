@@ -29,7 +29,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l")
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "model_type=s")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -41,30 +41,46 @@ my %cfg = ParseConfig(\%opt);
 # Main Program
 ################################################################################
 my @model_types = qw(average cell_background local_background area box_intensity);
+if ($opt{lsf}) {
+    my @commands;
+    foreach (@model_types) {
+        #$0 - the name of the program currently running, used to protect against
+        #future file name changes
+        push @commands, "$0 -cfg $opt{cfg} -model_type $_";
+    }
+    
+    $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
+    
+    &FA_job::send_general_lsf_program(\@commands,\%opt);
+
+    exit(0);
+}
+
 my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder});
 
-my $output_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models', 'R_out.txt');
-if (! -e dirname($output_file)) {
-	mkpath(dirname($output_file));
+my $output_base = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
+if (! -e $output_base) {
+	mkpath($output_base);
 }
 
 my @R_cmds;
-for (@model_types) {
-	push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir model_type=$_\" FA_analysis_lib.R $output_file"
+if (defined($opt{model_type})) {
+    my $output_file = catfile($output_base, 'R_out_' . $_ . '.txt');
+	push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir model_type=$opt{model_type}\" FA_analysis_lib.R $output_file"
+} else {
+    for (@model_types) {
+        my $output_file = catfile($output_base, 'R_out_' . $_ . '.txt');
+        push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir model_type=$_\" FA_analysis_lib.R $output_file"
+    }
 }
 
-$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models', 'error.txt');
 
-if ($opt{lsf}) {
-	&FA_job::send_general_lsf_program(\@R_cmds,\%opt);
-} else {
-	for (@R_cmds) {
-		if ($opt{debug}) {
-			print "$_\n";
-		} else {
-			system($_);
-		}
+for (@R_cmds) {
+	if ($opt{debug}) {
+		print "$_\n";
+	} else {
+		system($_);
 	}
 }
 
