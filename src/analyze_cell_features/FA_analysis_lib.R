@@ -350,7 +350,6 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props,
 }
 
 find_best_length_combination <- function(results, min_length = 10) {
-	
 	#Build an array with the sums of the collected R square values
 	R_sq_sums = array(NA, c(length(results$assembly$R_sq),length(results$disassembly$R_sq)));
 	for (i in 1:length(results$assembly$R_sq)) {
@@ -1250,28 +1249,44 @@ args <- commandArgs(TRUE)
 if (length(args) != 0) {
 	args <- trim_args_list(args)
     
+    debug = TRUE
     #each of the outputs of the following commands are saved to temp to avoid
     #writing the entire results contents to STDOUT, very useful when debugging
     #runs from the command line
 	average_model = gather_bilinear_models_from_dirs(args,
 		data_file='Average_adhesion_signal.csv',
-		results.file=file.path('..','models','intensity.Rdata'))
-	
+		results.file=file.path('..','models','intensity.Rdata'), debug=TRUE)
+	if (debug) {
+        print('Done with average intensity model');
+    }
+
 	write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))
 		
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='CB_corrected_signal.csv', 
-		results.file=file.path('..','models','CB_corrected.Rdata'))
+		results.file=file.path('..','models','CB_corrected.Rdata'), debug=TRUE)
+	if (debug) {
+        print('Done with cell background corrected intensity model');
+    }
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Background_corrected_signal.csv', 
-		results.file=file.path('..','models','local_corrected.Rdata'))
+		results.file=file.path('..','models','local_corrected.Rdata'), debug=TRUE)
+	if (debug) {
+        print('Done with local background corrected intensity model');
+    }
 
 	temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Area.csv', 
-		results.file=file.path('..','models','area.Rdata'))
+		results.file=file.path('..','models','area.Rdata'), debug=TRUE)
+	if (debug) {
+        print('Done with area model');
+    }
 	
     temp = gather_bilinear_models_from_dirs(args, 
 		data_file='Box_intensity.csv', 
-		results.file=file.path('..','models','box.Rdata'))
+		results.file=file.path('..','models','box.Rdata'), debug=TRUE)
+	if (debug) {
+        print('Done with box intensity model');
+    }
 }
