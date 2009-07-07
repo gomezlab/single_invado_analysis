@@ -30,7 +30,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|config=s", "debug|d", "skip_lin_regions|skip_linear_regions", "lsf|l") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -74,11 +74,6 @@ undef @single_ad_props;
 
 print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
-
-if (not($opt{skip_lin_regions})) {
-    print "\n\nBuilding R Model Files\n", if $opt{debug};
-    &run_R_linear_region_code;
-}
 
 ###############################################################################
 # Functions
@@ -739,20 +734,6 @@ sub gather_lineage_summary_data {
     }
 
     return @lin_summary_data;
-}
-
-#######################################
-# Linear Region Finding Code
-#######################################
-sub run_R_linear_region_code {
-    my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder});
-    
-    my $output_file = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_analysis', 'R_out.txt');
-    if (! -e dirname($output_file)) {
-        mkpath(dirname($output_file));
-    }
-    my $R_cmd = "R CMD BATCH --vanilla --args -$data_dir FA_analysis_lib.R $output_file";
-    system($R_cmd);
 }
 
 ################################################################################

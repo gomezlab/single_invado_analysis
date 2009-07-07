@@ -38,22 +38,25 @@ for (i in 1:dim(filt_data)[[1]]) {
 }
 min_max = data.frame(low = min_max[,1], high = min_max[,2])
 
-as_time = 20;
+as_time = 15;
 stable_lifetime = 20;
 error_amounts = seq(0.001,0.008,length=10)
 data_points = list()
-for (i in error_amounts[1]) {
+for (i in error_amounts[1:4]) {
 	data_sets = c()
 	for (j in 1:200) {
-		h_l = min_max[sample(1:length(min_max),1),]
+		h_l = min_max[sample(1:dim(min_max)[[1]],1),]
+		
+		
+		k = log(h_l$high/h_l$low)/as_time;
+		assembly_phase = h_l$low*exp(k * seq(0, as_time - 1)) + rnorm(as_time,sd=i);
 		
 		data = c(NaN, 
-				 exp(seq(h_l$low,h_l$high,length=as_time))*(h_l$high/exp(h_l$high)) + 
-				     rnorm(as_time,sd=runif(1,min=0.001,max=0.006)),
-				 rep(h_l$high,stable_lifetime) + rnorm(stable_lifetime,sd=0.003),
+				 assembly_phase,
+				 rep(h_l$high,stable_lifetime) + rnorm(stable_lifetime,sd=0.01),
 				 exp(seq(h_l$high,h_l$low,length=10))*(h_l$high/exp(h_l$high)), 
 				 NaN)
-		data_sets = rbind(data_sets, data);
+-		data_sets = rbind(data_sets, data);
 	}
 	data_props = data.frame(split_birth_status = rep(0,dim(data_sets)[[1]]), 
 						    death_status = rep(1,dim(data_sets)[[1]])

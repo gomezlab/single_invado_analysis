@@ -189,8 +189,6 @@ pad_results_to_row_length <- function(results, desired_length, debug=FALSE) {
 	results
 }
 
-################################################################################
-
 find_optimum_bilinear_fit <- function(initial_data_set, exp_props, 
 	normed = TRUE, min_length = 10, log.trans = TRUE) {
 
@@ -693,7 +691,6 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE, phase_l
 }
 
 plot_overall_residuals <- function(results,dir,file='overall_residual_plot.pdf',window = 0.1) {
-	
 	resid = gather_exp_residuals(results)
 	
 	resid_win = gather_exp_win_residuals(resid,window=window)
@@ -827,7 +824,6 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 	}
 	rbind(left_x_seq,bottom_y_seq,right_x_seq,top_y_seq)
 }	
-
 
 ########################################
 #Data Summary functions
@@ -1054,7 +1050,6 @@ stopifnot(ranges_overlap(c(-0.5,0.01),c(0,1)))
 stopifnot(ranges_overlap(c(0.5,0.9),c(0,1)))
 stopifnot(! ranges_overlap(c(1.01,1.2),c(0,1)))
 
-
 gather_general_props <- function(results) {
 	points = list()
 	for (i in 1:length(results)) {
@@ -1116,7 +1111,6 @@ apply_per_image_correction <- function(result, correction_data, debug = FALSE) {
 	
 	return(stable_means)
 }
-
 
 ################################################################################
 # File Reading/Writing Functions
@@ -1189,8 +1183,6 @@ load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = 
 	results
 }
 
-
-
 write_assembly_disassembly_periods <- function(result, dir) {
 	if (! file.exists(dir)) {
 		dir.create(dir,recursive=TRUE)
@@ -1207,7 +1199,6 @@ write_assembly_disassembly_periods <- function(result, dir) {
 		rows_and_length = cbind(row_nums, result$disassembly$length[row_nums]);
 		write.table(rows_and_length,file=file.path(dir,'disassembly_rows_lengths.csv'), sep=',', row.names=FALSE, col.names=FALSE)
 	}
-		
 }
 
 write_high_r_rows <- function(result, dir, file=c('assembly_R_sq.csv','disassembly_R_sq.csv','neg_slope_R_sq.csv'), min_R_sq = 0.9) {
@@ -1231,62 +1222,45 @@ write_high_r_rows <- function(result, dir, file=c('assembly_R_sq.csv','disassemb
 	}
 }
 
-trim_args_list <- function(args) {
-	for (i in 1:length(args)) {
-		if (substr(args[i],0,1) == '-') {
-			args[i] = substring(args[i],2)
-		}
-	}
-	args
-}
-
 ################################################################################
 # Main Program
 ################################################################################
 
-args <- commandArgs(TRUE)
-
+args = commandArgs(TRUE)
 if (length(args) != 0) {
-	args <- trim_args_list(args)
-    
-    debug = TRUE
-    #each of the outputs of the following commands are saved to temp to avoid
-    #writing the entire results contents to STDOUT, very useful when debugging
-    #runs from the command line
-	average_model = gather_bilinear_models_from_dirs(args,
-		data_file='Average_adhesion_signal.csv',
-		results.file=file.path('..','models','intensity.Rdata'), debug=TRUE)
-	if (debug) {
-        print('Done with average intensity model');
-    }
+	debug = FALSE
 
-	write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))
-		
-	temp = gather_bilinear_models_from_dirs(args, 
-		data_file='CB_corrected_signal.csv', 
-		results.file=file.path('..','models','CB_corrected.Rdata'), debug=TRUE)
-	if (debug) {
-        print('Done with cell background corrected intensity model');
-    }
+	for (this_arg in commandArgs()) {
+		split_arg = strsplit(this_arg,"=",fixed=TRUE)
+		if (length(split_arg[[1]]) == 1) {
+			assign(split_arg[[1]][1], TRUE);
+		} else {
+			assign(split_arg[[1]][1], split_arg[[1]][2]);
+		}
+	}
 
-	temp = gather_bilinear_models_from_dirs(args, 
-		data_file='Background_corrected_signal.csv', 
-		results.file=file.path('..','models','local_corrected.Rdata'), debug=TRUE)
-	if (debug) {
-        print('Done with local background corrected intensity model');
-    }
-
-	temp = gather_bilinear_models_from_dirs(args, 
-		data_file='Area.csv', 
-		results.file=file.path('..','models','area.Rdata'), debug=TRUE)
-	if (debug) {
-        print('Done with area model');
-    }
-	
-    temp = gather_bilinear_models_from_dirs(args, 
-		data_file='Box_intensity.csv', 
-		results.file=file.path('..','models','box.Rdata'), debug=TRUE)
-	if (debug) {
-        print('Done with box intensity model');
-    }
+	if (exists('data_dir') & exists('model_type')) {
+		if (model_type == 'average') {
+			average_model = gather_bilinear_models_from_dirs(data_dir,
+					data_file='Average_adhesion_signal.csv',
+					results.file=file.path('..','models','intensity.Rdata'), debug=debug)
+			write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))	
+		} else if (model_type == 'cell_background') {
+			temp = gather_bilinear_models_from_dirs(args, 
+					data_file='CB_corrected_signal.csv', 
+					results.file=file.path('..','models','CB_corrected.Rdata'), debug=debug)
+		} else if (model_type == 'local_background') {
+			temp = gather_bilinear_models_from_dirs(args, 
+					data_file='Background_corrected_signal.csv', 
+					results.file=file.path('..','models','local_corrected.Rdata'), debug=debug)
+		} else if (model_type == 'area') {
+			temp = gather_bilinear_models_from_dirs(args, 
+					data_file='Area.csv', 
+					results.file=file.path('..','models','area.Rdata'), debug=debug)
+		} else if (model_type == 'box_intensity') {
+			temp = gather_bilinear_models_from_dirs(args, 
+					data_file='Box_intensity.csv', 
+					results.file=file.path('..','models','box.Rdata'), debug=TRUE)
+		}
+	}
 }
