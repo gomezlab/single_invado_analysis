@@ -61,6 +61,7 @@ if ($opt{lsf}) {
         [ [ "../visualize_cell_features", "./collect_visualizations.pl -only_config" ], ],
         [ [ "../analyze_cell_features",   "./collect_box_intensity.pl" ], ],
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
+        [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
     );
     if ($opt{skip_vis}) {
