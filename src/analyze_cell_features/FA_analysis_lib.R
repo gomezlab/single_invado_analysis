@@ -1244,21 +1244,25 @@ if (length(args) != 0) {
 			average_model = gather_bilinear_models_from_dirs(data_dir,
 					data_file='Average_adhesion_signal.csv',
 					results.file=file.path('..','models','intensity.Rdata'), debug=debug)
-			write_assembly_disassembly_periods(average_model[[1]],file.path(args[[1]],'..'))	
-		} else if (model_type == 'cell_background') {
-			temp = gather_bilinear_models_from_dirs(args, 
+			write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
+		}
+		if (model_type == 'cell_background') {
+			temp = gather_bilinear_models_from_dirs(data_dir, 
 					data_file='CB_corrected_signal.csv', 
 					results.file=file.path('..','models','CB_corrected.Rdata'), debug=debug)
-		} else if (model_type == 'local_background') {
-			temp = gather_bilinear_models_from_dirs(args, 
+		}
+		if (model_type == 'local_background') {
+			temp = gather_bilinear_models_from_dirs(data_dir, 
 					data_file='Background_corrected_signal.csv', 
 					results.file=file.path('..','models','local_corrected.Rdata'), debug=debug)
-		} else if (model_type == 'area') {
-			temp = gather_bilinear_models_from_dirs(args, 
+		}
+		if (model_type == 'area') {
+			temp = gather_bilinear_models_from_dirs(data_dir, 
 					data_file='Area.csv', 
 					results.file=file.path('..','models','area.Rdata'), debug=debug)
-		} else if (model_type == 'box_intensity') {
-			temp = gather_bilinear_models_from_dirs(args, 
+		}
+		if (model_type == 'box_intensity') {
+			temp = gather_bilinear_models_from_dirs(data_dir, 
 					data_file='Box_intensity.csv', 
 					results.file=file.path('..','models','box.Rdata'), debug=TRUE)
 		}
