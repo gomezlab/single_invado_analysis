@@ -84,7 +84,7 @@ if ($opt{lsf}) {
     if (@error_dirs) {
         find(\&remove_unimportant_errors, @error_dirs);
     }
-    system("bsub -F \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
+    system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
