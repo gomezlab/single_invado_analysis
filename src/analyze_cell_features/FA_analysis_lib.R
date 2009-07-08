@@ -920,7 +920,6 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
 }
 
 gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, debug=FALSE) {
-	
 	require(boot)
 	bar_lengths = matrix(NA,3,2)
 	conf_ints = matrix(NA,6,4)
@@ -1222,6 +1221,79 @@ write_high_r_rows <- function(result, dir, file=c('assembly_R_sq.csv','disassemb
 	}
 }
 
+########################################
+#Spacial Functions
+########################################
+correlate_signal_vs_dist <- function(intensities, cent_x, cent_y, min_overlap=40) {
+	correlations = c()
+	distances = c()
+	for (i in 1:dim(intensity_data)[[1]]) {		
+		this_row = intensity_data[i,];
+		if (sum(! is.na(this_row)) < min_overlap) {
+			next
+		}
+		overlap_rows = which(apply(intensity_data,1, function(data_2) enough_overlap(this_row, data_2, min_overlap=min_overlap)));		
+		overlap_rows = setdiff(overlap_rows,1:i)
+		
+		for (j in overlap_rows) {
+			overlap_entries = which(! is.na(this_row) & ! is.na(intensity_data[j,]))
+			correlations = c(correlations, cor(as.numeric(this_row[overlap_entries]), as.numeric(intensity_data[j,overlap_entries])))
+			
+			temp_dists = c()
+			cent_x_start = cent_x[i,]
+			cent_y_start = cent_y[i,]
+			cent_x_end = cent_x[j,]
+			cent_y_end = cent_y[j,]
+			for (k in overlap_entries) {
+				temp_dists = c(temp_dists, sqrt((cent_x_start[k] - cent_x_end[k])^2 + (cent_y_start[k] - cent_y_end[k])^2))
+			}
+			distances = c(distances, mean(temp_dists))
+		}
+	}
+	return(list(correlations = correlations, distances = distances))
+}
+
+enough_overlap <- function(data_1, data_2, min_overlap=10) {
+	if (length(data_1) != length(data_2)) {
+		return(FALSE)
+	}
+	
+	if (length(which(! is.na(data_1) & ! is.na(data_2))) >= min_overlap) {
+		return(TRUE);
+	} else {
+		return(FALSE);
+	}	
+}
+stopifnot(! enough_overlap(rep(NaN, 10), rep(1,10), min_overlap=10))
+stopifnot(enough_overlap(rep(2, 10), rep(1,10), min_overlap=10))
+stopifnot(! enough_overlap(c(rep(1, 9), NaN), rep(1,10), min_overlap=10))
+
+bin_corr_data <- function(corr_results, bin_size=10, bootstrap.rep = 50000) {
+
+	require(boot)
+
+	bins = c(0,seq(bin_size,max(corr_results$distances)+bin_size, by=bin_size))
+	means = rep(NA, length(bins) - 1);
+	upper = rep(NA, length(bins) - 1);
+	lower = rep(NA, length(bins) - 1);
+	bin_mids = rep(NA, length(bins) - 1);
+	for (i in 2:length(bins)) {
+		this_bin_data = corr_results$correlations[corr_results$distances > bins[i-1] & corr_results$distances <= bins[i]]
+		means[i-1] = mean(this_bin_data)
+		bin_mids[i-1] = mean(c(bins[i - 1], bins[i]))
+	
+		boot_samp = boot(this_bin_data, 
+			function(data,indexes) mean(data[indexes]), bootstrap.rep)
+			
+		boot_conf = boot.ci(boot_samp,type="perc")
+
+		lower[i-1] = boot_conf$perc[4]
+		upper[i-1] = boot_conf$perc[5]
+	}
+	
+	return(list(means = means, mids = bin_mids, upper = upper, lower = lower))
+}
+
 ################################################################################
 # Main Program
 ################################################################################
@@ -1266,5 +1338,21 @@ if (length(args) != 0) {
 					data_file='Box_intensity.csv', 
 					results.file=file.path('..','models','box.Rdata'), debug=TRUE)
 		}
+		if (model_type == 'background_correlation_model') {
+			intensity_data <- 
+				read.table(file.path(data_dir,'Background_corrected_signal.csv'), 
+						   sep=',', header=FALSE);
+
+			centroid_x <- read.table(file.path(data_dir,'Centroid_x.csv'), sep=',', header=FALSE);
+			centroid_y <- read.table(file.path(data_dir,'Centroid_y.csv'), sep=',', header=FALSE);
+			
+			results = correlate_signal_vs_dist(intensity_data, centroid_x, centroid_y)
+			output_file = file.path(data_dir,'..','models','background_corr.Rdata')
+			if (! file.exists(dirname(output_file))) {
+				dir.create(dirname(output_file),recursive=TRUE)
+			}
+            save(results,file = output_file);
+		}
+
 	}
 }
