@@ -829,10 +829,9 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 #Data Summary functions
 ########################################
 filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, 
-	pos_slope = TRUE, primary_filter_results = NA, background_corrections = NA) {
+	pos_slope = TRUE, primary_filter_results = NA) {
 	
 	stopifnot(is.na(primary_filter_results) | length(results) == length(primary_filter_results))
-	stopifnot(is.na(background_corrections) | length(results) == length(background_corrections))
 	
 	
 	points = list()
@@ -903,10 +902,6 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
 		points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt])
 		points$joint$stable_mean = c(points$joint$stable_mean, res$stable_mean[joint_filt])
 		points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt])
-		if (! all(is.na(background_corrections))) {
-			corrected_means = apply_per_image_correction(res, background_corrections[[i]])
-			points$joint$corr_stable_mean = c(points$joint$corr_stable_mean, corrected_means[joint_filt])
-		}
 		for (j in names(points$joint)) {
 			stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
 		}
@@ -1130,6 +1125,22 @@ load_results <- function(dirs,file) {
 	results
 }
 
+load_results_2 <- function(dirs,file) {
+	temp_results = list()
+	for (i in 1:length(dirs)) {
+		this_file = file.path(dirs[i],file)
+		if (file.exists(this_file)) {
+			load(file.path(dirs[i],file))
+			temp_results[[i]] = as.data.frame(results)
+	
+		}
+	}
+	if (length(temp_results) == 1) {
+		temp_results = results[[1]]
+	}
+	temp_results
+}
+
 load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = FALSE) {
 	results = list()
 	
@@ -1268,30 +1279,45 @@ stopifnot(! enough_overlap(rep(NaN, 10), rep(1,10), min_overlap=10))
 stopifnot(enough_overlap(rep(2, 10), rep(1,10), min_overlap=10))
 stopifnot(! enough_overlap(c(rep(1, 9), NaN), rep(1,10), min_overlap=10))
 
-bin_corr_data <- function(corr_results, bin_size=10, bootstrap.rep = 50000) {
+bin_corr_data <- function(corr_results, bin_size = NA, bootstrap.rep = 5000, bin_max = NA, pixel_size=0.215051) {
 
 	require(boot)
+	corr_results$distances = corr_results$distances*pixel_size
 
-	bins = c(0,seq(bin_size,max(corr_results$distances)+bin_size, by=bin_size))
+	if (is.na(bin_size)) {
+		bin_size = pixel_size * 5
+	}
+
+	if (! is.na(bin_max)) {
+		bins = c(0,seq(bin_size, bin_max*pixel_size, by=bin_size))
+	} else {
+		bins = c(0,seq(bin_size,max(corr_results$distances)+bin_size, by=bin_size))
+	}
 	means = rep(NA, length(bins) - 1);
 	upper = rep(NA, length(bins) - 1);
 	lower = rep(NA, length(bins) - 1);
+	counts = rep(NA, length(bins) - 1);
 	bin_mids = rep(NA, length(bins) - 1);
+	
 	for (i in 2:length(bins)) {
 		this_bin_data = corr_results$correlations[corr_results$distances > bins[i-1] & corr_results$distances <= bins[i]]
 		means[i-1] = mean(this_bin_data)
 		bin_mids[i-1] = mean(c(bins[i - 1], bins[i]))
-	
-		boot_samp = boot(this_bin_data, 
-			function(data,indexes) mean(data[indexes]), bootstrap.rep)
-			
-		boot_conf = boot.ci(boot_samp,type="perc")
-
-		lower[i-1] = boot_conf$perc[4]
-		upper[i-1] = boot_conf$perc[5]
+		counts[i-1] = length(this_bin_data)
+		if (counts[i-1] < 10) {
+			next
+		}
+		boot_samp = boot(this_bin_data, function(data,indexes) mean(data[indexes]), bootstrap.rep)
+		if (all(boot_samp$t[1] == boot_samp$t)) {
+			browser()
+		} else {		
+			boot_conf = boot.ci(boot_samp,type="perc")
+			lower[i-1] = boot_conf$perc[4]
+			upper[i-1] = boot_conf$perc[5]
+		}
 	}
 	
-	return(list(means = means, mids = bin_mids, upper = upper, lower = lower))
+	return(as.data.frame(list(means = means, mids = bin_mids, upper = upper, lower = lower, counts = counts)))
 }
 
 ################################################################################
