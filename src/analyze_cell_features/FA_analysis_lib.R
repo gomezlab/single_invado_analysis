@@ -1075,37 +1075,6 @@ gather_single_image_props <- function(ind_results) {
 	as.data.frame(ind_data)
 }
 
-apply_per_image_correction <- function(result, correction_data, debug = FALSE) {
-	mean_val_lineages = which(! is.na(result$stable_lifetime))
-	if (debug) {
-		print(result$exp_dir)
-	}
-	
-	total_longevities = result$exp_props$longevity;
-	assembly_lengths = result$assembly$length;
-	disassembly_lengths = result$disassembly$length;	
-	stable_means = rep(NA, length(result$stable_lifetime))
-	for (lin_num in 1:length(result$stable_lifetime)) {
-		if (is.na(result$stable_lifetime[lin_num])) {
-			next;
-		}
-		
-		this_lin_data = result$exp_data[lin_num,]
-		stopifnot(length(na.omit(this_lin_data)) == total_longevities[lin_num])
-		stopifnot(total_longevities[lin_num] == assembly_lengths[lin_num] + disassembly_lengths[lin_num] + result$stable_lifetime[lin_num])
-		
-		corrected_data = this_lin_data - as.numeric(correction_data);
-		
-		stable_data = na.omit(corrected_data)
-		stable_data = stable_data[(assembly_lengths[lin_num] + 1):(length(stable_data) - disassembly_lengths[lin_num])];
-		stopifnot(length(stable_data) == result$stable_lifetime[lin_num])
-		
-		stable_means[lin_num] = mean(stable_data)
-	}
-	
-	return(stable_means)
-}
-
 ################################################################################
 # File Reading/Writing Functions
 ################################################################################

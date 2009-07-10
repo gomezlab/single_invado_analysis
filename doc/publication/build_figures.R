@@ -15,27 +15,15 @@ exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
 #exp_dirs <- Sys.glob('../../results/lin_region_variation/FA/8/*/adhesion_props/models/')
 #exp_dirs <- Sys.glob('../../results/lin_region_variation/FA/no_log_trans/*/adhesion_props/models/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
-raw_data$results = load_results(exp_dirs,file.path('intensity_model.Rdata'))
-raw_data$area = load_results(exp_dirs,file.path('area_model.Rdata'))
+raw_data$results = load_results(exp_dirs,file.path('intensity.Rdata'))
+raw_data$corr_results = load_results(exp_dirs,file.path('local_corrected.Rdata'))
+raw_data$CB_results = load_results(exp_dirs,file.path('CB_corrected.Rdata'))
+raw_data$area = load_results(exp_dirs,file.path('area.Rdata'))
 raw_data$ind_results <- load_data_files(exp_dirs, file.path('..','individual_adhesions.csv'), 						headers=T, debug=FALSE, inc_exp_names=FALSE);
 
-single_props$fa$cell_area <- load_data_files(exp_dirs, 
-	file.path('..','single_props','Cell_size.csv'), 
-	headers=F, debug=FALSE, inc_exp_names=FALSE);
-single_props$fa$ad_area <- load_data_files(exp_dirs,
-	file.path('..','single_props','Ad_size.csv'), 
-	headers=F, debug=FALSE, inc_exp_names=FALSE);
-single_props$fa$cell_int <- load_data_files(exp_dirs,
-	file.path('..','single_props','Cell_mean_intensity.csv'), 
-	headers=F, debug=FALSE, inc_exp_names=FALSE);
-single_props$fa$ad_int <- load_data_files(exp_dirs,
-	file.path('..','single_props','Adhesion_mean_intensity.csv'), 
-	headers=F, debug=FALSE, inc_exp_names=FALSE);
+background_correlation = load_results_2(exp_dirs, 'Background_corr.Rdata')
 single_props$fa$not_ad_int <- load_data_files(exp_dirs,
 	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
-	headers=F, debug=FALSE, inc_exp_names=FALSE);
-single_props$fa$outside_int <- load_data_files(exp_dirs,
-	file.path('..','single_props','Outside_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
@@ -43,13 +31,16 @@ exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 #exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/8/*/adhesion_props/models/')
 #exp_dirs <- Sys.glob('../../results/lin_region_variation/S178A/no_log_trans/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
-raw_data$results_S = load_results(exp_dirs_S,file.path('intensity_model.Rdata'))
-raw_data$area_S = load_results(exp_dirs_S,file.path('area_model.Rdata'))
+raw_data$results_S = load_results(exp_dirs_S,file.path('intensity.Rdata'))
+raw_data$corr_results_S = load_results(exp_dirs_S,file.path('local_corrected.Rdata'))
+raw_data$CB_results_S = load_results(exp_dirs_S,file.path('CB_corrected.Rdata'))
+raw_data$area_S = load_results(exp_dirs_S,file.path('area.Rdata'))
 raw_data$ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 
-cell_area_S <- load_data_files(exp_dirs_S,file.path('..','Cell_size.csv'), headers=F, debug=FALSE, inc_exp_names=FALSE);
-ad_area_S <- load_data_files(exp_dirs_S,file.path('..','Ad_size.csv'), headers=F, debug=FALSE, inc_exp_names=FALSE);
-mean_int_S <- load_data_files(exp_dirs_S,file.path('..','Mean_intensity.csv'), headers=F, debug=FALSE, inc_exp_names=FALSE);
+background_correlation_S = load_results_2(exp_dirs_S, 'Background_corr.Rdata')
+single_props$S178A$not_ad_int <- load_data_files(exp_dirs_S,
+	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
 print('Done Loading Data')
 
@@ -57,25 +48,36 @@ print('Done Loading Data')
 #Result filtering
 ########################################
 results_props = gather_general_props(raw_data$results)
+results_S_props = gather_general_props(raw_data$results_S)
+
 ind_exp_filt = gather_single_image_props(raw_data$ind_results)
+ind_exp_filt_S = gather_single_image_props(raw_data$ind_results_S)
+
 results_nofilt = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = Inf)
 results_S_nofilt = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = Inf)
 
+corr_results_nofilt = filter_results(raw_data$corr_results, min_R_sq = -Inf, max_p_val = Inf)
+corr_results_S_nofilt = filter_results(raw_data$corr_results_S, min_R_sq = -Inf, max_p_val = Inf)
+
 results_onlysignif = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = 0.05)
 results_S_onlysignif = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = 0.05)
+corr_results_onlysignif = filter_results(raw_data$corr_results, min_R_sq = -Inf, max_p_val = 0.05)
+corr_results_S_onlysignif = filter_results(raw_data$corr_results_S, min_R_sq = -Inf, max_p_val = 0.05)
+CB_results_onlysignif = filter_results(raw_data$CB_results, min_R_sq = -Inf, max_p_val = 0.05)
+CB_results_S_onlysignif = filter_results(raw_data$CB_results_S, min_R_sq = -Inf, max_p_val = 0.05)
 
 area_nofilt = filter_results(raw_data$area, primary_filter_results = raw_data$results, min_R_sq = -Inf, max_p_val = 0.05)
-
-results_S_props = gather_general_props(raw_data$results_S)
-ind_exp_filt_S = gather_single_image_props(raw_data$ind_results_S)
-results_filt = filter_results(raw_data$results)
-results_all_filt = filter_results(raw_data$all_merge_results)
-results_S_filt = filter_results(raw_data$results_S)
 area_filt = filter_results(raw_data$area, primary_filter_results = raw_data$results)
+
+results_filt = filter_results(raw_data$results)
+results_S_filt = filter_results(raw_data$results_S)
+corr_results_filt = filter_results(raw_data$results)
+corr_results_S_filt = filter_results(raw_data$results_S)
 
 rm(raw_data)
 gc()
 
+stop()
 print('Done Filtering Data')
 
 ################################################################################
@@ -146,19 +148,21 @@ par(bty='n', mar=c(4,4.2,1.1,0))
 plot.new()
 mtext('A',adj=-.19,side=3,line=-0.5,cex=1.5)
 
-ad_num = 675
-plot_ad_seq(exp_one_only,ad_num,type='overall', 
+ad_num = 1799
+plot_ad_seq(exp_one_only, ad_num, type='overall', 
 	phase_lengths=c(exp_one_only$assembly$length[ad_num],exp_one_only$disassembly$length[ad_num]))
 mtext('B',adj=-.19,side=3,line=-0.5,cex=1.5)
 
-plot_ad_seq(exp_one_only,675, main = 'Assembly');
-text(3,0.65,pos=3,expression(paste(R^2,' = 0.949')))
-text(3,0.6,pos=3,adj=0,'Slope = 0.106')
+plot_ad_seq(exp_one_only, ad_num, main = 'Assembly');
+text(3,0.65,pos=3,expression(paste(R^2,' = 0.920')))
+text(3,0.6,pos=3,adj=0, 
+	substitute(paste('Slope = ', x), list(x=sprintf('%.03f',exp_one_only$assembly$slope[ad_num]))))
 mtext('C',adj=-.19,side=3,line=-0.5,cex=1.5)
 
-plot_ad_seq(exp_one_only,675,type='disassembly', main = 'Disassembly')
-text(3,0.33,pos=3,expression(paste(R^2,' = 0.961')))
-text(3,0.3,pos=3,adj=0,'Slope = 0.035')
+plot_ad_seq(exp_one_only,ad_num,type='disassembly', main = 'Disassembly')
+text(3,0.35,pos=3, expression(paste(R^2,' = 0.961')))
+text(3,0.3,pos=3,adj=0,
+	substitute(paste('Slope = ', x), list(x=sprintf('%.03f',exp_one_only$disassembly$slope[ad_num]))))
 mtext('D',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 par(bty='n', mar=c(2.1,4.2,1.1,0))
@@ -206,20 +210,28 @@ if (make_pdfs) {
 par(bty='n',mar=c(4.2,4.1,2,0))
 layout(rbind(c(1,2),c(3,4)))
 
+breaks_end = ceil(max(c(results_filt$a$edge_dist,results_filt$dis$edge_dist)));
+if (breaks_end %% 2 != 0) {
+	breaks_end = breaks_end + 1;
+}
+stopifnot(breaks_end %% 2 == 0);
+these_breaks = seq(0,breaks_end,by=2);
+
 birth_props = hist(results_filt$a$edge_dist, 
 				   xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
-				   main = '', ylab = '# of Focal Adhesions', breaks=seq(0,26,by=2))
+				   main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5)
 
 death_props = hist(results_filt$dis$edge_dist,
      xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=470', sep='')), 
-     main = '', ylab = '# of Focal Adhesions', breaks=birth_props$breaks)
+     main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,2,0.4))
 
-plot(results_filt$a$edge_dist, 
-	 results_filt$a$slope, 
+plot(results_filt$a$edge_dist,
+	 results_filt$a$slope,
+	 xlim = c(0,breaks_end),
 	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')),
 	 xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')))
 mtext('C',adj=-.2,side=3,line=-0.5,cex=1.5)
@@ -228,6 +240,7 @@ par(bty='n',mar=c(4.2,4.1,2,0.95))
 
 plot(results_filt$d$edge_dist, 
 	 results_filt$d$slope, 
+	 xlim = c(0,breaks_end),
 	 ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')),
 	 xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')))
 mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
@@ -298,16 +311,20 @@ print('Done with Spacial')
 ############################################################
 
 ########################################
-#Statics
+#Lifetime Phases
 ########################################
-cors = c()
-for (i in 1:length(cell_area)) {	
-	cors = c(cors, cor(as.numeric(ad_area[[i]]/cell_area[[i]]), as.numeric(mean_int[[i]])))
-}
-cors_S = c()
-for (i in 1:length(cell_area_S)) {	
-	cors_S = c(cors_S, cor(as.numeric(ad_area_S[[i]]/cell_area_S[[i]]), as.numeric(mean_int_S[[i]])))
-}
+
+pdf(file.path(out_folder,'lifetimes','stable_mean.pdf'), width=20)
+boxplot_with_points(
+	list(corr_results_onlysignif$joint$stable_mean, 
+		 corr_results_S_onlysignif$joint$stable_mean, 
+		 CB_results_onlysignif$joint$stable_mean, 
+		 CB_results_S_onlysignif$joint$stable_mean,
+		 results_onlysignif$joint$stable_mean, 
+		 results_S_onlysignif$joint$stable_mean
+		 ),
+	names=c('Corrected WT','Corrected S189A','WC Corrected WT', 'WC Corrected S178A', 'WT','S178A'))
+graphics.off()
 
 stage_data <- gather_stage_lengths(results_onlysignif, results_S_onlysignif, debug=TRUE)
 #stage_data_filt <- gather_stage_lengths(results_filt, results_S_filt, debug=TRUE)
@@ -404,3 +421,27 @@ boot_two = boot(results_S_filt$dis$edge_dist, function(data,indexes) median(data
 find_p_val_from_bootstrap(boot_one, boot_two)
 
 print('Done with S178A Comparisons')
+
+############################################################
+#Distance versus Background corrected correlation
+############################################################
+
+all = list()
+for (i in 1:length(background_correlation)) {
+	all$distances = c(all$distances, background_correlation[[i]]$distances)
+	all$correlations = c(all$correlations, background_correlation[[i]]$correlations)
+}	
+all = as.data.frame(all)
+
+all_S = list()
+for (i in 1:length(background_correlation_S)) {
+	all_S$distances = c(all_S$distances, background_correlation_S[[i]]$distances)
+	all_S$correlations = c(all_S$correlations, background_correlation_S[[i]]$correlations)
+}	
+all_S = as.data.frame(all_S)
+
+binned_all = bin_corr_data(all, bin_max=200, bin_size=10)
+binned_all_S = bin_corr_data(all_S, bin_max=200, bin_size=10)
+
+errbar(binned_all$mids, binned_all$means, binned_all$upper, binned_all$lower)
+errbar(binned_all_S$mids, binned_all_S$means, binned_all_S$upper, binned_all_S$lower, add=TRUE,col='red')

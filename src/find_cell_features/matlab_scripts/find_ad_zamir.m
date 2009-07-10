@@ -23,17 +23,23 @@ if (i_p.Results.debug == 1), profile on; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_zamir = zeros(size(high_passed_image));
 
-pix_vals = high_passed_image(i_p.Results.binary_image);
+pix_vals = high_passed_image(binary_image);
 sorted_pix_vals = sort(unique(pix_vals),'descend');
 
 count = 0;
-total_pixels = sum(sum(i_p.Results.binary_image));
+total_pixels = sum(sum(binary_image));
 
 %Cycle through all pixels of image
 for i = 1:length(sorted_pix_vals)
     lin_ind = find(high_passed_image == sorted_pix_vals(i));
-
+    
+    
     for j = 1:length(lin_ind)
+        [lin_row, lin_col] = ind2sub(size(high_passed_image), lin_ind(j));
+        if (not(binary_image(lin_row, lin_col)))
+            continue;
+        end
+    
         assert(ad_zamir(lin_ind(j)) == 0, 'Error: Adhesion already assigned in this position %d',lin_ind(j))
         ad_zamir = add_single_pixel(ad_zamir,lin_ind(j),i_p.Results.min_pixel_size);
         count = count + 1;
