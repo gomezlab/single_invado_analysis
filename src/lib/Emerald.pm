@@ -36,7 +36,8 @@ sub create_LSF_Matlab_commands {
     unlink($opt{output_file}, $opt{error_file});
 
     my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
-    my $matlab_command = "/afs/isis/pkg/matlab/matlab -nodisplay -nojvm -nosplash -r";
+    my $matlab_command = "/afs/isis.unc.edu/pkg/matlab-2008a/matlab -nodisplay -nojvm -nosplash -r";
+    $matlab_command = "matlab -nodisplay -nojvm -nosplash -r";
 
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command $matlab_command \"$_\""} @commands;
@@ -53,7 +54,7 @@ sub create_general_LSF_commands {
     $opt{error_file}  = File::Spec->catfile($opt{folder},$opt{error_file});
     unlink($opt{output_file}, $opt{error_file});
 
-    my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    my $bsub_command   = "bsub -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command \"$_\""} @commands;
