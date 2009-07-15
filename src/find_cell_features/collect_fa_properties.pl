@@ -69,7 +69,11 @@ sub create_all_matlab_commands {
 
     my @raw_image_files = grep -e $_, <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
     my @adhesion_image_files = grep -e $_, <$cfg{individual_results_folder}/*/adhesions.png>;
-    die "Expected to find equal number of raw data adhesion image and adhesion mask images." if (scalar(@raw_image_files) != scalar(@adhesion_image_files));
+    if (scalar(@raw_image_files) != scalar(@adhesion_image_files)) {
+        die "Expected to find equal number of raw data adhesion image and adhesion mask images." . 
+            "Instead found " . scalar(@raw_image_files) . " and " . scalar(@adhesion_image_files);
+    }
+    
     foreach (0..$#raw_image_files) {
         my $raw_image_file = $raw_image_files[$_];
         my $adhesion_image_file = $adhesion_image_files[$_];
