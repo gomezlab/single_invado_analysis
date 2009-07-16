@@ -102,27 +102,30 @@ sub move_target_image_set {
 
 =head1 NAME
 
-setup_results_folder.pl - Move all the raw data files into the proper locations
+split_exp.pl - Move all the raw data files into the proper locations
 in the results folder
 
 =head1 SYNOPSIS
 
-setup_results_folder.pl -cfg FA_config
+split_exp.pl -cfg FA_config -split_num ###
 
 =head1 Description
 
-Since the the data sets being used come in multiple forms, mostly split and
-stacked image sequences, it became easier to write a single function to move all
-the data files into a standard results directory. Then all the downstream
-programs would have an easier time trying to find specific images. This program
-scans through a the data directory for an experiment and moves all the files
-into the correct locations.
+Occasionally it is helpful to analyze a single experiment as though it were two
+independent experiments, but splitting an experimental data set by hand is time
+consuming. This script analyzes the directory structure and files output by
+setup_results_folder.pl and puts the raw data images back into the data
+directory with the proper numbering and directory structure. The script only
+looks for adhesion files and cell mask data files, but that can be extended. The
+split folders are named simply $cfg{exp_name} . "_pre" or "_post", with the pre
+data being before the specified split image number.
 
 Required parameter(s):
 
 =over 
 
 =item * cfg or c: the focal adhesion analysis config file
+=item * split_num: the focal adhesion analysis config file
 
 =back
 
@@ -132,22 +135,16 @@ Optional parameter(s):
 
 =item * debug or d: print debuging information during program execution
 
-=item * emerald: submit jobs through the emerald queuing system
-
 =back
 
 =head1 EXAMPLES
 
-setup_results_folder.pl -cfg FA_config
-
-OR
-
-setup_results_folder.pl -cfg FA_config -d
+split_exp.pl -cfg FA_config.cfg -split_num 50
 
 =head1 AUTHORS
 
 Matthew Berginski (mbergins@unc.edu)
 
-Documentation last updated: 4/10/2008 
+Documentation last updated: 7/15/2009 
 
 =cut
