@@ -206,7 +206,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (exist('cell_mask','var'))
-    [dists, indices] = bwdist(~cell_mask);
     cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
     cell_centroid = cell_centroid.Centroid;
     
@@ -223,6 +222,20 @@ if (exist('cell_mask','var'))
     not_cell_mask = not(cell_mask);
     adhesion_props(1).Outside_mean_intensity = sum(sum(orig_I(not_cell_mask)))/sum(sum(not_cell_mask));
     
+    [dists, indices] = bwdist(~cell_mask);
+    
+    %Now we search for the pixels which are closest to an edge of the cell
+    %mask that is also touching the edge of image. We want to find these
+    %pixels because the true closest cell edge may be off the microscope
+    %field of view. To be safe, we will set those
+    %distance-to-nearest-cell-edge values to NaN.
+    black_border_mask = cell_mask;
+    black_border_mask(1,:) = 0; black_border_mask(end,:) = 0; 
+    black_border_mask(:,1) = 0; black_border_mask(:,end) = 0;
+    
+    [bb_dists, bb_indexes] = bwdist(~black_border_mask);
+    
+    dists(bb_dists < dists) = NaN;
     for i=1:max(labeled_adhesions(:))
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid;
