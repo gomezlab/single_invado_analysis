@@ -6,7 +6,6 @@
 ########################################
 #Data fitting functions
 ########################################
-
 gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 	data_file='Average_adhesion_signal.csv', col_lims = NA, 
 	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
@@ -151,7 +150,6 @@ gather_bilinear_models <- function(data_set, props,
 }
 
 pad_results_to_row_length <- function(results, desired_length, debug=FALSE) {
-	
 	print(dim(results$assembly)[[1]])
 	print(desired_length)
 	stopifnot(dim(results$assembly)[[1]] <= desired_length)
@@ -454,10 +452,10 @@ gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
 			result.log.trans = result.log.trans, exp.log.trans = exp.log.trans, 
 			results.file = results.file, save.exp_data = save.exp_data);
 			
-        if (! is.na(results.file)) {
-            this_result = corr_results[[k]]
-            save(this_result,file = file.path(dirs[[k]],results.file))
-        }
+                if (! is.na(results.file)) {
+                    this_result = corr_results[[k]]
+                        save(this_result,file = file.path(dirs[[k]],results.file))
+                }
 	}
 	
 	corr_results
@@ -538,7 +536,6 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 ########################################
 #Plotting Functions
 ########################################
-
 plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA) {
 	assembly_slope = c()
 	assembly_error = c()
@@ -637,10 +634,6 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE, phase_l
 		r_sq_val_str = sprintf('%.3f',results$assembly$R_sq[index])
 		slope_val_str = sprintf('%.3f',results$assembly$slope[index])
 		exp_str = paste('R^2=',r_sq_val_str,'\n Slope = ',slope_val_str,sep='')
-#		text(x[1]+3,0.5*max(this_ad_seq), 
-#			 expression(paste(R^2,' = 0.949 \n test')))
-			 #expression(paste(R^2,' = ', sprintf('%.3f',results$assembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$assembly$slope[index]),sep='')))
-
 	}
 
 	if (type == 'disassembly') {
@@ -663,8 +656,6 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE, phase_l
 			 ylim=c(min(this_ad_seq,y),max(this_ad_seq,y)), ...)
 		
 		lines(x,y,col='red',lwd = 3)
-#		text(x[1]+ 3,0.5*max(this_ad_seq), 
-#			 paste('R^2 = ',sprintf('%.3f',results$disassembly$R_sq[index]),'\n Slope = ',sprintf('%.3f',results$disassembly$slope[index]),sep=''))
 	}
 	
 	if (type == 'overall') {
@@ -674,19 +665,19 @@ plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE, phase_l
 		
 		plot(0:(length(ad_seq)-1), ad_seq, xlab='Time (minutes)', ylab='Normalized Intensity',type="o")
 		
-		if (all(! is.na(phase_lengths))) {
-			lowess_points = lowess(0:(length(ad_seq)-1), ad_seq, f=1/3)
-			
-			lines(lowess_points$x[0:(phase_lengths[1])], lowess_points$y[0:(phase_lengths[1])], col='green',lwd = 3)
-			lines(lowess_points$x[phase_lengths[1]:(length(lowess_points$x) - phase_lengths[2] + 1)], 
-				  lowess_points$y[phase_lengths[1]:(length(lowess_points$x) - phase_lengths[2] + 1)],  
-				  col='black',lwd = 3)
-			lines(lowess_points$x[(length(lowess_points$x) - phase_lengths[2] + 1):(length(lowess_points$x))], 
-				  lowess_points$y[(length(lowess_points$x) - phase_lengths[2] + 1):(length(lowess_points$x))], 
-				  col='red',lwd = 3)
-		} else {	
-			lines(lowess(0:(length(ad_seq)-1), ad_seq, f=1/3), col='black',lwd = 3)
-		}
+                if (all(! is.na(phase_lengths))) {
+                    lowess_points = lowess(0:(length(ad_seq)-1), ad_seq, f=1/3)
+
+                    lines(lowess_points$x[0:(phase_lengths[1])], lowess_points$y[0:(phase_lengths[1])], col='green',lwd = 3)
+                    lines(lowess_points$x[phase_lengths[1]:(length(lowess_points$x) - phase_lengths[2] + 1)], 
+                          lowess_points$y[phase_lengths[1]:(length(lowess_points$x) - phase_lengths[2] + 1)],  
+                          col='yellow',lwd = 3)
+                    lines(lowess_points$x[(length(lowess_points$x) - phase_lengths[2] + 1):(length(lowess_points$x))], 
+                          lowess_points$y[(length(lowess_points$x) - phase_lengths[2] + 1):(length(lowess_points$x))], 
+                          col='red',lwd = 3)
+                } else {	
+                    lines(lowess(0:(length(ad_seq)-1), ad_seq, f=1/3), col='black',lwd = 3)
+                }
 	}
 }
 
@@ -1078,7 +1069,6 @@ gather_single_image_props <- function(ind_results) {
 ################################################################################
 # File Reading/Writing Functions
 ################################################################################
-
 load_results <- function(dirs,file) {
 	results = list()
 	for (i in 1:length(dirs)) {
@@ -1132,7 +1122,8 @@ load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = 
 	        if (regex_range[1] == -1) {
         		exp_names[[length(all_files_present_dirs)]] = dirs[[i]];
 	        } else {
-    	    	exp_names[[length(all_files_present_dirs)]] = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
+    	    	        exp_names[[length(all_files_present_dirs)]] = 
+                                substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
         	}
 		}
 	}
@@ -1249,7 +1240,6 @@ stopifnot(enough_overlap(rep(2, 10), rep(1,10), min_overlap=10))
 stopifnot(! enough_overlap(c(rep(1, 9), NaN), rep(1,10), min_overlap=10))
 
 bin_corr_data <- function(corr_results, bin_size = NA, bootstrap.rep = 5000, bin_max = NA, pixel_size=0.215051) {
-
 	require(boot)
 	corr_results$distances = corr_results$distances*pixel_size
 

@@ -30,7 +30,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-$opt{min_ad_size} = 0;
+$opt{min_ad_size} = 5;
 GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -45,6 +45,7 @@ our @files;
 find(\&include_in_vis, catdir($cfg{individual_results_folder}));
 my @colors = &build_jet_color_map(scalar(@files));
 my @hex_colors = &convert_rbg_to_hex(@colors);
+@files = sort @files;
 
 my @bmp_files = &build_bitmaps(@files);
 print "Done Converting to BMP\n" if $opt{debug};
@@ -101,7 +102,7 @@ sub convert_using_potrace {
         my $bmp_file = $files[$_];
         my $color = $hex_colors[$_];
         my $svg_file = $bmp_file;
-        
+     	   
         $svg_file =~ s/\.bmp/\.svg/;
         push @svg_files, $svg_file;
         system "potrace -t $opt{min_ad_size} -s --fillcolor=#$color $bmp_file\n";
@@ -131,10 +132,12 @@ sub get_svg_header {
 
 sub build_full_svg_file {
     my @svg_files = @_;
-    
+    @svg_files = sort @svg_files;
+
     my @svg_path_data;
 
     for (0 .. $#svg_files) {
+    #for (0 .. 0) {
         my $file = $svg_files[$_];
         my $opacity = ($#svg_files - $_)/$#svg_files;
         my $path_count = 0;
@@ -274,7 +277,3 @@ sub round {
     my($number) = shift;
     return int($number + .5);
 }
-
-###############################################################################
-#Documentation
-###############################################################################
