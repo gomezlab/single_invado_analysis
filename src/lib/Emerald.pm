@@ -37,7 +37,7 @@ sub create_LSF_Matlab_commands {
 
     my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     my $matlab_command = "/afs/isis.unc.edu/pkg/matlab-2008a/matlab -nodisplay -nojvm -nosplash -r";
-    $matlab_command = "matlab -nodisplay -nojvm -nosplash -r";
+    $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
 
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command $matlab_command \"$_\""} @commands;
