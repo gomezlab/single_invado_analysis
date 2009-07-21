@@ -158,9 +158,9 @@ sub make_dist_mat {
 sub calc_pix_sim {
     my @pix_id1 = @{ $_[0] };
     my @pix_id2 = @{ $_[1] };
-    my @cent_dists;
+  	my @cent_dists;
     if (scalar(@_) > 2) {
-       @cent_dists = @{ $_[2] };
+    	@cent_dists = @{ $_[2] };
     }
 
     my @sim_percents;
@@ -168,10 +168,10 @@ sub calc_pix_sim {
         our @current_pix_list = @{ $pix_id1[$i] };
         my $current_pix_list_length = scalar(@current_pix_list);
         
-        die "$i" if not $current_pix_list_length;
+        die "\n\nProblem with pixel ID list ($i), the length is zero" if not $current_pix_list_length;
         
         my @search_order;
-        if (scalar(@_) > 2) {
+        if (@cent_dists) {
             my @dist_to_next_ads = @{$cent_dists[$i]};
             @search_order = sort {$dist_to_next_ads[$a] <=> $dist_to_next_ads[$b]} (0 .. $#dist_to_next_ads);
         } else {
@@ -179,7 +179,9 @@ sub calc_pix_sim {
         }
 
         for my $j (@search_order) {
-            die "$i\n\n", Dumper(\@pix_id2) if (not($pix_id2[$j]));
+            die "\n\nProblem with the number of entries in the second pixel " . 
+				"ID list index ($j), the whole list is:", Dumper(\@pix_id2) 
+				if (not($pix_id2[$j]));
             my @next_pix_list = @{ $pix_id2[$j] };
             my $match_count = 0;
             for (0 .. $#current_pix_list) {

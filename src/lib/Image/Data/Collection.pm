@@ -116,15 +116,6 @@ sub gather_data_from_matlab_file {
     my $parser = Text::CSV::Simple->new;
     my @data   = $parser->read_file($file);
     
-    #For most of the files matlab produces, we will see a property with a single
-    #value for each adhesion. In this case, we want to collapse the array of
-    #arrays produced by Text::CSV::Simple into a single array of numbers. So we
-    #check to make sure there are only one entry in each array in each row of
-    #the @data variable, them collapse each entry into a single array.
-    if (scalar(grep scalar(@{$_}) == 1, @data) == scalar(@data)) {
-        @data = map ${$_}[0], @data;
-    }
-
     #PixelIdxList is supposed to be an array of arrayes containing the pixel id
     #numbers, when only a single adhesion is present in the image, then the
     #parser returns just an array, not an array of arrays, this checks for that
@@ -132,6 +123,19 @@ sub gather_data_from_matlab_file {
     if ($file =~ /PixelIdxList/ && !(ref($data[0]) eq "ARRAY")) {
         @data = [@data];
     }
+    
+	#For most of the files matlab produces, we will see a property with a single
+    #value for each adhesion. In this case, we want to collapse the array of
+    #arrays produced by Text::CSV::Simple into a single array of numbers. So we
+    #check to make sure there are only one entry in each array in each row of
+    #the @data variable, them collapse each entry into a single array. We run
+	#into problem when the PixelIdxList is an array of arrays with single
+	#entries, which we want to stay in that format, so we make sure not the
+	#process the PixelIdxList with this statement.
+    if (scalar(grep scalar(@{$_}) == 1, @data) == scalar(@data) && !($file =~ /PixelIdxList/)) {
+        @data = map ${$_}[0], @data;
+    }
+
     return @data;
 }
 

@@ -820,89 +820,88 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 #Data Summary functions
 ########################################
 filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, 
-	pos_slope = TRUE, primary_filter_results = NA) {
-	
-	stopifnot(is.na(primary_filter_results) | length(results) == length(primary_filter_results))
-	
-	
-	points = list()
-	for (i in 1:length(results)) {
-		res = results[[i]]
+    pos_slope = TRUE, primary_filter_results = NA) {
 
-		if (all(is.na(primary_filter_results))) {
-			for_filter = res
-		} else {
-			for_filter = primary_filter_results[[i]]
-		}	
+    stopifnot(is.na(primary_filter_results) | length(results) == length(primary_filter_results))
+	
+    points = list()
+    for (i in 1:length(results)) {
+	res = results[[i]]
 
-		assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
-					   & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
-					   & for_filter$assembly$p_val < max_p_val)
-		disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
-						  & is.finite(for_filter$disassembly$slope) & is.finite(for_filter$disassembly$p_val) 
-						  & for_filter$disassembly$p_val < max_p_val)
-		
-		if (pos_slope) {
-			assembly_filt = assembly_filt & for_filter$assembly$slope > 0
-			disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
-		}				  
-		joint_filt = assembly_filt & disassembly_filt
-				
-		points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
-		points$assembly$fold_change = c(points$assembly$fold_change, res$assembly$fold_change[assembly_filt])
-		points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
-		points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
-		points$assembly$length = c(points$assembly$length, res$assembly$length[assembly_filt])
-		points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
-		points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
-		points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
-		points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
-		if (any(names(res$exp_props) == 'starting_edge_dist')) {
-			points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
-		}		
-		for (j in names(points$assembly)) {
-			stopifnot(length(points$assembly[[1]]) == length(points$assembly[[j]]))
-		}
-		
-		points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
-		points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
-		points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
-		points$disassembly$length = c(points$disassembly$length, res$disassembly$length[disassembly_filt])
-		points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
-		points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
-		points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))))
-		points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
-		if (any(names(res$exp_props) == 'ending_edge_dist')) {
-			points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
-		}
-		for (j in names(points$disassembly)) {
-			stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[j]]))
-		}
-
-		points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt])
-		points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[joint_filt])
-		
-		points$joint$lin_num = c(points$joint$lin_num, which(joint_filt))
-		points$joint$exp_num = c(points$joint$exp_num, rep(i,length(which(joint_filt))))
-		
-		points$joint$assembly = c(points$joint$assembly, res$assembly$slope[joint_filt])
-		points$joint$disassembly = c(points$joint$disassembly, res$disassembly$slope[joint_filt])
-		
-		points$joint$assembly_length = c(points$joint$assembly_length, res$assembly$length[joint_filt])
-		points$joint$disassembly_length = c(points$joint$disassembly_length, res$dis$length[joint_filt])
-		points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt])
-		points$joint$stable_mean = c(points$joint$stable_mean, res$stable_mean[joint_filt])
-		points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt])
-		for (j in names(points$joint)) {
-			stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
-		}
+	if (all(is.na(primary_filter_results))) {
+		for_filter = res
+	} else {
+		for_filter = primary_filter_results[[i]]
+	}	
+        print(names(for_filter)) 
+        assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
+                & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
+                & for_filter$assembly$p_val < max_p_val)
+	disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
+                & is.finite(for_filter$disassembly$slope) & is.finite(for_filter$disassembly$p_val) 
+                & for_filter$disassembly$p_val < max_p_val)
+	
+	if (pos_slope) {
+		assembly_filt = assembly_filt & for_filter$assembly$slope > 0
+		disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
+	}				  
+	joint_filt = assembly_filt & disassembly_filt
+			
+	points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
+	points$assembly$fold_change = c(points$assembly$fold_change, res$assembly$fold_change[assembly_filt])
+	points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
+	points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
+	points$assembly$length = c(points$assembly$length, res$assembly$length[assembly_filt])
+	points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
+	points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
+	points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
+	points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
+	if (any(names(res$exp_props) == 'starting_edge_dist')) {
+		points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
+	}		
+	for (j in names(points$assembly)) {
+		stopifnot(length(points$assembly[[1]]) == length(points$assembly[[j]]))
 	}
 	
-	points$assembly = as.data.frame(points$assembly)
-	points$disassembly = as.data.frame(points$disassembly)
-	points$joint = as.data.frame(points$joint)
+	points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
+	points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
+	points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
+	points$disassembly$length = c(points$disassembly$length, res$disassembly$length[disassembly_filt])
+	points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
+	points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
+	points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))))
+	points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
+	if (any(names(res$exp_props) == 'ending_edge_dist')) {
+		points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
+	}
+	for (j in names(points$disassembly)) {
+		stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[j]]))
+	}
+
+	points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt])
+	points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[joint_filt])
 	
-	points
+	points$joint$lin_num = c(points$joint$lin_num, which(joint_filt))
+	points$joint$exp_num = c(points$joint$exp_num, rep(i,length(which(joint_filt))))
+	
+	points$joint$assembly = c(points$joint$assembly, res$assembly$slope[joint_filt])
+	points$joint$disassembly = c(points$joint$disassembly, res$disassembly$slope[joint_filt])
+	
+	points$joint$assembly_length = c(points$joint$assembly_length, res$assembly$length[joint_filt])
+	points$joint$disassembly_length = c(points$joint$disassembly_length, res$dis$length[joint_filt])
+	points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt])
+	points$joint$stable_mean = c(points$joint$stable_mean, res$stable_mean[joint_filt])
+	points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt])
+	for (j in names(points$joint)) {
+		stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
+	}
+    }
+
+    points$assembly = as.data.frame(points$assembly)
+    points$disassembly = as.data.frame(points$disassembly)
+    points$joint = as.data.frame(points$joint)
+
+    points
 }
 
 gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, debug=FALSE) {
@@ -1077,9 +1076,6 @@ load_results <- function(dirs,file) {
 			load(file.path(dirs[i],file))
 			results[[i]] = this_result
 		}
-	}
-	if (length(results) == 1) {
-		results = results[[1]]
 	}
 	results
 }
