@@ -833,7 +833,7 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
 	} else {
 		for_filter = primary_filter_results[[i]]
 	}	
-        print(names(for_filter)) 
+        
         assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
                 & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
                 & for_filter$assembly$p_val < max_p_val)

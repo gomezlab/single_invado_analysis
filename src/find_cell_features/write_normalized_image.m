@@ -25,6 +25,7 @@ i_p.addRequired('out_file',@(x)exist(fileparts(x),'dir')==7);
 i_p.addParamValue('I_num',1,@(x)isnumeric(x) && x>0);
 i_p.addParamValue('debug',0,@(x)(isnumeric(x) && (x == 0 || x == 1) || islogical(x)));
 i_p.addParamValue('d',0,@(x)(isnumeric(x) && (x == 0 || x == 1) || islogical(x)));
+i_p.addParamValue('ir_norm',0,@(x)(isnumeric(x) && (x == 0 || x == 1) || islogical(x)));
 
 i_p.parse(I_file,out_file,varargin{:});
 
@@ -51,7 +52,11 @@ end
 possible_ranges = [2^8, 2^12, 2^16];
 max_val = possible_ranges(find(possible_ranges > max(input_image(:)), 1, 'first'));
 
-normalized_image = normalize_grayscale_image(input_image,'min_max',[0,max_val - 1]);
+if (i_p.Results.ir_norm)
+    normalized_image = normalize_grayscale_image(input_image);
+else 
+    normalized_image = normalize_grayscale_image(input_image,'min_max',[0,max_val - 1]);
+end
 
 imwrite(normalized_image,out_file,'Bitdepth',output_bits);
 

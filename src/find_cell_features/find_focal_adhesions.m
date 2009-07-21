@@ -57,7 +57,6 @@ addpath('matlab_scripts');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 I_filt = fspecial('disk',i_p.Results.filter_size);
 blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 high_passed_image = focal_image - blurred_image;

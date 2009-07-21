@@ -44,5 +44,5 @@ end
 
 I = I - min_max(1);
 I = I/(min_max(2)-min_max(1));
- 
+
 end
