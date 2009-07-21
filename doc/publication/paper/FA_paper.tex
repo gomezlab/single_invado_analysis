@@ -101,11 +101,11 @@ Utilizing this software we are able to obtain information about the size, shape,
 intensity, and position of every adhesion present in a living cell. Moreover we
 can follow how these properties change over time to assess adhesion lifetime and
 turnover rates. Here we analyze the adhesion component Paxillin in migrating NIH
-3T3 fibroblasts. We also show how a single point mutation in Paxillin at the
+3T3 fibroblasts, characterizing\ldots. We also show how a single point mutation in Paxillin at the
 Jun-kinase phosporylation site Serine 178 changes focal adhesion size,
 distribution, and rate of assembly. We present this software as a generally
 applicable tool that will advance the understanding of how focal adhesions are
-dynamically regulated in living cells.
+dynamically regulated in living cells (Note: may want to just say that the sw is freely available).
 
 % Please keep the Author Summary between 150 and 200 words
 % Use first person. PLoS ONE authors please skip this step. 
@@ -178,7 +178,7 @@ paxillin is an early step in adhesion formation.
 
 In this study we use our imaging analysis system to characterize focal adhesions
 tagged with EGFP-paxillin, generating high-resolution and high-content data sets
-of focal adhesion distribution, morphology, and turnover in migrating NIH 3T3
+of focal adhesion distribution, morphology, and turnover in migrating \textbf{are these really considered migrating?} NIH 3T3
 fibroblasts. Results indicate that we can characterize adhesions in an unbiased
 manner, with typically $10^3-10^4$ adhesions characterized per cell. We further
 show that we can detect subtle alterations in adhesion spatiotemporal properties
@@ -191,11 +191,10 @@ analysis systems in the characterization of high-content data sets.
 % Results and Discussion can be combined.
 \section*{Results}
 
-\subsection*{Quantitative Time-lapse Micrscopy of Focal Adhesions}
 
-We used TIRF microscopy and a set of computational algorithms to identify and
-track FA in order to quantify the static and dynamic properties of FAs (Figure
-\ref{method_flow}). 
+\subsection*{Quantitative Time-lapse Microscopy of Focal Adhesions}
+
+To quantify aspects of focal adhesion spatiotemporal dynamic behavior, we implemented a multistage image analysis pipeline (Figure~\ref{method_flow}). Briefly, adhesions tagged with EGFP-paxillin are identified and segmented via a WaterShed algorithm and the cell edge identified via an RFP tag (see Methods). At each consecutive time step both adhesion birth and death events are identified and tagged by the software. Static properties of adhesions identified within each image are quantified and include properties such as area and position. Dynamic properties of adhesions, such as velocities and changes in fluorescent intensity, are determined by tracking and measuring adhesion properties across time steps/images. A summary of basic extracted and/or derived FA properties is given in Table~\ref{prop_table}.
 
 \subsection*{Static Properties of FA}
 
