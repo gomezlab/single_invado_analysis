@@ -27,10 +27,7 @@ sub run_matlab_progam {
     mkpath($opt{error_folder});
 
     if ($opt{lsf}) {
-        if (not defined $opt{lsf_opt}{folder}) {
-            $opt{lsf_opt}{folder} = $opt{error_folder};
-        }
-        my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, $opt{lsf_opt});
+        my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%opt);
         if ($opt{debug}) {
             print "\n", join("\n", @commands), "\n";
         } else {
@@ -55,11 +52,7 @@ sub send_general_lsf_program {
 
     mkpath($opt{error_folder});
     
-    if (not defined $opt{lsf_opt}{folder}) {
-        $opt{lsf_opt}{folder} = $opt{error_folder};
-    }
-
-    @commands = &Emerald::create_general_LSF_commands(\@commands,$opt{lsf_opt});
+    @commands = &Emerald::create_general_LSF_commands(\@commands,\%opt);
     if ($opt{debug}) {
         print join("\n", @commands);
     } else {

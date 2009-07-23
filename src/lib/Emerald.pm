@@ -14,7 +14,7 @@ use Data::Dumper;
 # Module Definition
 ###############################################################################
 my %opt = ("queue" => "idle", "output_file" => "out.txt", 
-           "error_file" => "error.txt", "folder" => "./",
+           "error_file" => "error.txt", "error_folder" => "./",
            "runtime" => "24",);
 
 sub send_LSF_commands {
@@ -31,8 +31,8 @@ sub create_LSF_Matlab_commands {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
     }
-    $opt{output_file} = File::Spec->catfile($opt{folder},$opt{output_file});
-    $opt{error_file}  = File::Spec->catfile($opt{folder},$opt{error_file});
+    $opt{output_file} = File::Spec->catfile($opt{error_folder},$opt{output_file});
+    $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_file});
     unlink($opt{output_file}, $opt{error_file});
 
     my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
@@ -50,12 +50,14 @@ sub create_general_LSF_commands {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
     }
-    $opt{output_file} = File::Spec->catfile($opt{folder},$opt{output_file});
-    $opt{error_file}  = File::Spec->catfile($opt{folder},$opt{error_file});
+    $opt{output_file} = File::Spec->catfile($opt{error_folder},$opt{output_file});
+    $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_file});
     unlink($opt{output_file}, $opt{error_file});
-
-    my $bsub_command   = "bsub -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     
+    my $bsub_command   = "bsub -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    if (defined $opt{resource}) {
+        $bsub_command .= " -R $opt{resource}";
+    }
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command \"$_\""} @commands;
     return @commands;   
