@@ -35,21 +35,16 @@ sorted_mask_pixels = sort(mask_image(:));
 smoothed_heights = smooth(heights,0.05,'loess');
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
+%keep in mind that the zmax is sorted by value, so the highest peak is
+%first and the corresponding index is also first in imax, the same pattern
+%hold for zmin and imin
+
 sorted_max_indexes = sort(imax);
 first_max_index = find(sorted_max_indexes == imax(1));
 
-min_indexes = find(imin > sorted_max_indexes(first_max_index) & imin < sorted_max_indexes(first_max_index + 1));
-
-if (length(min_indexes) > 1)
-    min_index = min_indexes(1)
-    for i=2:length(min_indexes)
-        if (imin(i) < min_index) 
-            min_index = min_indexes(i);
-        end
-    end
-else 
-    min_index = min_indexes;
-end
+%locate the index between the first two maximums
+min_index = find(imin > sorted_max_indexes(first_max_index) & imin < sorted_max_indexes(first_max_index + 1));
+assert(length(min_index) == 1, 'Error: expected to only find one minimum index between the first two max indexes, instead found %d', length(min_index));
 
 threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 

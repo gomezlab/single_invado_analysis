@@ -23,7 +23,7 @@ i_p.parse(input_edge_binary);
 connected_areas = bwlabel(input_edge_binary);
 region_sizes = regionprops(connected_areas, 'Area');
 
-edge_binary_image = ismember(connected_areas, find([region_sizes.Area] == max([region_sizes.Area])));
+edge_binary_image = ismember(connected_areas, find([region_sizes.Area] > 10));
 
 ad_nums = unique(edge_binary_image);
 
