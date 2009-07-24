@@ -21,7 +21,7 @@ sub send_LSF_commands {
     my @commands = @{$_[0]};
     
     foreach (@commands) {
-        system("$_");
+        system("$_ > /dev/null 2>/dev/null");
     }
 }
 

@@ -70,13 +70,37 @@ if ($opt{lsf}) {
         @overall_command_seq = @overall_command_seq[-1];
     }
 
-    my $starting_dir        = getcwd;
+    my $starting_dir = getcwd;
     for (@overall_command_seq) {
         my @command_seq = @{$_};
         my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
+        print "Starting on $command_seq[0][1]\n";
         &execute_command_seq(\@command_seq, $starting_dir);
+
+        #If debugging is on, we want to wait till the current jobs finish and
+        #then check the file complements of the experiments for completeness
         if (not($opt{debug})) {
             &wait_till_LSF_jobs_finish;
+            print "Checking for all output files on command $command_seq[0][1]\n";
+            my @exp_to_retry = &check_file_sets(\@config_files);
+
+            for (1..3) {
+                if (not(@exp_to_retry)) {
+                    last;
+                    next;
+                }
+                print "Retrying these experiments:\n".
+                      join("\n", @exp_to_retry) . "\n";
+                &execute_command_seq(\@command_seq, $starting_dir, \@exp_to_retry);
+                &wait_till_LSF_jobs_finish;
+                @exp_to_retry = &check_file_sets(\@config_files);
+            }
+            if (@exp_to_retry) {
+                die "Problem with collecting full file complement on experiments after three retries:\n" .
+                    join("\n", @exp_to_retry);
+            } else {
+                print "Output file set complete, moving on.\n\n\n";
+            }
         }
     }
 
@@ -149,10 +173,14 @@ sub running_LSF_jobs {
 sub execute_command_seq {
     my @command_seq  = @{ $_[0] };
     my $starting_dir = $_[1];
+    my @these_config_files = @config_files;
+    if (scalar(@_) > 2) {
+        @these_config_files = @{$_[2]};
+    } 
     foreach my $set (@command_seq) {
         my $dir     = $set->[0];
         my $command = $set->[1];
-        foreach my $cfg_file (@config_files) {
+        foreach my $cfg_file (@these_config_files) {
             my $config_command = "$command -cfg $cfg_file";
             chdir $dir;
             my $return_code = 0;
@@ -171,6 +199,21 @@ sub execute_command_seq {
             }
         }
     }
+}
+
+sub check_file_sets {
+    my @config_files = @{$_[0]};
+
+    my @exp_to_retry;
+    foreach my $this_config_file (@config_files) {
+        my $return_code = system "./check_file_complement.pl -cfg $this_config_file";
+        
+        #if the return code is anything besides zero, add that config file back
+        #to the exp_to_retry list
+        push @exp_to_retry, $this_config_file if ($return_code);
+    }
+
+    return @exp_to_retry;
 }
 
 sub remove_unimportant_errors {
