@@ -25,7 +25,7 @@ sub run_matlab_progam {
     }
 
     mkpath($opt{error_folder});
-
+    
     if ($opt{lsf}) {
         my @commands = &Emerald::create_LSF_Matlab_commands(\@matlab_code, \%opt);
         if ($opt{debug}) {

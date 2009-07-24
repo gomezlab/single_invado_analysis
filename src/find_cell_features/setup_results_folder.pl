@@ -84,7 +84,7 @@ die "Unable to find any images to include in the new experiment" if $all_images_
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'setup', 'error.txt');
-$opt{lsf_opt}{runtime} = "0:5";
+$opt{runtime} = "0:5";
 
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
 

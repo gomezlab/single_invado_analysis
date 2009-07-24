@@ -57,7 +57,7 @@ my @matlab_code = &create_all_matlab_commands;
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
-$opt{lsf_opt}{runtime} = "1";
+$opt{runtime} = "1";
 
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
 

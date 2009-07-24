@@ -13,8 +13,8 @@ use Data::Dumper;
 ###############################################################################
 # Module Definition
 ###############################################################################
-my %opt = ("queue" => "idle", "output_file" => "out.txt", 
-           "error_file" => "error.txt", "error_folder" => "./",
+my %opt = ("queue" => "idle", "output_filename" => "out.txt", 
+           "error_filename" => "error.txt", "error_folder" => "./",
            "runtime" => "24",);
 
 sub send_LSF_commands {
@@ -31,10 +31,10 @@ sub create_LSF_Matlab_commands {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
     }
-    $opt{output_file} = File::Spec->catfile($opt{error_folder},$opt{output_file});
-    $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_file});
+    $opt{output_file} = File::Spec->catfile($opt{error_folder},$opt{output_filename});
+    $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_filename});
     unlink($opt{output_file}, $opt{error_file});
-
+    
     my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     my $matlab_command = "/afs/isis.unc.edu/pkg/matlab-2008a/matlab -nodisplay -nojvm -nosplash -r";
     $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
@@ -50,8 +50,8 @@ sub create_general_LSF_commands {
         my %temp = %{$_[1]};
         $opt{$_} = $temp{$_} foreach (keys %temp);
     }
-    $opt{output_file} = File::Spec->catfile($opt{error_folder},$opt{output_file});
-    $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_file});
+    $opt{output_file} = File::Spec->catfile($opt{error_folder},$opt{output_filename});
+    $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_filename});
     unlink($opt{output_file}, $opt{error_file});
     
     my $bsub_command   = "bsub -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
