@@ -228,19 +228,19 @@ phenol red (SAFC Biosciences) with 2\% fetal bovine serum, 15mM HEPES, 1\%
 L-Glutamine, and 1\% penicillinstreptomycin. 
 
 To make stable cell lines, retroviral vectors were transfected into 293 LinXE
-cells plated in 6cm dishes with Fugene 6 (Roche) according to the manufacturer’s
+cells plated in 6cm dishes with Fugene 6 (Roche) according to the manufacturer's
 protocol (using 18$\mu$L Fugene 6 and 8$\mu$g of DNA). The media was replaced
 after 12 hours. Viral supernatant was harvested 48 hours after media
 replacement, passed through a .45$\mu$m syringe filter and then added to MEFs
 plated at subconfluent densities at a ratio of 1:3 (viral supernatant/normal
-media). Cells were simultaneously infected with virus containing myr-mRFP and
+media). Cells were simultaneously infected with virus containing myr-RFP and
 the appropriate EGFP-Paxillin construct and went through 5-8 rounds of infection
 to reach expression levels sufficient for live cell imaging.
 
 \subsection*{Microscopy}
 
 Prior to imaging, MEFs were plated onto coverslips coated with 5$\mu$g/mL
-Fibronectin (Sigma) for 30min. Fibroblasts expressing EGFP- Pax$_{\text{S187A}}$
+Fibronectin (Sigma) for 30min. Fibroblasts expressing EGFP-Pax$_{\textrm{S187A}}$
 required 2-3 hours to adhere to the coverslips due to a spreading defect.
 Immediately before being transferred to a sealed imaging chamber, complete
 culture media was replaced with imaging media. 
@@ -285,8 +285,17 @@ region within 10 pixels of the adhesion border. Pixels outside the cell, inside
 another another adhesion or the adhesion itself were excluded from the average
 background fluorescence calculation.
 
-The cell edges were found using a described in a prior publication
-\cite{Machacek06}, with some modifications. 
+The cell edges were found by analyzing the myr-RFP images using a method similar
+to that described in a prior publication \cite{Machacek06}. Briefly, a histogram
+of all the intensity values for a single image was collected and split into 1000
+equal sized bins. The counts of each bins were then smoothed with the loess
+algorithm \cite{Cleveland79} (polynomial order 2, 5\% of data included in each
+fit) and the minima and maxima of the smoothed fit found. The maxima with the
+highest value was identified and the set of minima at intensity values greater
+than that the highest maxima collected. The intensity value of the minima
+closest to the highest maxima in intensity was used as the binary threshold
+cutoff for identifying the cell edge. Connected regions smaller than 10 pixels
+were discarded and all the holes in the cell edge image filled.
 
 \subsection*{FA Tracking}
 
