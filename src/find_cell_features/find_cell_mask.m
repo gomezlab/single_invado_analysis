@@ -27,6 +27,7 @@ addpath(genpath('matlab_scripts'));
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%Threshold identification
 sorted_mask_pixels = sort(mask_image(:));
 % sorted_mask_pixels(1:0.05*round(length(sorted_mask_pixels))) = 0;
 
@@ -48,7 +49,16 @@ assert(length(min_index) == 1, 'Error: expected to only find one minimum index b
 
 threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 
-threshed_mask = clean_up_mask_image(threshed_mask);
+
+%%Mask Cleanup
+connected_areas = bwlabel(threshed_mask);%
+region_sizes = regionprops(connected_areas, 'Area');
+
+%filter out connected regions smaller than 10 pixels
+threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10));
+
+threshed_mask = imfill(threshed_mask,'holes');
+
 imwrite(threshed_mask, out_file)
 
 if (nargout >= 1)

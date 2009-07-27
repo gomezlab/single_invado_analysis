@@ -23,15 +23,10 @@ i_p.parse(input_edge_binary);
 connected_areas = bwlabel(input_edge_binary);
 region_sizes = regionprops(connected_areas, 'Area');
 
+%filter out connected regions smaller than 10 pixels
 edge_binary_image = ismember(connected_areas, find([region_sizes.Area] > 10));
 
-ad_nums = unique(edge_binary_image);
-
-assert(length(ad_nums) == 2, 'Error in cell mask cleaning: Hoped to see only background and foreground in image');
-
-edge_binary_image(edge_binary_image == ad_nums(2)) = 1;
-
-edge_binary_image = imdilate(edge_binary_image,strel('diamond',1));
+% edge_binary_image = imdilate(edge_binary_image,strel('diamond',1));
 
 mask_image = imfill(edge_binary_image,'holes');
 
