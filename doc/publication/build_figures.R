@@ -11,9 +11,6 @@ raw_data <- list()
 single_props <- list()
 
 exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
-#exp_dirs <- Sys.glob('../../results/lin_region_variation/FA/6/*/adhesion_props/models/')
-#exp_dirs <- Sys.glob('../../results/lin_region_variation/FA/8/*/adhesion_props/models/')
-#exp_dirs <- Sys.glob('../../results/lin_region_variation/FA/no_log_trans/*/adhesion_props/models/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 raw_data$results = load_results(exp_dirs,file.path('intensity.Rdata'))
 raw_data$corr_results = load_results(exp_dirs,file.path('local_corrected.Rdata'))
@@ -27,9 +24,6 @@ single_props$fa$not_ad_int <- load_data_files(exp_dirs,
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
-#exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/6/*/adhesion_props/models/')
-#exp_dirs_S <- Sys.glob('../../results/lin_region_variation/S178A/8/*/adhesion_props/models/')
-#exp_dirs <- Sys.glob('../../results/lin_region_variation/S178A/no_log_trans/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
 raw_data$results_S = load_results(exp_dirs_S,file.path('intensity.Rdata'))
 raw_data$corr_results_S = load_results(exp_dirs_S,file.path('local_corrected.Rdata'))
@@ -49,10 +43,8 @@ single_props$S178A$outside <- load_data_files(exp_dirs_S,
 	file.path('..','single_props','Outside_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
-
 for (i in 1:length(single_props$S178A$ad_int)) {
         single_props$S178A$exp_num = c(single_props$S178A$exp_num, rep(i, length(single_props$S178A$ad_int[[i]])));
-        print(length(single_props$S178A$ad_int[[i]]))
 }
 
 for (i in names(single_props$S178A)) {
@@ -61,6 +53,11 @@ for (i in names(single_props$S178A)) {
     }
     single_props$S178A[[i]] = unlist(single_props$S178A[[i]])
 }
+
+exp_dirs_rap <- Sys.glob('../../results/rap_src/*/adhesion_props/models/')
+exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)]
+raw_data$results_rap = load_results(exp_dirs_rap,file.path('intensity.Rdata'))
+raw_data$corr_results_rap = load_results(exp_dirs_rap,file.path('local_corrected.Rdata'))
 
 print('Done Loading Data')
 
@@ -91,8 +88,11 @@ area_filt = filter_results(raw_data$area, primary_filter_results = raw_data$resu
 
 results_filt = filter_results(raw_data$results)
 results_S_filt = filter_results(raw_data$results_S)
+results_rap_filt = filter_results(raw_data$results_rap, min_R_sq=0.75)
+
 corr_results_filt = filter_results(raw_data$results)
 corr_results_S_filt = filter_results(raw_data$results_S)
+corr_results_rap_filt = filter_results(raw_data$corr_results_rap, min_R_sq=0.75)
 
 rm(raw_data)
 gc()
@@ -105,8 +105,14 @@ assembly_nums = intersect(results_filt$assembly$lin_num, results_filt$disassembl
 ################################################################################
 #Plotting
 ################################################################################
-out_folder = '../../doc/publication/figures/'
+out_folder = '../../doc/publication/figures/test'
 make_pdfs = FALSE;
+dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
+
+########################################
+#RAP-SRC Plotting
+########################################
+
 
 ########################################
 #All by all plots
@@ -124,13 +130,21 @@ make_pdfs = FALSE;
 ########################################
 #General Properties
 ########################################
-svg(file.path(out_folder,'statics','statics.svg'))
+dir.create(dirname(file.path(out_folder,'statics','statics.svg')), 
+    recursive=TRUE, showWarnings=FALSE)
+svg(file.path(out_folder,'statics','statics.svg'),height=8)
 if (make_pdfs) {
 	pdf(file.path(out_folder,'statics','statics.pdf'),width=8)
 }
-layout(rbind(c(1,1,2,2,3,3),c(4,4,4,5,5,5),c(6,6,6,7,7,7)),heights=c(1,0.85,0.85))
+
+layout_mat = rbind(c(rep(1,4),rep(2,4),rep(3,4)),
+                   c(rep(4,6),rep(5,6)),
+                   c(rep(6,6),rep(7,6)),
+                   c(rep(0,3), rep(8,6), rep(0, 3)))
+layout(layout_mat,heights=c(1,0.65,0.65,0.65))
 par(bty='n', mar=c(0,4,1.6,0))
 
+#Place holders for cell images
 plot.new()
 mtext('A',adj=-.31,side=3,line=0,cex=1.5)
 
@@ -140,32 +154,50 @@ mtext('B',adj=-.31,side=3,line=0,cex=1.5)
 plot.new()
 mtext('C',adj=-.31,side=3,line=0,cex=1.5)
 
-par(bty='n', mar=c(5,4.2,2,0.1))
+
+#Histograms
+par(bty='n', mar=c(4,4.2,0,0.1))
 area_data = ind_exp_filt$Area[ind_exp_filt$Area < 5];
+area_hist = hist(area_data, main="", ylab = "FA Count", 
+	 xlab = expression(paste('FA Area (', symbol("m"), m^2, ')',sep='')));
+    
+#area_hist_model = lm(log(area_hist$counts) ~area_hist$mids);
+#predictions = exp(predict(area_hist_model))
+#lines(area_hist$mids,predictions, col='red', lwd=2)
 
-hist(area_data, main="", ylab = "Adhesion Count", 
-	 xlab = expression(paste('Adhesion Area (', symbol("m"), m^2, ')',sep='')))
 mtext('D',adj=-.2,side=3,line=-0.25,cex=1.5)
-hist(ind_exp_filt$ad_sig, main="", ylab = "Adhesion Count", xlab = "Normalized Average Paxillin Intensity")
-hist(ind_exp_filt$ax[ind_exp_filt$ax < 8], main="", ylab = "Adhesion Count",  xlab = "Axial Ratio")
-hist(ind_exp_filt$cent_dist, main="", ylab = "Adhesion Count",  
-	 xlab = expression(paste("Distance from Edge (", symbol("m"), m, ')',sep='')))
+hist(ind_exp_filt$ad_sig, main="", ylab = "FA Count", xlab = "Normalized Average Paxillin Intensity")
 
+par(bty='n', mar=c(4,4.2,1.2,0.1))
+hist(ind_exp_filt$ax[ind_exp_filt$ax < 8], main="", ylab = "FA Count",  xlab = "Axial Ratio")
+hist(ind_exp_filt$cent_dist, main="", ylab = "FA Count",  
+	 xlab = expression(paste("Distance from Edge (", symbol("m"), m, ')',sep='')))
+hist(results_props$longevity, main="", ylab = "FA Count",  xlab = "Longevity (min)")
 graphics.off()
+
+svg(file.path(out_folder,'statics','longev_inset.svg'), width=3, height=3/2)
+par(bty='n', mar=c(2,2,0.5,0))
+hist(results_props$longevity[!is.na(results_props$longevity) & results_props$longevity > 20], 
+    main="", ylab = "", xlab = "")
+graphics.off()
+
 print('Done with Static Properties')
 
 ########################################
 #Kinetics Figure
-########################################
-svg(file.path(out_folder,'kinetics','kinetics.svg'),height=10.5)
+#######################################
+dir.create(dirname(file.path(out_folder,'kinetics','kinetics.svg')), 
+    recursive=TRUE, showWarnings=FALSE);
+svg(file.path(out_folder,'kinetics','kinetics.svg'),height=10.5);
 if (make_pdfs) {
 	pdf(file.path(out_folder,'kinetics','kinetics.pdf'),height=10.5)
 }
 layout(rbind(c(1,2),c(3,4),c(5,5)))
 
 exp_one_only = load_results(exp_dirs[[1]],'intensity.Rdata')
+exp_one_only = exp_one_only[[1]]
 
-par(bty='n', mar=c(4,4.2,4,0))
+par(bty='n', mar=c(4,4.2,1.5,0))
 
 plot.new()
 mtext('A',adj=-.19,side=3,line=-0.5,cex=1.5)
@@ -176,6 +208,7 @@ plot_ad_seq(exp_one_only, ad_num, type='overall',
 	phase_lengths=c(exp_one_only$assembly$length[ad_num],exp_one_only$disassembly$length[ad_num]))
 mtext('B',adj=-.19,side=3,line=-0.5,cex=1.5)
 
+par(bty='n', mar=c(4,4.2,4,0))
 plot_ad_seq(exp_one_only, ad_num, main = 'Assembly');
 text(3,0.65,pos=3,expression(paste(R^2,' = 0.920')))
 text(3,0.6,pos=3,adj=0, 
@@ -191,7 +224,7 @@ par(bty='n', mar=c(2.1,4.2,1.1,0))
 
 boxplot_with_points(list(results_filt$a$slope,results_filt$dis$slope), 
 		    names=c('Assembly', 'Disassembly'), boxwex=0.6, 
-		    ylab=expression(paste('Rate (',min^-1,')',sep='')))
+		    ylab=expression(paste('Rate (',min^-1,')',sep='')), point_cex=0.6)
 #95% confidence intervals on the mean from Webb 2004
 #segments(1.4,0.04,1.4,0.2,lwd=2)
 #segments(1.35,0.12,1.45,0.12,lwd=2)
@@ -203,7 +236,8 @@ graphics.off()
 ####################
 #Supplemental
 ####################
-
+dir.create(dirname(file.path(out_folder,'supplemental','R_squared.svg')), 
+    recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'supplemental','R_squared.svg'),width=14)
 if (make_pdfs) {
 	pdf(file.path(out_folder,'supplemental','R_squared.pdf'),width=14)
@@ -228,6 +262,8 @@ print('Done with Kinetics')
 ########################################
 #Spacial Figure
 ########################################
+dir.create(dirname(file.path(out_folder,'spacial','spacial.svg')), 
+    recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'spacial','spacial.svg'))
 if (make_pdfs) {
 	pdf(file.path(out_folder,'spacial','spacial.pdf'))
@@ -235,15 +271,15 @@ if (make_pdfs) {
 par(bty='n',mar=c(4.2,4.1,2,0))
 layout(rbind(c(1,2),c(3,4)))
 
-breaks_end = ceil(max(c(results_filt$a$edge_dist,results_filt$dis$edge_dist)));
+breaks_end = ceil(max(c(results_filt$a$edge_dist,results_filt$dis$edge_dist), na.rm=T));
 if (breaks_end %% 2 != 0) {
 	breaks_end = breaks_end + 1;
 }
 these_breaks = seq(0,breaks_end,by=2);
 
 hist(results_filt$a$edge_dist, 
-        xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
-        main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
+     main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5)
 
 hist(results_filt$dis$edge_dist,
@@ -276,6 +312,8 @@ graphics.off()
 ####################
 #Supplemental
 ####################
+dir.create(dirname(file.path(out_folder,'supplemental','spacial_nofilt.svg')), 
+    recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'supplemental','spacial_nofilt.svg'))
 if (make_pdfs) {
 	pdf(file.path(out_folder,'supplemental','spacial_nofilt.pdf'))
@@ -283,18 +321,18 @@ if (make_pdfs) {
 par(bty='n',mar=c(4.2,4.1,2,0))
 layout(rbind(c(1,2),c(3,4)))
 
-breaks_end = ceil(max(c(results_nofilt$a$edge_dist,results_nofilt$dis$edge_dist)));
+breaks_end = ceil(max(c(results_nofilt$a$edge_dist,results_nofilt$dis$edge_dist), na.rm=T));
 if (breaks_end %% 2 != 0) {
 	breaks_end = breaks_end + 1;
 }
 these_breaks = seq(0,breaks_end,by=2);
 
-start_props = hist(results_nofilt$a$edge_dist, 
+hist(results_nofilt$a$edge_dist, 
     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=1169', sep='')),
     main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5)
 
-death_props = hist(results_nofilt$dis$edge_dist,
+hist(results_nofilt$dis$edge_dist,
      xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=1460', sep='')), 
      main = '', ylab = '# of Focal Adhesions',breaks=these_breaks)
 mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
@@ -331,12 +369,12 @@ plot(results_nofilt$j$birth_dist, results_nofilt$j$death_dist,
 birth_vs_death_model <- lm(death_dist ~ birth_dist, data=results_nofilt$joint)
 abline(birth_vs_death_model, col='green', lwd = 3)
 model_summary <- summary(birth_vs_death_model)
-x_data <- data.frame(birth_dist = seq(min(results_nofilt$j$b),max(results_nofilt$j$b),by=0.01))
+x_data <- data.frame(birth_dist = seq(min(results_nofilt$j$b, na.rm=T),max(results_nofilt$j$b, na.rm=T),by=0.01))
 line_conf = predict(birth_vs_death_model, x_data, interval="confidence", level=0.95)
 lines(x_data$birth_dist, line_conf[,2], col='red', lty=2, lwd = 3)
 lines(x_data$birth_dist, line_conf[,3], col='red', lty=2, lwd = 3)
 
-segments(0,0,max(results_nofilt$j$b),max(results_nofilt$j$b), col='blue', lty=4, lwd = 3)
+segments(0,0,max(results_nofilt$j$b, na.rm=T), max(results_nofilt$j$b, na.rm=T), col='blue', lty=4, lwd = 3)
 
 graphics.off()
 print('Done with Spacial')
@@ -344,7 +382,8 @@ print('Done with Spacial')
 ############################################################
 #Comparing S178A to Wild-type
 ############################################################
-
+dir.create(dirname(file.path(out_folder,'lifetimes','stable_mean.pdf')), 
+    recursive=TRUE, showWarnings=FALSE);
 pdf(file.path(out_folder,'lifetimes','stable_mean.pdf'), width=8.5, pointsize=8)
 boxplot_with_points(
         list(corr_results_onlysignif$joint$stable_mean, 
@@ -358,11 +397,13 @@ boxplot_with_points(
         names=c('Local WT','Local S189A', 'WT','S178A'), ylab='Mean Stable Intensity')
 graphics.off()
 
+print('Done with Stable Lifetime Averages')
+
 ########################################
 #Lifetime Phases
 ########################################
 
-stage_data <- gather_stage_lengths(corr_results_onlysignif, corr_results_S_onlysignif, debug=TRUE)
+stage_data <- gather_stage_lengths(corr_results_onlysignif, corr_results_S_onlysignif)
 #stage_data_filt <- gather_stage_lengths(results_filt, results_S_filt, debug=TRUE)
 bar_lengths = stage_data$bar_lengths
 conf_ints = stage_data$conf_ints
@@ -377,11 +418,10 @@ err_bars[4,3:4] = err_bars[4,3:4]
 err_bars[5,3:4] = err_bars[5,3:4] + sum(bar_lengths[1,2])
 err_bars[6,3:4] = err_bars[6,3:4] + sum(bar_lengths[1:2,2])
 
+dir.create(dirname(file.path(out_folder,'lifetimes','adhesion_phase_lifetimes.svg')), 
+    recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'lifetimes','adhesion_phase_lifetimes.svg'))
 par(bty='n',mar=c(2,4,0,0))
-layout(rbind(c(1,2), c(2,2)))
-
-
 barplot(bar_lengths, names=c('Wild-type','S178A'), 
         ylab='Time (min)', width=matrix(0.3,3,2), xlim=c(0,1),
         legend=c('Assembly','Stability','Disassembly'),ylim = c(0,max(err_bars)+3.5))
@@ -407,14 +447,15 @@ text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"*"
 
 graphics.off()
 
+print('Done with Lifetime Phase Lengths')
+
 ########################################
 #Dynamics
 ########################################
 #svg(file.path(out_folder,'S178A','S178A_vs_wild-type.svg'))
+dir.create(dirname(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf')), 
+    recursive=TRUE, showWarnings=FALSE);
 pdf(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf'))
-if (make_pdfs) {
-	pdf(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf'))
-}
 layout(rbind(c(1,2),c(3,4)))
 par(bty='n', mar=c(2,4,0,0))
 
@@ -457,7 +498,7 @@ mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)
 #Panel Birth Distances
 par(bty='n', mar=c(2,4,1.5,0))
 max_dist = max(c(results_filt$as$edge_dist,results_S_filt$as$edge_dist,
-                  results_filt$dis$edge_dist,results_S_filt$dis$edge_dist))
+                 results_filt$dis$edge_dist,results_S_filt$dis$edge_dist), na.rm=T)
 boxplot_with_points(list(results_filt$as$edge_dist,results_S_filt$as$edge_dist), 
     names=c('Wild-type','S178A'), 
     ylim=c(0,max_dist+2), 
@@ -535,6 +576,8 @@ all_S = as.data.frame(all_S)
 binned_all = bin_corr_data(all, bin_max=200)
 binned_all_S = bin_corr_data(all_S, bin_max=200)
 
+dir.create(dirname(file.path(out_folder,'S178A','dist_vs_corr.pdf')), 
+    recursive=TRUE, showWarnings=FALSE);
 pdf(file.path(out_folder,'S178A','dist_vs_corr.pdf'))
 y_max = max(c(binned_all$upper, binned_all_S$upper), na.rm=TRUE)
 
@@ -545,3 +588,5 @@ errbar(binned_all$mids, binned_all$means, binned_all$upper, binned_all$lower, ad
 #plot(binned_all_S$mids, binned_all_S$means, ylim=c(0, y_max), col='red', add=TRUE)
 errbar(binned_all_S$mids, binned_all_S$means, binned_all_S$upper, binned_all_S$lower, add=TRUE,col='red', xlab="", ylab="")
 graphics.off()
+
+print('Done with Distance versus Pax Concentration Correlation')
