@@ -44,7 +44,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
                 normed = normed, log.trans = log.trans, 
                 boot.samp = boot.samp, debug=debug);
 
-        regex_range = regexpr("time_series_[[:digit:]].*?/",exp_dirs_rap[[1]], perl=TRUE);
+        regex_range = regexpr("time_series_[[:digit:]].*?/",dirs[[1]], perl=TRUE);
         if (regex_range[1] == -1) {
             results[[i]]$exp_dir = dirs[[i]];
         } else {

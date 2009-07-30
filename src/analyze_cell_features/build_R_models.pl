@@ -65,7 +65,7 @@ if (! -e $output_base) {
 
 my @R_cmds;
 if (defined($opt{model_type})) {
-    my $output_file = catfile($output_base, 'R_out_' . $_ . '.txt');
+    my $output_file = catfile($output_base, 'R_out_' . $opt{model_type} . '.txt');
 	push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir model_type=$opt{model_type}\" FA_analysis_lib.R $output_file"
 } else {
     for (@model_types) {
