@@ -289,7 +289,8 @@ sub gather_and_output_lineage_properties {
 
     ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
     &output_prop_time_series($props{speeds}{All}, "All_speeds");
-    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = &gather_speed_props($props{speeds}{All});
+    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = 
+		&gather_speed_props($props{speeds}{All});
 
     if (grep "Area" eq $_, @available_data_types) {
         $props{Area} = &gather_prop_seq("Area");

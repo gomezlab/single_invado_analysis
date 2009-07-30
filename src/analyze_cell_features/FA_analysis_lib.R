@@ -7,146 +7,147 @@
 #Data fitting functions
 ########################################
 gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
-	data_file='Average_adhesion_signal.csv', col_lims = NA, 
-	normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
-	debug = FALSE) {
-	
-	results = list()
-	
-	for (i in 1:length(dirs)) {
-		if (is.na(dirs[[i]])) {
-			next;
-		}
-		if (! file.exists(file.path(dirs[[i]],data_file))) {
-			next;
-		}
-		
-		if (debug) {
-			print(dirs[[i]])
-		}
-			
-		exp_data <- as.matrix(read.table(file.path(dirs[[i]],data_file),header = FALSE, sep = ','));
+        data_file='Average_adhesion_signal.csv', col_lims = NA, 
+        normed = TRUE, log.trans = TRUE, boot.samp = NA, results.file = NA,
+        debug = FALSE) {
 
-		exp_props <- read.table(file.path(dirs[[i]],'../single_lin.csv'), header = TRUE, sep = ',');
-		
-		#process the col_lim parameter passed in if values were passed in
-		this_col_lim = NA 
-		if (! is.na(as.matrix(col_lims)[1,1])) {
-			if(dim(as.matrix(col_lims))[[2]] == 1) {
-				this_col_lim = c(col_lims[i],dim(exp_data)[[2]])
-			} else {
-				this_col_lim = col_lims[i,]
-			}
-		}
-		
-		results[[i]] <- gather_bilinear_models(exp_data, exp_props, 
-							min_length = min_length, col_lims = this_col_lim, 
-							normed = normed, log.trans = log.trans, 
-							boot.samp = boot.samp, debug=debug);
-        regex_range = regexpr("time_series_[[:digit:]]",dirs[[i]])
-        if (regex_range[1] == -1) {
-        	results[[i]]$exp_dir = dirs[[i]];
-        } else {
-        	results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
+    results = list();
+
+    for (i in 1:length(dirs)) {
+        if (is.na(dirs[[i]])) {
+            next;
         }
-        results[[i]]$parameters$normed = normed
-        results[[i]]$parameters$min_length = min_length
-        results[[i]]$parameters$log.trans = log.trans
-        
+        if (! file.exists(file.path(dirs[[i]],data_file))) {
+            next;
+        }
+
+        if (debug) {
+            print(dirs[[i]])
+        }
+
+        exp_data <- as.matrix(read.table(file.path(dirs[[i]],data_file),header = FALSE, sep = ','));
+
+        exp_props <- read.table(file.path(dirs[[i]],'../single_lin.csv'), header = TRUE, sep = ',');
+
+        #process the col_lim parameter passed in if values were passed in
+        this_col_lim = NA;
+        if (! is.na(as.matrix(col_lims)[1,1])) {
+            if(dim(as.matrix(col_lims))[[2]] == 1) {
+                this_col_lim = c(col_lims[i],dim(exp_data)[[2]])
+            } else {
+                this_col_lim = col_lims[i,]
+            }
+        }
+
+        results[[i]] <- gather_bilinear_models(exp_data, exp_props, 
+                min_length = min_length, col_lims = this_col_lim, 
+                normed = normed, log.trans = log.trans, 
+                boot.samp = boot.samp, debug=debug);
+
+        regex_range = regexpr("time_series_[[:digit:]].*?/",exp_dirs_rap[[1]], perl=TRUE);
+        if (regex_range[1] == -1) {
+            results[[i]]$exp_dir = dirs[[i]];
+        } else {
+            results[[i]]$exp_dir = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length') - 2);
+        }
+        results[[i]]$parameters$normed = normed;
+        results[[i]]$parameters$min_length = min_length;
+        results[[i]]$parameters$log.trans = log.trans;
+
         if (! is.na(results.file)) {
-        	this_file = file.path(dirs[[i]],results.file)
-        	if (! file.exists(dirname(this_file))) {
-				dir.create(dirname(this_file),recursive=TRUE)
-			}
+            this_file = file.path(dirs[[i]],results.file)
+                if (! file.exists(dirname(this_file))) {
+                    dir.create(dirname(this_file),recursive=TRUE)
+                }
             this_result = results[[i]];
             save(this_result,file = this_file);
         }
-	}
+    }
 
-	return(results);
+    return(results);
 }
 
 gather_bilinear_models <- function(data_set, props, 
-	min_length = 10, col_lims = NA, normed = TRUE, 
-	log.trans = TRUE, boot.samp = NA, debug = FALSE) {
-		
-	if (is.numeric(col_lims) && length(col_lims) == 2) {
-		data_set = data_set[,col_lims[1]:col_lims[2]];
-	}
+    min_length = 10, col_lims = NA, normed = TRUE, 
+    log.trans = TRUE, boot.samp = NA, debug = FALSE) {
 
-	rows <- dim(data_set)[[1]]
-	cols <- dim(data_set)[[2]]
-		  
-	results <- list()
-	results$exp_props = props
-	
-	results$exp_data = data_set;
+    if (is.numeric(col_lims) && length(col_lims) == 2) {
+        data_set = data_set[,col_lims[1]:col_lims[2]];
+    }
 
-	results$stable_data_set = list();
-	for (i in 1:rows) {
-		if (i > 100 & debug) {
-			#next()
-		}
-		
-		if ((i %% 100 == 0 | i < -300) & debug) {
-			print(sprintf('%d %d %.02f',i,rows,i/rows))
-		}
+    rows <- dim(data_set)[[1]];
+    cols <- dim(data_set)[[2]];
 
-		this_data_set = as.vector(data_set[i,])
-		
-		these_exp_props = results$exp_props[i,]
-		
-		temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
-			min_length = min_length, log.trans = log.trans)
+    results <- list();
+    results$exp_props = props;
 
-		if (is.na(charmatch("assembly", names(results)))) {
-			results$assembly = temp_results$assembly;
-		} else {
-			stopifnot(length(temp_results$assembly) == dim(results$assembly)[[2]])
-			results$assembly = rbind(results$assembly, temp_results$assembly);
-		}
-		if (dim(results$assembly)[[1]] != i) {
-			print(paste("Problem with row count in row number:", i))
-			stop()
-		}
-		
-		if (is.na(charmatch("disassembly", names(results)))) {
-			results$disassembly = temp_results$disassembly;
-		} else {
-			stopifnot(length(temp_results$disassembly) == dim(results$disassembly)[[2]])
-			results$disassembly = rbind(results$disassembly, temp_results$disassembly);
-		}
-		stopifnot(dim(results$disassembly)[[1]] == i)
-				
-		#If either of the length values are NA or the assembly and disassembly phases take up the entire data set, 
-		if (! is.na(results$disassembly$length[i]) && ! is.na(results$assembly$length[i]) &&
-		    ! is.na(results$exp_props$longevity[i]) &&
-			results$exp_props$longevity[i] > (results$assembly$length[i] + results$disassembly$length[i])) {
-			numeric_data_set = na.omit(this_data_set)
-			
-			results$stable_data_set[[i]] = numeric_data_set[(results$assembly$length[i]+1):(length(numeric_data_set) - results$disassembly$length[i])]
-			results$stable_lifetime[i] = length(results$stable_data_set[[i]])
-			results$stable_mean[i] = mean(results$stable_data_set[[i]])
-			results$stable_variance[i] = var(results$stable_data_set[[i]])
-			
-			stopifnot(length(numeric_data_set) == results$stable_lifetime[i] + results$assembly$length[i] + results$disassembly$length[i])
-		}
-	}
-	
-	if (debug) {
-		print('Done with gathering bilinear models-Starting to Pad Results')
-	}
-	results <- pad_results_to_row_length(results, rows, debug=debug)
-	if (debug) {
-		print('Done with Padding Results')
-	}
-	
-	if (is.numeric(boot.samp)) {
-		results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
-			col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp)
-	}
-	
-	results
+    results$exp_data = data_set;
+
+    results$stable_data_set = list();
+    for (i in 1:rows) {
+        if (i > 100 & debug) {
+            #next();
+        }
+
+        if ((i %% 100 == 0 | i < -300) & debug) {
+            print(sprintf('%d %d %.02f',i,rows,i/rows))
+        }
+
+        this_data_set = as.vector(data_set[i,]);
+        these_exp_props = results$exp_props[i,];
+
+        temp_results = find_optimum_bilinear_fit(this_data_set, these_exp_props, normed = normed, 
+                min_length = min_length, log.trans = log.trans);
+
+        if (is.na(charmatch("assembly", names(results)))) {
+            results$assembly = temp_results$assembly;
+        } else {
+            stopifnot(length(temp_results$assembly) == dim(results$assembly)[[2]]);
+            results$assembly = rbind(results$assembly, temp_results$assembly);
+        }
+        if (dim(results$assembly)[[1]] != i) {
+            print(paste("Problem with row count in row number:", i));
+            stop();
+        }
+
+        if (is.na(charmatch("disassembly", names(results)))) {
+            results$disassembly = temp_results$disassembly;
+        } else {
+            stopifnot(length(temp_results$disassembly) == dim(results$disassembly)[[2]]);
+            results$disassembly = rbind(results$disassembly, temp_results$disassembly);
+        }
+        stopifnot(dim(results$disassembly)[[1]] == i);
+
+        #If either of the length values are NA or the assembly and disassembly phases take up the entire data set, 
+        if (! is.na(results$disassembly$length[i]) && ! is.na(results$assembly$length[i]) &&
+            ! is.na(results$exp_props$longevity[i]) &&
+            results$exp_props$longevity[i] > (results$assembly$length[i] + results$disassembly$length[i])) {
+
+            numeric_data_set = na.omit(this_data_set);
+
+            results$stable_data_set[[i]] = numeric_data_set[(results$assembly$length[i]+1):(length(numeric_data_set) - results$disassembly$length[i])];
+            results$stable_lifetime[i] = length(results$stable_data_set[[i]]);
+            results$stable_mean[i] = mean(results$stable_data_set[[i]]);
+            results$stable_variance[i] = var(results$stable_data_set[[i]]);
+
+            stopifnot(length(numeric_data_set) == results$stable_lifetime[i] + results$assembly$length[i] + results$disassembly$length[i]);
+        }
+    }
+
+    if (debug) {
+        print('Done with gathering bilinear models-Starting to Pad Results');
+    }
+    results <- pad_results_to_row_length(results, rows, debug=debug);
+    if (debug) {
+        print('Done with Padding Results');
+    }
+
+    if (is.numeric(boot.samp)) {
+        results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
+                col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp);
+    }
+
+    results
 }
 
 pad_results_to_row_length <- function(results, desired_length, debug=FALSE) {
@@ -767,9 +768,10 @@ gather_exp_win_residuals <- function(resid, window) {
 	resid_win
 }
 
-boxplot_with_points <- function(data, 
-	colors=c('green','red','yellow','blue','pink','cyan','gray','orange','brown','purple'), 
-	notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, ...) {
+boxplot_with_points <- function(data,
+    colors=c('green','red','yellow','blue','pink','cyan','gray','orange','brown','purple'),
+    notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, pch=20,
+    point_cex=0.5, ...) {
 		
 	
 	if (inc.n.counts) {
@@ -783,7 +785,8 @@ boxplot_with_points <- function(data,
 		for (i in 1:length(data)) {
 			this_data = data[[i]]
 			temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
-			points(jitter(array(0,dim=c(1,length(temp_data))),10)+i,temp_data,col=colors[[i]])
+			points(jitter(array(0,dim=c(1,length(temp_data))),10)+i,
+                temp_data,col=colors[[i]], pch=pch, cex=point_cex)
 		}
 	}
 }
@@ -1038,12 +1041,13 @@ gather_general_props <- function(results) {
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
-	
+	        #test
 		points$longevity = c(points$longevity, res$exp_props$longevity)
 		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
 		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
 		points$largest_area = c(points$largest_area, res$exp_props$largest_area)
 		points$ad_sig = c(points$ad_sig, res$exp_props$ad_sig)
+		points$average_speed = c(points$average_speed, res$exp_props$average_speeds)
 	}	
 	points = as.data.frame(points)
 	points
@@ -1065,6 +1069,9 @@ gather_single_image_props <- function(ind_results) {
 	as.data.frame(ind_data)
 }
 
+determine_birth_death_rate <- function(data_matrix) {
+    
+}
 ################################################################################
 # File Reading/Writing Functions
 ################################################################################
@@ -1087,7 +1094,6 @@ load_results_2 <- function(dirs,file) {
 		if (file.exists(this_file)) {
 			load(file.path(dirs[i],file))
 			temp_results[[i]] = as.data.frame(results)
-	
 		}
 	}
 	if (length(temp_results) == 1) {
