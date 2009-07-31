@@ -94,25 +94,43 @@ corr_results_filt = filter_results(raw_data$results)
 corr_results_S_filt = filter_results(raw_data$results_S)
 corr_results_rap_filt = filter_results(raw_data$corr_results_rap, min_R_sq=0.75)
 
-rm(raw_data)
+#rm(raw_data)
 gc()
 
 print('Done Filtering Data')
-#stop()
+stop()
 
 assembly_nums = intersect(results_filt$assembly$lin_num, results_filt$disassembly$lin_num)
 
 ################################################################################
 #Plotting
 ################################################################################
-out_folder = '../../doc/publication/figures/test'
-make_pdfs = FALSE;
+out_folder = '../../doc/publication/figures'
 dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
 
 ########################################
 #RAP-SRC Plotting
 ########################################
 
+#boxplot_with_points(list(corr_results_rap_filt$assembly$slope[corr_results_rap_filt$assembly$exp_num == 1]*3, 
+#                         corr_results_rap_filt$assembly$slope[corr_results_rap_filt$assembly$exp_num == 2]*3),
+#                    names=c('Before', 'After'))
+#boxplot_with_points(list(corr_results_rap_filt$disassembly$slope[corr_results_rap_filt$disassembly$exp_num == 1]*3, 
+#                         corr_results_rap_filt$disassembly$slope[corr_results_rap_filt$disassembly$exp_num == 2]*3),
+#                    names=c('Before', 'After'))
+
+dir.create(dirname(file.path(out_folder,'rapr_src','rapr_src_rates.pdf')), 
+    recursive=TRUE, showWarnings=FALSE);
+pdf(file.path(out_folder,'rapr_src','rapr_src_rates.pdf'), height=7/2)
+layout(rbind(c(1,2)))
+par(bty='n', mar=c(2,4,1,0))
+boxplot_with_points(list(results_rap_filt$assembly$slope[results_rap_filt$assembly$exp_num == 2]*3, 
+                         results_rap_filt$assembly$slope[results_rap_filt$assembly$exp_num == 1]*3),
+                    names=c('Before', 'After'), main='Assembly')
+boxplot_with_points(list(results_rap_filt$disassembly$slope[results_rap_filt$disassembly$exp_num == 2]*3,
+                         results_rap_filt$disassembly$slope[results_rap_filt$disassembly$exp_num == 1]*3),
+                    names=c('Before', 'After'), main='Disassembly')
+graphics.off()
 
 ########################################
 #All by all plots
@@ -128,14 +146,11 @@ dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
 #graphics.off()
 
 ########################################
-#General Properties
+#Statics Properties
 ########################################
 dir.create(dirname(file.path(out_folder,'statics','statics.svg')), 
     recursive=TRUE, showWarnings=FALSE)
 svg(file.path(out_folder,'statics','statics.svg'),height=8)
-if (make_pdfs) {
-	pdf(file.path(out_folder,'statics','statics.pdf'),width=8)
-}
 
 layout_mat = rbind(c(rep(1,4),rep(2,4),rep(3,4)),
                    c(rep(4,6),rep(5,6)),
@@ -189,9 +204,6 @@ print('Done with Static Properties')
 dir.create(dirname(file.path(out_folder,'kinetics','kinetics.svg')), 
     recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'kinetics','kinetics.svg'),height=10.5);
-if (make_pdfs) {
-	pdf(file.path(out_folder,'kinetics','kinetics.pdf'),height=10.5)
-}
 layout(rbind(c(1,2),c(3,4),c(5,5)))
 
 exp_one_only = load_results(exp_dirs[[1]],'intensity.Rdata')
@@ -210,14 +222,16 @@ mtext('B',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 par(bty='n', mar=c(4,4.2,4,0))
 plot_ad_seq(exp_one_only, ad_num, main = 'Assembly');
-text(3,0.65,pos=3,expression(paste(R^2,' = 0.920')))
-text(3,0.6,pos=3,adj=0, 
+limits = par("usr");
+text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3,expression(paste(R^2,' = 0.920')))
+text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3, offset=c(-0.65,0),
 	substitute(paste('Slope = ', x), list(x=sprintf('%.03f',exp_one_only$assembly$slope[ad_num]))))
 mtext('C',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 plot_ad_seq(exp_one_only,ad_num,type='disassembly', main = 'Disassembly')
-text(3,0.35,pos=3, expression(paste(R^2,' = 0.961')))
-text(3,0.3,pos=3,adj=0,
+limits = par("usr");
+text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3, expression(paste(R^2,' = 0.961')))
+text(3,(limits[4]-limits[3])*0.8+limits[3], offset=c(-0.65,0),
 	substitute(paste('Slope = ', x), list(x=sprintf('%.03f',exp_one_only$disassembly$slope[ad_num]))))
 mtext('D',adj=-.19,side=3,line=-0.5,cex=1.5)
 par(bty='n', mar=c(2.1,4.2,1.1,0))
@@ -239,9 +253,6 @@ graphics.off()
 dir.create(dirname(file.path(out_folder,'supplemental','R_squared.svg')), 
     recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'supplemental','R_squared.svg'),width=14)
-if (make_pdfs) {
-	pdf(file.path(out_folder,'supplemental','R_squared.pdf'),width=14)
-}
 layout(cbind(1,2))
 
 par(bty='n', mar=c(4,4.2,2,0))
@@ -262,12 +273,9 @@ print('Done with Kinetics')
 ########################################
 #Spacial Figure
 ########################################
-dir.create(dirname(file.path(out_folder,'spacial','spacial.svg')), 
+dir.create(dirname(file.path(out_folder,'spatial','spatial.svg')), 
     recursive=TRUE, showWarnings=FALSE);
-svg(file.path(out_folder,'spacial','spacial.svg'))
-if (make_pdfs) {
-	pdf(file.path(out_folder,'spacial','spacial.pdf'))
-}
+svg(file.path(out_folder,'spatial','spatial.svg'))
 par(bty='n',mar=c(4.2,4.1,2,0))
 layout(rbind(c(1,2),c(3,4)))
 
@@ -290,7 +298,7 @@ mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
 par(bty='n',mar=c(4.2,4.1,2,0.4))
 
 max_rate = max(c(results_filt$a$slope, results_filt$d$slope));
-plot(results_filt$a$edge_dist,
+plot(results_filt$a$edge_dist, pch=19, cex=0.5,
 	 results_filt$a$slope,
 	 xlim = c(0,breaks_end),
          ylim = c(0,max_rate),
@@ -300,7 +308,7 @@ mtext('C',adj=-.2,side=3,line=-0.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,2,0.95))
 
-plot(results_filt$d$edge_dist, 
+plot(results_filt$d$edge_dist, pch=19, cex = 0.5,
 	 results_filt$d$slope, 
 	 xlim = c(0,breaks_end),
          ylim = c(0,max_rate),
@@ -312,12 +320,9 @@ graphics.off()
 ####################
 #Supplemental
 ####################
-dir.create(dirname(file.path(out_folder,'supplemental','spacial_nofilt.svg')), 
+dir.create(dirname(file.path(out_folder,'supplemental','spatial_nofilt.svg')), 
     recursive=TRUE, showWarnings=FALSE);
-svg(file.path(out_folder,'supplemental','spacial_nofilt.svg'))
-if (make_pdfs) {
-	pdf(file.path(out_folder,'supplemental','spacial_nofilt.pdf'))
-}
+svg(file.path(out_folder,'supplemental','spatial_nofilt.svg'))
 par(bty='n',mar=c(4.2,4.1,2,0))
 layout(rbind(c(1,2),c(3,4)))
 

@@ -206,12 +206,25 @@ Distributions for several adhesion properties including area, average paxillin i
 
 \subsection*{Paxillin S178A Mutant Perturbation}
 
+
+
 \section*{Discussion}
 
 We have described the development of a set of computational tools suitable for
 assessing the results of perturbing the signaling networks which control FA
 development. The S178A mutation was presented as case study for applying the
-tools to analyzing complex FA phenotypes. 
+tools to analyzing complex FA phenotypes. The computational tools were used to
+discover that the migration defects present in the S178A Paxillin mutant may be
+caused by significant changes in the assembly and disassembly rates of FAs. In
+addition, these changes in rates are accompanied by shifts in positions away
+from the cell edge of FA birth and death. These changes indicate that Jun
+Kinase's phosphorylation of Paxillin, exhibits strong controls on the entire FA
+lifecycle.
+
+The computational tools presented 
+
+
+
 
 % You may title this section "Methods" or "Models". 
 % "Models" is not a valid title for PLoS ONE authors. However, PLoS ONE
@@ -395,8 +408,8 @@ adhesion lifetime data. In order to estimate the length of time an adhesion
 spends in the stability phase, both the assembly and disassembly phases have to
 be observed. There are few adhesions where both the assembly and disassembly
 phases fit log-linear models with high R$^2$ values (above 0.9), so the
-filtering criteria were loosened to include adhesions where both log-linear
-model p-values were below 0.05.
+R$^2$ value requirements were excluded, but the filter did exclude adhesions
+were either the assembly or disassembly p-value was above 0.05.
 
 % Do NOT remove this, even if you are not including acknowledgments
 \section*{Acknowledgments}
