@@ -80,6 +80,9 @@ if ($opt{single_ad_folders}) {
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
+if (defined $cfg{job_group}) {
+    $opt{job_group} = $cfg{job_group};
+}
 
 if (not($opt{config_only})) {
     &FA_job::run_matlab_progam(\@matlab_code,\%opt);

@@ -137,11 +137,6 @@ if ($opt{lsf}) {
 }
 
 $t2 = new Benchmark;
-print "Runtime: ", timestr(timediff($t2, $t1)), "\n";
-
-open OUTPUT, ">most_recent_runtime.txt";
-print OUTPUT "Runtime: ", timestr(timediff($t2, $t1)), "\n";
-close OUTPUT;
 
 ################################################################################
 # Functions
@@ -162,7 +157,11 @@ sub wait_till_LSF_jobs_finish {
 }
 
 sub running_LSF_jobs {
-    my @lines = `bjobs`;
+    my $bjobs_command = "bjobs";
+    if (defined $cfg{job_group}) {
+        $bjobs_command .= " -g $cfg{job_group}";
+    }
+    my @lines = `$bjobs_command`;
     if (scalar(@lines) > 1) {
         return scalar(@lines) - 1;
     } else {

@@ -36,6 +36,9 @@ sub create_LSF_Matlab_commands {
     unlink($opt{output_file}, $opt{error_file});
     
     my $bsub_command   = "bsub -R RH5 -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    if (defined $opt{job_group}) {
+        $bsub_command .= " -g $opt{job_group}";
+    }
     my $matlab_command = "/afs/isis.unc.edu/pkg/matlab-2008a/matlab -nodisplay -nojvm -nosplash -r";
     $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
 
@@ -55,6 +58,9 @@ sub create_general_LSF_commands {
     unlink($opt{output_file}, $opt{error_file});
     
     my $bsub_command   = "bsub -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    if (defined $opt{job_group}) {
+        $bsub_command .= " -g $opt{job_group}";
+    }
     if (defined $opt{resource}) {
         $bsub_command .= " -R $opt{resource}";
     }

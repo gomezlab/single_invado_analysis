@@ -46,6 +46,9 @@ my @matlab_code = "find_box_intensity('$files[0]')";
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'Box_intensity');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'Box_intensity', 'error.txt');
+if (defined $cfg{job_group}) {
+    $opt{job_group} = $cfg{job_group};
+}
 
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
 

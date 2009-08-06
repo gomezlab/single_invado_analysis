@@ -64,6 +64,9 @@ my @matlab_code = &create_all_matlab_commands;
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'mask_set', 'error.txt');
 $opt{runtime} = "0:5";
+if (defined $cfg{job_group}) {
+    $opt{job_group} = $cfg{job_group};
+}
 
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
 
