@@ -70,7 +70,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
 gather_bilinear_models <- function(data_set, props, 
     min_length = 10, col_lims = NA, normed = TRUE, 
     log.trans = TRUE, boot.samp = NA, debug = FALSE) {
-
+        
     if (is.numeric(col_lims) && length(col_lims) == 2) {
         data_set = data_set[,col_lims[1]:col_lims[2]];
     }
@@ -146,7 +146,7 @@ gather_bilinear_models <- function(data_set, props,
         results$sim_results <- gather_linear_regions.boot(results, min_length = min_length, 
                 col_lims = col_lims, normed = normed, log.trans = log.trans, boot.samp = boot.samp);
     }
-
+        print(names(results));
     results
 }
 
@@ -407,8 +407,10 @@ gather_linear_regions.boot <- function(results,
 
 	sim_results <- list()
 	
-	#collect the entire set of adhesion signal values and lengths, excluding adhesions which don't live long enough
-	all_ad_sig = c()
+        #collect the entire set of adhesion signal values and lengths,
+        #excluding adhesions which don't live long enough
+	
+        all_ad_sig = c()
 	all_length = c()
 	for (i in 1:dim(results$exp_data)[[2]]) {
 		temp = as.numeric(results$exp_data[i,])
@@ -429,8 +431,9 @@ gather_linear_regions.boot <- function(results,
 		sim_props$death_status[i] = 1
 	}
 	
-	sim_results <- gather_linear_regions(sim_ad_sig, sim_props, 
-				       min_length = min_length, normed = normed, log.trans = log.trans, save.exp_data = FALSE)
+	sim_results <- gather_bilinear_models(sim_ad_sig, sim_props, 
+				       min_length = min_length, normed = normed, 
+                                       log.trans = log.trans, save.exp_data = FALSE)
 }	
 
 gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',

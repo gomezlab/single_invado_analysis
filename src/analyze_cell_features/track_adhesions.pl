@@ -460,7 +460,8 @@ sub select_best_merge_decision {
     for (0 .. $#percent_end_overlap) {
         $sum += $percent_end_overlap[$_];
     }
-    die "\nProblem with determining percent of each merging adhesion that overlaps with the merged adhesion." if ($sum > 1.01);
+    die "\nProblem with determining percent of each merging adhesion that " . 
+	  "overlaps with the merged adhesion." if ($sum > 1.01);
     my $high_overlap = (sort {$b <=> $a} (@percent_end_overlap))[0];
 
     my $prop_indeter_percent = 0.8;
