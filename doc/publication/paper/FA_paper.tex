@@ -198,11 +198,29 @@ To quantify aspects of focal adhesion spatiotemporal dynamic behavior, we implem
 
 An example of the output generated with this approach is shown in Figure 2, where a single frame of an image time series is shown in Panel A. Adhesions identified through the identification and segmentation algorithms are highlighted in color in Panel B. Superimposition of adhesions across all 120 (??) image frames from this move are shown in Panel C.    
 
-Distributions for several adhesion properties including area, average paxillin intensity, axial ratio and distance from edge are shown in Panel D. In total, properties for over 200,000 adhesions are represented in each histogram (\textbf{Matt:} is this filtered data?). As can be observed, adhesion area is exponentially distributed (should check this), with expected areas typically less than 0.2 $um^2$ (what is the mean?). The average paxillin intensity within adhesions follows a YYY (Poisson?) distribution with mean intensity of XXX (what is the distribution of areas within the tallest adhesion area bar? is it distributed like the paxillin intensity?). The gross shape of an adhesion, for instance by FA axial ratios (major axix/minor axis) can also be characterized and we observe that they tend to follow a YYY distribution(?) with a mean value of XXX. Furthermore, we observe that adhesions are preferentially born within a region beginning 2 microns from the cell edge and extending up to 10 microns away. Of the FA births observed, 65\% were born within this region (\textbf{Matt:} what is the prob of birth in this region based on the histogram?).
+Distributions for several adhesion properties including area, average paxillin intensity, axial ratio and distance from edge are shown in Panel D. In total, properties for over 200,000 adhesions are represented in each histogram (\textbf{Matt:} is this filtered data?). As can be observed, adhesion area is exponentially distributed (should check this), with expected areas typically less than 0.2 $um^2$ (what is the mean?). The average paxillin intensity within adhesions follows a YYY (Poisson?) distribution with mean intensity of XXX (what is the distribution of areas within the tallest adhesion area bar? is it distributed like the paxillin intensity?). The gross shape of an adhesion, for instance by FA axial ratios (major axis/minor axis) can also be characterized and we observe that they tend to follow a YYY distribution(?) with a mean value of XXX. Furthermore, we observe that adhesions are preferentially born within a region beginning 2 microns from the cell edge and extending up to 10 microns away. Of the FA births observed, 65\% were born within this region (\textbf{Matt:} what is the prob of birth in this region based on the histogram? Actually, is this distance at birth or just the average distance of each adhesion from the edge?).
+
+(\textbf{Matt: something looks strange on the inset figure on longevity - the x-axis is the same - is the y-axis reduced?})
+
+As a whole, these results demonstrate that we are able to identify and quantitatively characterize large numbers of adhesions, allowing the unbiased assessment of FA behavior.
+
+
+
+\subsection*{Dynamic Properties of FAs}
+\subsubsection*{Kinetics of FA assembly and disassembly}
+Of particular importance for understanding FA function is the assessment of FA behavior through time, with or without perturbation. As a demonstration of the power of this approach, Figure 3 shows the process of determining FA assembly and disassembly rates for an individual adhesion as well as results for all adhesions within the 3T3 cells of this study. In Panel A, an image series of a single adhesion (green) progressing in 1-minute intervals from birth, through maturation and on to death is shown. This particular adhesion has a lifetime of 48 minutes. Using this image time series, we quantify the normalized intensity of each adhesion, with the intensity of this particular adhesion shown in Panel B. The smooth line running through the data is a lowess fit. Readily apparent are the linear assembly and disassembly phases, indicated in green and red respectively. In between these two phases we define a stable or stationary phase, shown in yellow. As can be observed, a linear fit appears appropriate and has been applied to the log intensity of the adhesion as shown in Panel C. Approximately 92\% of the variance is described by this linear approximation. Similarly, the rate of disassembly for this adhesion is shown in Panel D and is again well described by a linear approximation with 96\% of the variance explained.
+
+As described previously, a major objective of earlier studies has been to estimate the rate of FA assembly and disassembly under different conditions. However, such rates have been defined through measurement of relatively small numbers of adhesions, typically between 10-20 (may want to put prev sentence in discussion instead). We utilized our system to more broadly characterize the rates of FA assembly and disassembly. We repeated the analysis detailed in Panels A-D on all ZZZ adhesions found within 20 3T3 cells. To establish rates for ``ideal'' adhesions, we focused on the analysis of FAs having lifetimes of at least 20 minutes and having well-defined log-linear fits ($R^2 > 0.9$; Panel E). Filtering using this $R^2$ criterion gave 303 adhesions with clearly definable assembly rates and another 484 with similarly well-defined rates of disassembly. As can be seen, the mean rate of assembly of 0.038 $min^{-1}$ is nearly twice (??) that of disassembly, with mean rate of 0.02 $min^{-1}$ \textbf{Matt: what are the real numbers? Are they means or medians?} 
+
+\textbf{Probably need to better describe why this group of adhesions and not the 1000's of others available.}
+
+\subsubsection*{Spatial properties FA assembly and disassembly}
+
 
 \subsection*{Static Properties of FA}
 
-\subsection*{Dynamic Properties of FA}
+\subsubsection*{Paxillin kinetics}
+
 
 \subsection*{Paxillin S178A Mutant Perturbation}
 
