@@ -8,5 +8,8 @@ rsync --progress -a ../../results/S178A/ $1:~/Documents/Projects/focal_adhesions
 echo "Syncing Rap-Src Results to $1";
 rsync --progress -a ../../results/rap_src/ $1:~/Documents/Projects/focal_adhesions/results/rap_src/;
 
+echo "Syncing Rap-Src Control Results to $1";
+rsync --progress -a ../../results/rap_src_control/ $1:~/Documents/Projects/focal_adhesions/results/rap_src_control/;
+
 echo "Syncing Simulation Results to $1";
 rsync --progress -a ../../results/simulation/ $1:~/Documents/Projects/focal_adhesions/results/simulation/;

@@ -108,7 +108,9 @@ if ($opt{lsf}) {
     if (@error_dirs) {
         find(\&remove_unimportant_errors, @error_dirs);
     }
-    system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
+    if (not($opt{debug})) {
+    	system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
+    }
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
@@ -147,6 +149,8 @@ $t2 = new Benchmark;
 #######################################
 
 sub wait_till_LSF_jobs_finish {
+    #After each step of the pipeline, we want to wait till all the individual
+    #jobs are completed, which will be checked three times
     for (1 .. 3) {
         my $sleep_time = 5;
         do {
@@ -161,13 +165,31 @@ sub running_LSF_jobs {
     if (defined $cfg{job_group}) {
         $bjobs_command .= " -g $cfg{job_group}";
     }
+
     my @lines = `$bjobs_command`;
+    my @running_lines = `$bjobs_command -r`;
+
     if (scalar(@lines) > 1) {
+        #dealing with the strange case where all the idle jobs refuse to be
+        #shifted into a running queue position, so we slowly shift all the
+        #pending jobs into the week queue, where they will certainly get a
+        #running jobs spot
+        if (scalar(@running_lines) > scalar(@lines)) {
+            &move_job_to_week_queue($lines[-1]);
+        }
         return scalar(@lines) - 1;
     } else {
         0;
     }
 }
+
+sub move_job_to_week_queue {
+    my $line = pop @_;
+    if ($line =~ /^(\d+)/) {;
+        system("bmod -q week $1");
+    }
+}
+
 
 sub execute_command_seq {
     my @command_seq  = @{ $_[0] };
