@@ -40,7 +40,8 @@ my %cfg = ParseConfig(\%opt);
 ################################################################################
 # Main Program
 ################################################################################
-my @model_types = qw(average cell_background local_background area box_intensity background_correlation_model);
+my @model_types = qw(average cell_background local_background area box_intensity);
+#push @model_types, "background_correlation_model";
 if ($opt{lsf}) {
     my @commands;
     foreach (@model_types) {
