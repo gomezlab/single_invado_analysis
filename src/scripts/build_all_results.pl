@@ -174,7 +174,7 @@ sub running_LSF_jobs {
         #shifted into a running queue position, so we slowly shift all the
         #pending jobs into the week queue, where they will certainly get a
         #running jobs spot
-        if (scalar(@running_lines) > scalar(@lines)) {
+        if (scalar(@lines) > scalar(@running_lines)) {
             &move_job_to_week_queue($lines[-1]);
         }
         return scalar(@lines) - 1;
@@ -185,7 +185,7 @@ sub running_LSF_jobs {
 
 sub move_job_to_week_queue {
     my $line = pop @_;
-    if ($line =~ /^(\d+)/) {;
+    if ($line =~ /^(\d+)/) {
         system("bmod -q week $1");
     }
 }
