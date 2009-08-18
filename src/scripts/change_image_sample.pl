@@ -8,6 +8,7 @@ use lib "../lib";
 use lib "../lib/perl";
 
 use strict;
+use POSIX;
 use File::Path;
 use File::Spec::Functions;
 use File::Basename;
@@ -29,11 +30,10 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "split_num=i")
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
-die "The split number must be specified on the command line" if not exists $opt{split_num};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
@@ -41,6 +41,16 @@ my %cfg = ParseConfig(\%opt);
 ################################################################################
 # Main Program
 ################################################################################
+
+#check for the presence of a "/" at the end of the data folder config variable,
+#if present remove it, we will need a "/"-free ending for building the new
+#folder names
+#
+#Also note that I'm using a m^^ form of the regular expression matching, see
+#page 115 in Learning Perl, 3rd ed for details
+if ($cfg{data_folder} =~ m^(.*)/$^) {
+	$cfg{data_folder} = $1;
+}
 
 my @image_sets = ([qw(raw_mask_folder raw_mask_file)], [qw(adhesion_image_folder adhesion_image_file)]);
 for (@image_sets) {
@@ -73,28 +83,18 @@ sub move_target_image_set {
 			 scalar(@image_files) . " and " . scalar(@image_dirs);
 	}
 
-	my $max_digit_count = length($image_nums[-1]);
+	my $max_digit_count = length($image_nums[floor($#image_nums/2)]);
 
-	my @split_index = grep $image_nums[$_] == $opt{split_num}, (0 .. $#image_nums);
-	die if (scalar(@split_index) > 1);
-
-	for (0 .. $split_index[0]) {
-		my $image_name = sprintf("%0" . $max_digit_count . "d", $_ + 1);
-		my $target_file = catdir($cfg{data_folder}, $cfg{exp_name} . "_pre", 
-								 $cfg{$target_dir}, $image_name . ".png");
+	for (1 .. floor($#image_files/2)) {
+		my $image_name = sprintf("%0" . $max_digit_count . "d", $_);
+		my $target_file = catfile($cfg{data_folder} . "_reduced", $cfg{exp_name}, $cfg{$target_dir}, $image_name . ".png");
+		
 		mkpath(dirname($target_file));
-		copy($image_files[$_], $target_file);
+		copy($image_files[2*$_], $target_file);
 	}
-	copy($opt{cfg}, catfile($cfg{data_folder}, $cfg{exp_name} . "_pre", basename($opt{cfg}))); 
 
-	for (($split_index[0] + 1) .. $#image_files) {
-		my $image_name = sprintf("%0" . $max_digit_count . "d", $_ + 1 - $opt{split_num});
-		my $target_file = catdir($cfg{data_folder}, $cfg{exp_name} . "_post", 
-								 $cfg{$target_dir}, $image_name . ".png");
-		mkpath(dirname($target_file));
-		copy($image_files[$_], $target_file);
-	}
-	copy($opt{cfg}, catfile($cfg{data_folder}, $cfg{exp_name} . "_post", basename($opt{cfg}))); 
+	#also copy over the config file, which will need to be updated by hand
+	copy($opt{cfg}, catfile($cfg{data_folder} . "_reduced", $cfg{exp_name}, basename($opt{cfg}))); 
 }
 
 ################################################################################
