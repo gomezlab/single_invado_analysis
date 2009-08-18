@@ -50,12 +50,15 @@ my $all_images_empty = 1;
 foreach (@image_sets) {
     my $folder   = $cfg{ $_->[0] };
     my $out_file = $cfg{ $_->[1] };
-
-    next if (not(defined($folder)));
+    
+	next if (not(defined($folder)));
 
     #Remove an ' marks used in config file to keep the folder name together
     $folder =~ s/\'//g;
-
+	
+	if ($opt{debug}) {
+		print "Searching: $cfg{exp_data_folder}/$folder/\n";
+	}
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
 
