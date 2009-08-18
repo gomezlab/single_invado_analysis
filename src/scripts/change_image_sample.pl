@@ -103,30 +103,29 @@ sub move_target_image_set {
 
 =head1 NAME
 
-split_exp.pl - Move all the raw data files into the proper locations
-in the results folder
+change_image_sample.pl: sample the images from an experiment to create a new
+experiment with half as many images, used for testing robustness of image
+sampling rate
 
 =head1 SYNOPSIS
 
-split_exp.pl -cfg FA_config -split_num ###
+change_image_sample.pl -cfg config_file
 
 =head1 Description
 
-Occasionally it is helpful to analyze a single experiment as though it were two
-independent experiments, but splitting an experimental data set by hand is time
-consuming. This script analyzes the directory structure and files output by
-setup_results_folder.pl and puts the raw data images back into the data
-directory with the proper numbering and directory structure. The script only
-looks for adhesion files and cell mask data files, but that can be extended. The
-split folders are named simply $cfg{exp_name} . "_pre" or "_post", with the pre
-data being before the specified split image number.
+In order to test the effect of reducing the image sampling rate on the outcome
+of experiment, some automated method to downsample an experiment's raw images
+was needed. This program looks for cell mask and FA image files in a given
+results folder and copies those files back into a new experimental data folder
+in the data directory. The name of the new experiment will be $cfg{data_folder}
+. "_reduced". All the appropriate config files will also be copied, but those
+will need to be modified to reflect the new data file locations.
 
 Required parameter(s):
 
 =over 
 
 =item * cfg or c: the focal adhesion analysis config file
-=item * split_num: the focal adhesion analysis config file
 
 =back
 
@@ -140,12 +139,12 @@ Optional parameter(s):
 
 =head1 EXAMPLES
 
-split_exp.pl -cfg FA_config.cfg -split_num 50
+./change_image_sample.pl -cfg ../../data/focal_adhesions/time_series_01/analysis.cfg
 
 =head1 AUTHORS
 
 Matthew Berginski (mbergins@unc.edu)
 
-Documentation last updated: 7/15/2009 
+Documentation last updated: 8/18/2009 
 
 =cut
