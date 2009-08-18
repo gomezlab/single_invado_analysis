@@ -69,13 +69,17 @@ if (! -e $output_base) {
 
 my @R_cmds;
 if (defined($opt{model_type})) {
-    my $output_file = catfile($output_base, 'R_out_' . $opt{model_type} . '.txt');
-	push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir model_type=$opt{model_type}\" FA_analysis_lib.R $output_file"
+	my $output_file = catfile($output_base, 'R_out_' . $opt{model_type} . '.txt');
+	push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir " .
+	  "model_type=$opt{model_type} min_length=$cfg{min_linear_model_length}\" " . 
+	  "FA_analysis_lib.R $output_file";
 } else {
-    for (@model_types) {
-        my $output_file = catfile($output_base, 'R_out_' . $_ . '.txt');
-        push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir model_type=$_\" FA_analysis_lib.R $output_file"
-    }
+	for (@model_types) {
+		my $output_file = catfile($output_base, 'R_out_' . $_ . '.txt');
+		push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir " .
+		  "model_type=$_ min_length=$cfg{min_linear_model_length}\" " . 
+		  "FA_analysis_lib.R $output_file";
+	}
 }
 
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models', 'error.txt');

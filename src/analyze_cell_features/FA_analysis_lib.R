@@ -20,7 +20,7 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
         if (! file.exists(file.path(dirs[[i]],data_file))) {
             next;
         }
-
+        
         if (debug) {
             print(dirs[[i]])
         }
@@ -434,6 +434,7 @@ gather_linear_regions.boot <- function(results,
 	sim_results <- gather_bilinear_models(sim_ad_sig, sim_props, 
 				       min_length = min_length, normed = normed, 
                                        log.trans = log.trans, save.exp_data = FALSE)
+        sim_results
 }	
 
 gather_correlations_from_dirs <- function (dirs, results, data_file='Area.csv',
@@ -826,86 +827,108 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 #Data Summary functions
 ########################################
 filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, 
-    pos_slope = TRUE, primary_filter_results = NA) {
+        pos_slope = TRUE, primary_filter_results = NA, cell_intensities = NA) {
 
-    stopifnot(is.na(primary_filter_results) | length(results) == length(primary_filter_results))
-	
-    points = list()
+    stopifnot(is.na(primary_filter_results) | length(results) == length(primary_filter_results));
+
+    points = list();
     for (i in 1:length(results)) {
-	res = results[[i]]
+    #for (i in 7) {
+        res = results[[i]];
 
-	if (all(is.na(primary_filter_results))) {
-		for_filter = res
-	} else {
-		for_filter = primary_filter_results[[i]]
-	}	
-        
+        if (all(is.na(primary_filter_results))) {
+            for_filter = res
+        } else {
+            for_filter = primary_filter_results[[i]]
+        }
+
         assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
                 & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
-                & for_filter$assembly$p_val < max_p_val)
-	disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
+                & for_filter$assembly$p_val < max_p_val);
+        disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
                 & is.finite(for_filter$disassembly$slope) & is.finite(for_filter$disassembly$p_val) 
-                & for_filter$disassembly$p_val < max_p_val)
-	
-	if (pos_slope) {
-		assembly_filt = assembly_filt & for_filter$assembly$slope > 0
-		disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
-	}				  
-	joint_filt = assembly_filt & disassembly_filt
-			
-	points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt])
-	points$assembly$fold_change = c(points$assembly$fold_change, res$assembly$fold_change[assembly_filt])
-	points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt])
-	points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt])
-	points$assembly$length = c(points$assembly$length, res$assembly$length[assembly_filt])
-	points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt])
-	points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt))
-	points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))))
-	points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))))
-	if (any(names(res$exp_props) == 'starting_edge_dist')) {
-		points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
-	}		
-	for (j in names(points$assembly)) {
-		stopifnot(length(points$assembly[[1]]) == length(points$assembly[[j]]))
-	}
-	
-	points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt])
-	points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt])
-	points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt])
-	points$disassembly$length = c(points$disassembly$length, res$disassembly$length[disassembly_filt])
-	points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt])
-	points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt))
-	points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))))
-	points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))))
-	if (any(names(res$exp_props) == 'ending_edge_dist')) {
-		points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
-	}
-	for (j in names(points$disassembly)) {
-		stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[j]]))
-	}
+                & for_filter$disassembly$p_val < max_p_val);
 
-	points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt])
-	points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[joint_filt])
-	
-	points$joint$lin_num = c(points$joint$lin_num, which(joint_filt))
-	points$joint$exp_num = c(points$joint$exp_num, rep(i,length(which(joint_filt))))
-	
-	points$joint$assembly = c(points$joint$assembly, res$assembly$slope[joint_filt])
-	points$joint$disassembly = c(points$joint$disassembly, res$disassembly$slope[joint_filt])
-	
-	points$joint$assembly_length = c(points$joint$assembly_length, res$assembly$length[joint_filt])
-	points$joint$disassembly_length = c(points$joint$disassembly_length, res$dis$length[joint_filt])
-	points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt])
-	points$joint$stable_mean = c(points$joint$stable_mean, res$stable_mean[joint_filt])
-	points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt])
-	for (j in names(points$joint)) {
-		stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
-	}
+        if (pos_slope) {
+            assembly_filt = assembly_filt & for_filter$assembly$slope > 0
+                disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
+        }				  
+        joint_filt = assembly_filt & disassembly_filt;
+
+        points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt]);
+        points$assembly$fold_change = c(points$assembly$fold_change, res$assembly$fold_change[assembly_filt]);
+        points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt]);
+        points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt]);
+        points$assembly$length = c(points$assembly$length, res$assembly$length[assembly_filt]);
+        points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt]);
+        points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt));
+        points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))));
+        points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))));
+        if (any(names(res$exp_props) == 'starting_edge_dist')) {
+            points$assembly$edge_dist = c(points$assembly$edge_dist, 
+                res$exp_props$starting_edge_dist[assembly_filt])
+        }
+        if (! all(is.na(cell_intensities))) {
+            if (length(which(assembly_filt)) == 1) {
+                exp_data_filt = as.matrix(t(raw_data$results[[i]]$exp_data[assembly_filt,]));
+            } else {
+                exp_data_filt = res$exp_data[assembly_filt,]
+            }
+            
+            mean_vals = find_cell_intensity_during_phase(exp_data_filt, res$assembly$length[assembly_filt], type="assembly", cell_intensities[[i]]);
+            points$assembly$mean_cell_vals = c(points$assembly$mean_cell_vals, mean_vals);
+        }
+        for (j in names(points$assembly)) {
+            stopifnot(length(points$assembly[[1]]) == length(points$assembly[[j]]))
+        }
+
+        points$disassembly$slope = c(points$disassembly$slope, res$disassembly$slope[disassembly_filt]);
+        points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt]);
+        points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt]);
+        points$disassembly$length = c(points$disassembly$length, res$disassembly$length[disassembly_filt]);
+        points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt]);
+        points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt));
+        points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))));
+        points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))));
+        if (any(names(res$exp_props) == 'ending_edge_dist')) {
+            points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
+        }
+        if (! all(is.na(cell_intensities))) {
+            if (length(which(disassembly_filt)) == 1) {
+                exp_data_filt = as.matrix(t(raw_data$results[[i]]$exp_data[disassembly_filt,]));
+            } else {
+                exp_data_filt = res$exp_data[disassembly_filt,]
+            }
+            
+            mean_vals = find_cell_intensity_during_phase(exp_data_filt, res$disassembly$length[disassembly_filt], type="disassembly", cell_intensities[[i]]);
+            points$disassembly$mean_cell_vals = c(points$disassembly$mean_cell_vals, mean_vals);
+        }
+        for (j in names(points$disassembly)) {
+            stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[j]]))
+        }
+
+        points$joint$birth_dist = c(points$joint$birth_dist, res$exp_props$starting_edge_dist[joint_filt]);
+        points$joint$death_dist = c(points$joint$death_dist, res$exp_props$ending_edge_dist[joint_filt]);
+
+        points$joint$lin_num = c(points$joint$lin_num, which(joint_filt));
+        points$joint$exp_num = c(points$joint$exp_num, rep(i,length(which(joint_filt))));
+
+        points$joint$assembly = c(points$joint$assembly, res$assembly$slope[joint_filt]);
+        points$joint$disassembly = c(points$joint$disassembly, res$disassembly$slope[joint_filt]);
+
+        points$joint$assembly_length = c(points$joint$assembly_length, res$assembly$length[joint_filt]);
+        points$joint$disassembly_length = c(points$joint$disassembly_length, res$dis$length[joint_filt]);
+        points$joint$stable_lifetime = c(points$joint$stable_lifetime, res$stable_lifetime[joint_filt]);
+        points$joint$stable_mean = c(points$joint$stable_mean, res$stable_mean[joint_filt]);
+        points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt]);
+        for (j in names(points$joint)) {
+            stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
+        }
     }
 
-    points$assembly = as.data.frame(points$assembly)
-    points$disassembly = as.data.frame(points$disassembly)
-    points$joint = as.data.frame(points$joint)
+    points$assembly = as.data.frame(points$assembly);
+    points$disassembly = as.data.frame(points$disassembly);
+    points$joint = as.data.frame(points$joint);
 
     points
 }
@@ -1030,16 +1053,6 @@ ranges_overlap <- function(range_1, range_2) {
 	}
 	return(FALSE);
 }
-stopifnot(! ranges_overlap(c(0,1),c(-0.5,-0.01)))
-stopifnot(ranges_overlap(c(0,1),c(-0.5,0.01)))
-stopifnot(ranges_overlap(c(0,1),c(0.5,0.9)))
-stopifnot(! ranges_overlap(c(0,1),c(1.01,1.2)))
-
-stopifnot(! ranges_overlap(c(-0.5,-0.01),c(0,1)))
-stopifnot(ranges_overlap(c(-0.5,0.01),c(0,1)))
-stopifnot(ranges_overlap(c(0.5,0.9),c(0,1)))
-stopifnot(! ranges_overlap(c(1.01,1.2),c(0,1)))
-
 gather_general_props <- function(results) {
 	points = list()
 	for (i in 1:length(results)) {
@@ -1072,9 +1085,33 @@ gather_single_image_props <- function(ind_results) {
 	as.data.frame(ind_data)
 }
 
-determine_birth_death_rate <- function(data_matrix) {
-    
+find_cell_intensity_during_phase <- function(exp_data,lengths,type,cell_intensity) {
+
+    mean_intensities = c();
+    if (nrow(exp_data) == 0) {
+        return();
+    }
+    for (i in 1:nrow(exp_data)) {
+        this_data = exp_data[i,];
+        this_length = lengths[i];
+        
+        this_intensity = cell_intensity[! is.na(this_data)]
+        if (type == 'assembly') {
+            this_intensity = this_intensity[1:this_length];
+            stopifnot(length(this_intensity) == this_length);
+
+            mean_intensities = c(mean_intensities, mean(as.numeric(this_intensity)));
+        }
+        if (type == 'disassembly') {
+            this_intensity = this_intensity[(length(this_intensity) - this_length + 1):length(this_intensity)];
+            stopifnot(length(this_intensity) == this_length);
+
+            mean_intensities = c(mean_intensities, mean(as.numeric(this_intensity)));
+        }
+    }
+    mean_intensities
 }
+
 ################################################################################
 # File Reading/Writing Functions
 ################################################################################
@@ -1144,8 +1181,13 @@ load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = 
 	header_array = array(headers, dim=c(1,length(all_files_present_dirs)))
 
 	for (i in 1:length(all_files_present_dirs)) {
-		for (j in 1:length(files)) { 
-			results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[j], sep=",")
+		for (j in 1:length(files)) {
+            if (headers) {
+			    results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[j], sep=",")
+            } else {
+			    results[[j]][[i]] = as.numeric(read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[j], sep=","))
+            }
+
 		}
 	}
 	if (inc_exp_names) {
@@ -1285,12 +1327,27 @@ bin_corr_data <- function(corr_results, bin_size = NA, bootstrap.rep = 5000, bin
 }
 
 ################################################################################
+# Testing
+################################################################################
+stopifnot(! ranges_overlap(c(0,1),c(-0.5,-0.01)))
+stopifnot(ranges_overlap(c(0,1),c(-0.5,0.01)))
+stopifnot(ranges_overlap(c(0,1),c(0.5,0.9)))
+stopifnot(! ranges_overlap(c(0,1),c(1.01,1.2)))
+
+stopifnot(! ranges_overlap(c(-0.5,-0.01),c(0,1)))
+stopifnot(ranges_overlap(c(-0.5,0.01),c(0,1)))
+stopifnot(ranges_overlap(c(0.5,0.9),c(0,1)))
+stopifnot(! ranges_overlap(c(1.01,1.2),c(0,1)))
+
+################################################################################
 # Main Program
 ################################################################################
 
 args = commandArgs(TRUE)
 if (length(args) != 0) {
-	debug = FALSE
+	debug = FALSE;
+    min_length = 10;
+    print(class(min_length));
 
 	for (this_arg in commandArgs()) {
 		split_arg = strsplit(this_arg,"=",fixed=TRUE)
@@ -1301,31 +1358,33 @@ if (length(args) != 0) {
 		}
 	}
 
+    class(min_length) <- "numeric";
+
 	if (exists('data_dir') & exists('model_type')) {
 		if (model_type == 'average') {
 			average_model = gather_bilinear_models_from_dirs(data_dir,
-					data_file='Average_adhesion_signal.csv',
+					data_file='Average_adhesion_signal.csv', min_length = min_length,
 					results.file=file.path('..','models','intensity.Rdata'), debug=debug)
 			write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
 		}
 		if (model_type == 'cell_background') {
 			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='CB_corrected_signal.csv', 
+					data_file='CB_corrected_signal.csv', min_length = min_length,
 					results.file=file.path('..','models','CB_corrected.Rdata'), debug=debug)
 		}
 		if (model_type == 'local_background') {
 			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Background_corrected_signal.csv', 
+					data_file='Background_corrected_signal.csv', min_length = min_length,
 					results.file=file.path('..','models','local_corrected.Rdata'), debug=debug)
 		}
 		if (model_type == 'area') {
 			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Area.csv', 
+					data_file='Area.csv', min_length = min_length,
 					results.file=file.path('..','models','area.Rdata'), debug=debug)
 		}
 		if (model_type == 'box_intensity') {
 			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Box_intensity.csv', 
+					data_file='Box_intensity.csv', min_length = min_length,
 					results.file=file.path('..','models','box.Rdata'), debug=TRUE)
 		}
 		if (model_type == 'background_correlation_model') {
@@ -1343,6 +1402,5 @@ if (length(args) != 0) {
 			}
             save(results,file = output_file);
 		}
-
 	}
 }
