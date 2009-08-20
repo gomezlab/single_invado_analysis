@@ -16,12 +16,28 @@ raw_data$results = load_results(exp_dirs,file.path('intensity.Rdata'))
 raw_data$corr_results = load_results(exp_dirs,file.path('local_corrected.Rdata'))
 raw_data$CB_results = load_results(exp_dirs,file.path('CB_corrected.Rdata'))
 raw_data$area = load_results(exp_dirs,file.path('area.Rdata'))
-raw_data$ind_results <- load_data_files(exp_dirs, file.path('..','individual_adhesions.csv'), 						headers=T, debug=FALSE, inc_exp_names=FALSE);
+raw_data$ind_results <- load_data_files(exp_dirs, file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 
 background_correlation = load_results_2(exp_dirs, 'background_corr.Rdata')
 single_props$fa$not_ad_int <- load_data_files(exp_dirs,
 	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$cell_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Cell_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$ad_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Adhesion_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$not_ad_int <- load_data_files(exp_dirs,
+	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+single_props$fa$outside <- load_data_files(exp_dirs,
+	file.path('..','single_props','Outside_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
+
+exp_dirs_reduced <- Sys.glob('../../results/focal_adhesions_reduced/*/adhesion_props/models/')
+exp_dirs_reduced <- exp_dirs_reduced[file_test('-d',exp_dirs_reduced)]
+raw_data$results_reduced = load_results(exp_dirs_reduced,file.path('intensity.Rdata'))
 
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
@@ -33,6 +49,9 @@ raw_data$ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_
 
 background_correlation_S = load_results_2(exp_dirs_S, 'background_corr.Rdata')
 single_props$S178A = list()
+single_props$S178A$cell_int <- load_data_files(exp_dirs_S,
+	file.path('..','single_props','Cell_mean_intensity.csv'), 
+	headers=F, debug=FALSE, inc_exp_names=FALSE);
 single_props$S178A$not_ad_int <- load_data_files(exp_dirs_S,
 	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
@@ -43,21 +62,15 @@ single_props$S178A$outside <- load_data_files(exp_dirs_S,
 	file.path('..','single_props','Outside_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
-for (i in 1:length(single_props$S178A$ad_int)) {
-        single_props$S178A$exp_num = c(single_props$S178A$exp_num, rep(i, length(single_props$S178A$ad_int[[i]])));
-}
-
-for (i in names(single_props$S178A)) {
-    if (i == "exp_num") {
-        next;
-    }
-    single_props$S178A[[i]] = unlist(single_props$S178A[[i]])
-}
-
 exp_dirs_rap <- Sys.glob('../../results/rap_src/*/adhesion_props/models/')
 exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)]
 raw_data$results_rap = load_results(exp_dirs_rap,file.path('intensity.Rdata'))
 raw_data$corr_results_rap = load_results(exp_dirs_rap,file.path('local_corrected.Rdata'))
+
+exp_dirs_rap <- Sys.glob('../../results/rap_src_control/*/adhesion_props/models/')
+exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)]
+raw_data$results_rap_ctrl = load_results(exp_dirs_rap,file.path('intensity.Rdata'))
+raw_data$corr_results_rap_ctrl = load_results(exp_dirs_rap,file.path('local_corrected.Rdata'))
 
 print('Done Loading Data')
 
@@ -70,10 +83,14 @@ results_S_props = gather_general_props(raw_data$results_S)
 ind_exp_filt = gather_single_image_props(raw_data$ind_results)
 ind_exp_filt_S = gather_single_image_props(raw_data$ind_results_S)
 
-results_nofilt = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = Inf)
-results_S_nofilt = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = Inf)
+results_nofilt = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
+results_reduced_nofilt = filter_results(raw_data$results_reduced, min_R_sq = -Inf, max_p_val = Inf)
+results_rap_nofilt = filter_results(raw_data$results_rap, min_R_sq = -Inf, max_p_val = Inf)
+results_rap_ctrl_nofilt = filter_results(raw_data$results_rap_ctrl, min_R_sq = -Inf, max_p_val = Inf)
+results_S_nofilt = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$S178A$cell_int)
 
 corr_results_nofilt = filter_results(raw_data$corr_results, min_R_sq = -Inf, max_p_val = Inf)
+corr_results_rap_nofilt = filter_results(raw_data$corr_results_rap, min_R_sq = -Inf, max_p_val = Inf)
 corr_results_S_nofilt = filter_results(raw_data$corr_results_S, min_R_sq = -Inf, max_p_val = Inf)
 
 results_onlysignif = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = 0.05)
@@ -82,17 +99,18 @@ corr_results_onlysignif = filter_results(raw_data$corr_results, min_R_sq = -Inf,
 corr_results_S_onlysignif = filter_results(raw_data$corr_results_S, min_R_sq = -Inf, max_p_val = 0.05)
 CB_results_onlysignif = filter_results(raw_data$CB_results, min_R_sq = -Inf, max_p_val = 0.05)
 CB_results_S_onlysignif = filter_results(raw_data$CB_results_S, min_R_sq = -Inf, max_p_val = 0.05)
+results_rap_onlysignif = filter_results(raw_data$results_rap, min_R_sq = -Inf, max_p_val = 0.05)
+results_rap_ctrl_onlysignif = filter_results(raw_data$results_rap_ctrl, min_R_sq = -Inf, max_p_val = 0.05)
+
 
 area_nofilt = filter_results(raw_data$area, primary_filter_results = raw_data$results, min_R_sq = -Inf, max_p_val = 0.05)
 area_filt = filter_results(raw_data$area, primary_filter_results = raw_data$results)
 
-results_filt = filter_results(raw_data$results)
-results_S_filt = filter_results(raw_data$results_S)
+results_filt = filter_results(raw_data$results, cell_intensities=single_props$fa$cell_int)
+results_reduced_filt = filter_results(raw_data$results_reduced)
+results_S_filt = filter_results(raw_data$results_S, cell_intensities=single_props$S178A$cell_int)
+results_rap_ctrl_filt = filter_results(raw_data$results_rap_ctrl)
 results_rap_filt = filter_results(raw_data$results_rap, min_R_sq=0.75)
-
-corr_results_filt = filter_results(raw_data$results)
-corr_results_S_filt = filter_results(raw_data$results_S)
-corr_results_rap_filt = filter_results(raw_data$corr_results_rap, min_R_sq=0.75)
 
 #rm(raw_data)
 gc()
@@ -109,28 +127,165 @@ out_folder = '../../doc/publication/figures'
 dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
 
 ########################################
+#Control Checks
+########################################
+
+#Assembly and Disassembly Rates versus Expression
+dir.create(dirname(file.path(out_folder,'controls','rates_vs_expression.svg')), 
+    recursive=TRUE, showWarnings=FALSE);
+svg(file.path(out_folder,'controls','rates_vs_expression.svg'))
+layout(rbind(c(1,2), c(3,4)))
+
+par(bty='n', mar=c(4,4.5,2,0))
+cor_results = cor.test(results_nofilt$assembly$mean_cell_vals, results_nofilt$assembly$slope);
+plot(results_nofilt$assembly$mean_cell_vals, results_nofilt$assembly$slope, 
+    xlab='Mean Paxillin Intensity', 
+    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), main='Wild-type');
+plot_size = par("usr");
+text(0.8*plot_size[2],0.9*plot_size[4], sprintf('(%0.3f, %0.3f)',cor_results$conf.int[1], cor_results$conf.int[2]), col='red');
+mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5);
+
+cor_results = cor.test(results_nofilt$disassembly$mean_cell_vals, results_nofilt$disassembly$slope);
+plot(results_nofilt$disassembly$mean_cell_vals, results_nofilt$disassembly$slope, 
+    xlab='Mean Paxillin Intensity', 
+    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), main='Wild-type ');
+plot_size = par("usr");
+text(0.8*plot_size[2],0.9*plot_size[4], sprintf('(%0.3f, %0.3f)',cor_results$conf.int[1], cor_results$conf.int[2]), col='red')
+mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
+
+cor_results = cor.test(results_S_nofilt$assembly$mean_cell_vals, results_S_nofilt$assembly$slope);
+plot(results_S_nofilt$assembly$mean_cell_vals, results_S_nofilt$assembly$slope, 
+    xlab='Mean Paxillin Intensity', 
+    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), 
+    main='S178A Mutant', sub = summary(model)$adj.r.squared);
+plot_size = par("usr");
+text(0.8*plot_size[2],0.9*plot_size[4], sprintf('(%0.3f, %0.3f)',cor_results$conf.int[1], cor_results$conf.int[2]), col='red')
+mtext('C',adj=-.2,side=3,line=-0.5,cex=1.5)
+
+cor_results = cor.test(results_S_nofilt$disassembly$mean_cell_vals, results_S_nofilt$disassembly$slope);
+plot(results_S_nofilt$disassembly$mean_cell_vals, results_S_nofilt$disassembly$slope,
+    xlab='Mean Paxillin Intensity', 
+    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), main='S178A Mutant')
+plot_size = par("usr");
+text(0.8*plot_size[2],0.9*plot_size[4], sprintf('(%0.3f, %0.3f)',cor_results$conf.int[1], cor_results$conf.int[2]), col='red')
+mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
+graphics.off()
+
+#Resampled Slope
+svg(file.path(out_folder,'controls','resampled_slopes.svg'))
+layout(rbind(c(1,2),c(3,4)))
+par(bty='n', mar=c(3,4.2,0,0));
+
+boxplot_with_points(list(results_nofilt$assembly$slope, results_reduced_nofilt$assembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_nofilt$assembly$slope, results_reduced_nofilt$assembly$slope/2)$p.value), col='red')
+
+boxplot_with_points(list(results_nofilt$disassembly$slope, results_reduced_nofilt$disassembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_nofilt$disassembly$slope, results_reduced_nofilt$disassembly$slope/2)$p.value), col='red')
+
+boxplot_with_points(list(results_nofilt$assembly$R_sq, results_reduced_nofilt$assembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly ',R^2,sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_nofilt$assembly$R_sq, results_reduced_nofilt$assembly$R_sq)$p.value), col='red')
+
+boxplot_with_points(list(results_nofilt$disassembly$R_sq, results_reduced_nofilt$disassembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly ',R^2,sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_nofilt$disassembly$R_sq, results_reduced_nofilt$disassembly$R_sq)$p.value), col='red')
+
+graphics.off()
+
+#Poor R^2 adhesion sequence plots
+pdf(file.path(out_folder,'controls','poor_assembly.pdf'),width=14, height=7)
+layout(cbind(c(1),c(2)))
+for (i in which(results_nofilt$assembly$R_sq < 0.2)) {
+    plot_ad_seq(raw_data$results[[results_nofilt$assembly$exp_num[i]]], results_nofilt$assembly$lin_num[i], main=results_nofilt$assembly$exp_dir[i], sub=results_nofilt$assembly$lin_num[i])
+    plot_ad_seq(raw_data$area[[results_nofilt$assembly$exp_num[i]]], results_nofilt$assembly$lin_num[i], main=results_nofilt$assembly$exp_dir[i], sub=results_nofilt$assembly$lin_num[i])
+}
+graphics.off()
+
+pdf(file.path(out_folder,'controls','poor_disassembly.pdf'),width=14, height=7)
+layout(cbind(c(1),c(2)))
+for (i in which(results_nofilt$disdisassembly$R_sq < 0.2)) {
+    plot_ad_seq(raw_data$results[[results_nofilt$disassembly$exp_num[i]]], results_nofilt$disassembly$lin_num[i], main=results_nofilt$disassembly$exp_dir[i], sub=results_nofilt$disassembly$lin_num[i], type='disassembly')
+    plot_ad_seq(raw_data$area[[results_nofilt$disassembly$exp_num[i]]], results_nofilt$disassembly$lin_num[i], main=results_nofilt$disassembly$exp_dir[i], sub=results_nofilt$disassembly$lin_num[i])
+}
+graphics.off()
+
+########################################
 #RAP-SRC Plotting
 ########################################
 
-#boxplot_with_points(list(corr_results_rap_filt$assembly$slope[corr_results_rap_filt$assembly$exp_num == 1]*3, 
-#                         corr_results_rap_filt$assembly$slope[corr_results_rap_filt$assembly$exp_num == 2]*3),
-#                    names=c('Before', 'After'))
-#boxplot_with_points(list(corr_results_rap_filt$disassembly$slope[corr_results_rap_filt$disassembly$exp_num == 1]*3, 
-#                         corr_results_rap_filt$disassembly$slope[corr_results_rap_filt$disassembly$exp_num == 2]*3),
-#                    names=c('Before', 'After'))
+#Data splitting
+rap_src_pre = list();
+rap_src_post = list();
 
-dir.create(dirname(file.path(out_folder,'rapr_src','rapr_src_rates.pdf')), 
+assembly_pre_filt = results_rap_onlysignif$assembly$exp_num %% 2 == 0;
+assembly_post_filt = results_rap_onlysignif$assembly$exp_num %% 2 == 1;
+rap_src_pre$assembly = results_rap_onlysignif$assembly[assembly_pre_filt,];
+rap_src_post$assembly = results_rap_onlysignif$assembly[assembly_post_filt,];
+
+disassembly_pre_filt = results_rap_onlysignif$disassembly$exp_num %% 2 == 0;
+disassembly_post_filt = results_rap_onlysignif$disassembly$exp_num %% 2 == 1;
+rap_src_pre$disassembly = results_rap_onlysignif$disassembly[disassembly_pre_filt,];
+rap_src_post$disassembly = results_rap_onlysignif$disassembly[disassembly_post_filt,];
+
+joint_pre_filt = results_rap_onlysignif$joint$exp_num %% 2 == 0;
+joint_post_filt = results_rap_onlysignif$joint$exp_num %% 2 == 1;
+rap_src_pre$joint = results_rap_onlysignif$joint[joint_pre_filt,];
+rap_src_post$joint = results_rap_onlysignif$joint[joint_post_filt,];
+
+rap_src_stage_lengths = gather_stage_lengths(rap_src_pre,rap_src_post);
+
+rap_src_pre_ctrl = list();
+rap_src_post_ctrl = list();
+
+assembly_pre_filt = results_rap_ctrl_onlysignif$assembly$exp_num %% 2 == 0;
+assembly_post_filt = results_rap_ctrl_onlysignif$assembly$exp_num %% 2 == 1;
+rap_src_pre_ctrl$assembly = results_rap_ctrl_onlysignif$assembly[assembly_pre_filt,];
+rap_src_post_ctrl$assembly = results_rap_ctrl_onlysignif$assembly[assembly_post_filt,];
+
+disassembly_pre_filt = results_rap_ctrl_onlysignif$disassembly$exp_num %% 2 == 0;
+disassembly_post_filt = results_rap_ctrl_onlysignif$disassembly$exp_num %% 2 == 1;
+rap_src_pre_ctrl$disassembly = results_rap_ctrl_onlysignif$disassembly[disassembly_pre_filt,];
+rap_src_post_ctrl$disassembly = results_rap_ctrl_onlysignif$disassembly[disassembly_post_filt,];
+
+joint_pre_filt = results_rap_ctrl_onlysignif$joint$exp_num %% 2 == 0;
+joint_post_filt = results_rap_ctrl_onlysignif$joint$exp_num %% 2 == 1;
+rap_src_pre_ctrl$joint = results_rap_ctrl_onlysignif$joint[joint_pre_filt,];
+rap_src_post_ctrl$joint = results_rap_ctrl_onlysignif$joint[joint_post_filt,];
+
+rap_src_ctrl_stage_lengths = gather_stage_lengths(rap_src_pre_ctrl,rap_src_post_ctrl);
+
+#Unfiltered Rate Plotting
+dir.create(dirname(file.path(out_folder,'rapr_src','rapr_src_rates_nofilt.pdf')), 
     recursive=TRUE, showWarnings=FALSE);
-pdf(file.path(out_folder,'rapr_src','rapr_src_rates.pdf'), height=7/2)
-layout(rbind(c(1,2)))
+pdf(file.path(out_folder,'rapr_src','rapr_src_rates_nofilt.pdf'))
+layout(rbind(c(1,2),c(3,4)))
 par(bty='n', mar=c(2,4,1,0))
-boxplot_with_points(list(results_rap_filt$assembly$slope[results_rap_filt$assembly$exp_num == 2]*3, 
-                         results_rap_filt$assembly$slope[results_rap_filt$assembly$exp_num == 1]*3),
-                    names=c('Before', 'After'), main='Assembly')
-boxplot_with_points(list(results_rap_filt$disassembly$slope[results_rap_filt$disassembly$exp_num == 2]*3,
-                         results_rap_filt$disassembly$slope[results_rap_filt$disassembly$exp_num == 1]*3),
-                    names=c('Before', 'After'), main='Disassembly')
+
+boxplot_with_points(list(rap_src_pre$assembly$slope, 
+                         rap_src_post$assembly$slope),
+                    names=c('Before', 'After'), main='Assembly', notch=T,
+                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
+
+boxplot_with_points(list(rap_src_pre$disassembly$slope, 
+                         rap_src_post$disassembly$slope),
+                    names=c('Before', 'After'), main='Disassembly', notch=T,
+                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
+
+par(bty='n', mar=c(2,4,1.5,0))
+
+boxplot_with_points(list(rap_src_pre_ctrl$assembly$slope, 
+                         rap_src_post_ctrl$assembly$slope),
+                    names=c('Before', 'After'), main='Assembly Control', notch=T,
+                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
+
+boxplot_with_points(list(rap_src_pre_ctrl$disassembly$slope, 
+                         rap_src_post_ctrl$disassembly$slope),
+                    names=c('Before', 'After'), main='Disassembly Control', notch=T,
+                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
 graphics.off()
+
 
 ########################################
 #All by all plots
@@ -144,6 +299,7 @@ graphics.off()
 #splom(cbind(results_filt$dis[1:10]), sub='Disassembly Scatter Plot (Filtered)')
 #splom(cbind(results_nofilt$dis[1:10]), sub='Disassembly Scatter Plot')
 #graphics.off()
+
 
 ########################################
 #Statics Properties
@@ -266,6 +422,7 @@ hist(results_nofilt$dis$R,main='Disassembly', freq=TRUE,
 	 ylab='# of Focal Adhesions')
 mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
 graphics.off()
+
 
 print('Done with Kinetics')
 
@@ -523,6 +680,23 @@ lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
 text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"*",cex=1.5)
 
 graphics.off()
+
+svg(file.path(out_folder,'lifetimes','adhesion_phase_lifetimes_alt.svg'), height=5)
+par(bty='n',mar=c(2,4,0,0))
+barplot(t(bar_lengths), names=c('Assembly','Stability','Disassembly'), beside=TRUE, xlim=c(0,12),
+        ylab='Time (min)', legend=c('Wild-type','S178A'),ylim = c(0,max(conf_ints)+1))
+
+sideways_err_bars = conf_ints;
+sideways_err_bars[1,1] = 1.5;
+sideways_err_bars[2,1] = 4.5;
+sideways_err_bars[3,1] = 7.5;
+sideways_err_bars[4,1] = 2.5;
+sideways_err_bars[5,1] = 5.5;
+sideways_err_bars[6,1] = 8.5;
+
+errbar(sideways_err_bars[,1],sideways_err_bars[,2],sideways_err_bars[,3],
+       sideways_err_bars[,4],add=TRUE,cex=0.0001, xlab='', ylab='');
+graphics.off();
 
 print('Done with Lifetime Phase Lengths')
 
