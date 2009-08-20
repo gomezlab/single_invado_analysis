@@ -833,7 +833,6 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
 
     points = list();
     for (i in 1:length(results)) {
-    #for (i in 7) {
         res = results[[i]];
 
         if (all(is.na(primary_filter_results))) {
@@ -842,16 +841,14 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
             for_filter = primary_filter_results[[i]]
         }
 
-        assembly_filt = (is.finite(for_filter$assembly$R_sq) & for_filter$assembly$R_sq >= min_R_sq
-                & is.finite(for_filter$assembly$slope) & is.finite(for_filter$assembly$p_val) 
-                & for_filter$assembly$p_val < max_p_val);
-        disassembly_filt = (is.finite(for_filter$disassembly$R_sq) & for_filter$disassembly$R_sq >= min_R_sq 
-                & is.finite(for_filter$disassembly$slope) & is.finite(for_filter$disassembly$p_val) 
-                & for_filter$disassembly$p_val < max_p_val);
+        assembly_filt = (! is.na(for_filter$assembly$length) & for_filter$assembly$R_sq >= min_R_sq
+                & for_filter$assembly$p_val < max_p_val & ! res$exp_props$split_birth_status);
+        disassembly_filt = (! is.na(for_filter$disassembly$length) & for_filter$disassembly$R_sq >= min_R_sq
+                & for_filter$disassembly$p_val < max_p_val & res$exp_props$death_status);
 
         if (pos_slope) {
-            assembly_filt = assembly_filt & for_filter$assembly$slope > 0
-                disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0
+            assembly_filt = assembly_filt & for_filter$assembly$slope > 0;
+            disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0;
         }				  
         joint_filt = assembly_filt & disassembly_filt;
 
@@ -870,12 +867,13 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
         }
         if (! all(is.na(cell_intensities))) {
             if (length(which(assembly_filt)) == 1) {
-                exp_data_filt = as.matrix(t(raw_data$results[[i]]$exp_data[assembly_filt,]));
+                exp_data_filt = as.matrix(t(res$exp_data[assembly_filt,]));
             } else {
                 exp_data_filt = res$exp_data[assembly_filt,]
             }
             
-            mean_vals = find_cell_intensity_during_phase(exp_data_filt, res$assembly$length[assembly_filt], type="assembly", cell_intensities[[i]]);
+            mean_vals = find_cell_intensity_during_phase(exp_data_filt, 
+                res$assembly$length[assembly_filt], type="assembly", cell_intensities[[i]]);
             points$assembly$mean_cell_vals = c(points$assembly$mean_cell_vals, mean_vals);
         }
         for (j in names(points$assembly)) {
@@ -891,7 +889,8 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
         points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))));
         points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))));
         if (any(names(res$exp_props) == 'ending_edge_dist')) {
-            points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
+            points$disassembly$edge_dist = c(points$disassembly$edge_dist, 
+                res$exp_props$ending_edge_dist[disassembly_filt])
         }
         if (! all(is.na(cell_intensities))) {
             if (length(which(disassembly_filt)) == 1) {
@@ -899,8 +898,8 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
             } else {
                 exp_data_filt = res$exp_data[disassembly_filt,]
             }
-            
-            mean_vals = find_cell_intensity_during_phase(exp_data_filt, res$disassembly$length[disassembly_filt], type="disassembly", cell_intensities[[i]]);
+            mean_vals = find_cell_intensity_during_phase(exp_data_filt, 
+                res$disassembly$length[disassembly_filt], type="disassembly", cell_intensities[[i]]);
             points$disassembly$mean_cell_vals = c(points$disassembly$mean_cell_vals, mean_vals);
         }
         for (j in names(points$disassembly)) {
@@ -1053,6 +1052,7 @@ ranges_overlap <- function(range_1, range_2) {
 	}
 	return(FALSE);
 }
+
 gather_general_props <- function(results) {
 	points = list()
 	for (i in 1:length(results)) {
@@ -1086,7 +1086,6 @@ gather_single_image_props <- function(ind_results) {
 }
 
 find_cell_intensity_during_phase <- function(exp_data,lengths,type,cell_intensity) {
-
     mean_intensities = c();
     if (nrow(exp_data) == 0) {
         return();
@@ -1094,8 +1093,8 @@ find_cell_intensity_during_phase <- function(exp_data,lengths,type,cell_intensit
     for (i in 1:nrow(exp_data)) {
         this_data = exp_data[i,];
         this_length = lengths[i];
-        
         this_intensity = cell_intensity[! is.na(this_data)]
+        
         if (type == 'assembly') {
             this_intensity = this_intensity[1:this_length];
             stopifnot(length(this_intensity) == this_length);
@@ -1379,7 +1378,7 @@ if (length(args) != 0) {
 		}
 		if (model_type == 'area') {
 			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Area.csv', min_length = min_length,
+					data_file='Area.csv', min_length = min_length, log.trans = FALSE,
 					results.file=file.path('..','models','area.Rdata'), debug=debug)
 		}
 		if (model_type == 'box_intensity') {
