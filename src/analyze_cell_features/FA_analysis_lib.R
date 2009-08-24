@@ -541,80 +541,6 @@ gather_correlations <- function(result, exp_data, result.normed = TRUE,
 ########################################
 #Plotting Functions
 ########################################
-plot_lin_reg_set <- function(results,dir,file='linear_regions.pdf', hist_file=NA) {
-	assembly_slope = c()
-	assembly_error = c()
-	assembly_n = c()
-	disassembly_slope  = c()
-	disassembly_error  = c()
-	disassembly_n = c()
-	for (i in 1:10) {
-		slope_ests = exp_set_slope_estimate(results,r_cutoff = ((i - 1)/10));
-		assembly_slope[i] = slope_ests$assembly
-		assembly_n[i] = slope_ests$assembly_n
-		assembly_error[i] = slope_ests$assembly_sem
-		disassembly_slope[i] = slope_ests$disassembly
-		disassembly_n[i] = slope_ests$disassembly_n
-		disassembly_error[i] = slope_ests$disassembly_sem
-	}
-	
-	library(Hmisc)
-    pdf(file.path(dir,file),width=8.5,height=8.5,pointsize=14);
-    par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
-	
-	#########################################################################
-	#Plot 1 - Slope versus R squared (assembly)
-	#########################################################################	
-    plot(results$assembly_slope[results$assembly_R_sq != 0],
-         results$assembly_R_sq[results$assembly_R_sq != 0],
-         xlab='Formation Slope', ylab='R Squared', cex = 0.5,
-         ylim = c(0,1)
-        );
-
-	#########################################################################
-	#Plot 2 - R squared versus Slope (disassembly)
-	#########################################################################	
-    plot(results$disassembly_slope[results$disassembly_R_sq != 0 & results$exp_props$death_status],
-		 results$disassembly_R_sq[results$disassembly_R_sq != 0 & results$exp_props$death_status],
-         xlab='Decay Slope (/min)', ylab='R Squared', cex = 0.5,
-         ylim = c(0,1)
-        )
-    
-	#Plot 3
-    errbar(seq(0,0.9,by=0.1), assembly_slope, assembly_slope - assembly_error, assembly_slope + assembly_error, xlab = 'R squared cutoff', ylab='Accumulation Rate (/min)')
-    for (i in 1:10) {
-    	x_points = seq(0,0.9,by=0.1)
-    	text(x_points[i],assembly_slope[i]+assembly_error[i],assembly_n[i])
-    }
-	
-	#Plot 4
-    errbar(seq(0,0.9,by=0.1), disassembly_slope, disassembly_slope - disassembly_error, disassembly_slope + disassembly_error, xlab = 'R squared cutoff', ylab='Decay Rate (/min)')
-    for (i in 1:10) {
-    	x_points = seq(0,0.9,by=0.1)
-    	text(x_points[i],disassembly_slope[i]+disassembly_error[i],disassembly_n[i])
-    }
-	
-	if (! is.na(hist_file)) {
-	    pdf(file.path(dir,hist_file),width=8.5,height=8.5,pointsize=14);
-    	par(mfrow=c(2,2),bty='n', mar=c(5,4,1,1))
-        
-	    #Plot 1
-    	hist(results$assembly_length, xlab = 'Linear Sequence Length (min)', main='')
-    
-	    #Plot 2
-    	hist(results$disassembly_length, xlab = 'Linear Sequence Length (min)', main='')
-    
-	    #Plot 3
-    	hist(results$assembly_slope[results$assembly_R_sq > 0.9], xlab = 'Slope (/min)', main='')
-
-	    #Plot 4
-    	hist(results$disassembly_slope[results$disassembly_R_sq > 0.9 & results$exp_props$death_status], xlab = 'Slope (/min)', main='')
-    	dev.off()
-    }
-    
-    dev.off()
-}
-
 plot_ad_seq <- function (results,index,type='assembly',log.trans = TRUE, phase_lengths = c(NA, NA), ...) {
 	ad_seq = as.vector(results$exp_data[index,])
 	ad_seq = t(ad_seq[!(is.nan(ad_seq))])
@@ -821,7 +747,53 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 		top_y_seq = c(top_y_seq,(top_y - bottom_y)*(i/11)+bottom_y)
 	}
 	rbind(left_x_seq,bottom_y_seq,right_x_seq,top_y_seq)
-}	
+}
+
+plot_stage_length_data <- function(stage_length_data, type='stacked', top_gap = 0.1, names = NA, 
+    sideways_high_xlim = 12) {
+
+    bar_lengths = stage_length_data$bar_lengths;
+    conf_ints = stage_length_data$conf_ints;
+
+    if (all(is.na(names))) {
+        names = c('Exp 1', 'Exp 2');
+    }
+    if (type == 'stacked') {
+        conf_ints[1:3,1] = 0.22;
+        conf_ints[4:6,1] = 0.57;
+
+        err_bars = conf_ints;
+        err_bars[1,3:4] = err_bars[1,3:4];
+        err_bars[2,3:4] = err_bars[2,3:4] + sum(bar_lengths[1,1]);
+        err_bars[3,3:4] = err_bars[3,3:4] + sum(bar_lengths[1:2,1]);
+        err_bars[4,3:4] = err_bars[4,3:4];
+        err_bars[5,3:4] = err_bars[5,3:4] + sum(bar_lengths[1,2]);
+        err_bars[6,3:4] = err_bars[6,3:4] + sum(bar_lengths[1:2,2]);
+
+        barplot(bar_lengths, names=names, 
+            ylab='Time (min)', width=matrix(0.3,3,2), xlim=c(0,1),
+            legend=c('Assembly','Stability','Disassembly'),ylim = c(0,max(err_bars)+top_gap));
+        errbar(err_bars[,1],err_bars[,2],err_bars[,3],err_bars[,4],add=TRUE,cex=0.0001, xlab='', ylab='');
+        return(err_bars);
+    } else {
+        barplot(t(bar_lengths), names=c('Assembly','Stability','Disassembly'), 
+            beside=TRUE, xlim=c(0,sideways_high_xlim),
+            ylab='Time (min)', legend=names,
+            ylim = c(0,max(conf_ints, na.rm=T)+top_gap));
+
+        sideways_err_bars = conf_ints;
+        sideways_err_bars[1,1] = 1.5;
+        sideways_err_bars[2,1] = 4.5;
+        sideways_err_bars[3,1] = 7.5;
+        sideways_err_bars[4,1] = 2.5;
+        sideways_err_bars[5,1] = 5.5;
+        sideways_err_bars[6,1] = 8.5;
+
+        errbar(sideways_err_bars[,1],sideways_err_bars[,2],sideways_err_bars[,3],
+            sideways_err_bars[,4],add=TRUE,cex=0.0001, xlab='', ylab='');
+        return(sideways_err_bars);
+    }
+}
 
 ########################################
 #Data Summary functions
@@ -862,19 +834,8 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
         points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))));
         points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))));
         if (any(names(res$exp_props) == 'starting_edge_dist')) {
-            points$assembly$edge_dist = c(points$assembly$edge_dist, 
-                res$exp_props$starting_edge_dist[assembly_filt])
-        }
-        if (! all(is.na(cell_intensities))) {
-            if (length(which(assembly_filt)) == 1) {
-                exp_data_filt = as.matrix(t(res$exp_data[assembly_filt,]));
-            } else {
-                exp_data_filt = res$exp_data[assembly_filt,]
-            }
-            
-            mean_vals = find_cell_intensity_during_phase(exp_data_filt, 
-                res$assembly$length[assembly_filt], type="assembly", cell_intensities[[i]]);
-            points$assembly$mean_cell_vals = c(points$assembly$mean_cell_vals, mean_vals);
+            points$assembly$edge_dist = c(points$assembly$edge_dist, res$exp_props$starting_edge_dist[assembly_filt])
+            points$control$birth_pos = c(points$control$birth_pos,  mean(res$exp_props$starting_edge_dist[assembly_filt], na.rm=T));
         }
         for (j in names(points$assembly)) {
             stopifnot(length(points$assembly[[1]]) == length(points$assembly[[j]]))
@@ -889,18 +850,8 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
         points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))));
         points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))));
         if (any(names(res$exp_props) == 'ending_edge_dist')) {
-            points$disassembly$edge_dist = c(points$disassembly$edge_dist, 
-                res$exp_props$ending_edge_dist[disassembly_filt])
-        }
-        if (! all(is.na(cell_intensities))) {
-            if (length(which(disassembly_filt)) == 1) {
-                exp_data_filt = as.matrix(t(raw_data$results[[i]]$exp_data[disassembly_filt,]));
-            } else {
-                exp_data_filt = res$exp_data[disassembly_filt,]
-            }
-            mean_vals = find_cell_intensity_during_phase(exp_data_filt, 
-                res$disassembly$length[disassembly_filt], type="disassembly", cell_intensities[[i]]);
-            points$disassembly$mean_cell_vals = c(points$disassembly$mean_cell_vals, mean_vals);
+            points$disassembly$edge_dist = c(points$disassembly$edge_dist, res$exp_props$ending_edge_dist[disassembly_filt])
+            points$control$death_pos = c(points$control$death_pos,  mean(res$exp_props$ending_edge_dist[disassembly_filt], na.rm=T));
         }
         for (j in names(points$disassembly)) {
             stopifnot(length(points$disassembly[[1]]) == length(points$disassembly[[j]]))
@@ -922,6 +873,12 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
         points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt]);
         for (j in names(points$joint)) {
             stopifnot(length(points$joint[[1]]) == length(points$joint[[j]]))
+        }
+        
+        if (! all(is.na(cell_intensities))) {
+            points$control$assembly_slope = c(points$control$assembly_slope,  mean(res$assembly$slope[assembly_filt]));
+            points$control$disassembly_slope = c(points$control$disassembly_slope,  mean(res$disassembly$slope[disassembly_filt]));
+            points$control$mean_cell_int = c(points$control$mean_cell_int, mean(cell_intensities[[i]]));
         }
     }
 
@@ -1083,32 +1040,6 @@ gather_single_image_props <- function(ind_results) {
 	}
 	
 	as.data.frame(ind_data)
-}
-
-find_cell_intensity_during_phase <- function(exp_data,lengths,type,cell_intensity) {
-    mean_intensities = c();
-    if (nrow(exp_data) == 0) {
-        return();
-    }
-    for (i in 1:nrow(exp_data)) {
-        this_data = exp_data[i,];
-        this_length = lengths[i];
-        this_intensity = cell_intensity[! is.na(this_data)]
-        
-        if (type == 'assembly') {
-            this_intensity = this_intensity[1:this_length];
-            stopifnot(length(this_intensity) == this_length);
-
-            mean_intensities = c(mean_intensities, mean(as.numeric(this_intensity)));
-        }
-        if (type == 'disassembly') {
-            this_intensity = this_intensity[(length(this_intensity) - this_length + 1):length(this_intensity)];
-            stopifnot(length(this_intensity) == this_length);
-
-            mean_intensities = c(mean_intensities, mean(as.numeric(this_intensity)));
-        }
-    }
-    mean_intensities
 }
 
 ################################################################################
@@ -1343,63 +1274,63 @@ stopifnot(! ranges_overlap(c(1.01,1.2),c(0,1)))
 ################################################################################
 
 args = commandArgs(TRUE)
-if (length(args) != 0) {
-	debug = FALSE;
-    min_length = 10;
-    print(class(min_length));
+    if (length(args) != 0) {
+        debug = FALSE;
+        min_length = 10;
+        print(class(min_length));
 
-	for (this_arg in commandArgs()) {
-		split_arg = strsplit(this_arg,"=",fixed=TRUE)
-		if (length(split_arg[[1]]) == 1) {
-			assign(split_arg[[1]][1], TRUE);
-		} else {
-			assign(split_arg[[1]][1], split_arg[[1]][2]);
-		}
-	}
+        for (this_arg in commandArgs()) {
+            split_arg = strsplit(this_arg,"=",fixed=TRUE)
+                if (length(split_arg[[1]]) == 1) {
+                    assign(split_arg[[1]][1], TRUE);
+                } else {
+                    assign(split_arg[[1]][1], split_arg[[1]][2]);
+                }
+        }
 
-    class(min_length) <- "numeric";
+        class(min_length) <- "numeric";
 
-	if (exists('data_dir') & exists('model_type')) {
-		if (model_type == 'average') {
-			average_model = gather_bilinear_models_from_dirs(data_dir,
-					data_file='Average_adhesion_signal.csv', min_length = min_length,
-					results.file=file.path('..','models','intensity.Rdata'), debug=debug)
-			write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
-		}
-		if (model_type == 'cell_background') {
-			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='CB_corrected_signal.csv', min_length = min_length,
-					results.file=file.path('..','models','CB_corrected.Rdata'), debug=debug)
-		}
-		if (model_type == 'local_background') {
-			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Background_corrected_signal.csv', min_length = min_length,
-					results.file=file.path('..','models','local_corrected.Rdata'), debug=debug)
-		}
-		if (model_type == 'area') {
-			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Area.csv', min_length = min_length, log.trans = FALSE,
-					results.file=file.path('..','models','area.Rdata'), debug=debug)
-		}
-		if (model_type == 'box_intensity') {
-			temp = gather_bilinear_models_from_dirs(data_dir, 
-					data_file='Box_intensity.csv', min_length = min_length,
-					results.file=file.path('..','models','box.Rdata'), debug=TRUE)
-		}
-		if (model_type == 'background_correlation_model') {
-			intensity_data <- 
-				read.table(file.path(data_dir,'Background_corrected_signal.csv'), 
-						   sep=',', header=FALSE);
+        if (exists('data_dir') & exists('model_type')) {
+            if (model_type == 'average') {
+                average_model = gather_bilinear_models_from_dirs(data_dir,
+                        data_file='Average_adhesion_signal.csv', min_length = min_length,
+                        results.file=file.path('..','models','intensity.Rdata'), debug=debug)
+                    write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
+            }
+            if (model_type == 'cell_background') {
+                temp = gather_bilinear_models_from_dirs(data_dir, 
+                        data_file='CB_corrected_signal.csv', min_length = min_length,
+                        results.file=file.path('..','models','CB_corrected.Rdata'), debug=debug)
+            }
+            if (model_type == 'local_background') {
+                temp = gather_bilinear_models_from_dirs(data_dir, 
+                        data_file='Background_corrected_signal.csv', min_length = min_length,
+                        results.file=file.path('..','models','local_corrected.Rdata'), debug=debug)
+            }
+            if (model_type == 'area') {
+                temp = gather_bilinear_models_from_dirs(data_dir, 
+                        data_file='Area.csv', min_length = min_length, log.trans = FALSE,
+                        results.file=file.path('..','models','area.Rdata'), debug=debug)
+            }
+            if (model_type == 'box_intensity') {
+                temp = gather_bilinear_models_from_dirs(data_dir, 
+                        data_file='Box_intensity.csv', min_length = min_length,
+                        results.file=file.path('..','models','box.Rdata'), debug=TRUE)
+            }
+            if (model_type == 'background_correlation_model') {
+                intensity_data <- 
+                    read.table(file.path(data_dir,'Background_corrected_signal.csv'), 
+                            sep=',', header=FALSE);
 
-			centroid_x <- read.table(file.path(data_dir,'Centroid_x.csv'), sep=',', header=FALSE);
-			centroid_y <- read.table(file.path(data_dir,'Centroid_y.csv'), sep=',', header=FALSE);
-			
-			results = correlate_signal_vs_dist(intensity_data, centroid_x, centroid_y)
-			output_file = file.path(data_dir,'..','models','background_corr.Rdata')
-			if (! file.exists(dirname(output_file))) {
-				dir.create(dirname(output_file),recursive=TRUE)
-			}
-            save(results,file = output_file);
-		}
-	}
-}
+                centroid_x <- read.table(file.path(data_dir,'Centroid_x.csv'), sep=',', header=FALSE);
+                centroid_y <- read.table(file.path(data_dir,'Centroid_y.csv'), sep=',', header=FALSE);
+
+                results = correlate_signal_vs_dist(intensity_data, centroid_x, centroid_y)
+                    output_file = file.path(data_dir,'..','models','background_corr.Rdata')
+                    if (! file.exists(dirname(output_file))) {
+                        dir.create(dirname(output_file),recursive=TRUE)
+                    }
+                save(results,file = output_file);
+            }
+        }
+    }
