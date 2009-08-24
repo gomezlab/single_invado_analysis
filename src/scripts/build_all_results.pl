@@ -190,7 +190,6 @@ sub move_job_to_week_queue {
     }
 }
 
-
 sub execute_command_seq {
     my @command_seq  = @{ $_[0] };
     my $starting_dir = $_[1];

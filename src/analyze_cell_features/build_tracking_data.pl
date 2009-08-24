@@ -56,6 +56,8 @@ if ($opt{lsf}) {
     }
     
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking_data');
+    $opt{resource} = "mem32";
+    $opt{queue} = "week";
     if (defined $cfg{job_group}) {
         $opt{job_group} = $cfg{job_group};
     }
