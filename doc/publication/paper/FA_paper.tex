@@ -101,11 +101,12 @@ Utilizing this software we are able to obtain information about the size, shape,
 intensity, and position of every adhesion present in a living cell. Moreover we
 can follow how these properties change over time to assess adhesion lifetime and
 turnover rates. Here we analyze the adhesion component Paxillin in migrating NIH
-3T3 fibroblasts, characterizing\ldots. We also show how a single point mutation in Paxillin at the
-Jun-kinase phosphorylation site Serine 178 changes focal adhesion size,
-distribution, and rate of assembly. We present this software as a generally
-applicable tool that will advance the understanding of how focal adhesions are
-dynamically regulated in living cells (Note: may want to just say that the sw is freely available).
+3T3 fibroblasts, characterizing\ldots. We also show how a single point mutation
+in Paxillin at the Jun-kinase phosphorylation site Serine 178 changes focal
+adhesion size, distribution, and rate of assembly. We present this software as a
+generally applicable tool that will advance the understanding of how focal
+adhesions are dynamically regulated in living cells (Note: may want to just say
+that the sw is freely available).
 
 % Please keep the Author Summary between 150 and 200 words
 % Use first person. PLoS ONE authors please skip this step. 
@@ -139,11 +140,23 @@ reflection fluorescence microscopy (TIR-FM) providing high-resolution images
 capable of being quantitatively analyzed. However, challenges in image capture
 and downstream analysis has generally led to the characterization of only a
 relatively small number of hand-picked adhesions within any given cell
-\cite{Webb2004} (other refs). Recent technological and methodological improvements have led to the automated detection and characterization of focal adhesions for application in high-throughput screening studies. For instance, Paran and colleagues have reported on the use of a high-throughput high-resolution imaging system to screen a plant extract library for effects on adhesion morphology and distribution. Similarly, the same high-throughput imaging system was used to perform multicolor analysis on various adhesion components \cite{Zamir2008}. In this instance, they were able to obtain molecular signatures of protein components within focal adhesions as well as resolve sub-domains within adhesions. These studies demonstrate the power of being able to identify and characterize all adhesions present within a cell. However, as these approaches rely on cell fixation, critical aspects of focal adhesion biology are lost including spatiotemporal adhesion dynamics.
+\cite{Webb2004} (other refs). Recent technological and methodological
+improvements have led to the automated detection and characterization of focal
+adhesions for application in high-throughput screening studies. For instance,
+Paran and colleagues have reported on the use of a high-throughput
+high-resolution imaging system to screen a plant extract library for effects on
+adhesion morphology and distribution. Similarly, the same high-throughput
+imaging system was used to perform multicolor analysis on various adhesion
+components \cite{Zamir2008}. In this instance, they were able to obtain
+molecular signatures of protein components within focal adhesions as well as
+resolve sub-domains within adhesions. These studies demonstrate the power of
+being able to identify and characterize all adhesions present within a cell.
+However, as these approaches rely on cell fixation, critical aspects of focal
+adhesion biology are lost including spatiotemporal adhesion dynamics.
 
 Here we describe a novel system for the quantification of focal adhesion
-spatiotemporal dynamics. This approach utilizes high-resolution
-(60x, oil-immersion) time-series images of living cells generated with TIR-FM. Image
+spatiotemporal dynamics. This approach utilizes high-resolution (60x,
+oil-immersion) time-series images of living cells generated with TIR-FM. Image
 sequences are then processed through an analysis system that identifies each
 individual adhesion, tracks their movement through time and collects associated
 properties concerning the location, shape, size and intensity. As the birth,
@@ -157,17 +170,29 @@ a platform for adhesion signal transduction. A principal regulatory mechanism of
 paxillin is phosphorylation with over 40 phosphorylated sites currently
 identified, several of which show strong effects on cell migration. One of these
 is the Jun-kinase (JNK) phosphorylation site Serine 178 (S178). Mutation of this
-residue to Alanine or inhibition of JNK signaling inhibits cell motility (Jacobsen ref).
-More recently, it has been shown that phosphorylation of S178 enhances
-paxillin's interaction with FAK and Tyrosine phosphorylation at residues 31 and
-118 (ref). Expression of the phosphomimetic Y31D/Y118D paxillin can rescue the
-S178A mutant phenotype. This and related work hints that JNK phosphorylation of
-paxillin is an early step in adhesion formation. 
+residue to Alanine or inhibition of JNK signaling inhibits cell motility
+(Jacobsen ref).  More recently, it has been shown that phosphorylation of S178
+enhances paxillin's interaction with FAK and Tyrosine phosphorylation at
+residues 31 and 118 (ref). Expression of the phosphomimetic Y31D/Y118D paxillin
+can rescue the S178A mutant phenotype. This and related work hints that JNK
+phosphorylation of paxillin is an early step in adhesion formation. 
 
-In this study we use our imaging analysis system to characterize focal adhesions tagged with EGFP-paxillin, generating high-resolution and high-content data sets of focal adhesion distribution, morphology, and turnover in migrating (\textbf{are these really considered migrating?}) NIH 3T3 fibroblasts. Results indicate that we can characterize adhesions in an unbiased manner, with typically $10^3-10^4$ adhesions characterized per cell in this study. We further show that we can detect both large as well as subtle alterations in adhesion spatiotemporal properties such as site formation, size and assembly rates in response to S178 mutation. In addition, we find that S178 mutation does not affect adhesion assembly rate in a symmetric manner, with the rate of disassembly being far less perturbed then the rate of assembly. These results further improve our understanding of JNK regulation of paxillin dynamics as well as demonstrating the utility of appropriately designed image analysis systems in the characterization of high-content data sets. 
+In this study we use our imaging analysis system to characterize focal adhesions
+tagged with EGFP-paxillin, generating high-resolution and high-content data sets
+of focal adhesion distribution, morphology, and turnover in migrating
+(\textbf{are these really considered migrating?}) NIH 3T3 fibroblasts. Results
+indicate that we can characterize adhesions in an unbiased manner, with
+typically $10^3-10^4$ adhesions characterized per cell in this study. We further
+show that we can detect both large as well as subtle alterations in adhesion
+spatiotemporal properties such as site formation, size and assembly rates in
+response to S178 mutation. In addition, we find that S178 mutation does not
+affect adhesion assembly rate in a symmetric manner, with the rate of
+disassembly being far less perturbed then the rate of assembly. These results
+further improve our understanding of JNK regulation of paxillin dynamics as well
+as demonstrating the utility of appropriately designed image analysis systems in
+the characterization of high-content data sets. 
 
 (\textbf{Anything about ``zones?''})
-
 
 
 % Results and Discussion can be combined.
@@ -176,34 +201,132 @@ In this study we use our imaging analysis system to characterize focal adhesions
 
 \subsection*{Quantitative Time-lapse Microscopy of Focal Adhesions}
 
-To quantify aspects of focal adhesion spatiotemporal dynamic behavior, we implemented a multistage image analysis pipeline (Figure~\ref{method_flow}). Briefly, adhesions tagged with EGFP-paxillin are identified and segmented via a WaterShed algorithm and the cell edge identified via an RFP tag (see Methods). At each consecutive time step both adhesion birth and death events are identified and tagged by the software. Static properties of adhesions identified within each image are quantified and include properties such as area and position. Dynamic properties of adhesions, such as velocities and changes in fluorescent intensity, are determined by tracking and measuring adhesion properties across time steps/images. A summary of basic extracted and/or derived FA properties is given in Table~\ref{prop_table}.
+To quantify aspects of focal adhesion spatiotemporal dynamic behavior, we
+implemented a multistage image analysis pipeline (Figure~\ref{method_flow}).
+Briefly, adhesions tagged with EGFP-paxillin are identified and segmented via a
+WaterShed algorithm and the cell edge identified via an RFP tag (see Methods).
+At each consecutive time step both adhesion birth and death events are
+identified and tagged by the software. Static properties of adhesions identified
+within each image are quantified and include properties such as area and
+position. Dynamic properties of adhesions, such as velocities and changes in
+fluorescent intensity, are determined by tracking and measuring adhesion
+properties across time steps/images. A summary of basic extracted and/or derived
+FA properties is given in Table~\ref{prop_table}.
 
-An example of the graphical output generated with this approach is shown in Figure 2, where a single frame of an image time series is shown, with adhesions identified through segmentation and highlighted (Panels A and B). Superimposition of adhesions across all 120 (??) image frames from this movie are shown in Panel C.     
+An example of the graphical output generated with this approach is shown in
+Figure 2, where a single frame of an image time series is shown, with adhesions
+identified through segmentation and highlighted (Panels A and B).
+Superimposition of adhesions across all 120 (??) image frames from this movie
+are shown in Panel C.     
 
-Distributions for several adhesion properties including area, average paxillin intensity, axial ratio and distance from edge are shown in Panel D. In total, properties for over 200,000 adhesions are represented in each histogram (\textbf{Matt:} is this filtered data?). While significantly larger adhesions occur, adhesion areas are typically less than 0.2 $um^2$ (what is the mean/median?). The average paxillin intensity within adhesions follows a YYY (Poisson?) distribution with mean intensity of XXX (what is the distribution of areas within the tallest adhesion area bar? is it distributed like the paxillin intensity?). The gross shape of an adhesion, for instance by FA axial ratios (major axis/minor axis) can also be characterized and we observe that they tend to follow a YYY distribution(?) with a mean value of XXX. Furthermore, we observe that adhesions are preferentially born within a region beginning 2 microns from the cell edge and extending up to 10 microns away. Of the FA births observed, 65\% were born within this region (\textbf{Matt:} what is the prob of birth in this region based on the histogram? Actually, is this distance at birth or just the average distance of each adhesion from the edge?). (\textbf{Matt: something looks strange on the inset figure on longevity - the x-axis is the same - is the y-axis reduced?}) As a whole, these results demonstrate that we are able to identify and quantitatively characterize large numbers of adhesions, allowing the unbiased assessment of FA behavior.
+Distributions for several adhesion properties including area, average paxillin
+intensity, axial ratio and distance from edge are shown in Panel D. In total,
+properties for over 200,000 adhesions are represented in each histogram
+(\textbf{Matt:} is this filtered data?). While significantly larger adhesions
+occur, adhesion areas are typically less than 0.2 $um^2$ (what is the
+mean/median?). The average paxillin intensity within adhesions follows a YYY
+(Poisson?) distribution with mean intensity of XXX (what is the distribution of
+areas within the tallest adhesion area bar? is it distributed like the paxillin
+intensity?). The gross shape of an adhesion, for instance by FA axial ratios
+(major axis/minor axis) can also be characterized and we observe that they tend
+to follow a YYY distribution(?) with a mean value of XXX. Furthermore, we
+observe that adhesions are preferentially born within a region beginning 2
+microns from the cell edge and extending up to 10 microns away. Of the FA births
+observed, 65\% were born within this region (\textbf{Matt:} what is the prob of
+birth in this region based on the histogram? Actually, is this distance at birth
+or just the average distance of each adhesion from the edge?). (\textbf{Matt:
+something looks strange on the inset figure on longevity - the x-axis is the
+same - is the y-axis reduced?}) As a whole, these results demonstrate that we
+are able to identify and quantitatively characterize large numbers of adhesions,
+allowing the unbiased assessment of FA behavior.
 
 Longevity...
 
 \subsection*{Dynamic Properties of FAs}
 \subsubsection*{Kinetics of FA assembly and disassembly}
-Of particular importance for understanding FA function is the assessment of FA behavior through time, with or without perturbation. As an example, Figure 3 shows the process of determining FA assembly and disassembly rates for an individual adhesion as well as results for all adhesions within the 3T3 cells of this study. In Panel A, an image series of a single adhesion (green) progressing in 1-minute intervals from birth, through maturation and on to death is shown. This particular adhesion has a lifetime of 48 minutes. Using this image time series, we quantify the normalized intensity of each adhesion, with the intensity of this particular adhesion shown in Panel B. The smooth line running through the data is a lowess fit. Readily apparent are the linear assembly and disassembly phases, indicated in green and red respectively. In between these two phases we define a stable or stationary phase, shown in yellow. As can be observed, a log-linear fit appears appropriate and has been applied to the log intensity of the adhesion as shown in Panel C. Approximately 92\% of the variance is described by this linear approximation. Similarly, the rate of disassembly for this adhesion is shown in Panel D and is again well described by a linear approximation with 96\% of the variance explained.
+Of particular importance for understanding FA function is the assessment of FA
+behavior through time, with or without perturbation. As an example, Figure 3
+shows the process of determining FA assembly and disassembly rates for an
+individual adhesion as well as results for all adhesions within the 3T3 cells of
+this study. In Panel A, an image series of a single adhesion (green) progressing
+in 1-minute intervals from birth, through maturation and on to death is shown.
+This particular adhesion has a lifetime of 48 minutes. Using this image time
+series, we quantify the normalized intensity of each adhesion, with the
+intensity of this particular adhesion shown in Panel B. The smooth line running
+through the data is a lowess fit. Readily apparent are the linear assembly and
+disassembly phases, indicated in green and red respectively. In between these
+two phases we define a stable or stationary phase, shown in yellow. As can be
+observed, a log-linear fit appears appropriate and has been applied to the log
+intensity of the adhesion as shown in Panel C. Approximately 92\% of the
+variance is described by this linear approximation. Similarly, the rate of
+disassembly for this adhesion is shown in Panel D and is again well described by
+a linear approximation with 96\% of the variance explained.
 
-As described previously, a major objective of earlier studies has been to estimate the rate of FA assembly and disassembly under different conditions. However, such rates have been defined through measurement of relatively small numbers of adhesions, typically between 10-20 (may want to put prev sentence in discussion instead - or at least incorporate into discussion). We utilized our system to more broadly characterize the rates of FA assembly and disassembly. We repeated the analysis detailed in Panels A-D on all ZZZ adhesions found within 20 3T3 cells. To establish rates for ``ideal'' adhesions, we focused on the analysis of FAs having lifetimes of at least 20 minutes and having well-defined log-linear fits ($R^2 > 0.9$; Panel E). Filtering using this $R^2$ criterion gave 303 adhesions with clearly definable assembly rates and another 484 with similarly well-defined rates of disassembly. As can be seen, the mean rate of assembly of 0.038 $min^{-1}$ is nearly twice (??) that of disassembly, with mean rate of 0.02 $min^{-1}$ \textbf{Matt: what are the real numbers? Are they means or medians?} 
+As described previously, a major objective of earlier studies has been to
+estimate the rate of FA assembly and disassembly under different conditions.
+However, such rates have been defined through measurement of relatively small
+numbers of adhesions, typically between 10-20 (may want to put prev sentence in
+discussion instead - or at least incorporate into discussion). We utilized our
+system to more broadly characterize the rates of FA assembly and disassembly. We
+repeated the analysis detailed in Panels A-D on all ZZZ adhesions found within
+20 3T3 cells. To establish rates for ``ideal'' adhesions, we focused on the
+analysis of FAs having lifetimes of at least 20 minutes and having well-defined
+log-linear fits ($R^2 > 0.9$; Panel E). Filtering using this $R^2$ criterion
+gave 303 adhesions with clearly definable assembly rates and another 484 with
+similarly well-defined rates of disassembly. As can be seen, the mean rate of
+assembly of 0.038 $min^{-1}$ is nearly twice (??) that of disassembly, with mean
+rate of 0.02 $min^{-1}$ \textbf{Matt: what are the real numbers? Are they means
+or medians?} 
 
-\textbf{Probably need to better describe why this group of adhesions and not the 1000's of others available. XX\% have linear fits with R^2 > yy, etc. Should also state results for all data (unfiltered)} 
+\textbf{Probably need to better describe why this group of adhesions and not the
+1000's of others available. XX\% have linear fits with $R^2 > yy$, etc. Should
+also state results for all data (unfiltered)} 
 
 \subsubsection*{Spatial properties of FA assembly and disassembly}
-Comprehensive analysis of the dynamics of this class of prototypical FAs allows the estimation of rates of assembly and disassembly. While this provides a view of FA behavior as a function of time, spatial aspects of FA behavior and dynamics can similarly be studied. Using the identical set of adhesions identified in the previous paxillin kinetics analysis, we investigated the spatial property of where adhesions tend to be born or die (Figure 4). As seen in (A), the vast majority (~ ZZZ\%) of these adhesions are born less than 5 microns from the cell edge. In contrast, adhesions tend to die further from the edge with a mean value of ZZZ microns in these experiments (B). This suggests the existence of two distinct, but partially overlapping "zones" within which preferential birth or death of FAs occurs. When looking at both FA birth/death location and assembly/disassembly rate simultaneously, we find that higher assembly rates tend to be observed in births that occur near the edge while no obvious effect of spatial location on the rate of disassembly is apparent. 
 
-
+Comprehensive analysis of the dynamics of this class of prototypical FAs allows
+the estimation of rates of assembly and disassembly. While this provides a view
+of FA behavior as a function of time, spatial aspects of FA behavior and
+dynamics can similarly be studied. Using the identical set of adhesions
+identified in the previous paxillin kinetics analysis, we investigated the
+spatial property of where adhesions tend to be born or die (Figure 4). As seen
+in (A), the vast majority (~ ZZZ\%) of these adhesions are born less than 5
+microns from the cell edge. In contrast, adhesions tend to die further from the
+edge with a mean value of ZZZ microns in these experiments (B). This suggests
+the existence of two distinct, but partially overlapping "zones" within which
+preferential birth or death of FAs occurs. When looking at both FA birth/death
+location and assembly/disassembly rate simultaneously, we find that higher
+assembly rates tend to be observed in births that occur near the edge while no
+obvious effect of spatial location on the rate of disassembly is apparent. 
 
 
 \subsection*{Paxillin S178A Mutant Perturbation}
-We used mutation of serine 178 to alanine as a system perturbation. This mutation blocks JNK phosphorylation of paxillin and has known alterations on cell motility. However, effects on adhesion spatiotemporal dynamics have not been characterized.
 
-We found that S178A mutants induced a number of significant effects on both dynamic and spatial properties of adhesions. The most dramatic of these changes is the approximately 40\% reduction in the rate of adhesion assembly as measured by paxillin incorporation Figure ##A. This decrease in assembly rate is significant with a p-value of less than 10^-5. While not as large, we also observe a small (~16\%) but statistically significant decrease in disassembly rate (p <10^-3). Thus the kinetics of FA assembly is strongly affected by this mutation, but in a non-symmetric manner.
+We used mutation of serine 178 to alanine as a system perturbation. This
+mutation blocks JNK phosphorylation of paxillin and has known alterations on
+cell motility. However, effects on adhesion spatiotemporal dynamics have not
+been characterized.
 
-We previously observed that adhesions in  WT cells have different distributions of birth and death position relative to the cell edge. In comparison to WT cells, we find that the distance from the edge at birth is greater by 44\% in S178A cells (Figure ##C). While subtle in terms of physical displacement, this statistically significant difference is detectable due to the large sample number achieved with our automated computational approach. We also see a greater variance in this measure in S178A cells. In contrast, there is no significant difference between WT and mutant cells with regard to where an adhesion tends to die, suggesting that spatial aspects of the disassembly process (i.e. where disassembly occurs) is not dependent and/or sensitive to JNK phosphorylation at this residue (Figure ##D).
+We found that S178A mutants induced a number of significant effects on both
+dynamic and spatial properties of adhesions. The most dramatic of these changes
+is the approximately 40\% reduction in the rate of adhesion assembly as measured
+by paxillin incorporation Figure \#\#A. This decrease in assembly rate is
+significant with a p-value of less than $10^-5$. While not as large, we also
+observe a small (~16\%) but statistically significant decrease in disassembly
+rate ($p <10^-3$). Thus the kinetics of FA assembly is strongly affected by this
+mutation, but in a non-symmetric manner.
+
+We previously observed that adhesions in  WT cells have different distributions
+of birth and death position relative to the cell edge. In comparison to WT
+cells, we find that the distance from the edge at birth is greater by 44\% in
+S178A cells (Figure \#\#C). While subtle in terms of physical displacement, this
+statistically significant difference is detectable due to the large sample
+number achieved with our automated computational approach. We also see a greater
+variance in this measure in S178A cells. In contrast, there is no significant
+difference between WT and mutant cells with regard to where an adhesion tends to
+die, suggesting that spatial aspects of the disassembly process (i.e. where
+disassembly occurs) is not dependent and/or sensitive to JNK phosphorylation at
+this residue (Figure \#\#D).
 
 
 
@@ -235,7 +358,8 @@ Paragraph about JNK kinase findings, include reference to screening paper from
 Geiger's lab with confirmation of drop in adhesion intensity upon JNK
 knockdown.
 
-Detection of subtle phenotypes - challenge of separating weak but relevant direct effects from indirect effects(?)
+Detection of subtle phenotypes - challenge of separating weak but relevant
+direct effects from indirect effects(?)
 
 Paragraph about expansions to the code base to include other cell properties
 (edge velocity, other spatial properties).
