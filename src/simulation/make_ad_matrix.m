@@ -1,4 +1,4 @@
-function adhesion_matrix = make_ad_matrix(radius, varargin)
+function adhesion_matrix = make_ad_matrix(ad_size, intensity, varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -6,55 +6,47 @@ function adhesion_matrix = make_ad_matrix(radius, varargin)
 i_p = inputParser;
 i_p.FunctionName = 'make_ad_matrix';
 
-i_p.addRequired('radius',@(x)x >= 0);
-i_p.addParamValue('mean_intensity',0.4237,@isnumeric);
-i_p.addParamValue('outer_intensity',0.3067,@isnumeric);
+i_p.addRequired('ad_size',@(x)isnumeric(x) && length(x) == 2);
+i_p.addRequired('intensity',@isnumeric);
 
-i_p.parse(radius, varargin{:});
+i_p.parse(ad_size,intensity,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (i_p.Results.radius == 0)    
-    adhesion_matrix = [i_p.Results.mean_intensity];
+
+%interp2 blows up on things smaller than 2, so short circuit at the
+%beginnign for those types of adhesions
+if (any(ad_size <= 2)) 
+    adhesion_matrix = ones(ad_size)*intensity;
     return;
 end
 
-adhesion_matrix = zeros(i_p.Results.radius*2+1);
-center = ceil(size(adhesion_matrix,1)/2);
-adhesion_matrix(center,center) = 1;
-% adhesion_matrix(bwdist(adhesion_matrix) > i_p.Results.radius) = NaN;
-adhesion_matrix(bwdist(adhesion_matrix) <= i_p.Results.radius) = 1;
+circle = zeros(max(i_p.Results.ad_size));
 
-ad_matrix_temp = adhesion_matrix;
-pixel_counts = [];
-while(any(ad_matrix_temp(:)))
-    temp_erode = imerode(ad_matrix_temp,strel('disk', 1));
-    pixel_counts = [pixel_counts, sum(ad_matrix_temp(:)) - sum(temp_erode(:))]; %#ok<AGROW>
-    ad_matrix_temp = temp_erode;
+if (mod(size(circle,1), 2) == 0)
+    points = [size(circle,1)/2, size(circle,1)/2+1];
+    circle(points(1), points(1)) = 1;
+    circle(points(1), points(2)) = 1;
+    circle(points(2), points(1)) = 1;
+    circle(points(2), points(2)) = 1;
+else
+    circle(size(circle,1)/2+0.5, size(circle,1)/2+0.5) = 1;
 end
 
-assert(sum(pixel_counts) == sum(adhesion_matrix(:)))
+[X,Y] = meshgrid(1:size(circle,1));
+[XI,YI] = meshgrid(1:(size(circle,1)-1)/(ad_size(2)-1):size(circle,1), ... 
+                   1:(size(circle,1)-1)/(ad_size(1)-1):size(circle,1));
 
-intensity_eq = '';
+interped_circle = interp2(X,Y,bwdist(circle),XI,YI);
 
-for i=1:length(pixel_counts)
-    frac = ['(', num2str(pixel_counts(i)), '/', num2str(sum(adhesion_matrix(:))), ')'];
-    intensity = ['(', num2str(i_p.Results.outer_intensity), ' + (', num2str(i), ' - 1) * x)'];
-    intensity_eq = [intensity_eq, frac, '*', intensity, ' + ']; %#ok<AGROW>
+edge_point = [size(interped_circle,1), size(interped_circle,2)/2];
+if (mod(edge_point(1),1) ~= 0)
+    edge_point(1) = edge_point(1) + 0.5;
 end
 
-intensity_eq = [intensity_eq, '(-1*', num2str(i_p.Results.mean_intensity), ')'];
-step_size = solve(intensity_eq);
-
-ad_matrix_temp = adhesion_matrix;
-for i=1:length(pixel_counts)
-    temp_erode = imerode(ad_matrix_temp,strel('disk', 1));
-    
-    this_layer_intensity = i_p.Results.outer_intensity + (i-1)*step_size;
-    
-    assert(sum(sum(ad_matrix_temp & not(temp_erode))) == pixel_counts(i))
-    
-    adhesion_matrix(ad_matrix_temp & not(temp_erode)) = this_layer_intensity;
-    ad_matrix_temp = temp_erode;
+if (mod(edge_point(2),1) ~= 0)
+    edge_point(2) = edge_point(2) + 0.5;
 end
+
+adhesion_matrix = intensity*(interped_circle <= interped_circle(edge_point(1),edge_point(2)));
