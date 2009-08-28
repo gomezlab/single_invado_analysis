@@ -186,11 +186,13 @@ typically $10^3-10^4$ adhesions characterized per cell in this study. We further
 show that we can detect both large as well as subtle alterations in adhesion
 spatiotemporal properties such as site formation, size and assembly rates in
 response to S178 mutation. In addition, we find that S178 mutation does not
-affect adhesion assembly rate in a symmetric manner, with the rate of
-assembly being far more perturbed then the rate of disassembly. We are also able to infer the existence of two distinct spatial zones in which the process of either adhesion assembly or disassembly is favored. These results
-further improve our understanding of JNK regulation of paxillin dynamics as well
-as demonstrating the utility of appropriately designed image analysis systems in
-the characterization of high-content data sets. 
+affect adhesion assembly rate in a symmetric manner, with the rate of assembly
+being far more perturbed than the rate of disassembly. We are also able to infer
+the existence of two distinct spatial zones in which the process of either
+adhesion assembly or disassembly is favored. These results further improve our
+understanding of JNK regulation of paxillin dynamics as well as demonstrating
+the utility of appropriately designed image analysis systems in the
+characterization of high-content data sets. 
 
 
 
@@ -203,11 +205,11 @@ the characterization of high-content data sets.
 To quantify aspects of focal adhesion spatiotemporal dynamic behavior, we
 implemented a multistage image analysis pipeline (Figure~\ref{method_flow}).
 Briefly, adhesions tagged with EGFP-paxillin are identified and segmented via a
-WaterShed algorithm and the cell edge identified via an RFP tag (see Methods).
-At each consecutive time step both adhesion birth and death events are
-identified and tagged by the software. Static properties of adhesions identified
-within each image are quantified and include properties such as area and
-position. Dynamic properties of adhesions, such as velocities and changes in
+watershed-like algorithm and the cell edge identified via a myristoylated  RFP
+tag (see Methods).  At each consecutive time step both adhesion birth and death
+events are identified and tagged by the software. Static properties of adhesions
+identified within each image are quantified and include properties such as area
+and position. Dynamic properties of adhesions, such as velocities and changes in
 fluorescent intensity, are determined by tracking and measuring adhesion
 properties across time steps/images. A summary of basic extracted and/or derived
 FA properties is given in Table~\ref{prop_table}.
@@ -215,26 +217,32 @@ FA properties is given in Table~\ref{prop_table}.
 An example of the graphical output generated with this approach is shown in
 Figure 2, where a single frame of an image time series is shown, with adhesions
 identified through segmentation and highlighted (Panels A and B).
-Superimposition of adhesions across all 120 (??) image frames from this movie
-are shown in Panel C.     
+Superimposition of adhesions across all 198 image frames from this movie are
+shown in Panel C.     
 
 Distributions for several adhesion properties including area, average paxillin
 intensity, axial ratio and distance from edge are shown in Panel D. In total,
 properties for over 200,000 adhesions are represented in each histogram
-(\textbf{Matt:} is this filtered data?). While significantly larger adhesions
-occur, adhesion areas are typically less than 0.2 $\mu m^2$ (what is the
-mean/median?). The average paxillin intensity within adhesions follows a YYY
-(Poisson?) distribution with mean intensity of XXX (Have to decide whether or not to mention specific distributions). The gross shape of an adhesion, for instance by FA axial ratios
-(major axis/minor axis) can also be characterized and we observe that they tend
-to follow a YYY distribution(?) with a mean value of XXX. Furthermore, we
-observe that adhesions are preferentially born within a region beginning 2
-microns from the cell edge and extending up to 10 $\mu m$ away. Of the FA births
-observed, 65\% were born within this region (\textbf{Matt:} what is the prob of
-birth in this region based on the histogram? Actually, is this distance at birth
-or just the average distance of each adhesion from the edge?). (\textbf{Matt:
-something looks strange on the inset figure on longevity - the x-axis is the
-same - is the y-axis reduced?}) These results demonstrate that we
-are able to identify and quantitatively characterize large numbers of adhesions,
+(\textbf{Matt:} is this filtered data? The filter sets for each individual
+histogram is are in the caption). While significantly larger adhesions occur,
+adhesion areas are typically less than 0.2 $\mu m^2$ (what is the mean/median?).
+The average paxillin intensity within adhesions follows a YYY (Poisson?)
+distribution with mean intensity of XXX (Have to decide whether or not to
+mention specific distributions). The gross shape of an adhesion, for instance by
+FA axial ratios (major axis/minor axis) can also be characterized and we observe
+that they tend to follow a YYY distribution(?) with a mean value of XXX.
+Furthermore, we observe that adhesions are preferentially born within a region
+beginning 2 microns from the cell edge and extending up to 10 $\mu m$ away. Of
+the FA births observed, 65\% were born within this region (\textbf{Matt:} what
+is the prob of birth in this region based on the histogram? Actually, is this
+distance at birth or just the average distance of each adhesion from the edge? -
+The plot is just of adhesion position without reference to adhesion lifecycle
+events like birth or death. Those results are in the following figures).
+(\textbf{Matt: something looks strange on the inset figure on longevity - the
+x-axis is the same - is the y-axis reduced?} - Nope, there are relatively few
+adhesions that live for 20 minutes or longer, note that the FA counts max out
+around 80000 on the large longevity plot.) These results demonstrate that we are
+able to identify and quantitatively characterize large numbers of adhesions,
 allowing the unbiased assessment of FA behavior.
 
 (Discuss longevity?...)
@@ -356,7 +364,7 @@ knockdown.
 
 
 Detection of subtle phenotypes - challenge of separating weak but relevant
-direct effects from indirect effects(?)
+direct effects from indirect effects(?). 
 
 Paragraph about expansions to the code base to include other cell properties
 (edge velocity, other spatial properties).
