@@ -82,6 +82,9 @@ sub create_all_matlab_commands {
         if (defined $cfg{scale_filter_thresh}) {
             $extra_opt .= ",'scale_filter_thresh',$cfg{scale_filter_thresh}";
         }
+        if (defined $cfg{no_ad_splitting}) {
+            $extra_opt .= ",'no_ad_splitting',$cfg{no_ad_splitting}";
+        }
 
         if (-e $cell_mask) {
             $matlab_code[0] .= "find_focal_adhesions('$file_name','cell_mask','$cell_mask'$extra_opt)\n";

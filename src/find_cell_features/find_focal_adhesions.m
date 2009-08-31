@@ -37,6 +37,7 @@ i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('output_file', 'adhesions.png', @ischar);
 i_p.addParamValue('output_file_perim', 'adhesions_perim.png', @ischar);
 i_p.addParamValue('output_file_binary', 'adhesions_binary.png', @ischar);
+i_p.addParamValue('no_splitting', 0, @(x) islogical(x) || x == 1 || x == 0);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,varargin{:});
@@ -78,6 +79,11 @@ end
 threshed_image = remove_edge_adhesions(threshed_image);
 
 min_pixel_size = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
+if (i_p.Results.no_splitting)
+    %if splitting is off, the minimum pixel count for splitting is set to a
+    %super high number, so no adhesions fall above the threshold
+    min_pixel_size = Inf;
+end
 
 ad_zamir = find_ad_zamir(high_passed_image,threshed_image,min_pixel_size,'debug',i_p.Results.debug);
 
