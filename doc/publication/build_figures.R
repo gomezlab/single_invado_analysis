@@ -10,6 +10,7 @@ library(Hmisc)
 raw_data <- list()
 single_props <- list()
 
+#Wild-type FA
 exp_dirs <- Sys.glob('../../results/focal_adhesions/*/adhesion_props/models/')
 exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
 raw_data$results = load_results(exp_dirs,file.path('intensity.Rdata'))
@@ -39,16 +40,14 @@ exp_dirs_reduced <- Sys.glob('../../results/focal_adhesions_reduced/*/adhesion_p
 exp_dirs_reduced <- exp_dirs_reduced[file_test('-d',exp_dirs_reduced)]
 raw_data$results_reduced = load_results(exp_dirs_reduced,file.path('intensity.Rdata'))
 
+#S178A Results
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
 raw_data$results_S = load_results(exp_dirs_S,file.path('intensity.Rdata'))
+raw_data$corr_results_S = load_results(exp_dirs,file.path('local_corrected.Rdata'))
 raw_data$CB_results_S = load_results(exp_dirs_S,file.path('CB_corrected.Rdata'))
 raw_data$area_S = load_results(exp_dirs_S,file.path('area.Rdata'))
 raw_data$ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
-
-exp_dirs_S_reduced <- Sys.glob('../../results/S178A_reduced/*/adhesion_props/models/')
-exp_dirs_S_reduced <- exp_dirs_S_reduced[file_test('-d',exp_dirs_S_reduced)]
-raw_data$results_S_reduced = load_results(exp_dirs_S_reduced,file.path('intensity.Rdata'))
 
 background_correlation_S = load_results_2(exp_dirs_S, 'background_corr.Rdata')
 single_props$S178A = list()
@@ -65,15 +64,9 @@ single_props$S178A$outside <- load_data_files(exp_dirs_S,
 	file.path('..','single_props','Outside_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
-exp_dirs_rap <- Sys.glob('../../results/rap_src/*/adhesion_props/models/')
-exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)]
-raw_data$results_rap = load_results(exp_dirs_rap,file.path('intensity.Rdata'))
-raw_data$corr_results_rap = load_results(exp_dirs_rap,file.path('local_corrected.Rdata'))
-
-exp_dirs_rap <- Sys.glob('../../results/rap_src_control/*/adhesion_props/models/')
-exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)]
-raw_data$results_rap_ctrl = load_results(exp_dirs_rap,file.path('intensity.Rdata'))
-raw_data$corr_results_rap_ctrl = load_results(exp_dirs_rap,file.path('local_corrected.Rdata'))
+exp_dirs_S <- Sys.glob('../../results/S178A_reduced/*/adhesion_props/models/')
+exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
+raw_data$results_S_reduced = load_results(exp_dirs_S,file.path('intensity.Rdata'))
 
 print('Done Loading Data')
 
@@ -107,7 +100,8 @@ results_rap_ctrl_onlysignif = filter_results(raw_data$results_rap_ctrl, min_R_sq
 
 
 area_nofilt = filter_results(raw_data$area, primary_filter_results = raw_data$results, min_R_sq = -Inf, max_p_val = 0.05)
-area_filt = filter_results(raw_data$area, primary_filter_results = raw_data$results)
+area_filt = filter_results(raw_data$area)
+area_filt_S = filter_results(raw_data$area_S)
 results_filt = filter_results(raw_data$results, cell_intensities=single_props$fa$cell_int)
 results_reduced_filt = filter_results(raw_data$results_reduced)
 results_S_filt = filter_results(raw_data$results_S, cell_intensities=single_props$S178A$cell_int)
@@ -133,35 +127,88 @@ dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
 #Control Checks
 ########################################
 
-
-summary(lm(results_onlysignif$control$assembly_slope ~ results_onlysignif$control$mean_cell_int))
-summary(lm(results_filt$control$assembly_slope ~ results_filt$control$mean_cell_int))
-summary(lm(results_onlysignif$control$disassembly_slope ~ results_onlysignif$control$mean_cell_int))
-
-
 #Assembly and Disassembly Rates versus Expression
 dir.create(dirname(file.path(out_folder,'controls','rates_vs_expression.svg')), 
     recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'controls','rates_vs_expression.svg'))
 layout(rbind(c(1,2), c(3,4)))
 
-par(bty='n', mar=c(4,4,2,0))
+par(bty='n', mar=c(4,4.5,2,0))
 
-ylim_vals = range(c(results_filt$control$assembly_slope, results_filt$control$disassembly_slope))
-plot(results_filt$control$mean_cell_int, results_filt$control$assembly_slope, 
-	col='green', ylim=ylim_vals, xlab='Mean Paxillin Intensity', 
-	ylab=expression(paste('Rate (',min^-1,')',sep='')), main='Wild-type', pch=19);
-points(results_filt$control$mean_cell_int, results_filt$control$disassembly_slope, col='red', pch=19)
+exp_num_counts = c()
+for (i in sort(unique(results_onlysignif$assembly$exp_num))) {
+        exp_num_counts = c(exp_num_counts, length(which(results_onlysignif$assembly$exp_num == i)));
+}
+
+#Assembly/Disassembly Rates versus mean cell intensity
+ylim_vals = range(c(results_onlysignif$control$assembly_slope, results_onlysignif$control$disassembly_slope))
+plot(results_onlysignif$control$mean_cell_int, results_onlysignif$control$assembly_slope, 
+	col='green', ylim=ylim_vals, xlab='Mean Cellular Paxillin Intensity', 
+	ylab=expression(paste('Mean Rate (',min^-1,')',sep='')), main='Wild-type', pch=19);
+points(results_onlysignif$control$mean_cell_int, results_onlysignif$control$disassembly_slope, col='red', pch=19)
+
 legend('topright', c('Assembly','Disassembly'), fill=c('green','red'))
-summary(lm(results_filt$control$assembly_slope ~ results_filt$control$mean_cell_int))
-summary(lm(results_filt$control$disassembly_slope ~ results_filt$control$mean_cell_int))
+summary(lm(results_onlysignif$control$assembly_slope ~ results_onlysignif$control$mean_cell_int, weights=exp_num_counts))
+summary(lm(results_onlysignif$control$disassembly_slope ~ results_onlysignif$control$mean_cell_int))
 mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5);
 
-ylim_vals = range(c(results_filt$control$birth_pos, results_filt$control$death_pos), na.rm=T)
-plot(results_filt$control$mean_cell_int, results_filt$control$birth_pos, 
+#birth/death position versus mean cell intensity
+ylim_vals = range(c(results_onlysignif$control$birth_pos, results_onlysignif$control$death_pos), na.rm=T)
+plot(results_onlysignif$control$mean_cell_int, results_onlysignif$control$birth_pos, 
+	col='green', ylim=ylim_vals, xlab='Mean Cellular Paxillin Intensity', 
+	ylab=expression(paste('Mean Distance from Edge (',mu,'m)',sep='')), main='Wild-type', pch=19);
+points(results_onlysignif$control$mean_cell_int, results_onlysignif$control$death_pos, col='red', pch=19)
+
+legend('topright', c('Birth','Death'), fill=c('green','red'))
+summary(lm(results_onlysignif$control$birth_pos ~ results_onlysignif$control$mean_cell_int, weights=exp_num_counts))
+summary(lm(results_onlysignif$control$death_pos ~ results_onlysignif$control$mean_cell_int, weights=exp_num_counts))
+mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
+
+ylim_vals = range(c(results_S_onlysignif$control$assembly_slope, results_S_onlysignif$control$disassembly_slope), na.rm=T)
+plot(results_S_onlysignif$control$mean_cell_int, results_S_onlysignif$control$assembly_slope, 
+	col='green', ylim=ylim_vals, xlab='Mean Cellular Paxillin Intensity', 
+	ylab=expression(paste('Mean Rate (',min^-1,')',sep='')), main='S178A', pch=19);
+points(results_S_onlysignif$control$mean_cell_int, results_S_onlysignif$control$disassembly_slope, col='red', pch=19)
+
+legend('topright', c('Assembly','Disassembly'), fill=c('green','red'))
+summary(lm(results_S_onlysignif$control$assembly_slope ~ results_S_onlysignif$control$mean_cell_int))
+summary(lm(results_S_onlysignif$control$disassembly_slope ~ results_S_onlysignif$control$mean_cell_int))
+mtext('C',adj=-.2,side=3,line=-0.5,cex=1.5);
+
+ylim_vals = range(c(results_S_onlysignif$control$birth_pos, results_S_onlysignif$control$death_pos), na.rm=T)
+plot(results_S_onlysignif$control$mean_cell_int, results_S_onlysignif$control$birth_pos, 
+	col='green', ylim=ylim_vals, xlab='Mean Cellular Paxillin Intensity', 
+	ylab=expression(paste('Mean Distance from Edge (',mu,'m)',sep='')), main='S178A', pch=19);
+points(results_S_onlysignif$control$mean_cell_int, results_S_onlysignif$control$death_pos, col='red', pch=19)
+
+
+legend('topright', c('Birth','Death'), fill=c('green','red'))
+summary(lm(results_S_onlysignif$control$birth_pos ~ results_S_onlysignif$control$mean_cell_int))
+summary(lm(results_S_onlysignif$control$death_pos ~ results_S_onlysignif$control$mean_cell_int))
+mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
+graphics.off()
+
+#Rates versus expression unfiltered
+svg(file.path(out_folder,'controls','rates_vs_expression_unfilt.svg'))
+layout(rbind(c(1,2), c(3,4)))
+
+par(bty='n', mar=c(4,4.5,2,0))
+
+ylim_vals = range(c(results_onlysignif$control$assembly_slope, results_onlysignif$control$disassembly_slope))
+plot(results_onlysignif$control$mean_cell_int, results_onlysignif$control$assembly_slope, 
 	col='green', ylim=ylim_vals, xlab='Mean Paxillin Intensity', 
 	ylab=expression(paste('Rate (',min^-1,')',sep='')), main='Wild-type', pch=19);
-points(results_filt$control$mean_cell_int, results_filt$control$death_pos, col='red', pch=19)
+points(results_onlysignif$control$mean_cell_int, results_onlysignif$control$disassembly_slope, col='red', pch=19)
+legend('topright', c('Assembly','Disassembly'), fill=c('green','red'))
+summary(lm(results_onlysignif$control$assembly_slope ~ results_onlysignif$control$mean_cell_int))
+summary(lm(results_onlysignif$control$disassembly_slope ~ results_onlysignif$control$mean_cell_int))
+mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5);
+
+ylim_vals = range(c(results_onlysignif$control$birth_pos, results_onlysignif$control$death_pos), na.rm=T)
+plot(results_onlysignif$control$mean_cell_int, results_onlysignif$control$birth_pos, 
+	col='green', ylim=ylim_vals, xlab='Mean Paxillin Intensity', 
+	ylab=expression(paste('Rate (',min^-1,')',sep='')), main='Wild-type', pch=19);
+points(results_onlysignif$control$mean_cell_int, results_onlysignif$control$death_pos, col='red', pch=19)
 legend('topright', c('Birth','Death'), fill=c('green','red'))
 mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
 
@@ -202,7 +249,28 @@ text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_nofilt$a
 boxplot_with_points(list(results_nofilt$disassembly$R_sq, results_reduced_nofilt$disassembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly ',R^2,sep='')))
 plot_size = par("usr");
 text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_nofilt$disassembly$R_sq, results_reduced_nofilt$disassembly$R_sq)$p.value), col='red')
+graphics.off()
 
+#Reduced S178A
+svg(file.path(out_folder,'controls','resampled_slopes_S178A.svg'))
+layout(rbind(c(1,2),c(3,4)))
+par(bty='n', mar=c(3,4.2,0,0));
+
+boxplot_with_points(list(results_S_onlysignif$assembly$slope, results_S_reduced_nofilt$assembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_S_nofilt$assembly$slope, results_S_reduced_nofilt$assembly$slope/2)$p.value), col='red')
+
+boxplot_with_points(list(results_S_nofilt$disassembly$slope, results_S_reduced_nofilt$disassembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_S_nofilt$disassembly$slope, results_S_reduced_nofilt$disassembly$slope/2)$p.value), col='red')
+
+boxplot_with_points(list(results_S_nofilt$assembly$R_sq, results_S_reduced_nofilt$assembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly ',R^2,sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_S_nofilt$assembly$R_sq, results_S_reduced_nofilt$assembly$R_sq)$p.value), col='red')
+
+boxplot_with_points(list(results_S_nofilt$disassembly$R_sq, results_S_reduced_nofilt$disassembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly ',R^2,sep='')))
+plot_size = par("usr");
+text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_S_nofilt$disassembly$R_sq, results_S_reduced_nofilt$disassembly$R_sq)$p.value), col='red')
 graphics.off()
 
 #Poor R^2 adhesion sequence plots
@@ -220,87 +288,6 @@ for (i in which(results_nofilt$disassembly$R_sq < 0.2)) {
     plot_ad_seq(raw_data$results[[results_nofilt$disassembly$exp_num[i]]], results_nofilt$disassembly$lin_num[i], main=results_nofilt$disassembly$exp_dir[i], sub=results_nofilt$disassembly$lin_num[i], type='disassembly')
     plot_ad_seq(raw_data$area[[results_nofilt$disassembly$exp_num[i]]], results_nofilt$disassembly$lin_num[i], main=results_nofilt$disassembly$exp_dir[i], sub=results_nofilt$disassembly$lin_num[i], type='disassembly')
 }
-graphics.off()
-
-########################################
-#RAP-SRC Plotting
-########################################
-
-#Data splitting
-rap_src_pre = list();
-rap_src_post = list();
-
-assembly_pre_filt = results_rap_onlysignif$assembly$exp_num %% 2 == 0;
-assembly_post_filt = results_rap_onlysignif$assembly$exp_num %% 2 == 1;
-rap_src_pre$assembly = results_rap_onlysignif$assembly[assembly_pre_filt,];
-rap_src_post$assembly = results_rap_onlysignif$assembly[assembly_post_filt,];
-
-disassembly_pre_filt = results_rap_onlysignif$disassembly$exp_num %% 2 == 0;
-disassembly_post_filt = results_rap_onlysignif$disassembly$exp_num %% 2 == 1;
-rap_src_pre$disassembly = results_rap_onlysignif$disassembly[disassembly_pre_filt,];
-rap_src_post$disassembly = results_rap_onlysignif$disassembly[disassembly_post_filt,];
-
-joint_pre_filt = results_rap_onlysignif$joint$exp_num %% 2 == 0;
-joint_post_filt = results_rap_onlysignif$joint$exp_num %% 2 == 1;
-rap_src_pre$joint = results_rap_onlysignif$joint[joint_pre_filt,];
-rap_src_post$joint = results_rap_onlysignif$joint[joint_post_filt,];
-
-rap_src_stage_lengths = gather_stage_lengths(rap_src_pre,rap_src_post);
-
-rap_src_pre_ctrl = list();
-rap_src_post_ctrl = list();
-
-assembly_pre_filt = results_rap_ctrl_onlysignif$assembly$exp_num %% 2 == 0;
-assembly_post_filt = results_rap_ctrl_onlysignif$assembly$exp_num %% 2 == 1;
-rap_src_pre_ctrl$assembly = results_rap_ctrl_onlysignif$assembly[assembly_pre_filt,];
-rap_src_post_ctrl$assembly = results_rap_ctrl_onlysignif$assembly[assembly_post_filt,];
-
-disassembly_pre_filt = results_rap_ctrl_onlysignif$disassembly$exp_num %% 2 == 0;
-disassembly_post_filt = results_rap_ctrl_onlysignif$disassembly$exp_num %% 2 == 1;
-rap_src_pre_ctrl$disassembly = results_rap_ctrl_onlysignif$disassembly[disassembly_pre_filt,];
-rap_src_post_ctrl$disassembly = results_rap_ctrl_onlysignif$disassembly[disassembly_post_filt,];
-
-joint_pre_filt = results_rap_ctrl_onlysignif$joint$exp_num %% 2 == 0;
-joint_post_filt = results_rap_ctrl_onlysignif$joint$exp_num %% 2 == 1;
-rap_src_pre_ctrl$joint = results_rap_ctrl_onlysignif$joint[joint_pre_filt,];
-rap_src_post_ctrl$joint = results_rap_ctrl_onlysignif$joint[joint_post_filt,];
-
-rap_src_ctrl_stage_lengths = gather_stage_lengths(rap_src_pre_ctrl,rap_src_post_ctrl);
-
-#Lifetime Plot
-dir.create(dirname(file.path(out_folder,'rapr_src','rapr_src_rates_nofilt.pdf')), 
-    recursive=TRUE, showWarnings=FALSE);
-svg(file.path(out_folder,'rapr_src','rapr_src_lifetimes.svg'))
-par(bty='n', mar=c(3,4,0,0))
-temp = plot_stage_length_data(rap_src_stage_lengths, type='side_by_side', names=c('Before', 'After'));
-graphics.off()
-
-#Unfiltered Rate Plotting
-pdf(file.path(out_folder,'rapr_src','rapr_src_rates_nofilt.pdf'))
-layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(2,4,1,0))
-
-boxplot_with_points(list(rap_src_pre$assembly$slope, 
-                         rap_src_post$assembly$slope),
-                    names=c('Before', 'After'), main='Assembly', notch=T,
-                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
-
-boxplot_with_points(list(rap_src_pre$disassembly$slope, 
-                         rap_src_post$disassembly$slope),
-                    names=c('Before', 'After'), main='Disassembly', notch=T,
-                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
-
-par(bty='n', mar=c(2,4,1.5,0))
-
-boxplot_with_points(list(rap_src_pre_ctrl$assembly$slope, 
-                         rap_src_post_ctrl$assembly$slope),
-                    names=c('Before', 'After'), main='Assembly Control', notch=T,
-                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
-
-boxplot_with_points(list(rap_src_pre_ctrl$disassembly$slope, 
-                         rap_src_post_ctrl$disassembly$slope),
-                    names=c('Before', 'After'), main='Disassembly Control', notch=T,
-                    ylab=expression(paste('Rate (',min^-1,')',sep='')))
 graphics.off()
 
 ########################################
@@ -423,7 +410,7 @@ graphics.off()
 ####################
 dir.create(dirname(file.path(out_folder,'supplemental','R_squared.svg')), 
     recursive=TRUE, showWarnings=FALSE);
-svg(file.path(out_folder,'supplemental','R_squared.svg'), width=14)
+svg(file.path(out_folder,'supplemental','R_squared.svg'), width=14*.55, height=7*.55)
 layout(rbind(c(1,2)))
 
 par(bty='n', mar=c(4,4.2,2,0))
@@ -431,11 +418,21 @@ par(bty='n', mar=c(4,4.2,2,0))
 hist(results_nofilt$a$R, main='Assembly', freq=TRUE,
 	 xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt$a$R_sq),')', sep=''), 
 	 ylab='# of Focal Adhesions')
-mtext('A',adj=-.18,side=3,line=-0.5,cex=1.5)
+
+plot_dims = par("usr");
+sorted_r_vals = sort(results_nofilt$assem$R)
+segments(sorted_r_vals[floor(length(sorted_r_vals)/2)],0, 
+         sorted_r_vals[floor(length(sorted_r_vals)/2)],plot_dims[4], col='red', lwd=2)
+mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5)
 
 hist(results_nofilt$dis$R,main='Disassembly', freq=TRUE,
 	 xlab=paste('Adjusted R Squared Values (n=',length(results_nofilt$d$R_sq),')', sep=''), 
 	 ylab='# of Focal Adhesions')
+
+plot_dims = par("usr");
+sorted_r_vals = sort(results_nofilt$dis$R)
+segments(sorted_r_vals[floor(length(sorted_r_vals)/2)],0, 
+         sorted_r_vals[floor(length(sorted_r_vals)/2)],plot_dims[4], col='red', lwd=2)
 mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
 graphics.off()
 
@@ -788,6 +785,80 @@ mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 graphics.off()
 
+dir.create(dirname(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf')), 
+    recursive=TRUE, showWarnings=FALSE);
+pdf(file.path(out_folder,'S178A','S178A_vs_wild-type_area.pdf'))
+layout(rbind(c(1,2),c(3,4)))
+par(bty='n', mar=c(2,4,0,0))
+
+max_rate = max(c(area_filt$as$slope,area_filt_S$as$slope,
+                 area_filt$dis$slope,area_filt_S$dis$slope));
+
+#Panel Assembly Rates
+boxplot_with_points(list(area_filt$as$slope,area_filt_S$as$slope), 
+        names=c('Wild-type','S178A'), 
+        colors=c('orange','blue'),
+        ylim = c(0,max_rate + 0.012),
+        ylab=expression(paste('Assembly Rate (',min^-1,')',sep=''))
+)
+
+bar_length = .005;
+sep_from_data = 0.005;
+
+upper_left = c(1, max_rate + sep_from_data + bar_length);
+lower_right = c(2, max_rate + sep_from_data);
+lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
+	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
+text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"***",cex=1.5)
+mtext('A',adj=-.25,side=3,line=-1.5,cex=1.5)	    
+
+#Panel Disassembly Rates
+boxplot_with_points(list(area_filt$dis$slope,area_filt_S$dis$slope), 
+    names=c('Wild-type','S178A'), 
+    colors=c('orange','blue'),
+    ylim = c(0,max_rate + 0.012),
+    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')) 
+)
+
+upper_left = c(1, max_rate + sep_from_data + bar_length);
+lower_right = c(2, max_rate + sep_from_data);
+lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
+	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
+text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"*",cex=1.5)
+mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)
+
+#Panel Birth Distances
+par(bty='n', mar=c(2,4,1.5,0))
+max_dist = max(c(area_filt$as$edge_dist,area_filt_S$as$edge_dist,
+                 area_filt$dis$edge_dist,area_filt_S$dis$edge_dist), na.rm=T)
+boxplot_with_points(list(area_filt$as$edge_dist,area_filt_S$as$edge_dist), 
+    names=c('Wild-type','S178A'), 
+    ylim=c(0,max_dist+2), 
+    colors=c('orange','blue'),
+    ylab=expression(paste('Distance from Edge at Birth (',mu,'m)',sep=''))
+)
+
+bar_length = 1;
+sep_from_data = 1;
+
+upper_left = c(1, max_dist + sep_from_data + bar_length);
+lower_right = c(2, max_dist + sep_from_data);
+lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
+	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
+text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"**",cex=1.5)
+mtext('C',adj=-.25,side=3,line=-1.5,cex=1.5)
+
+#Panel Death Distances
+boxplot_with_points(list(area_filt$dis$edge_dist,area_filt_S$dis$edge_dist), 
+    names=c('Wild-type','S178A'), 
+    ylim=c(0,max_dist+2),
+    colors=c('orange','blue'),
+    ylab=expression(paste('Distance from Edge at Death (',mu,'m)',sep=''))
+)
+mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)	    
+
+graphics.off()
+
 ###############
 #Conf Levels
 ###############
@@ -797,20 +868,28 @@ boot_two = boot(results_S_filt$as$slope, function(data,indexes) mean(data[indexe
 find_p_val_from_bootstrap(boot_one, boot_two)
 boot_two$t0/boot_one$t0
 
+determine_median_p_value(results_filt$as$slope, results_S_filt$as$slope)
+
 boot_one = boot(results_filt$dis$slope, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
 boot_two = boot(results_S_filt$dis$slope, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
 find_p_val_from_bootstrap(boot_one, boot_two)
 boot_two$t0/boot_one$t0
+
+determine_median_p_value(results_filt$dis$slope, results_S_filt$dis$slope)
 
 boot_one = boot(results_filt$as$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
 boot_two = boot(results_S_filt$as$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
 find_p_val_from_bootstrap(boot_one, boot_two)
 boot_two$t0/boot_one$t0
 
+determine_median_p_value(results_filt$as$edge_dist, results_S_filt$as$edge_dist)
+
 boot_one = boot(results_filt$dis$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
 boot_two = boot(results_S_filt$dis$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
 find_p_val_from_bootstrap(boot_one, boot_two)
 boot_two$t0/boot_one$t0
+
+determine_median_p_value(results_filt$dis$edge_dist, results_S_filt$dis$edge_dist)
 
 rm(boot_one); rm(boot_two);
 

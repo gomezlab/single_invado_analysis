@@ -71,42 +71,48 @@ par(bty='n',mar=c(3,4.3,2,0))
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_10$assembly$slope,
 		 processed$high_Rsq$S178A$results_10$assembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 10")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 10", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_9$assembly$slope,
 		 processed$high_Rsq$S178A$results_9$assembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 9")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 9", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_8$assembly$slope,
 		 processed$high_Rsq$S178A$results_8$assembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 8")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 8", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_7$assembly$slope,
 		 processed$high_Rsq$S178A$results_7$assembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 7")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 7", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_6$assembly$slope,
 		 processed$high_Rsq$S178A$results_6$assembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 6")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 6", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_5$assembly$slope,
 		 processed$high_Rsq$S178A$results_5$assembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 5")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 5", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 graphics.off()
@@ -119,42 +125,48 @@ par(bty='n',mar=c(3,4.3,2,0))
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_10$disassembly$slope,
 		 processed$high_Rsq$S178A$results_10$disassembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 10")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 10", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_9$disassembly$slope,
 		 processed$high_Rsq$S178A$results_9$disassembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 9")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 9", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_8$disassembly$slope,
 		 processed$high_Rsq$S178A$results_8$disassembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 8")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 8", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_7$disassembly$slope,
 		 processed$high_Rsq$S178A$results_7$disassembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 7")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 7", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_6$disassembly$slope,
 		 processed$high_Rsq$S178A$results_6$disassembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 6")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 6", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_5$disassembly$slope,
 		 processed$high_Rsq$S178A$results_5$disassembly$slope),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 5")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 5", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 graphics.off()
@@ -163,47 +175,53 @@ graphics.off()
 #Edge Dist at birth variation
 svg(file.path(out_folder,'controls','edge_dist_at_birth.svg'));
 layout(matrix(c(1,3,5,2,4,6),ncol=2))
-y_label = expression(paste('Assembly Rate (',min^-1,')',sep=''))
+y_label = expression(paste('Distance from Cell Edge (',mu,'m)',sep=''))
 par(bty='n',mar=c(3,4.3,2,0))
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_10$assembly$edge_dist,
 		 processed$high_Rsq$S178A$results_10$assembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 10")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 10", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_9$assembly$edge_dist,
 		 processed$high_Rsq$S178A$results_9$assembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 9")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 9", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_8$assembly$edge_dist,
 		 processed$high_Rsq$S178A$results_8$assembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 8")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 8", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_7$assembly$edge_dist,
 		 processed$high_Rsq$S178A$results_7$assembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 7")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 7", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_6$assembly$edge_dist,
 		 processed$high_Rsq$S178A$results_6$assembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 6")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 6", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_5$assembly$edge_dist,
 		 processed$high_Rsq$S178A$results_5$assembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 5")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 5", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 graphics.off()
@@ -212,47 +230,53 @@ graphics.off()
 #Edge dist at death variation
 svg(file.path(out_folder,'controls','edge_dist_at_death.svg'));
 layout(matrix(c(1,3,5,2,4,6),ncol=2))
-y_label = expression(paste('Disassembly Rate (',min^-1,')',sep=''))
+y_label = expression(paste('Distance from Cell Edge (',mu,'m)',sep=''))
 par(bty='n',mar=c(3,4.3,2,0))
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_10$disassembly$edge_dist,
 		 processed$high_Rsq$S178A$results_10$disassembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 10")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 10", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_9$disassembly$edge_dist,
 		 processed$high_Rsq$S178A$results_9$disassembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 9")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 9", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_8$disassembly$edge_dist,
 		 processed$high_Rsq$S178A$results_8$disassembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 8")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 8", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_7$disassembly$edge_dist,
 		 processed$high_Rsq$S178A$results_7$disassembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 7")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 7", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_6$disassembly$edge_dist,
 		 processed$high_Rsq$S178A$results_6$disassembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 6")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 6", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 
 data = boxplot_with_points(
 	list(processed$high_Rsq$wild$results_5$disassembly$edge_dist,
 		 processed$high_Rsq$S178A$results_5$disassembly$edge_dist),
-	names=c('Wild-type','S178A'), notch=T, ylab=y_label, main="Minimum Phase Length: 5")
+	names=c('Wild-type','S178A'), notch=T, ylab=y_label, 
+        main="Minimum Phase Length: 5", colors=c('orange','blue'))
 plot_dims = par("usr");
 text(2.3,plot_dims[4]*0.9,paste(round(100*(data$stats[3,2]/data$stats[3,1])), '%'))
 graphics.off()
