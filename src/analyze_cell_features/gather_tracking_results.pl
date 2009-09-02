@@ -300,6 +300,7 @@ sub gather_and_output_lineage_properties {
         $props{Area} = &gather_prop_seq("Area");
         &output_prop_time_series($props{Area}, "Area");
         $props{largest_area} = &gather_largest_entry($props{Area});
+        $props{mean_area} = &gather_average_value($props{Area});
         undef $props{Area};
     }
 
@@ -722,11 +723,11 @@ sub gather_split_birth_status {
 
 sub gather_lineage_summary_data {
     my %props          = %{ $_[0] };
-    my @possible_props = qw(longevity largest_area starting_edge_dist 
-      ending_edge_dist starting_center_dist ending_center_dist merge_count 
-      death_status split_birth_status average_speeds max_speeds ad_sig 
-      birth_i_num start_x start_y death_i_num end_x end_y);
-
+	my @possible_props = qw(longevity largest_area mean_area starting_edge_dist
+		ending_edge_dist starting_center_dist ending_center_dist merge_count
+		death_status split_birth_status average_speeds max_speeds ad_sig birth_i_num
+		start_x start_y death_i_num end_x end_y);
+	
     my @lin_summary_data;
     for (@possible_props) {
         my $this_prop = $_;

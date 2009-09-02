@@ -719,6 +719,7 @@ boxplot_with_points <- function(data,
                 temp_data,col=colors[[i]], pch=pch, cex=point_cex)
 		}
 	}
+        return(box.data);
 }
 
 hist_with_percents <- function(data, ...) {
@@ -889,6 +890,22 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05,
     points
 }
 
+determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
+	require(boot);
+	boot_samp_1 = boot(data_1, function(data_1,indexes) mean(data_1[indexes],na.rm=T), bootstrap.rep);
+	boot_samp_2 = boot(data_2, function(data_1,indexes) mean(data_1[indexes],na.rm=T), bootstrap.rep);
+	p_val = find_p_val_from_bootstrap(boot_samp_1, boot_samp_2);
+	return(p_val);
+}
+
+determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
+	require(boot);
+	boot_samp_1 = boot(data_1, function(data_1,indexes) median(data_1[indexes],na.rm=T), bootstrap.rep);
+	boot_samp_2 = boot(data_2, function(data_1,indexes) median(data_1[indexes],na.rm=T), bootstrap.rep);
+	p_val = find_p_val_from_bootstrap(boot_samp_1, boot_samp_2);
+	return(p_val);
+}
+
 gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, debug=FALSE) {
 	require(boot)
 	bar_lengths = matrix(NA,3,2)
@@ -968,7 +985,7 @@ gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, de
 }
 
 find_p_val_from_bootstrap <- function(boot_one, boot_two, 
-	p_vals_to_test = c(0.05,1E-2,1E-3,1E-4,1E-5)) {
+	p_vals_to_test = c(seq(0.5,0.1,by=-0.01),0.1,0.05,1E-2,1E-3,1E-4,1E-5)) {
 	
 	stopifnot(class(boot_one) == "boot")
 	stopifnot(class(boot_two) == "boot")
@@ -1014,7 +1031,6 @@ gather_general_props <- function(results) {
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
-	        #test
 		points$longevity = c(points$longevity, res$exp_props$longevity)
 		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
 		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
@@ -1034,6 +1050,7 @@ gather_single_image_props <- function(ind_results) {
 		filt_by_area = res$Area >= min(res$Area)# & res$I_num == 1
 		ind_data$Area = c(ind_data$Area, res$Area[filt_by_area]);
 		ind_data$ad_sig = c(ind_data$ad_sig, res$Average_adhesion_signal[filt_by_area]);
+		ind_data$ad_var = c(ind_data$ad_var, res$Variance_adhesion_signal[filt_by_area]);
 		ind_data$axial_r = c(ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);
 	
 		ind_data$cent_dist = c(ind_data$cent_dist, res$Centroid_dist_from_edge[filt_by_area]);
