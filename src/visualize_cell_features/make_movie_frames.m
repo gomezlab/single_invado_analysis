@@ -19,6 +19,8 @@ i_p = inputParser;
 i_p.FunctionName = 'MAKE_MOVIE_FRAMES';
 
 i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
+i_p.addParamValue('no_b_box',0,@(x) islogical(x) || x == 0 || x == 1);
+i_p.addParamValue('no_scale_bar',0,@(x) islogical(x) || x == 0 || x == 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(cfg_file,varargin{:});
@@ -66,6 +68,13 @@ if (b_box(1) <= 0), b_box(1) = 1; end
 if (b_box(2) <= 0), b_box(2) = 1; end
 if (b_box(3) > i_size(2)), b_box(3) = i_size(2); end
 if (b_box(4) > i_size(1)), b_box(4) = i_size(1); end
+
+if (i_p.Results.no_b_box)
+    b_box(1) = 1;
+    b_box(2) = 1;
+    b_box(3) = i_size(2);
+    b_box(4) = i_size(1);
+end
 
 edge_cmap = jet(size(tracking_seq,2));
 %define the edge image here because the edge image will be added to each
@@ -192,7 +201,7 @@ for i = 1:max_image_num
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
     
     %Add scale bars if the pixel size is available
-    if (exist('pixel_size','var'))
+    if (exist('pixel_size','var') && not(i_p.Results.no_scale_bar))
         for j = 1:size(frame,2)
             frame{j} = draw_scale_bar(frame{j},pixel_size);
         end

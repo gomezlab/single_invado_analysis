@@ -19,29 +19,8 @@ i_p.parse(I);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-temp = regionprops(bwlabel(I),'BoundingBox');
 
-bounds = zeros(size(temp,1),4);
-
-for i = 1:size(temp,1)
-    bounds(i,:) = temp(i).BoundingBox;
-end
-
-bbox = [Inf, Inf, -Inf, -Inf];
-
-for i = 1:size(bounds,1)
-    x1 = ceil(bounds(i,1));
-    y1 = ceil(bounds(i,2));
-    x2 = floor(x1 + bounds(i,3));
-    y2 = floor(y1 + bounds(i,4));
-
-    if (bbox(1) > x1), bbox(1) = x1; end
-    if (bbox(2) > y1), bbox(2) = y1; end
-    if (bbox(3) < x2), bbox(3) = x2; end
-    if (bbox(4) < y2), bbox(4) = y2; end
-end
-
-if (bbox(1) < 0), bbox(1) = 0; end
-if (bbox(2) < 0), bbox(2) = 0; end
-if (bbox(3) > size(I,2)), bbox(3) = size(I,2); end
-if (bbox(4) > size(I,2)), bbox(4) = size(I,2); end
+bbox(1) = find(sum(I) > 0,1,'first');
+bbox(2) = find(sum(I,2) > 0,1,'first');
+bbox(3) = find(sum(I)>0, 1, 'last');
+bbox(4) = find(sum(I,2)>0, 1, 'last');

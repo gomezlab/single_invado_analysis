@@ -65,9 +65,18 @@ foreach (@movie_params) {
     
     &write_matlab_config(%params);
     
-    my $movie_debug_string = $opt{movie_debug} ? ",'debug',1" : "";
-    push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$movie_debug_string)";
-    push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "'$movie_debug_string)";
+	my $extra_opt = "";
+	if (defined $opt{movie_debug}) {
+		$extra_opt .= ",'debug',1";
+	}
+	if (defined $cfg{no_scale_bar}) {
+		$extra_opt .= ",'no_scale_bar',$cfg{no_scale_bar}";
+	}
+	if (defined $cfg{no_b_box}) {
+		$extra_opt .= ",'no_b_box',$cfg{no_b_box}";
+	}
+    push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$extra_opt)";
+    push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "')";
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
         %single_ad_params = %params;
     }
