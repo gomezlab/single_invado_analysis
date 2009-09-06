@@ -199,6 +199,9 @@ characterization of high-content data sets.
 % Results and Discussion can be combined.
 \section*{Results}
 
+\subsection*{Testing Data}
+
+To test the capabilities of the FA analysis methods 
 
 \subsection*{Quantitative Time-lapse Microscopy of Focal Adhesions}
 
@@ -579,6 +582,45 @@ be observed. There are few adhesions where both the assembly and disassembly
 phases fit log-linear models with high R$^2$ values (above 0.9), so the
 R$^2$ value requirements were excluded, but the filter did exclude adhesions
 were either the assembly or disassembly p-value was above 0.05.
+
+\subsection*{Simulated Data}
+
+To test the algorithm's ability to detect adhesion structures, track their
+movement and extract their kinetic properties. A series of gold standard set of
+simulated data was created. These simulated experiments fell into three classes:
+
+\begin{itemize}
+	\item Stationary: designed to test the image processing algorithm's ability
+	to detect, track and measure adhesions that are not moving
+	\item Moving: designed to test the tracking algorithm's ability to follow
+	adhesions of various sizes as they move
+	\item Kinetics: designed to test the assembly and disassembly phase length
+	and rate detection algorithms
+\end{itemize}
+
+All of the adhesions in the simulation were round in shape, with radii varying
+between 1 to 10 pixels. The background noise values were distributed with mean 0
+and variance $5*10^{-5}$.
+
+\subsubsection*{Stationary Simulation}
+
+The stationary simulation consisted of an array of round adhesions situated on a
+noisy background. The adhesion intensities were varied between 0.05 and 0.47,
+in order to cover a wide range of detected adhesion intensities (the
+10$^\text{th}$ and 90$^\text{th}$ percentiles of average adhesion intensity is
+0.23 and 0.47 on the 0 to 1 normalized scale). The range of simulated adhesion
+intensities were evenly sampled to make 15 columns of adhesions, while each row
+contained adhesions of a single size.
+
+\subsubsection*{Moving Simulation}
+
+The moving simulation used the same set of parameters as the stationary
+simulation except that the adhesions were shifted across the imaging field at
+varying rates.  
+
+\subsubsection*{Kinetics Simulation}
+
+
 
 % Do NOT remove this, even if you are not including acknowledgments
 \section*{Acknowledgments}
