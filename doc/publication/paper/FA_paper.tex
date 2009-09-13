@@ -74,13 +74,15 @@
 Matthew E. Berginski$^{1,\dagger}$, 
 Eric Vitriol$^{2,\dagger}$, 
 Klaus Hahn$^{3,\ast}$
-Shawn M. Gomez$^{1,\ast}$
+Shawn M. Gomez$^{1,3,4,\ast}$
 \\
 \bf{1} Department of Biomedical Engineering, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
 \\
 \bf{2} Department of Cell and Developmental Biology, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
 \\
 \bf{3} Department of Pharmacology, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
+\\
+\bf{4} Department of Computer Science, University of North Carolina at Chapel Hill, Chapel Hill, NC, USA
 \\
 $\dagger$ These authors contributed equally to this work.
 \\
@@ -132,25 +134,28 @@ In this and other FA-relevant processes, FA dynamics is recognized as being
 highly regulated, with alterations in the balance of regulating factors playing
 a key role in adhesion turnover essential for normal cell function.
 
-Microscopic imaging of focal adhesions has driven a significant portion of our
-current understanding of adhesion dynamics, with methods such as total internal
+Microscopic imaging of FAs has driven a significant portion of our current
+understanding of adhesion dynamics, with methods such as total internal
 reflection fluorescence microscopy (TIR-FM) providing high-resolution images
 capable of being quantitatively analyzed. However, challenges in image capture
 and downstream analysis has generally led to the characterization of only a
 relatively small number of hand-picked adhesions within any given cell
-\cite{Webb2004} (other refs). Recent technological and methodological
-improvements have led to the automated detection and characterization of focal
-adhesions for application in high-throughput screening studies. For instance,
-Paran and colleagues have reported on the use of a high-throughput
-high-resolution imaging system to screen a plant extract library for effects on
-adhesion morphology and distribution. Similarly, the same high-throughput
+\cite{Webb2004} (\textbf{other example refs}). Recent technical and
+methodological improvements have led to the automated detection and
+characterization of focal adhesions for application in high-throughput screening
+studies. For instance, Paran and colleagues have reported on the use of a
+high-throughput high-resolution imaging system to screen a plant extract library
+for effects on adhesion morphology and distribution. The same high-throughput
 imaging system was used to perform multicolor analysis on various adhesion
-components \cite{Zamir2008}. In this instance, they were able to obtain
-molecular signatures of protein components within focal adhesions as well as
-resolve sub-domains within adhesions. These studies demonstrate the power of
-being able to identify and characterize all adhesions present within a cell.
-However, as these approaches rely on cell fixation, critical aspects of focal
-adhesion biology are lost including spatiotemporal adhesion dynamics.
+components \cite{Zamir2008} and used in a siRNA screen against adhesion related
+genes (\textbf{new Geiger paper in JCB}). In these instances, researchers were
+able to obtain molecular signatures of protein components within focal
+adhesions, resolve sub-domains within adhesions and identify clusters of genes
+that had similar effects on focal adhesion morphology and placement. These
+studies demonstrate the power of being able to identify and characterize all
+adhesions present within a cell. However as these approaches rely on cell
+fixation, critical aspects of focal adhesion biology, including spatiotemporal
+adhesion dynamics, are lost.
 
 Here we describe a novel system for the quantification of focal adhesion
 spatiotemporal dynamics. This approach utilizes high-resolution (60x,
@@ -162,35 +167,42 @@ lifetime and death of each adhesion is quantified in this approach, a thorough
 picture of global adhesion behavior is captured.
 
 To demonstrate the power of this approach, we focus on the molecular scaffold
-protein paxillin which is a core constituent of focal adhesions. Through direct
+protein paxillin, a core constituent of focal adhesions. Through direct
 interactions with both structural and regulatory components, paxillin serves as
 a platform for adhesion signal transduction. A principal regulatory mechanism of
-paxillin is phosphorylation with over 40 phosphorylated sites currently
-identified, several of which show strong effects on cell migration. One of these
-is the Jun-kinase (JNK) phosphorylation site Serine 178 (S178). Mutation of this
-residue to Alanine, or inhibition of JNK signaling, inhibits cell motility
-(\textbf{Jacobsen ref}).  More recently, it has been shown that phosphorylation of S178
-enhances paxillin's interaction with FAK and Tyrosine phosphorylation at
-residues 31 and 118 (\textbf{ref}). Expression of the phosphomimetic Y31D/Y118D paxillin
-can rescue the S178A mutant phenotype. This and related work hints that JNK
-phosphorylation of paxillin is an early step in adhesion formation. 
+paxillin is phosphorylation, with over 40 sites of phosphorylation currently
+identified (\textbf{Horwitz JCS ref}). Many of these have yet to be
+characterized, but those that have demonstrate strong effects on cell migration
+(\textbf{refs}). One of these is the Jun-kinase (JNK) phosphorylation site
+Serine 178 (S178). Mutation of this residue to Alanine, or inhibition of JNK
+signaling, inhibits cell motility (\textbf{Jacobsen ref}). More recently, it has
+been shown that phosphorylation of S178 enhances paxillin's interaction with FAK
+and Tyrosine phosphorylation at residues 31 and 118 (\textbf{ref}). Expression
+of the phosphomimetic Y31D/Y118D paxillin can rescue the S178A mutant phenotype.
+This and related work hints that JNK phosphorylation of paxillin is an early
+step in adhesion formation.
 
-In this study we use our imaging analysis system to characterize focal adhesions
-tagged with EGFP-paxillin, generating high-resolution and high-content data sets
-of focal adhesion distribution, morphology, and turnover in migrating
-(\textbf{are these really considered migrating?}) NIH 3T3 fibroblasts. Results
-indicate that we can characterize adhesions in an unbiased manner, with
-typically $10^3-10^4$ adhesions characterized per cell in this study. We further
-show that we can detect both large as well as subtle alterations in adhesion
-spatiotemporal properties such as site formation, size and assembly rates in
-response to S178 mutation. In addition, we find that S178 mutation does not
-affect adhesion assembly rate in a symmetric manner, with the rate of assembly
-being far more perturbed than the rate of disassembly. We are also able to infer
-the existence of two distinct spatial zones in which the process of either
-adhesion assembly or disassembly is favored. These results further improve our
-understanding of JNK regulation of paxillin dynamics as well as demonstrating
-the utility of appropriately designed image analysis systems in the
-characterization of high-content data sets. 
+In this study we use our imaging analysis system to characterize FAs labeled
+with EGFP-paxillin, generating high-resolution and high-content data sets of
+adhesion distribution, morphology, and turnover in migrating NIH 3T3
+fibroblasts. Results demonstrate that we can analyze adhesion spatiotemporal
+properties in an unbiased manner, with typically $10^3-10^4$ adhesions analyzed
+per cell. Utilizing wild-type paxillin as a baseline for comparison, we utilize
+our software to detect alterations in adhesion spatiotemporal properties in
+response to S178 mutation. Results demonstrate that the loss of this single
+phosphorylation site affects adhesion site formation, size and assembly rates;
+the large data sets generated in this work allowing subtle differences to be
+detected at a significant level. We are also able to infer the existence of two
+distinct spatial zones in which the process of either adhesion assembly or
+disassembly is favored. (Comment from Eric on this sentence: I think we should
+leave this out of the discussion for now until adhesions can be assigned to
+specific protrusions. With distance from the nearest edge the only criteria,
+assembly and disassembly may be occurring at different distances relative to the
+edge, but in different parts of the cell (i.e. protruding edge and retracting
+tail, which would NOT be considered overlapping).) These results further improve
+our understanding of JNK regulation of paxillin dynamics as well as
+demonstrating the utility of appropriately designed image analysis systems in
+the characterization of high-content data sets.
 
 
 
@@ -201,7 +213,7 @@ characterization of high-content data sets.
 
 To test the capabilities of the FA analysis methods 
 
-\subsection*{Quantitative Time-lapse Microscopy of Focal Adhesions}
+\subsection*{Quantitative Analysis of TIR-FM Images of Focal Adhesions}
 
 To quantify aspects of focal adhesion spatiotemporal dynamic behavior, we
 implemented a multistage image analysis pipeline (Figure~\ref{method_flow}).
