@@ -70,11 +70,6 @@ blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
 high_passed_image = focal_image - blurred_image;
 threshed_image = logical(im2bw(high_passed_image,filter_thresh));
 
-if (exist('cell_mask','var'))
-    [row_indexes,col_indexes] = ind2sub(size(focal_image),find(cell_mask));
-    threshed_image = bwselect(threshed_image,col_indexes,row_indexes,4);
-end
-
 %identify and remove adhesions on the immediate edge of the image
 threshed_image = remove_edge_adhesions(threshed_image);
 
@@ -87,6 +82,26 @@ end
 
 ad_zamir = find_ad_zamir(high_passed_image,threshed_image,min_pixel_size,'debug',i_p.Results.debug);
 
+%remove adhesions that are not touching the cell mask
+if (exist('cell_mask','var'))
+    for i = 1:max(ad_zamir(:))
+        assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
+        this_ad = zeros(size(ad_zamir));
+        this_ad(ad_zamir == i) = 1;
+        if (sum(sum(this_ad & cell_mask)) == 0)
+            ad_zamir(ad_zamir == i) = 0;
+        end
+    end
+end
+
+%renumber the found adhesions to start at one
+ad_nums = unique(ad_zamir);
+assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
+for i = 2:length(ad_nums)
+    ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
+end
+
+%find all the adhesion perimeters and save those into another variable
 ad_zamir_perim = zeros(size(ad_zamir));
 for i = 1:max(ad_zamir(:))
     assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
