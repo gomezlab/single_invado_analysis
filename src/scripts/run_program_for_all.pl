@@ -19,7 +19,8 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{extra} = "";
-GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", "run_all_debug") or die;
+GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", 
+                  "run_all_debug", "exp_filter=s") or die;
 
 die "Can't find cfg file specified on the command line" if not(exists $opt{cfg});
 die "Can't find program to execute on the command line" if not(exists $opt{program});
@@ -39,9 +40,12 @@ my $debug_string = ($opt{debug}) ? "-d" : "";
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
-my @exp = <$cfg{data_folder}/*/*$cfg_suffix>;
+my @config_files = <$cfg{data_folder}/*/*$cfg_suffix>;
+if (exists($opt{exp_filter})) {
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
 
-foreach (@exp) {
+foreach (@config_files) {
     next if /config\/default/;
     if ($opt{debug}) {
         print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
