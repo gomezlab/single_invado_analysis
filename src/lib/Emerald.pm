@@ -62,7 +62,9 @@ sub create_general_LSF_commands {
         $bsub_command .= " -g $opt{job_group}";
     }
     if (defined $opt{resource}) {
-        $bsub_command .= " -R $opt{resource}";
+        foreach (split(/\s/, $opt{resource})) {
+            $bsub_command .= " -R $_";
+        }
     }
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command \"$_\""} @commands;
