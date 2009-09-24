@@ -10,8 +10,6 @@ use strict;
 use File::Path;
 use File::Basename;
 use File::Find;
-use Image::ExifTool;
-use Math::Matlab::Local;
 use Getopt::Long;
 use Data::Dumper;
 use File::Spec::Functions;
@@ -19,10 +17,6 @@ use Benchmark;
 use POSIX;
 
 use Config::Adhesions qw(ParseConfig);
-use Image::Stack;
-use Math::Matlab::Extra;
-use Emerald;
-use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -31,7 +25,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{min_ad_size} = 5;
-GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity") or die;
+GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity", "white_background") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -55,9 +49,17 @@ print "Done Converting to SVG\n" if $opt{debug};
 
 my @svg_header = &get_svg_header($svg_files[0]);
 
+if ($opt{white_background}) {
+	@svg_header = &convert_to_white_background(@svg_header);
+}
+
 my @full_svg_file = &build_full_svg_file(@svg_files);
 
+unlink(@bmp_files);
+unlink(@svg_files);
+
 my $output_file = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost.svg");
+
 open SVG_OUT, ">$output_file";
 print SVG_OUT @svg_header;
 print SVG_OUT @full_svg_file;
@@ -70,9 +72,6 @@ my $output_png_small = catfile($cfg{exp_results_folder}, $cfg{movie_output_folde
 
 system "convert -density 100x100 $output_file $output_png_small";
 system "convert -density 300x300 $output_file $output_png";
-
-unlink(@bmp_files);
-unlink(@svg_files);
 
 ###############################################################################
 #Functions
@@ -128,6 +127,21 @@ sub get_svg_header {
     close SVG_FILE;
 
     return @header;
+}
+
+sub convert_to_white_background {
+	my @header = @_;
+	
+	my @processed_header;
+	foreach (@header) {
+		if ($_ =~ /path fill/) {
+			$_ =~ s/#000000/#ffffff/g;
+			push @processed_header, $_;
+		} else {
+			push @processed_header, $_;
+		}
+	}
+	return @processed_header;
 }
 
 sub build_full_svg_file {
