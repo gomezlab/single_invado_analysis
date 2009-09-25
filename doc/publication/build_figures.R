@@ -44,7 +44,7 @@ raw_data$results_reduced = load_results(exp_dirs_reduced,file.path('intensity.Rd
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
 raw_data$results_S = load_results(exp_dirs_S,file.path('intensity.Rdata'))
-raw_data$corr_results_S = load_results(exp_dirs,file.path('local_corrected.Rdata'))
+raw_data$corr_results_S = load_results(exp_dirs_S,file.path('local_corrected.Rdata'))
 raw_data$CB_results_S = load_results(exp_dirs_S,file.path('CB_corrected.Rdata'))
 raw_data$area_S = load_results(exp_dirs_S,file.path('area.Rdata'))
 raw_data$ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
@@ -81,13 +81,10 @@ ind_exp_filt_S = gather_single_image_props(raw_data$ind_results_S)
 
 results_nofilt = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
 results_reduced_nofilt = filter_results(raw_data$results_reduced, min_R_sq = -Inf, max_p_val = Inf)
-results_rap_nofilt = filter_results(raw_data$results_rap, min_R_sq = -Inf, max_p_val = Inf)
-results_rap_ctrl_nofilt = filter_results(raw_data$results_rap_ctrl, min_R_sq = -Inf, max_p_val = Inf)
 results_S_nofilt = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$S178A$cell_int)
 results_S_reduced_nofilt = filter_results(raw_data$results_S_reduced, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$S178A$cell_int)
 
 corr_results_nofilt = filter_results(raw_data$corr_results, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
-corr_results_rap_nofilt = filter_results(raw_data$corr_results_rap, min_R_sq = -Inf, max_p_val = Inf)
 
 results_onlysignif = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = 0.05, cell_intensities=single_props$fa$cell_int)
 results_S_onlysignif = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = 0.05, cell_intensities=single_props$S178A$cell_int)
@@ -95,24 +92,22 @@ corr_results_onlysignif = filter_results(raw_data$corr_results, min_R_sq = -Inf,
 corr_results_S_onlysignif = filter_results(raw_data$corr_results_S, min_R_sq = -Inf, max_p_val = 0.05)
 CB_results_onlysignif = filter_results(raw_data$CB_results, min_R_sq = -Inf, max_p_val = 0.05)
 CB_results_S_onlysignif = filter_results(raw_data$CB_results_S, min_R_sq = -Inf, max_p_val = 0.05)
-results_rap_onlysignif = filter_results(raw_data$results_rap, min_R_sq = -Inf, max_p_val = 0.05)
-results_rap_ctrl_onlysignif = filter_results(raw_data$results_rap_ctrl, min_R_sq = -Inf, max_p_val = 0.05)
 
-
-area_nofilt = filter_results(raw_data$area, primary_filter_results = raw_data$results, min_R_sq = -Inf, max_p_val = 0.05)
+area_onlysignif = filter_results(raw_data$area, min_R_sq = -Inf, max_p_val = 0.05)
 area_filt = filter_results(raw_data$area)
-area_filt_S = filter_results(raw_data$area_S)
+area_S_onlysignif = filter_results(raw_data$area_S, min_R_sq = -Inf, max_p_val = 0.05)
 results_filt = filter_results(raw_data$results, cell_intensities=single_props$fa$cell_int)
 results_reduced_filt = filter_results(raw_data$results_reduced)
 results_S_filt = filter_results(raw_data$results_S, cell_intensities=single_props$S178A$cell_int)
 results_S_reduced_filt = filter_results(raw_data$results_S_reduced, cell_intensities=single_props$S178A$cell_int)
-results_rap_ctrl_filt = filter_results(raw_data$results_rap_ctrl)
-results_rap_filt = filter_results(raw_data$results_rap)
 
 #rm(raw_data)
 gc()
 
 print('Done Filtering Data')
+out_folder = '../../doc/publication/figures'
+dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
+
 stop()
 
 assembly_nums = intersect(results_filt$assembly$lin_num, results_filt$disassembly$lin_num)
@@ -514,12 +509,13 @@ hist(results_filt$a$edge_dist,
      xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 plot_range = par('usr')
-segments(1.5,0,1.5,plot_range[4], col='purple', lwd=2)
-points(results_filt$a$edge_dist, pch=19, cex=0.35, col='green',
+# segments(1.5,0,1.5,plot_range[4], col='purple', lwd=2)
+points(results_filt$a$edge_dist, pch=19, cex=0.35, col='darkgreen',
 	 results_filt$a$slope*((plot_range[4]-10)/max_rate),
 	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
-axis(4, at = axis_ticks*((plot_range[4]-10)/max_rate), labels=axis_ticks, col='green')
-mtext(expression(paste('Assembly Rate (',min^-1,')',sep='')),side=4,line=3, col='green');
+# axis_ticks = axTicks(2);
+axis(4, at = axis_ticks*((plot_range[4]-10)/max_rate), labels=axis_ticks, col='darkgreen')
+mtext(expression(paste('Assembly Rate (',min^-1,')',sep='')),side=4,line=3, col='darkgreen');
 mtext('A',adj=-.22,side=3,line=-1.5,cex=1.75)
 
 #disassembly rates
@@ -528,7 +524,7 @@ hist(results_filt$dis$edge_dist,
      xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=470', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 plot_range = par('usr')
-segments(1.5,0,1.5,plot_range[4], col='purple', lwd=2)
+# segments(1.5,0,1.5,plot_range[4], col='purple', lwd=2)
 points(results_filt$d$edge_dist, pch=19, cex=0.35, col='red',
 	 results_filt$d$slope*((plot_range[4]-10)/max_rate),
 	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
@@ -767,11 +763,11 @@ boxplot_with_points(list(results_filt$as$edge_dist,results_S_filt$as$edge_dist),
 bar_length = 1;
 sep_from_data = 1;
 
-upper_left = c(1, max_dist + sep_from_data + bar_length);
-lower_right = c(2, max_dist + sep_from_data);
-lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
-	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
-text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"**",cex=1.5)
+# upper_left = c(1, max_dist + sep_from_data + bar_length);
+# lower_right = c(2, max_dist + sep_from_data);
+# lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
+# 	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
+# text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"**",cex=1.5)
 mtext('C',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 #Panel Death Distances
@@ -785,17 +781,18 @@ mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 graphics.off()
 
+#comparing S178A area results
 dir.create(dirname(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf')), 
     recursive=TRUE, showWarnings=FALSE);
 pdf(file.path(out_folder,'S178A','S178A_vs_wild-type_area.pdf'))
 layout(rbind(c(1,2),c(3,4)))
 par(bty='n', mar=c(2,4,0,0))
 
-max_rate = max(c(area_filt$as$slope,area_filt_S$as$slope,
-                 area_filt$dis$slope,area_filt_S$dis$slope));
+max_rate = max(c(area_onlysignif$as$slope,area_S_onlysignif$as$slope,
+                 area_onlysignif$dis$slope,area_S_onlysignif$dis$slope));
 
 #Panel Assembly Rates
-boxplot_with_points(list(area_filt$as$slope,area_filt_S$as$slope), 
+boxplot_with_points(list(area_onlysignif$as$slope,area_S_onlysignif$as$slope), 
         names=c('Wild-type','S178A'), 
         colors=c('orange','blue'),
         ylim = c(0,max_rate + 0.012),
@@ -813,7 +810,7 @@ text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"**
 mtext('A',adj=-.25,side=3,line=-1.5,cex=1.5)	    
 
 #Panel Disassembly Rates
-boxplot_with_points(list(area_filt$dis$slope,area_filt_S$dis$slope), 
+boxplot_with_points(list(area_onlysignif$dis$slope,area_S_onlysignif$dis$slope), 
     names=c('Wild-type','S178A'), 
     colors=c('orange','blue'),
     ylim = c(0,max_rate + 0.012),
@@ -829,9 +826,9 @@ mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 #Panel Birth Distances
 par(bty='n', mar=c(2,4,1.5,0))
-max_dist = max(c(area_filt$as$edge_dist,area_filt_S$as$edge_dist,
-                 area_filt$dis$edge_dist,area_filt_S$dis$edge_dist), na.rm=T)
-boxplot_with_points(list(area_filt$as$edge_dist,area_filt_S$as$edge_dist), 
+max_dist = max(c(area_onlysignif$as$edge_dist,area_S_onlysignif$as$edge_dist,
+                 area_onlysignif$dis$edge_dist,area_S_onlysignif$dis$edge_dist), na.rm=T)
+boxplot_with_points(list(area_onlysignif$as$edge_dist,area_S_onlysignif$as$edge_dist), 
     names=c('Wild-type','S178A'), 
     ylim=c(0,max_dist+2), 
     colors=c('orange','blue'),
@@ -849,7 +846,7 @@ text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"**
 mtext('C',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 #Panel Death Distances
-boxplot_with_points(list(area_filt$dis$edge_dist,area_filt_S$dis$edge_dist), 
+boxplot_with_points(list(area_onlysignif$dis$edge_dist,area_S_onlysignif$dis$edge_dist), 
     names=c('Wild-type','S178A'), 
     ylim=c(0,max_dist+2),
     colors=c('orange','blue'),
@@ -863,36 +860,14 @@ graphics.off()
 #Conf Levels
 ###############
 require(boot)
-boot_one = boot(results_filt$as$slope, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-boot_two = boot(results_S_filt$as$slope, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-find_p_val_from_bootstrap(boot_one, boot_two)
-boot_two$t0/boot_one$t0
 
-determine_median_p_value(results_filt$as$slope, results_S_filt$as$slope)
+determine_median_p_value(results_S_filt$as$slope, results_filt$as$slope)
 
-boot_one = boot(results_filt$dis$slope, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-boot_two = boot(results_S_filt$dis$slope, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-find_p_val_from_bootstrap(boot_one, boot_two)
-boot_two$t0/boot_one$t0
-
-determine_median_p_value(results_filt$dis$slope, results_S_filt$dis$slope)
-
-boot_one = boot(results_filt$as$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-boot_two = boot(results_S_filt$as$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-find_p_val_from_bootstrap(boot_one, boot_two)
-boot_two$t0/boot_one$t0
+determine_median_p_value(results_S_filt$dis$slope, results_filt$dis$slope)
 
 determine_median_p_value(results_filt$as$edge_dist, results_S_filt$as$edge_dist)
 
-boot_one = boot(results_filt$dis$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-boot_two = boot(results_S_filt$dis$edge_dist, function(data,indexes) mean(data[indexes],na.rm=T), 50000);
-find_p_val_from_bootstrap(boot_one, boot_two)
-boot_two$t0/boot_one$t0
-
 determine_median_p_value(results_filt$dis$edge_dist, results_S_filt$dis$edge_dist)
-
-rm(boot_one); rm(boot_two);
-
 
 ###############
 #Supplemental
