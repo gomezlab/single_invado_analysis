@@ -33,7 +33,7 @@ GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "split_num=i")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
-die "The split number must be specified on the command line" if not exists $opt{split_num};
+die "The split number must be specified on the command line with option \"split_num\"" if not exists $opt{split_num};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
@@ -85,7 +85,10 @@ sub move_target_image_set {
 		mkpath(dirname($target_file));
 		copy($image_files[$_], $target_file);
 	}
-	copy($opt{cfg}, catfile($cfg{data_folder}, $cfg{exp_name} . "_pre", basename($opt{cfg}))); 
+	my $new_exp_name = $cfg{exp_name} . "_pre";
+	my $new_config_file = catfile($cfg{data_folder},$new_exp_name , basename($opt{cfg}));
+	copy($opt{cfg}, $new_config_file); 
+	system("sed -i -r 's/$cfg{exp_name}/$new_exp_name/' $new_config_file");
 
 	for (($split_index[0] + 1) .. $#image_files) {
 		my $image_name = sprintf("%0" . $max_digit_count . "d", $_ + 1 - $opt{split_num});
@@ -94,7 +97,10 @@ sub move_target_image_set {
 		mkpath(dirname($target_file));
 		copy($image_files[$_], $target_file);
 	}
-	copy($opt{cfg}, catfile($cfg{data_folder}, $cfg{exp_name} . "_post", basename($opt{cfg}))); 
+	$new_exp_name = $cfg{exp_name} . "_post";
+	$new_config_file = catfile($cfg{data_folder},$new_exp_name , basename($opt{cfg}));
+	copy($opt{cfg}, $new_config_file); 
+	system("sed -i -r 's/$cfg{exp_name}/$new_exp_name/' $new_config_file");
 }
 
 ################################################################################

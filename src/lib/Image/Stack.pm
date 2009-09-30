@@ -7,6 +7,7 @@
 use strict;
 use warnings;
 use Image::ExifTool;
+use Data::Dumper;
 
 package Image::Stack;
 

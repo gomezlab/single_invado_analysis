@@ -16,7 +16,7 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_MOVING_DATA';
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
-i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','moving_0_5','Images','Paxillin'), @ischar);
+i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','moving_5','Images','Paxillin'), @ischar);
 
 i_p.parse(varargin{:});
 
@@ -24,20 +24,18 @@ output_dir = i_p.Results.output_dir;
 
 %Other Parameters
 
-%source the 10th and 90th percentiles of all the adhesion intensities
-min_ad_intensity = 0.2341950;
-max_ad_intensity = 0.4723663;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Process config file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fid = fopen('sim_parameters.m');
+while 1
+    line = fgetl(fid);
+    if ~ischar(line), break; end
+    eval(line);
+end
 
-speed = 0.5;
-
-background_mean_intensity = 0.01;
-
-background_noise_var = 0.005;
-
-max_ad_size = 10;
-min_ad_size = 1;
-
-ad_padding = ceil(max_ad_size*0.4);
+%exp specific parameters
+speed = 5;
 
 total_images = 25+2;
 distance_covered = ceil((total_images - 2)*speed);
@@ -64,13 +62,20 @@ end
 
 this_ad = make_ad_matrix([floor(max_ad_size/2),floor(max_ad_size/2)], max_ad_intensity);
 row_range = ceil(side_mid(1) - size(this_ad,1)/2):floor(side_mid(1) + size(this_ad,1)/2);
+if (mod(size(this_ad,1),2) == 0)
+    row_range = row_range(1:(length(row_range) - 1));
+end
 col_range = ceil(side_mid(2) - size(this_ad,2)/2):floor(side_mid(2) + size(this_ad,2)/2);
+if (mod(size(this_ad,2),2) == 0)
+    col_range = col_range(1:(length(col_range) - 1));
+end
+
 side_image(row_range, col_range) = this_ad;
 
 
 for image_number = 2:(total_images - 1)
     %initialize all the individual adhesion frames
-    image_frames = cell(max_ad_size-min_ad_size+1, 1);
+    image_frames = cell(max_ad_size-min_ad_size+1, ad_int_steps);
     for i = 1:size(image_frames,1)
         for j = 1:size(image_frames,2)
             image_frames{i,j} = imnoise(zeros(standard_frame_size),'gaussian',background_mean_intensity,background_noise_var);
@@ -78,7 +83,7 @@ for image_number = 2:(total_images - 1)
     end
     
     %find the central point for this simulated adhesion
-    ad_pos = [size(image_frames{i,j},1)/2, ... 
+    ad_pos = [size(image_frames{i,j},1)/2, ...
         (ad_padding + distance_covered*((image_number - 1)/(total_images - 2)) + max_ad_size/2)];
     if (mod(ad_pos(1),1) ~= 0)
         ad_pos(1) = ad_pos(1) - 0.5;
@@ -91,22 +96,28 @@ for image_number = 2:(total_images - 1)
     for i = 1:size(image_frames,1)
         size_sequence = min_ad_size:max_ad_size;
         this_size = size_sequence(i);
-        
-        this_ad = make_ad_matrix([this_size,this_size],mean([max_ad_intensity,min_ad_intensity]));
-        
-        row_range = ceil(ad_pos(1) - size(this_ad,1)/2):floor(ad_pos(1) + size(this_ad,1)/2);
-        if (mod(size(this_ad,1),2) == 0)
-            row_range = row_range(1:(length(row_range) - 1));
+        for j = 1:size(image_frames,2)
+            intensity_sequence = linspace(min_ad_intensity, max_ad_intensity, ad_int_steps);
+            
+            this_intensity = intensity_sequence(j) - background_mean_intensity;
+            
+            
+            this_ad = make_ad_matrix([this_size,this_size],this_intensity);
+            
+            row_range = ceil(ad_pos(1) - size(this_ad,1)/2):floor(ad_pos(1) + size(this_ad,1)/2);
+            if (mod(size(this_ad,1),2) == 0)
+                row_range = row_range(1:(length(row_range) - 1));
+            end
+            col_range = ceil(ad_pos(2) - size(this_ad,2)/2):floor(ad_pos(2) + size(this_ad,2)/2);
+            if (mod(size(this_ad,2),2) == 0)
+                col_range = col_range(1:(length(col_range) - 1));
+            end
+            
+            assert(size(this_ad,1) == length(row_range))
+            assert(size(this_ad,2) == length(col_range));
+            
+            image_frames{i,j}(row_range,col_range) = image_frames{i,j}(row_range,col_range) + this_ad;
         end
-        col_range = ceil(ad_pos(2) - size(this_ad,2)/2):floor(ad_pos(2) + size(this_ad,2)/2);
-        if (mod(size(this_ad,2),2) == 0)
-            col_range = col_range(1:(length(col_range) - 1));
-        end
-        
-        assert(size(this_ad,1) == length(row_range))
-        assert(size(this_ad,2) == length(col_range));
-        
-        image_frames{i,j}(row_range,col_range) = image_frames{i,j}(row_range,col_range) + this_ad;
     end
     
     final_image = put_together_cell_images(image_frames);
@@ -118,9 +129,9 @@ end
 %Build the initial and final blank image
 sprintf_format = ['%0', num2str(length(num2str(total_images))), 'd'];
 if (not(exist(output_dir,'dir'))); mkdir(output_dir); end
-imwrite([zeros(size(put_together_cell_images(image_frames))), side_image], ... 
+imwrite([zeros(size(put_together_cell_images(image_frames))), side_image], ...
     fullfile(output_dir,[sprintf(sprintf_format,1), '.png']))
-imwrite([zeros(size(put_together_cell_images(image_frames))), side_image], ... 
+imwrite([zeros(size(put_together_cell_images(image_frames))), side_image], ...
     fullfile(output_dir,[sprintf(sprintf_format,total_images), '.png']))
 
 

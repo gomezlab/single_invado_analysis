@@ -14,7 +14,7 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_PHASE_DATA';
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
-i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','phases_10','Images','Paxillin'), @ischar);
+i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','phases_20','Images','Paxillin'), @ischar);
 
 i_p.parse(varargin{:});
 
@@ -22,24 +22,18 @@ output_dir = i_p.Results.output_dir;
 
 %Other Parameters
 
-%source the 10th and 90th percentiles of all the adhesion intensities
-min_ad_intensity = 0.2341950;
-max_ad_intensity = 0.4723663;
-side_ad_intensity = max_ad_intensity + 0.2;
-if (side_ad_intensity > 1)
-    side_ad_intensity = 1;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Process config file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fid = fopen('sim_parameters.m');
+while 1
+    line = fgetl(fid);
+    if ~ischar(line), break; end
+    eval(line);
 end
 
-phase_lengths = ones(15,1)*10;
-
-background_mean_intensity = 0.01;
-
-background_noise_var = 0.005;
-
-max_ad_size = 10;
-min_ad_size = 1;
-
-ad_padding = ceil(max_ad_size*0.4);
+%exp specific parameters
+phase_lengths = ones(15,1)*20;
 
 standard_frame_size = [max_ad_size + 2*ad_padding, max_ad_size + 2*ad_padding];
 
@@ -80,7 +74,13 @@ end
 
 this_ad = make_ad_matrix([floor(max_ad_size/2),floor(max_ad_size/2)], side_ad_intensity);
 row_range = ceil(side_mid(1) - size(this_ad,1)/2):floor(side_mid(1) + size(this_ad,1)/2);
+if (mod(size(this_ad,1),2) == 0)
+    row_range = row_range(1:(length(row_range) - 1));
+end
 col_range = ceil(side_mid(2) - size(this_ad,2)/2):floor(side_mid(2) + size(this_ad,2)/2);
+if (mod(size(this_ad,2),2) == 0)
+    col_range = col_range(1:(length(col_range) - 1));
+end
 side_image(row_range, col_range) = this_ad;
 
 %%Build all the images

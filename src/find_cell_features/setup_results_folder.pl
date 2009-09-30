@@ -184,8 +184,9 @@ sub create_matlab_code_single {
 }
 
 sub remove_file_name_spaces {
+	my @old_file_names = @_;
     my @new_files;
-    for (@_) {
+    for (@old_file_names) {
         my $dir       = dirname($_);
         my $file_name = basename($_);
 
@@ -200,7 +201,6 @@ sub remove_file_name_spaces {
         } else {
             push @new_files, $_;
         }
-
     }
     return @new_files;
 }

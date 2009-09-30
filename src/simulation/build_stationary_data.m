@@ -16,7 +16,7 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_STATIONARY_DATA';
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
-i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','stationary','Images','Paxillin'), @ischar);
+i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','stationary_no_noise','Images','Paxillin'), @ischar);
 
 i_p.parse(varargin{:});
 
@@ -24,25 +24,18 @@ output_dir = i_p.Results.output_dir;
 
 %Other Parameters
 
-%source the 10th and 90th percentiles of all the adhesion intensities
-% min_ad_intensity = 0.2341950;
-min_ad_intensity = 0.05;
-max_ad_intensity = 0.4723663;
-side_ad_intensity = max_ad_intensity + 0.2;
-if (side_ad_intensity > 1)
-    side_ad_intensity = 1;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Process config file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fid = fopen('sim_parameters.m');
+while 1
+    line = fgetl(fid);
+    if ~ischar(line), break; end
+    eval(line);
 end
 
-ad_int_steps = 15;
-
-background_mean_intensity = 0.01;
-
-background_noise_var = 0.005;
-
-max_ad_size = 10;
-min_ad_size = 1;
-
-ad_padding = ceil(max_ad_size*0.4);
+%exp specific parameters
+min_ad_intensity = 0.05;
 
 standard_frame_size = [max_ad_size + 2*ad_padding, max_ad_size + 2*ad_padding];
 
@@ -68,7 +61,13 @@ end
 
 this_ad = make_ad_matrix([floor(max_ad_size/2),floor(max_ad_size/2)], side_ad_intensity);
 row_range = ceil(side_mid(1) - size(this_ad,1)/2):floor(side_mid(1) + size(this_ad,1)/2);
+if (mod(size(this_ad,1),2) == 0)
+    row_range = row_range(1:(length(row_range) - 1));
+end
 col_range = ceil(side_mid(2) - size(this_ad,2)/2):floor(side_mid(2) + size(this_ad,2)/2);
+if (mod(size(this_ad,2),2) == 0)
+    col_range = col_range(1:(length(col_range) - 1));
+end
 side_image(row_range, col_range) = this_ad;
 
 
@@ -119,7 +118,7 @@ for image_number = 2:(total_images - 1)
     
     final_image = put_together_cell_images(image_frames);
     sprintf_format = ['%0', num2str(length(num2str(total_images))), 'd'];
-    
+    if (not(exist(output_dir,'dir'))); mkdir(output_dir); end
     imwrite([final_image, side_image], fullfile(output_dir,[sprintf(sprintf_format,image_number), '.png']))
 end
 

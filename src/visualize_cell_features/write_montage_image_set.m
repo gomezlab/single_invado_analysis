@@ -57,7 +57,7 @@ total_images = size(image_set,2);
 %rows needed. If the number of columns isn't specified loop through, trying
 %to find a square row/column number set or the nearest rectangle row/column
 %number set.
-if (not(isempty(strfind(i_p.UsingDefaults, 'num_cols'))))
+if (not(isempty(strmatch('num_cols', i_p.UsingDefaults))))
     images_per_side = ones(1,2);
     for j = 1:(ceil(sqrt(total_images)) - 1)
         if (total_images <= images_per_side(1)*images_per_side(2)), continue; end
