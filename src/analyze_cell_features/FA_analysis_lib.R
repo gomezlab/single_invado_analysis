@@ -843,9 +843,11 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
         }
 
         assembly_filt = (! is.na(for_filter$assembly$length) & for_filter$assembly$R_sq >= min_R_sq
-                & for_filter$assembly$p_val < max_p_val & ! res$exp_props$split_birth_status);
+                & ! is.na(for_filter$assembly$p_val) & for_filter$assembly$p_val < max_p_val 
+                & ! for_filter$exp_props$split_birth_status);
         disassembly_filt = (! is.na(for_filter$disassembly$length) & for_filter$disassembly$R_sq >= min_R_sq
-                & for_filter$disassembly$p_val < max_p_val & res$exp_props$death_status);
+                & ! is.na(for_filter$disassembly$p_val) & for_filter$disassembly$p_val < max_p_val 
+                & for_filter$exp_props$death_status);
 
         if (pos_slope) {
             assembly_filt = assembly_filt & for_filter$assembly$slope > 0;
@@ -858,7 +860,12 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
         points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt]);
         points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt]);
         points$assembly$length = c(points$assembly$length, res$assembly$length[assembly_filt]);
+        
         points$assembly$longevity = c(points$assembly$longevity, res$exp_props$longevity[assembly_filt]);
+        points$assembly$start_x = c(points$assembly$start_x, res$exp_props$start_x[assembly_filt]);
+        points$assembly$start_y = c(points$assembly$start_y, res$exp_props$start_y[assembly_filt]);
+        points$assembly$mean_area = c(points$assembly$mean_area, res$exp_props$mean_area[assembly_filt]);
+ 
         points$assembly$lin_num = c(points$assembly$lin_num, which(assembly_filt));
         points$assembly$exp_dir = c(points$assembly$exp_dir, rep(res$exp_dir, length(which(assembly_filt))));
         points$assembly$exp_num = c(points$assembly$exp_num, rep(i,length(which(assembly_filt))));
@@ -877,8 +884,9 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
         }
         for (j in names(points$assembly)) {
             if (length(points$assembly[[1]]) != length(points$assembly[[j]])) {
-                print(paste("Length of property '",j, "' wrong", sep=''))
+                print(paste("Length of property '",j, "' wrong in assembly filtering", sep=''))
                 print(paste("Lengths are", length(points$assembly[[1]]), " ", length(points$assembly[[j]])))
+                browser()
                 stop()
             }
         }
@@ -887,7 +895,12 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
         points$disassembly$R_sq = c(points$disassembly$R_sq, res$disassembly$R_sq[disassembly_filt]);
         points$disassembly$p_val = c(points$disassembly$p_val, res$disassembly$p_val[disassembly_filt]);
         points$disassembly$length = c(points$disassembly$length, res$disassembly$length[disassembly_filt]);
+
         points$disassembly$longevity = c(points$disassembly$longevity, res$exp_props$longevity[disassembly_filt]);
+        points$disassembly$start_x = c(points$disassembly$start_x, res$exp_props$start_x[disassembly_filt]);
+        points$disassembly$start_y = c(points$disassembly$start_y, res$exp_props$start_y[disassembly_filt]);
+        points$disassembly$mean_area = c(points$disassembly$mean_area, res$exp_props$mean_area[disassembly_filt]);
+        
         points$disassembly$lin_num = c(points$disassembly$lin_num, which(disassembly_filt));
         points$disassembly$exp_dir = c(points$disassembly$exp_dir, rep(res$exp_dir,length(which(disassembly_filt))));
         points$disassembly$exp_num = c(points$disassembly$exp_num, rep(i,length(which(disassembly_filt))));
@@ -908,7 +921,7 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
         }
         for (j in names(points$disassembly)) {
             if (length(points$disassembly[[1]]) != length(points$disassembly[[j]])) {
-                print(paste("Length of property '",j, "' wrong", sep=''))
+                print(paste("Length of property '",j, "' wrong in disassembly filtering", sep=''))
                 print(paste("Lengths are", length(points$disassembly[[1]]), " ", length(points$disassembly[[j]])))
                 stop()
             }
@@ -933,7 +946,7 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
         points$joint$stable_variance = c(points$joint$stable_variance, res$stable_variance[joint_filt]);
         for (j in names(points$joint)) {
             if (length(points$joint[[1]]) != length(points$joint[[j]])) {
-                print(paste("Length of property '",j, "' wrong", sep=''))
+                print(paste("Length of property '",j, "' wrong in joint filtering", sep=''))
                 print(paste("Lengths are", length(points$joint[[1]]), " ", length(points$joint[[j]])))
                 stop()
             }
