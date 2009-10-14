@@ -17,6 +17,7 @@ i_p.FunctionName = 'BUILD_MOVING_DATA';
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','moving_5','Images','Paxillin'), @ischar);
+i_p.addParamValue('speed',5,@isnumeric)
 
 i_p.parse(varargin{:});
 
@@ -35,7 +36,7 @@ while 1
 end
 
 %exp specific parameters
-speed = 5;
+speed = i_p.Results.speed;
 
 total_images = 25+2;
 distance_covered = ceil((total_images - 2)*speed);
@@ -93,13 +94,14 @@ for image_number = 2:(total_images - 1)
     end
     
     %fill all the frames with adhesions
-    for i = 1:size(image_frames,1)
+    for size_index = 1:size(image_frames,1)
         size_sequence = min_ad_size:max_ad_size;
-        this_size = size_sequence(i);
-        for j = 1:size(image_frames,2)
-            intensity_sequence = linspace(min_ad_intensity, max_ad_intensity, ad_int_steps);
+        this_size = size_sequence(size_index);
+        intensity_sequence = linspace(min_ad_intensity, max_ad_intensity, ad_int_steps);
+        for inten_index = 1:size(image_frames,2)
+            frame_background = mean(image_frames{size_index,inten_index}(:));
             
-            this_intensity = intensity_sequence(j) - background_mean_intensity;
+            this_intensity = intensity_sequence(j) - frame_background;
             
             
             this_ad = make_ad_matrix([this_size,this_size],this_intensity);
@@ -116,7 +118,7 @@ for image_number = 2:(total_images - 1)
             assert(size(this_ad,1) == length(row_range))
             assert(size(this_ad,2) == length(col_range));
             
-            image_frames{i,j}(row_range,col_range) = image_frames{i,j}(row_range,col_range) + this_ad;
+            image_frames{size_index,j}(row_range,col_range) = image_frames{size_index,j}(row_range,col_range) + this_ad;
         end
     end
     

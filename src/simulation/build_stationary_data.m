@@ -16,7 +16,7 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_STATIONARY_DATA';
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
-i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','stationary_no_noise','Images','Paxillin'), @ischar);
+i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','stationary','Images','Paxillin'), @ischar);
 
 i_p.parse(varargin{:});
 
@@ -70,7 +70,7 @@ if (mod(size(this_ad,2),2) == 0)
 end
 side_image(row_range, col_range) = this_ad;
 
-
+intensity_sequence = linspace(min_ad_intensity, max_ad_intensity, ad_int_steps);
 for image_number = 2:(total_images - 1)
     %initialize all the individual adhesion frames
     image_frames = cell(max_ad_size-min_ad_size+1, ad_int_steps);
@@ -90,13 +90,13 @@ for image_number = 2:(total_images - 1)
     end
     
     %fill all the frames with adhesions
-    for i = 1:size(image_frames,1)
+    for size_index = 1:size(image_frames,1)
         size_sequence = min_ad_size:max_ad_size;
-        this_size = size_sequence(i);
-        for j = 1:size(image_frames,2)
-            intensity_sequence = linspace(min_ad_intensity, max_ad_intensity, ad_int_steps);
+        this_size = size_sequence(size_index);
+        for inten_index = 1:size(image_frames,2)
+            frame_background = mean(image_frames{size_index,inten_index}(:));
             
-            this_intensity = intensity_sequence(j) - background_mean_intensity;
+            this_intensity = intensity_sequence(inten_index) - frame_background;
             
             this_ad = make_ad_matrix([this_size,this_size],this_intensity);
             
@@ -112,7 +112,7 @@ for image_number = 2:(total_images - 1)
             assert(size(this_ad,1) == length(row_range))
             assert(size(this_ad,2) == length(col_range));
             
-            image_frames{i,j}(row_range,col_range) = image_frames{i,j}(row_range,col_range) + this_ad;
+            image_frames{size_index,inten_index}(row_range,col_range) = image_frames{size_index,inten_index}(row_range,col_range) + this_ad;
         end
     end
     

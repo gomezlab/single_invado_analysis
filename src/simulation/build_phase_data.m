@@ -14,7 +14,9 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_PHASE_DATA';
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
-i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','phases_20','Images','Paxillin'), @ischar);
+% i_p.addParamValue('output_dir', fullfile('..','..','data','simulation','phases_10','Images','Paxillin'), @ischar);
+i_p.addParamValue('output_dir', 'temp', @ischar);
+i_p.addParamValue('phase_length', 10, @isnumeric);
 
 i_p.parse(varargin{:});
 
@@ -33,7 +35,7 @@ while 1
 end
 
 %exp specific parameters
-phase_lengths = ones(15,1)*20;
+phase_lengths = ones(15,1)*i_p.Results.phase_length;
 
 standard_frame_size = [max_ad_size + 2*ad_padding, max_ad_size + 2*ad_padding];
 
@@ -107,7 +109,9 @@ for image_number = 2:(total_images - 1)
         size_sequence = min_ad_size:max_ad_size;
         this_size = size_sequence(size_index);
         for inten_index = 1:size(image_frames,2)
-            this_intensity = intensity_seqs(inten_index,image_number - 1) - background_mean_intensity;
+            frame_background = mean(image_frames{size_index,inten_index}(:));
+            
+            this_intensity = intensity_seqs(inten_index,image_number - 1) - frame_background;
             
             this_ad = make_ad_matrix([this_size,this_size],this_intensity);
             
