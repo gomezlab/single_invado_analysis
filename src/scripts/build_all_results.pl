@@ -69,7 +69,11 @@ if ($opt{lsf}) {
     } elsif ($opt{only_vis}) {
         @overall_command_seq = @overall_command_seq[-1];
     }
-
+    
+    if (not($opt{debug})) {
+        my $job_queue_thread = threads->create('shift_idle_jobs','');
+    }
+    
     my $starting_dir = getcwd;
     for (@overall_command_seq) {
         my @command_seq = @{$_};
@@ -77,14 +81,16 @@ if ($opt{lsf}) {
         print "Starting on $command_seq[0][1]\n";
         &execute_command_seq(\@command_seq, $starting_dir);
 
-        #If debugging is on, we want to wait till the current jobs finish and
-        #then check the file complements of the experiments for completeness
+        #If debugging is not on, we want to wait till the current jobs finish
+        #and then check the file complements of the experiments for completeness
         if (not($opt{debug})) {
             &wait_till_LSF_jobs_finish;
             print "Checking for all output files on command $command_seq[0][1]\n";
             my @exp_to_retry = &check_file_sets(\@config_files);
 
             for (1..3) {
+                #if no experiments are left to retry, we break out and continue
+                #to the next command set
                 if (not(@exp_to_retry)) {
                     last;
                     next;
@@ -152,6 +158,7 @@ sub wait_till_LSF_jobs_finish {
     #After each step of the pipeline, we want to wait till all the individual
     #jobs are completed, which will be checked three times
     for (1 .. 3) {
+        print "On check number $_\n";
         my $sleep_time = 5;
         do {
             sleep($sleep_time);
@@ -167,26 +174,40 @@ sub running_LSF_jobs {
     }
 
     my @lines = `$bjobs_command`;
-    my @running_lines = `$bjobs_command -r`;
+    if (scalar(@lines) <= 1) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
 
+sub shift_idle_jobs {
+    my $bjobs_command = "bjobs";
+    if (defined $cfg{job_group}) {
+        $bjobs_command .= " -g $cfg{job_group}";
+    }
+    
+    my @lines = `$bjobs_command`;
+    my @running_lines = `$bjobs_command -r`;
+    
     if (scalar(@lines) > 1) {
         #dealing with the strange case where all the idle jobs refuse to be
         #shifted into a running queue position, so we slowly shift all the
         #pending jobs into the week queue, where they will certainly get a
         #running jobs spot
         if (scalar(@lines) > scalar(@running_lines)) {
+            print "Moving line: $lines[-1]\n";
             &move_job_to_week_queue($lines[-1]);
         }
-        return scalar(@lines) - 1;
-    } else {
-        0;
     }
+    sleep(60);
+    &shift_idle_jobs();
 }
 
 sub move_job_to_week_queue {
     my $line = pop @_;
     if ($line =~ /^(\d+)/) {
-        system("bmod -q week $1");
+       system("bmod -q week $1");
     }
 }
 
