@@ -45,12 +45,12 @@ print "\n\nBuild Movies\n\n" if $opt{debug};
 $t1 = new Benchmark;
 
 our @movie_dirs; 
-find(\&add_to_movie_dir, (catdir($cfg{exp_results_folder},'movies')));
+find(\&add_to_movie_dir, (catdir($cfg{exp_results_folder},$cfg{movie_output_folder})));
 
 foreach my $f1 (@movie_dirs) {
     foreach my $f2 (@{ $cfg{movie_output_prefix} }) {
         my $input_folder = catdir($f1,$f2);
-        system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png $input_folder.mov 2>&1";
+        system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -b $cfg{movie_bit_rate} -i $input_folder/%0" . $image_num_length . "d.png -sameq $input_folder.mov 2>&1";
     }
 }
 $t2 = new Benchmark;
