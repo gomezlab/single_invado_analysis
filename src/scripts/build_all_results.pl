@@ -196,7 +196,6 @@ sub shift_idle_jobs {
         #pending jobs into the week queue, where they will certainly get a
         #running jobs spot
         if (scalar(@lines) > scalar(@running_lines)) {
-            print "Moving line: $lines[-1]\n";
             &move_job_to_week_queue($lines[-1]);
         }
     }

@@ -39,8 +39,7 @@ sub create_LSF_Matlab_commands {
     if (defined $opt{job_group}) {
         $bsub_command .= " -g $opt{job_group}";
     }
-    my $matlab_command = "/afs/isis.unc.edu/pkg/matlab-2008a/matlab -nodisplay -nojvm -nosplash -r";
-    $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
+    my $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
 
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command $matlab_command \"$_\""} @commands;
