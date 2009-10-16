@@ -45,6 +45,7 @@ gc()
 print('Done Filtering Data')
 out_folder = '../../doc/publication/figures'
 dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
+stop()
 
 ################################################################################
 #Plotting
@@ -83,6 +84,11 @@ mtext('B',adj=-.2,side=3,line=-1,cex=1.5);
 par(mar=c(4,4,1.25,0), bty='n');
 boxplot(ad_sig ~ x_clusters, data=filt_data, notch=T, ylab='Average Adhesion Intensity', xlab='Column Number',
         names = 4:15)
+for (i in 4:15) {
+    predicted_int_vals = seq(0.1405, 0.4724,length=15-3);
+    print(median(filt_data$ad_sig[filt_data$x_clusters == i - 3]) - predicted_int_vals[i-3])
+    segments(i-0.5-3, predicted_int_vals[i-3], i+0.5-3, predicted_int_vals[i-3], col='red')
+}
 mtext('C',adj=-.2,side=3,line=-0.75,cex=1.5);
 
 boxplot(mean_area ~ y_clusters, data=filt_data, ylab = 'Mean Adhesion Area', xlab='Row Number')
@@ -120,10 +126,8 @@ for (i in moving_names) {
 ########################################
 
 svg(file.path(out_folder, 'simulation', 'kinetics_results.svg'));
-par(mar=c(4,4,0.75,0), bty='n');
+par(mar=c(4,4,0,0), bty='n');
 layout(rbind(c(1,2),c(3,4)))
-
-
 
 boxplot(processed$no_filt$phases_10$assembly$slope,
         processed$no_filt$phases_11$assembly$slope, 
@@ -138,9 +142,11 @@ boxplot(processed$no_filt$phases_10$assembly$slope,
         processed$no_filt$phases_20$assembly$slope,
         ylab = "Assembly Phase Slope", xlab = "Assembly Phase Lengths", names=10:20, notch=T);
 for (i in 1:11) {
-        segments(i-0.5,log(0.4723663/0.2341950)/(i+9), i+0.5, log(0.4723663/0.2341950)/(i+9), col='red')
+    phase_name = paste("phases_", i+9, sep='');
+    # print(median(processed$no_filt[[phase_name]]$assembly$slope) - log(0.4723663/0.2341950)/(i+8))
+    segments(i-0.5,log(0.4723663/0.2341950)/(i+8), i+0.5, log(0.4723663/0.2341950)/(i+8), col='red')
 }
-mtext('A',adj=-.2,side=3,line=-1,cex=1.5);
+mtext('A',adj=-.2,side=3,line=-1.5,cex=1.5);
 
 boxplot(processed$no_filt$phases_10$assembly$length,
         processed$no_filt$phases_11$assembly$length, 
@@ -157,8 +163,9 @@ boxplot(processed$no_filt$phases_10$assembly$length,
 for (i in 1:11) {
         segments(i-0.5,i+9, i+0.5, i+9, col='red')
 }
-mtext('B',adj=-.2,side=3,line=-1,cex=1.5);
+mtext('B',adj=-.2,side=3,line=-1.5,cex=1.5);
 
+par(mar=c(4,4,1,0), bty='n');
 boxplot(processed$no_filt$phases_10$disassembly$slope,
         processed$no_filt$phases_11$disassembly$slope, 
         processed$no_filt$phases_12$disassembly$slope, 
@@ -170,9 +177,9 @@ boxplot(processed$no_filt$phases_10$disassembly$slope,
         processed$no_filt$phases_18$disassembly$slope, 
         processed$no_filt$phases_19$disassembly$slope, 
         processed$no_filt$phases_20$disassembly$slope,
-        ylab = "Assembly Phase Slope", xlab = "Assembly Phase Lengths", names=10:20);
+        ylab = "Disassembly Phase Slope", xlab = "Disassembly Phase Lengths", names=10:20, notch=T);
 for (i in 1:11) {
-        segments(i-0.5,log(0.4723663/0.2341950)/(i+9), i+0.5, log(0.4723663/0.2341950)/(i+9), col='red')
+        segments(i-0.5,log(0.4723663/0.2341950)/(i+8), i+0.5, log(0.4723663/0.2341950)/(i+8), col='red')
 }
 mtext('C',adj=-.2,side=3,line=-1,cex=1.5);
 
@@ -187,7 +194,7 @@ boxplot(processed$no_filt$phases_10$disassembly$length,
         processed$no_filt$phases_18$disassembly$length, 
         processed$no_filt$phases_19$disassembly$length, 
         processed$no_filt$phases_20$disassembly$length,
-        ylab = "Detected Assembly Phase Length", xlab = "Assembly Phase Lengths", names=10:20, notch=T);
+        ylab = "Detected Disassembly Phase Length", xlab = "Disassembly Phase Lengths", names=10:20, notch=T);
 for (i in 1:11) {
         segments(i-0.5,i+9, i+0.5, i+9, col='red')
 }
