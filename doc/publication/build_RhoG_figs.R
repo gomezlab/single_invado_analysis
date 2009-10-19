@@ -57,8 +57,10 @@ layout(rbind(c(1,2)))
 par(mar=c(4,4,1,0), bty='n');
 boxplot_with_points(list(processed$only_signif$KD$assembly$slope, 
                          processed$only_signif$control$assembly$slope), 
-                    names=c("KD", "Control"), inc.points=FALSE)
+                    names=c("KD", "Control"), inc.points=FALSE,
+                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
 boxplot_with_points(list(processed$only_signif$KD$disassembly$slope, 
                          processed$only_signif$control$disassembly$slope), 
-                    names=c("KD", "Control"), inc.points=FALSE)
+                    names=c("KD", "Control"), inc.points=FALSE,
+                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
 graphics.off()

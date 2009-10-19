@@ -36,10 +36,6 @@ single_props$fa$outside <- load_data_files(exp_dirs,
 	file.path('..','single_props','Outside_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
-exp_dirs_reduced <- Sys.glob('../../results/focal_adhesions_reduced/*/adhesion_props/models/')
-exp_dirs_reduced <- exp_dirs_reduced[file_test('-d',exp_dirs_reduced)]
-raw_data$results_reduced = load_results(exp_dirs_reduced,file.path('intensity.Rdata'))
-
 #S178A Results
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
@@ -64,10 +60,6 @@ single_props$S178A$outside <- load_data_files(exp_dirs_S,
 	file.path('..','single_props','Outside_mean_intensity.csv'), 
 	headers=F, debug=FALSE, inc_exp_names=FALSE);
 
-exp_dirs_S <- Sys.glob('../../results/S178A_reduced/*/adhesion_props/models/')
-exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
-raw_data$results_S_reduced = load_results(exp_dirs_S,file.path('intensity.Rdata'))
-
 print('Done Loading Data')
 
 ########################################
@@ -80,9 +72,7 @@ ind_exp_filt = gather_single_image_props(raw_data$ind_results)
 ind_exp_filt_S = gather_single_image_props(raw_data$ind_results_S)
 
 results_nofilt = filter_results(raw_data$results, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
-results_reduced_nofilt = filter_results(raw_data$results_reduced, min_R_sq = -Inf, max_p_val = Inf)
 results_S_nofilt = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$S178A$cell_int)
-results_S_reduced_nofilt = filter_results(raw_data$results_S_reduced, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$S178A$cell_int)
 
 corr_results_nofilt = filter_results(raw_data$corr_results, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
 
@@ -97,9 +87,7 @@ area_onlysignif = filter_results(raw_data$area, min_R_sq = -Inf, max_p_val = 0.0
 area_filt = filter_results(raw_data$area)
 area_S_onlysignif = filter_results(raw_data$area_S, min_R_sq = -Inf, max_p_val = 0.05)
 results_filt = filter_results(raw_data$results, cell_intensities=single_props$fa$cell_int)
-results_reduced_filt = filter_results(raw_data$results_reduced)
 results_S_filt = filter_results(raw_data$results_S, cell_intensities=single_props$S178A$cell_int)
-results_S_reduced_filt = filter_results(raw_data$results_S_reduced, cell_intensities=single_props$S178A$cell_int)
 
 #rm(raw_data)
 gc()
@@ -222,50 +210,6 @@ plot(results_S_filt$control$mean_cell_int, results_S_filt$control$birth_pos,
 points(results_S_filt$control$mean_cell_int, results_S_filt$control$death_pos, col='red', pch=19)
 legend('topright', c('Birth','Death'), fill=c('green','red'))
 mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
-graphics.off()
-
-#Resampled Slope
-svg(file.path(out_folder,'controls','resampled_slopes.svg'))
-layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(3,4.2,0,0));
-
-boxplot_with_points(list(results_nofilt$assembly$slope, results_reduced_nofilt$assembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_nofilt$assembly$slope, results_reduced_nofilt$assembly$slope/2)$p.value), col='red')
-
-boxplot_with_points(list(results_nofilt$disassembly$slope, results_reduced_nofilt$disassembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_nofilt$disassembly$slope, results_reduced_nofilt$disassembly$slope/2)$p.value), col='red')
-
-boxplot_with_points(list(results_nofilt$assembly$R_sq, results_reduced_nofilt$assembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly ',R^2,sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_nofilt$assembly$R_sq, results_reduced_nofilt$assembly$R_sq)$p.value), col='red')
-
-boxplot_with_points(list(results_nofilt$disassembly$R_sq, results_reduced_nofilt$disassembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly ',R^2,sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_nofilt$disassembly$R_sq, results_reduced_nofilt$disassembly$R_sq)$p.value), col='red')
-graphics.off()
-
-#Reduced S178A
-svg(file.path(out_folder,'controls','resampled_slopes_S178A.svg'))
-layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(3,4.2,0,0));
-
-boxplot_with_points(list(results_S_onlysignif$assembly$slope, results_S_reduced_nofilt$assembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_S_nofilt$assembly$slope, results_S_reduced_nofilt$assembly$slope/2)$p.value), col='red')
-
-boxplot_with_points(list(results_S_nofilt$disassembly$slope, results_S_reduced_nofilt$disassembly$slope/2), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[4], sprintf('%0.3f',t.test(results_S_nofilt$disassembly$slope, results_S_reduced_nofilt$disassembly$slope/2)$p.value), col='red')
-
-boxplot_with_points(list(results_S_nofilt$assembly$R_sq, results_S_reduced_nofilt$assembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Assembly ',R^2,sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_S_nofilt$assembly$R_sq, results_S_reduced_nofilt$assembly$R_sq)$p.value), col='red')
-
-boxplot_with_points(list(results_S_nofilt$disassembly$R_sq, results_S_reduced_nofilt$disassembly$R_sq), names=c('All', 'Sampled'), notch=T, ylab=expression(paste('Disassembly ',R^2,sep='')))
-plot_size = par("usr");
-text(0.9*plot_size[2], 0.9*plot_size[3], sprintf('%0.3f',t.test(results_S_nofilt$disassembly$R_sq, results_S_reduced_nofilt$disassembly$R_sq)$p.value), col='red')
 graphics.off()
 
 #Poor R^2 adhesion sequence plots
