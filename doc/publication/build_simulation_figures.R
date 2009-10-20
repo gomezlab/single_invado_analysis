@@ -100,16 +100,24 @@ graphics.off()
 #Moving
 ########################################
 
+ad_sizes = c(1,4,5,12,13,24,29,44,49,68);
+
 moving_filtered = list();
 moving_names = c("moving_0_5","moving_1", "moving_2", "moving_3", 
                  "moving_4", "moving_5", "moving_6", "moving_7", 
                  "moving_8", "moving_9", "moving_10");
 for (i in moving_names) {
+    print(i)
     longev_filt = processed$no_filt[[i]]$assembly$longevity >= 25;
     if (any(longev_filt)) {
-        moving_filtered$min_size = c(moving_filtered$min_size, 
-            min(processed$no_filt[[i]]$assembly$mean_area[longev_filt]));
+        this_min_size = min(processed$no_filt[[i]]$assembly$mean_area[longev_filt])
 
+        moving_filtered$min_size = c(moving_filtered$min_size, this_min_size);
+        
+        moving_filtered$reliability = c(moving_filtered$reliability,
+            sum(processed$no_filt[[i]]$assembly$mean_area[longev_filt] <= this_min_size*1.05 &
+                processed$no_filt[[i]]$assembly$mean_area[longev_filt] >= this_min_size*0.95))
+        
         moving_filtered$number_detected = c(moving_filtered$number_detected,
             length(which(longev_filt)))
     } else {
@@ -120,6 +128,21 @@ for (i in moving_names) {
             0)
     }
 }
+
+moving_filtered$radii = c(seq(0.5,5,by=0.5),NA)
+moving_filtered$speeds = c(0.5, seq(1,10,by=1))
+
+
+svg(file.path(out_folder, 'simulation', 'moving_results.svg'), width=7/2, height=7*(3/4));
+par(mar=c(4,4,0,0), bty='n');
+layout(rbind(1,2), heights=c(0.45,1))
+
+plot.new()
+mtext('A',adj=-.3,side=3,line=-1.6,cex=1.5);
+
+plot(moving_filtered$speed, moving_filtered$radii, xlab = 'Movement Speed (pixels/min)', ylab = 'Minimum FA Radii (pixels)')
+mtext('B',adj=-.3,side=3,line=-1.25,cex=1.5);
+graphics.off()
 
 ########################################
 #Phases
