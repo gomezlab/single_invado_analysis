@@ -89,57 +89,74 @@ stop()
 ########################################
 # FA threshold variation
 ########################################
-dir.create(dirname(file.path(out_folder, 'parameter_variation', 'FA_assembly.svg')), 
-    recursive=TRUE, showWarnings=FALSE);
+dir.create(file.path(out_folder, 'parameter_variation'), recursive=TRUE, showWarnings=FALSE);
 
 svg(file.path(out_folder, 'parameter_variation', 'comparison_assembly.svg'), height=7*(3/2));
 layout(rbind(c(1,1,2,2),c(3,3,4,4), c(0,5,5,0)))
-par(mar=c(4,4,1,0), bty='n');
+par(mar=c(4,4.5,1,0), bty='n');
 boxplot_with_points(list(processed$only_signif$FA[["0_06"]]$assembly$slope, 
                          processed$only_signif$S178A[["0_06"]]$assembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.06",
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.16)) 
+axis(2,at=seq(0,0.16,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_07"]]$assembly$slope, 
                          processed$only_signif$S178A[["0_07"]]$assembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.07",
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.16)) 
+axis(2,at=seq(0,0.16,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_08"]]$assembly$slope, 
                          processed$only_signif$S178A[["0_08"]]$assembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.08",
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.16)) 
+axis(2,at=seq(0,0.16,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_09"]]$assembly$slope, 
                          processed$only_signif$S178A[["0_09"]]$assembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.09",
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.16)) 
+axis(2,at=seq(0,0.16,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_10"]]$assembly$slope, 
                          processed$only_signif$S178A[["0_10"]]$assembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.10",
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.16)) 
+axis(2,at=seq(0,0.16,by=0.02))
 graphics.off()
 
 svg(file.path(out_folder, 'parameter_variation', 'comparison_disassembly.svg'), height=7*(3/2))
 layout(rbind(c(1,1,2,2),c(3,3,4,4), c(0,5,5,0)))
-par(mar=c(4,4,1,0), bty='n');
+par(mar=c(4,4.5,1,0), bty='n');
 boxplot_with_points(list(processed$only_signif$FA[["0_06"]]$disassembly$slope, 
                          processed$only_signif$S178A[["0_06"]]$disassembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.06",
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.14))
+axis(2,at=seq(0,0.14,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_07"]]$disassembly$slope, 
                          processed$only_signif$S178A[["0_07"]]$disassembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.07",
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.14)) 
+axis(2,at=seq(0,0.14,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_08"]]$disassembly$slope, 
                          processed$only_signif$S178A[["0_08"]]$disassembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.08",
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.14)) 
+axis(2,at=seq(0,0.14,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_09"]]$disassembly$slope, 
                          processed$only_signif$S178A[["0_09"]]$disassembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.09",
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.14)) 
+axis(2,at=seq(0,0.14,by=0.02))
+
 boxplot_with_points(list(processed$only_signif$FA[["0_10"]]$disassembly$slope, 
                          processed$only_signif$S178A[["0_10"]]$disassembly$slope), 
                     names=c('Wild-type','S178A'), inc.points=F, notch=T, main="Threshold 0.10",
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep=''))) 
+                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), yaxt='n', ylim=c(0,0.14)) 
+axis(2,at=seq(0,0.14,by=0.02))
 graphics.off()
 
 # svg(file.path(out_folder, 'thresh_variation', 'wild_type_assembly.svg'), height=7, width=7*1/2)
