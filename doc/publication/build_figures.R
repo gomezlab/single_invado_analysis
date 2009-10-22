@@ -20,28 +20,6 @@ raw_data$wild_type$corrected_intensity = load_results(exp_dirs,file.path('local_
 raw_data$wild_type$static_props <- load_data_files(exp_dirs, 
     file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 
-# raw_data$corr_results = load_results(exp_dirs,file.path('local_corrected.Rdata'))
-# raw_data$CB_results = load_results(exp_dirs,file.path('CB_corrected.Rdata'))
-# raw_data$area = load_results(exp_dirs,file.path('area.Rdata'))
-# raw_data$ind_results <- load_data_files(exp_dirs, file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
-
-# background_correlation = load_results_2(exp_dirs, 'background_corr.Rdata')
-# single_props$fa$not_ad_int <- load_data_files(exp_dirs,
-# 	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$fa$cell_int <- load_data_files(exp_dirs,
-# 	file.path('..','single_props','Cell_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$fa$ad_int <- load_data_files(exp_dirs,
-# 	file.path('..','single_props','Adhesion_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$fa$not_ad_int <- load_data_files(exp_dirs,
-# 	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$fa$outside <- load_data_files(exp_dirs,
-# 	file.path('..','single_props','Outside_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# 
 # #S178A Results
 exp_dirs_S <- Sys.glob('../../results/S178A/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
@@ -51,27 +29,6 @@ raw_data$S178A$corrected_intensity = load_results(exp_dirs_S,file.path('local_co
 raw_data$S178A$static_props <- load_data_files(exp_dirs_S, 
     file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 
-# raw_data$results_S = load_results(exp_dirs_S,file.path('intensity.Rdata'))
-# raw_data$corr_results_S = load_results(exp_dirs_S,file.path('local_corrected.Rdata'))
-# raw_data$CB_results_S = load_results(exp_dirs_S,file.path('CB_corrected.Rdata'))
-# raw_data$area_S = load_results(exp_dirs_S,file.path('area.Rdata'))
-# raw_data$ind_results_S <- load_data_files(exp_dirs_S,file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
-# 
-# background_correlation_S = load_results_2(exp_dirs_S, 'background_corr.Rdata')
-# single_props$S178A = list()
-# single_props$S178A$cell_int <- load_data_files(exp_dirs_S,
-# 	file.path('..','single_props','Cell_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$S178A$not_ad_int <- load_data_files(exp_dirs_S,
-# 	file.path('..','single_props','Cell_not_ad_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$S178A$ad_int <- load_data_files(exp_dirs_S,
-# 	file.path('..','single_props','Adhesion_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# single_props$S178A$outside <- load_data_files(exp_dirs_S,
-# 	file.path('..','single_props','Outside_mean_intensity.csv'), 
-# 	headers=F, debug=FALSE, inc_exp_names=FALSE);
-# 
 print('Done Loading Data')
 
 ########################################
@@ -102,33 +59,6 @@ for (exp_type in names(raw_data)) {
     dynamic_props[[exp_type]] = gather_general_dynamic_props(raw_data[[exp_type]]$intensity)
     static_props[[exp_type]] = gather_static_props(raw_data[[exp_type]]$static_props) 
 }
-
-# results_props = gather_general_props(raw_data$wild_type$intensity)
-# results_S_props = gather_general_props(raw_data$results_S)
-# 
-# ind_exp_filt = gather_single_image_props(raw_data$ind_results)
-# ind_exp_filt_S = gather_single_image_props(raw_data$ind_results_S)
-# 
-# results_nofilt = filter_results(raw_data$wild_type$intensity, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
-# results_S_nofilt = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$S178A$cell_int)
-# 
-# corr_results_nofilt = filter_results(raw_data$wild_type$corrected_intensity, min_R_sq = -Inf, max_p_val = Inf, cell_intensities=single_props$fa$cell_int)
-# 
-# results_onlysignif = filter_results(raw_data$wild_type$intensity, min_R_sq = -Inf, max_p_val = 0.05, cell_intensities=single_props$fa$cell_int)
-# results_S_onlysignif = filter_results(raw_data$results_S, min_R_sq = -Inf, max_p_val = 0.05, cell_intensities=single_props$S178A$cell_int)
-# corr_results_onlysignif = filter_results(raw_data$corr_results, min_R_sq = -Inf, max_p_val = 0.05)
-# corr_results_S_onlysignif = filter_results(raw_data$corr_results_S, min_R_sq = -Inf, max_p_val = 0.05)
-# CB_results_onlysignif = filter_results(raw_data$CB_results, min_R_sq = -Inf, max_p_val = 0.05)
-# CB_results_S_onlysignif = filter_results(raw_data$CB_results_S, min_R_sq = -Inf, max_p_val = 0.05)
-# 
-# area_onlysignif = filter_results(raw_data$area, min_R_sq = -Inf, max_p_val = 0.05)
-# area_filt = filter_results(raw_data$area)
-# area_S_onlysignif = filter_results(raw_data$area_S, min_R_sq = -Inf, max_p_val = 0.05)
-# results_filt = filter_results(raw_data$wild_type$intensity, cell_intensities=single_props$fa$cell_int)
-# results_S_filt = filter_results(raw_data$results_S, cell_intensities=single_props$S178A$cell_int)
-
-#rm(raw_data)
-gc()
 
 print('Done Filtering Data')
 out_folder = '../../doc/publication/figures'
