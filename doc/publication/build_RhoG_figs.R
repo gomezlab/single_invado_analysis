@@ -54,7 +54,7 @@ dir.create(dirname(file.path(out_folder, 'RhoG', 'kinetics_comparison.svg')),
 
 svg(file.path(out_folder, 'RhoG', 'kinetics_comparison.svg'), height=7*(1/2));
 layout(rbind(c(1,2)))
-par(mar=c(4,4,1,0), bty='n');
+par(mar=c(4,4.5,1,0), bty='n');
 boxplot_with_points(list(processed$only_signif$KD$assembly$slope, 
                          processed$only_signif$control$assembly$slope), 
                     names=c("KD", "Control"), inc.points=FALSE,
@@ -63,4 +63,71 @@ boxplot_with_points(list(processed$only_signif$KD$disassembly$slope,
                          processed$only_signif$control$disassembly$slope), 
                     names=c("KD", "Control"), inc.points=FALSE,
                     ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')))
+graphics.off()
+
+for (i in unique(processed$only_signif$KD$assembly$exp_num)) {
+    # filter_slope = processed$only_signif$KD$assembly$slope[processed$only_signif$KD$assembly$exp_num != i]
+    # p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$assembly$slope);
+    # print(p_vals$ratio_conf)
+    
+    for (j in unique(processed$only_signif$KD$assembly$exp_num)) {
+        if (j == i) {
+            next;
+        }
+        if (i > j) {
+            next;
+        }
+        filter_slope = processed$only_signif$KD$assembly$slope[processed$only_signif$KD$assembly$exp_num != i |
+            processed$only_signif$KD$assembly$exp_num != j]
+        print(paste(i,j))
+
+        p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$assembly$slope);
+
+
+        print(p_vals$ratio_conf)
+    }
+}
+for (i in unique(processed$only_signif$KD$disassembly$exp_num)) {
+    # filter_slope = processed$only_signif$KD$disassembly$slope[processed$only_signif$KD$disassembly$exp_num != i]
+    # p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$disassembly$slope);
+    # print(p_vals$ratio_conf)
+    
+    for (j in unique(processed$only_signif$KD$disassembly$exp_num)) {
+        if (j == i) {
+            next;
+        }
+        if (i > j) {
+            next;
+        }
+        filter_slope = processed$only_signif$KD$disassembly$slope[processed$only_signif$KD$disassembly$exp_num != i |
+            processed$only_signif$KD$disassembly$exp_num != j]
+        print(paste(i,j))
+
+        p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$disassembly$slope);
+
+
+        print(p_vals$ratio_conf)
+    }
+}
+
+
+
+svg(file.path(out_folder, 'RhoG', 'single_exp.svg'));
+layout(rbind(c(1,2),c(3,4)))
+par(mar=c(4,4.5,1,0), bty='n');
+kd_exp_assem = boxplot(slope ~ exp_num, data=processed$only_signif$KD$assembly, 
+    notch=T, varwidth=T,ylim=c(0,0.12), xlab='KD Experiments',
+    ylab=expression(paste('Assembly Rate (',min^-1,')')), pch=19,cex=0.25)
+boxplot(slope ~ exp_num, data=processed$only_signif$control$assembly, 
+    notch=T, varwidth=T, ylim=c(0,0.12), xlab='Control Experiments',
+    ylab=expression(paste('Assembly Rate (',min^-1,')')), pch=19,cex=0.25)
+
+
+kd_exp_disassem = boxplot(slope ~ exp_num, data=processed$only_signif$KD$disassembly, 
+    notch=T, varwidth=T, ylim=c(0,0.12), xlab='KD Experiments',
+    ylab=expression(paste('Disassembly Rate (',min^-1,')')), pch=19,cex=0.25)
+boxplot(slope ~ exp_num, data=processed$only_signif$control$disassembly, 
+    notch=T, varwidth=T, ylim=c(0,0.12),xlab='Control Experiments',
+    ylab=expression(paste('Disassembly Rate (',min^-1,')')), pch=19,cex=0.25)
+
 graphics.off()
