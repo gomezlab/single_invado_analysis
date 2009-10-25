@@ -52,8 +52,6 @@ for (exp_type in names(raw_data)) {
         
         processed$only_signif[[exp_type]][[property]] = filter_results(raw_data[[exp_type]][[property]], 
             min_R_sq = -Inf, max_p_val = 0.05);
-        
-        processed$high_Rsq[[exp_type]][[property]] = filter_results(raw_data[[exp_type]][[property]]);
     }
     
     dynamic_props[[exp_type]] = gather_general_dynamic_props(raw_data[[exp_type]]$intensity)
@@ -61,7 +59,7 @@ for (exp_type in names(raw_data)) {
 }
 
 print('Done Filtering Data')
-out_folder = '../../doc/publication/figures'
+out_folder = '../../doc/publication/figures_no_filt'
 dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
 
 stop()
@@ -160,8 +158,8 @@ text(3,(limits[4]-limits[3])*0.8+limits[3], offset=c(-0.65,0),
 mtext('D',adj=-.19,side=3,line=-0.5,cex=1.5)
 par(bty='n', mar=c(2.1,4.2,1.1,0))
 
-boxplot_with_points(list(processed$high_Rsq$wild_type$intensity$assembly$slope,
-                         processed$high_Rsq$wild_type$intensity$disassembly$slope),
+boxplot_with_points(list(processed$only_signif$wild_type$intensity$assembly$slope,
+                         processed$only_signif$wild_type$intensity$disassembly$slope),
 		    names=c('Assembly', 'Disassembly'), boxwex=0.6, 
 		    ylab=expression(paste('Rate (',min^-1,')',sep='')), point_cex=0.6, with.median.props=FALSE)
 #95% confidence intervals on the mean from Webb 2004
@@ -216,29 +214,29 @@ svg(file.path(out_folder,'spatial','spatial.svg'))
 par(bty='n',mar=c(4.2,4.1,0.1,1))
 layout(rbind(c(1,2),c(3,4)))
 
-wt_high_Rsq = processed$high_Rsq$wild_type$intensity;
+wt_only_signif = processed$only_signif$wild_type$intensity;
 
-breaks_end = ceil(max(c(wt_high_Rsq$a$edge_dist,wt_high_Rsq$dis$edge_dist), na.rm=T));
+breaks_end = ceil(max(c(wt_only_signif$a$edge_dist,wt_only_signif$dis$edge_dist), na.rm=T));
 if (breaks_end %% 2 != 0) {
 	breaks_end = breaks_end + 1;
 }
 these_breaks = seq(0,breaks_end,by=2);
 
-hist(wt_high_Rsq$a$edge_dist, 
-     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=304', sep='')), 
+hist(wt_only_signif$a$edge_dist, 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('A',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,0.1,0))
-hist(wt_high_Rsq$dis$edge_dist,
-     xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=491', sep='')), 
+hist(wt_only_signif$dis$edge_dist,
+     xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=470', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,0.1,1))
-max_rate = max(c(wt_high_Rsq$a$slope, wt_high_Rsq$d$slope));
-plot(wt_high_Rsq$a$edge_dist, pch=19, cex=0.5,
-	 wt_high_Rsq$a$slope,
+max_rate = max(c(wt_only_signif$a$slope, wt_only_signif$d$slope));
+plot(wt_only_signif$a$edge_dist, pch=19, cex=0.5,
+	 wt_only_signif$a$slope,
 	 xlim = c(0,breaks_end),
      ylim = c(0,max_rate),
 	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')),
@@ -247,8 +245,8 @@ assembly_axis_ticks = axTicks(2);
 mtext('C',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,0.1,0))
-plot(wt_high_Rsq$d$edge_dist, pch=19, cex = 0.5,
-	 wt_high_Rsq$d$slope, 
+plot(wt_only_signif$d$edge_dist, pch=19, cex = 0.5,
+	 wt_only_signif$d$slope, 
 	 xlim = c(0,breaks_end),
      ylim = c(0,max_rate),
 	 ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')),
@@ -269,29 +267,29 @@ graphics.off()
 dir.create(dirname(file.path(out_folder,'spatial','spatial_alt.svg')), 
     recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'spatial','spatial_alt.svg'),height=4, width=10)
-par(bty='n',mar=c(4.2,4.1,0.1,6))
+par(bty='n',mar=c(4.2,4.1,0.1,5))
 layout(rbind(c(1,2)))
 
-breaks_end = ceil(max(c(wt_high_Rsq$a$edge_dist,wt_high_Rsq$dis$edge_dist), na.rm=T));
+breaks_end = ceil(max(c(wt_only_signif$a$edge_dist,wt_only_signif$dis$edge_dist), na.rm=T));
 if (breaks_end %% 2 != 0) {
 	breaks_end = breaks_end + 1;
 }
 these_breaks = seq(0,breaks_end,by=2);
-max_rate = max(c(wt_high_Rsq$a$slope, wt_high_Rsq$d$slope));
+max_rate = max(c(wt_only_signif$a$slope, wt_only_signif$d$slope));
 
 #########
 #Assembly Plot
 #########
-hist(wt_high_Rsq$a$edge_dist, 
-     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=304', sep='')), 
+hist(wt_only_signif$a$edge_dist, 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=1068', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 assembly_plot_dims = par('usr')
 
 # we adjust the scaling factor slightly down, so that all the points are
 # included in the plot size, otherwise the highest point gets cutoff
-scaled_assembly_rates = wt_high_Rsq$a$slope*((assembly_plot_dims[4]*0.97)/max_rate)
+scaled_assembly_rates = wt_only_signif$a$slope*((assembly_plot_dims[4]*0.97)/max_rate)
 
-points(wt_high_Rsq$a$edge_dist, scaled_assembly_rates,
+points(wt_only_signif$a$edge_dist, scaled_assembly_rates,
        pch=19, cex=0.05, col='darkgreen',
 	   ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
 
@@ -301,21 +299,22 @@ points(wt_high_Rsq$a$edge_dist, scaled_assembly_rates,
 axis(4, at = assembly_axis_ticks*((assembly_plot_dims[4]*0.97)/max_rate), labels=assembly_axis_ticks, col='darkgreen')
 
 mtext(expression(paste('Assembly Rate (',min^-1,')',sep='')),side=4,line=3, col='darkgreen');
-mtext('A',adj=-.22,side=3,line=-1.5,cex=1.75)
+mtext('A',adj=-.22,side=3,line=-1.5,cex=1.5)
 
 #########
 #Disassembly Plot
 #########
-hist(wt_high_Rsq$d$edge_dist, 
-     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=491', sep='')), 
+par(bty='n',mar=c(4.2,4.1,0.1,4))
+hist(wt_only_signif$d$edge_dist, 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=1392', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 disassembly_plot_dims = par('usr')
 
 # we adjust the scaling factor slightly down, so that all the points are
 # included in the plot size, otherwise the highest point gets cutoff
-scaled_disassembly_rates = wt_high_Rsq$d$slope*((disassembly_plot_dims[4]*0.97)/max_rate)
+scaled_disassembly_rates = wt_only_signif$d$slope*((disassembly_plot_dims[4]*0.97)/max_rate)
 
-points(wt_high_Rsq$d$edge_dist, scaled_disassembly_rates,
+points(wt_only_signif$d$edge_dist, scaled_disassembly_rates,
        pch=19, cex=0.05, col='red',
 	   ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
 
@@ -325,7 +324,7 @@ points(wt_high_Rsq$d$edge_dist, scaled_disassembly_rates,
 axis(4, at = disassembly_axis_ticks*((disassembly_plot_dims[4]*0.97)/max_rate), labels=disassembly_axis_ticks, col='red')
 
 mtext(expression(paste('Disassembly Rate (',min^-1,')',sep='')),side=4,line=3, col='red');
-
+mtext('B',adj=-.22,side=3,line=-1.5,cex=1.5)
 graphics.off()
 
 ####################
@@ -418,7 +417,7 @@ lines(x_data$birth_dist, line_conf[,3], col='red', lty=2, lwd = 3)
 segments(0,0,max(S178A_no_filt$j$b, na.rm=T), max(S178A_no_filt$j$b, na.rm=T), col='blue', lty=4, lwd = 3)
 
 graphics.off()
-print('Done with Spacial')
+print('Done with Spatial')
 
 ############################################################
 #Comparing S178A to Wild-type
@@ -494,95 +493,9 @@ print('Done with Lifetime Phase Lengths')
 ########################################
 #Dynamics
 ########################################
-#svg(file.path(out_folder,'S178A','S178A_vs_wild-type.svg'))
 dir.create(dirname(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf')), 
     recursive=TRUE, showWarnings=FALSE);
 pdf(file.path(out_folder,'S178A','S178A_vs_wild-type.pdf'))
-layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(2,4,0,0))
-
-wt_high_Rsq = processed$high_Rsq$wild_type$intensity;
-S178A_high_Rsq = processed$high_Rsq$S178A$intensity;
-
-max_rate = max(c(wt_high_Rsq$as$slope,S178A_high_Rsq$as$slope,
-                 wt_high_Rsq$dis$slope,S178A_high_Rsq$dis$slope));
-
-#Panel Assembly Rates
-boxplot_with_points(list(wt_high_Rsq$as$slope,S178A_high_Rsq$as$slope), 
-        names=c('Wild-type','S178A'), 
-        colors=c('orange','blue'),
-        ylim = c(0,max_rate + 0.012),
-        ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')),
-        median.props.color='brown'
-)
-
-# bar_length = .005;
-# sep_from_data = 0.005;
-# 
-# upper_left = c(1, max_rate + sep_from_data + bar_length);
-# lower_right = c(2, max_rate + sep_from_data);
-# lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
-# 	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
-# text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"***",cex=1.5)
-mtext('A',adj=-.25,side=3,line=-1.5,cex=1.5)	    
-
-#Panel Disassembly Rates
-boxplot_with_points(list(wt_high_Rsq$dis$slope,S178A_high_Rsq$dis$slope), 
-    names=c('Wild-type','S178A'), 
-    colors=c('orange','blue'),
-    ylim = c(0,max_rate + 0.012),
-    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')),
-    median.props.color='brown'
-
-)
-
-# upper_left = c(1, max_rate + sep_from_data + bar_length);
-# lower_right = c(2, max_rate + sep_from_data);
-# lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
-# 	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
-# text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"*",cex=1.5)
-mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)
-
-#Panel Birth Distances
-par(bty='n', mar=c(2,4,1.5,0))
-max_dist = max(c(wt_high_Rsq$as$edge_dist,S178A_high_Rsq$as$edge_dist,
-                 wt_high_Rsq$dis$edge_dist,S178A_high_Rsq$dis$edge_dist), na.rm=T)
-boxplot_with_points(list(wt_high_Rsq$as$edge_dist,S178A_high_Rsq$as$edge_dist), 
-    names=c('Wild-type','S178A'), 
-    ylim=c(0,max_dist+2), 
-    colors=c('orange','blue'),
-    ylab=expression(paste('Distance from Edge at Birth (',mu,'m)',sep='')),
-    median.props.color='brown'
-)
-
-bar_length = 1;
-sep_from_data = 1;
-
-# upper_left = c(1, max_dist + sep_from_data + bar_length);
-# lower_right = c(2, max_dist + sep_from_data);
-# lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
-# 	  c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
-# text(mean(c(upper_left[1],lower_right[1]))-0.005,upper_left[2]+sep_from_data,"**",cex=1.5)
-mtext('C',adj=-.25,side=3,line=-1.5,cex=1.5)
-
-#Panel Death Distances
-boxplot_with_points(list(wt_high_Rsq$dis$edge_dist,S178A_high_Rsq$dis$edge_dist), 
-    names=c('Wild-type','S178A'), 
-    ylim=c(0,max_dist+2),
-    colors=c('orange','blue'),
-    ylab=expression(paste('Distance from Edge at Death (',mu,'m)',sep='')),
-    median.props.color='brown'
-)
-mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)	    
-
-graphics.off()
-
-###############
-#Supplemental
-###############
-dir.create(dirname(file.path(out_folder,'supplemental','unfilt_S178A_vs_wild-type.pdf')), 
-    recursive=TRUE, showWarnings=FALSE);
-pdf(file.path(out_folder,'supplemental','unfilt_S178A_vs_wild-type.pdf'))
 layout(rbind(c(1,2),c(3,4)))
 par(bty='n', mar=c(2,4,0,0))
 
@@ -665,39 +578,3 @@ mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 graphics.off()
 print('Done with S178A Comparisons')
-
-############################################################
-#Distance versus Background corrected correlation
-############################################################
-
-# all = list()
-# for (i in 1:length(background_correlation)) {
-# 	all$distances = c(all$distances, background_correlation[[i]]$distances)
-# 	all$correlations = c(all$correlations, background_correlation[[i]]$correlations)
-# }	
-# all = as.data.frame(all)
-# 
-# all_S = list()
-# for (i in 1:length(background_correlation_S)) {
-# 	all_S$distances = c(all_S$distances, background_correlation_S[[i]]$distances)
-# 	all_S$correlations = c(all_S$correlations, background_correlation_S[[i]]$correlations)
-# }	
-# all_S = as.data.frame(all_S)
-# 
-# binned_all = bin_corr_data(all, bin_max=200)
-# binned_all_S = bin_corr_data(all_S, bin_max=200)
-# 
-# dir.create(dirname(file.path(out_folder,'S178A','dist_vs_corr.pdf')), 
-#     recursive=TRUE, showWarnings=FALSE);
-# pdf(file.path(out_folder,'S178A','dist_vs_corr.pdf'))
-# y_max = max(c(binned_all$upper, binned_all_S$upper), na.rm=TRUE)
-# 
-# plot(binned_all$mids, binned_all$means, ylim=c(0, y_max), 
-#         xlab=expression(paste('Mean Distance (', mu, 'm)', sep='')), ylab="correlation")
-# errbar(binned_all$mids, binned_all$means, binned_all$upper, binned_all$lower, add=TRUE, xlab="", ylab="")
-# 
-# #plot(binned_all_S$mids, binned_all_S$means, ylim=c(0, y_max), col='red', add=TRUE)
-# errbar(binned_all_S$mids, binned_all_S$means, binned_all_S$upper, binned_all_S$lower, add=TRUE,col='red', xlab="", ylab="")
-# graphics.off()
-# 
-# print('Done with Distance versus Pax Concentration Correlation')
