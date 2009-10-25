@@ -69,9 +69,6 @@ stop()
 ################################################################################
 #Plotting
 ################################################################################
-out_folder = '../../doc/publication/figures'
-dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
-
 
 ########################################
 #Statics Properties
@@ -228,13 +225,13 @@ if (breaks_end %% 2 != 0) {
 these_breaks = seq(0,breaks_end,by=2);
 
 hist(wt_high_Rsq$a$edge_dist, 
-     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=304', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('A',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,0.1,0))
 hist(wt_high_Rsq$dis$edge_dist,
-     xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=470', sep='')), 
+     xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=491', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
 mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)
 
@@ -243,22 +240,32 @@ max_rate = max(c(wt_high_Rsq$a$slope, wt_high_Rsq$d$slope));
 plot(wt_high_Rsq$a$edge_dist, pch=19, cex=0.5,
 	 wt_high_Rsq$a$slope,
 	 xlim = c(0,breaks_end),
-         ylim = c(0,max_rate),
+     ylim = c(0,max_rate),
 	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')),
 	 xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')))
+assembly_axis_ticks = axTicks(2);
 mtext('C',adj=-.25,side=3,line=-1.5,cex=1.5)
 
 par(bty='n',mar=c(4.2,4.1,0.1,0))
 plot(wt_high_Rsq$d$edge_dist, pch=19, cex = 0.5,
 	 wt_high_Rsq$d$slope, 
 	 xlim = c(0,breaks_end),
-         ylim = c(0,max_rate),
+     ylim = c(0,max_rate),
 	 ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')),
 	 xlab=expression(paste('Distance from Edge at Death (', mu, 'm)', sep='')))
+disassembly_axis_ticks = axTicks(2);
 mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)
 graphics.off()
 
+####################
 #Alternate combined plots
+####################
+# In this set of plots we overlay essentially overlay the two plots that are
+# made in the above figure into two figures, an assembly and disassembly
+# figure. To do this will will first create the histograms and then plots the
+# rates versus position. Since the histogram call sets up all the dimensions of
+# the plot, we will have to scale the rates to fit into those spaces.
+
 dir.create(dirname(file.path(out_folder,'spatial','spatial_alt.svg')), 
     recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'spatial','spatial_alt.svg'),height=4, width=10)
@@ -272,33 +279,52 @@ if (breaks_end %% 2 != 0) {
 these_breaks = seq(0,breaks_end,by=2);
 max_rate = max(c(wt_high_Rsq$a$slope, wt_high_Rsq$d$slope));
 
-#assembly rates
+#########
+#Assembly Plot
+#########
 hist(wt_high_Rsq$a$edge_dist, 
-     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=309', sep='')), 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=304', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
-plot_range = par('usr')
-# segments(1.5,0,1.5,plot_range[4], col='purple', lwd=2)
-points(wt_high_Rsq$a$edge_dist, pch=19, cex=0.35, col='darkgreen',
-	 wt_high_Rsq$a$slope*((plot_range[4]-10)/max_rate),
-	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
-axis_ticks = axTicks(2);
-axis(4, at = axis_ticks*((plot_range[4]-10)/max_rate), labels=axis_ticks, col='darkgreen')
+assembly_plot_dims = par('usr')
+
+# we adjust the scaling factor slightly down, so that all the points are
+# included in the plot size, otherwise the highest point gets cutoff
+scaled_assembly_rates = wt_high_Rsq$a$slope*((assembly_plot_dims[4]*0.97)/max_rate)
+
+points(wt_high_Rsq$a$edge_dist, scaled_assembly_rates,
+       pch=19, cex=0.05, col='darkgreen',
+	   ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
+
+# Now we have to place the axis ticks in the proper location, so we also scale
+# the axis ticks, using the same number of marks as would be used in the
+# standard plots
+axis(4, at = assembly_axis_ticks*((assembly_plot_dims[4]*0.97)/max_rate), labels=assembly_axis_ticks, col='darkgreen')
+
 mtext(expression(paste('Assembly Rate (',min^-1,')',sep='')),side=4,line=3, col='darkgreen');
 mtext('A',adj=-.22,side=3,line=-1.5,cex=1.75)
 
-#disassembly rates
-par(bty='n',mar=c(4.2,4.1,0.1,4))
-hist(wt_high_Rsq$dis$edge_dist,
-     xlab=expression(paste('Distance from Edge at Death (', mu, 'm) n=470', sep='')), 
+#########
+#Disassembly Plot
+#########
+hist(wt_high_Rsq$d$edge_dist, 
+     xlab=expression(paste('Distance from Edge at Birth (', mu, 'm) n=491', sep='')), 
      main = '', ylab = '# of Focal Adhesions', breaks=these_breaks)
-plot_range = par('usr')
-# segments(1.5,0,1.5,plot_range[4], col='purple', lwd=2)
-points(wt_high_Rsq$d$edge_dist, pch=19, cex=0.35, col='red',
-	 wt_high_Rsq$d$slope*((plot_range[4]-10)/max_rate),
-	 ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
-axis(4, at = axis_ticks*((plot_range[4]-10)/max_rate), labels=axis_ticks, col='red')
+disassembly_plot_dims = par('usr')
+
+# we adjust the scaling factor slightly down, so that all the points are
+# included in the plot size, otherwise the highest point gets cutoff
+scaled_disassembly_rates = wt_high_Rsq$d$slope*((disassembly_plot_dims[4]*0.97)/max_rate)
+
+points(wt_high_Rsq$d$edge_dist, scaled_disassembly_rates,
+       pch=19, cex=0.05, col='red',
+	   ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')))
+
+# Now we have to place the axis ticks in the proper location, so we also scale
+# the axis ticks, using the same number of marks as would be used in the
+# standard plots
+axis(4, at = disassembly_axis_ticks*((disassembly_plot_dims[4]*0.97)/max_rate), labels=disassembly_axis_ticks, col='red')
+
 mtext(expression(paste('Disassembly Rate (',min^-1,')',sep='')),side=4,line=3, col='red');
-mtext('B',adj=-0.22,side=3,line=-1.5,cex=1.75)
 
 graphics.off()
 
@@ -351,7 +377,6 @@ graphics.off()
 
 svg(file.path(out_folder,'supplemental','birth_vs_death_pos.svg'))
 par(bty='n',mar=c(4.2,4.1,2,0.2))
-
 
 plot(wt_no_filt$j$birth_dist, wt_no_filt$j$death_dist, 
      xlab=expression(paste('Distance from Edge at Birth (', mu, 'm)', sep='')),
