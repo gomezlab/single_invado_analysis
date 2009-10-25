@@ -42,6 +42,14 @@ exp_dirs_S <- Sys.glob('../../results/S178A_reduced/*/adhesion_props/models/')
 exp_dirs_S <- exp_dirs_S[file_test('-d',exp_dirs_S)]
 raw_data[["S178A_reduced"]] = load_results(exp_dirs_S,file.path('intensity.Rdata'))
 
+exp_dirs <- Sys.glob('../../results/focal_adhesions_no_split/*/adhesion_props/models/')
+exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
+raw_data[["FA_no_split"]] = load_results(exp_dirs,file.path('intensity.Rdata'))
+
+exp_dirs <- Sys.glob('../../results/S178A_no_split/*/adhesion_props/models/')
+exp_dirs <- exp_dirs[file_test('-d',exp_dirs)]
+raw_data[["S178A_no_split"]] = load_results(exp_dirs,file.path('intensity.Rdata'))
+
 print('Done Loading Data')
 
 ########################################
@@ -50,7 +58,7 @@ print('Done Loading Data')
 processed = list();
 
 for (exp_name in names(raw_data)) {
-    if (any(exp_name == c("FA_reduced", "S178A_reduced"))) {
+    if (any(exp_name == c("FA_reduced", "S178A_reduced", "FA_no_split", "S178A_no_split"))) {
         processed$no_filt[[exp_name]] = filter_results(raw_data[[exp_name]], 
             min_R_sq = -Inf, max_p_val = Inf);
         
@@ -58,7 +66,6 @@ for (exp_name in names(raw_data)) {
             min_R_sq = -Inf, max_p_val = 0.05);
         
         processed$high_Rsq[[exp_name]] = filter_results(raw_data[[exp_name]]);
-        
     }
     for (thresh_level in names(raw_data[[exp_name]])) {
         if (debug) {
