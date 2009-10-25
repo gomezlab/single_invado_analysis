@@ -66,10 +66,6 @@ boxplot_with_points(list(processed$only_signif$KD$disassembly$slope,
 graphics.off()
 
 for (i in unique(processed$only_signif$KD$assembly$exp_num)) {
-    # filter_slope = processed$only_signif$KD$assembly$slope[processed$only_signif$KD$assembly$exp_num != i]
-    # p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$assembly$slope);
-    # print(p_vals$ratio_conf)
-    
     for (j in unique(processed$only_signif$KD$assembly$exp_num)) {
         if (j == i) {
             next;
@@ -77,40 +73,19 @@ for (i in unique(processed$only_signif$KD$assembly$exp_num)) {
         if (i > j) {
             next;
         }
-        filter_slope = processed$only_signif$KD$assembly$slope[processed$only_signif$KD$assembly$exp_num != i |
-            processed$only_signif$KD$assembly$exp_num != j]
+        filtered_data = subset(processed$only_signif$KD$assembly, exp_num != i | exp_num != j);
+        filtered_dis = subset(processed$only_signif$KD$disassembly, exp_num != i | exp_num != j);
+        
         print(paste(i,j))
 
-        p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$assembly$slope);
-
-
+        p_vals = determine_median_p_value(filtered_data$slope, processed$only_signif$control$assembly$slope);
         print(p_vals$ratio_conf)
+        p_vals = determine_median_p_value(filtered_dis$slope, processed$only_signif$control$disassembly$slope);
+        print(p_vals$ratio_conf)
+
+
     }
 }
-for (i in unique(processed$only_signif$KD$disassembly$exp_num)) {
-    # filter_slope = processed$only_signif$KD$disassembly$slope[processed$only_signif$KD$disassembly$exp_num != i]
-    # p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$disassembly$slope);
-    # print(p_vals$ratio_conf)
-    
-    for (j in unique(processed$only_signif$KD$disassembly$exp_num)) {
-        if (j == i) {
-            next;
-        }
-        if (i > j) {
-            next;
-        }
-        filter_slope = processed$only_signif$KD$disassembly$slope[processed$only_signif$KD$disassembly$exp_num != i |
-            processed$only_signif$KD$disassembly$exp_num != j]
-        print(paste(i,j))
-
-        p_vals = determine_median_p_value(filter_slope, processed$only_signif$control$disassembly$slope);
-
-
-        print(p_vals$ratio_conf)
-    }
-}
-
-
 
 svg(file.path(out_folder, 'RhoG', 'single_exp.svg'));
 layout(rbind(c(1,2),c(3,4)))
