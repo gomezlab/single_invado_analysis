@@ -215,6 +215,12 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props,
 	
 	#Search the beginning of the sequence for a linear fit
 	assembly_slope_calculated = FALSE;
+    # we don't want to find an assembly slope if the first entry in the raw
+    # data set isn't a "NA", as that indicates that we saw the birth of the
+    # adhesion during the experiment, we are also not interested in adhesions
+    # that are the result of a split birth event, finally, we exclude those
+    # adhesions that aren't long enough to accomodate the minimum assembly and
+    # disassembly phases
 	if (is.nan(initial_data_set[1]) & ! exp_props$split_birth_status & length(results$filt_init) >= (min_length * 2)) {
 		assembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
@@ -264,19 +270,16 @@ find_optimum_bilinear_fit <- function(initial_data_set, exp_props,
 	
 	#Search the end of the sequence for a linear fit
 	disassembly_slope_calculated = FALSE;
+    # we don't want to find a disassembly slope if the last entry in the raw
+    # data set isn't a "NA", as that indicates that we didn't see the death of
+    # the adhesion during the experiment, we are also not interested in
+    # adhesions that merge another adhesion, finally, we exclude those
+    # adhesions that aren't long enough to accomodate the minimum assembly and
+    # disassembly phases
 	if (is.nan(initial_data_set[length(initial_data_set)]) & exp_props$death_status & length(results$filt_init) >= (min_length * 2)) {
 		disassembly_slope_calculated = TRUE;
 		for (j in min_length:dim(this_data_set)[[1]]) {
 			disassembly_subset = this_data_set[(dim(this_data_set)[[1]]-j+1):dim(this_data_set)[[1]],]
-#			stopifnot(length(disassembly_subset$y) >= min_length)
-#			stopifnot(length(disassembly_subset$y) == j)
-			if (!(length(disassembly_subset$y) == j)) {
-				browser()
-			}
-			if (!(length(disassembly_subset$y) >= min_length)) {
-				browser()
-			}
-			
 			
 			if (normed) {
 				disassembly_subset$y = disassembly_subset$y[1]/disassembly_subset$y
@@ -700,7 +703,8 @@ gather_exp_win_residuals <- function(resid, window) {
 boxplot_with_points <- function(data,
     colors=c('darkgreen','red','yellow','blue','pink','cyan','gray','orange','brown','purple'),
     notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, pch=20,
-    point_cex=0.5, return_output = FALSE, with.median.pval = TRUE, ...) {
+    point_cex=0.5, return_output = FALSE, with.median.props = TRUE, 
+    median.props.pos = rbind(c(0,0.8),c(0,0.9)), median.props.color = 'blue', ...) {
 		
 	if (inc.n.counts) {
 		for (i in 1:length(data)) {
@@ -708,21 +712,26 @@ boxplot_with_points <- function(data,
 		}
 	}
 	
-	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range,...)
+	box.data = boxplot(data,notch = notch,names = names,varwidth=T,range = range,pch=19,cex=0.25,...)
     plot_dims = par("usr");
 	if (inc.points) {
 		for (i in 1:length(data)) {
 			this_data = data[[i]]
 			temp_data = this_data[this_data >= box.data$stat[1,i] & this_data <= box.data$stat[5,i]]
 			points(jitter(array(0,dim=c(1,length(temp_data))),10)+i,
-                   temp_data,col=colors[[i]], pch=pch, cex=point_cex, ...)
+                   temp_data,col=colors[[i]], pch=pch, cex=point_cex, )
 		}
 	}
-    if (with.median.pval) {
+    if (with.median.props) {
         p_vals = determine_median_p_value(data[[1]], data[[2]]);
         median_ratio_low = sprintf('%.0f', 100*p_vals$ratio_conf[1]);
         median_ratio_high = sprintf('%.0f', 100*p_vals$ratio_conf[2]);
-        text(plot_dims[2]*0.85,plot_dims[4]*0.9,paste(p_vals$p_val,'\n(',median_ratio_low, ',', median_ratio_high, ')%',sep=''));
+        
+        x_pos = plot_dims[1]*median.props.pos[1,1] + plot_dims[2]*median.props.pos[1,2]
+        y_pos = plot_dims[3]*median.props.pos[2,1] + plot_dims[4]*median.props.pos[2,2]
+
+        text(x_pos,y_pos,
+             paste(p_vals$p_val,'\n(',median_ratio_low, ',', median_ratio_high, ')%',sep=''), col=median.props.color);
     }
     if (return_output) {
         return(box.data);
@@ -758,19 +767,19 @@ get_legend_rect_points <- function(left_x,bottom_y,right_x,top_y,box_num) {
 }
 
 plot_signif_bracket <- function(upper_left, lower_right, orientation = 'regular', 
-    over_text = NA, cex_text = 1.5, text_sep = 0.5) {
+    over_text = NA, cex_text = 1.5, text_sep = 0.5, text_x_adj=0) {
     if (orientation == 'regular') {
         lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
               c(lower_right[2],upper_left[2],upper_left[2],lower_right[2]))  
         if (! is.na(over_text)) {
-            text(mean(c(upper_left[1],lower_right[1])),upper_left[2]+text_sep,over_text,cex=cex_text)
+            text(mean(c(upper_left[1],lower_right[1])),upper_left[2]*1.025,over_text,cex=cex_text)
         }
     } 
     if (orientation == 'upside_down') {
         lines(c(upper_left[1],upper_left[1],lower_right[1], lower_right[1]),
               c(upper_left[2],lower_right[2],lower_right[2],upper_left[2]))  
         if (! is.na(over_text)) {
-            text(mean(c(upper_left[1],lower_right[1])),lower_right[2]-text_sep,over_text,cex=cex_text)
+            text(mean(c(upper_left[1],lower_right[1]))+text_x_adj,lower_right[2]-text_sep,over_text,cex=cex_text)
         }
     }
 }
@@ -842,21 +851,13 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
             for_filter = primary_filter_results[[i]]
         }
 
-        assembly_filt = (! is.na(for_filter$assembly$length) & for_filter$assembly$R_sq >= min_R_sq
-                & ! is.na(for_filter$assembly$p_val) & for_filter$assembly$p_val < max_p_val 
-                & ! for_filter$exp_props$split_birth_status);
-        disassembly_filt = (! is.na(for_filter$disassembly$length) & for_filter$disassembly$R_sq >= min_R_sq
-                & ! is.na(for_filter$disassembly$p_val) & for_filter$disassembly$p_val < max_p_val 
-                & for_filter$exp_props$death_status);
-
-        if (pos_slope) {
-            assembly_filt = assembly_filt & for_filter$assembly$slope > 0;
-            disassembly_filt = disassembly_filt & for_filter$disassembly$slope > 0;
-        }				  
-        joint_filt = assembly_filt & disassembly_filt;
+        filter_sets = produce_rate_filters(for_filter, min_R_sq = min_R_sq, max_p_val = max_p_val, pos_slope = pos_slope)
+        
+        assembly_filt = filter_sets$assembly;
+        disassembly_filt = filter_sets$disassembly;
+        joint_filt = filter_sets$joint;
 
         points$assembly$slope = c(points$assembly$slope, res$assembly$slope[assembly_filt]);
-        points$assembly$fold_change = c(points$assembly$fold_change, res$assembly$fold_change[assembly_filt]);
         points$assembly$R_sq = c(points$assembly$R_sq, res$assembly$R_sq[assembly_filt]);
         points$assembly$p_val = c(points$assembly$p_val, res$assembly$p_val[assembly_filt]);
         points$assembly$length = c(points$assembly$length, res$assembly$length[assembly_filt]);
@@ -966,6 +967,55 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
     points
 }
 
+produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slope=TRUE) {
+    filter_sets = list()
+
+    # First we cycle through all the variables used to filter the assembly and
+    # disassembly phases, collecting logic table describing which adhesions
+    # fulfill which criteria
+    vars_to_filter = c("assembly", "disassembly")
+    for (var in vars_to_filter) {
+        filter_sets[[var]]$total = length(raw_data[[var]]$length)
+        filter_sets[[var]]$long_enough = ! is.na(raw_data[[var]]$R_sq)
+        filter_sets[[var]]$good_R_sq = ! is.na(raw_data[[var]]$R_sq) & raw_data[[var]]$R_sq >= min_R_sq
+        filter_sets[[var]]$low_p_val = ! is.na(raw_data[[var]]$p_val) & raw_data[[var]]$p_val < max_p_val
+        filter_sets[[var]]$pos_slope = ! is.na(raw_data[[var]]$slope) & raw_data[[var]]$slope > 0; 
+    }
+    
+    # There are two variables that are unique to assembly and disassembly
+    # (split birth events and deaths due to merges), we will keep all those in
+    # the logic table "extra" and the in named variables so we can access the
+    # named variables separated if needed
+    filter_sets$assembly$split_birth = ! raw_data$exp_props$split_birth_status
+    filter_sets$assembly$extra = ! raw_data$exp_props$split_birth_status
+    
+    filter_sets$disassembly$merged = raw_data$exp_props$death_status
+    filter_sets$disassembly$extra = raw_data$exp_props$death_status
+    
+    # Now all the filters are cascaded to produce the final filter set, then
+    # the pos_slope variable is checked and applied if requested
+    final_filters = list()
+    for (var in vars_to_filter) {
+        final_filters[[var]] = (filter_sets[[var]]$good_R_sq & filter_sets[[var]]$low_p_val & filter_sets[[var]]$extra);
+    }
+
+    if (pos_slope) {
+        for (var in vars_to_filter) {
+            final_filters[[var]] = (final_filters[[var]] & filter_sets[[var]]$pos_slope);
+        }
+    }
+
+    final_filters$joint = final_filters$assembly & final_filters$disassembly
+    
+    for (filter_type in names(final_filters)) {
+        final_filters[[filter_type]] = as.logical(final_filters[[filter_type]])
+    }
+
+    final_filters$filter_sets = filter_sets;
+    
+    return(final_filters)
+}
+
 determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 	require(boot);
 	boot_samp_1 = boot(data_1, function(data_1,indexes) mean(data_1[indexes],na.rm=T), bootstrap.rep);
@@ -983,15 +1033,14 @@ determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
     return(results);
 }
 
-determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 5000) {
+determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 	require(boot);
 	boot_samp_1 = boot(data_1, function(values,indexes) median(values[indexes],na.rm=T), bootstrap.rep);
 	boot_samp_2 = boot(data_2, function(values,indexes) median(values[indexes],na.rm=T), bootstrap.rep);
-	
-
+    
     data_package = list(one = data_1, two = data_2);
     boot_ratio = boot(data_package, function(values, indexes) ratio_samp(values$one, values$two), bootstrap.rep);
-    boot_ratio_conf = boot.ci(boot_ratio,type="perc")
+    boot_ratio_conf = boot.ci(boot_ratio,type="perc", conf=0.99)
 
     results = list()
 	
@@ -1004,8 +1053,10 @@ determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 5000) {
 }
 
 ratio_samp <- function(data_1, data_2) {
-    samp_1 = sample(data_1, length(data_1), replace=TRUE);
-    samp_2 = sample(data_2, length(data_2), replace=TRUE);
+    no_na_data_1 = na.omit(data_1);
+    no_na_data_2 = na.omit(data_2);
+    samp_1 = sample(no_na_data_1, length(no_na_data_1), replace=TRUE);
+    samp_2= sample(no_na_data_2, length(no_na_data_2), replace=TRUE);
 
     return((median(samp_2) - median(samp_1))/median(samp_1));
 }
@@ -1091,7 +1142,7 @@ gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, de
 }
 
 find_p_val_from_bootstrap <- function(boot_one, boot_two, 
-	p_vals_to_test = c(seq(0.9,0.1,by=-0.01),0.1,0.05,1E-2,1E-3,1E-4,1E-5)) {
+	p_vals_to_test = c(seq(0.9,0.11,by=-0.01),0.1,0.05,1E-2,1E-3,1E-4,1E-5)) {
 	
 	stopifnot(class(boot_one) == "boot")
 	stopifnot(class(boot_two) == "boot")
@@ -1133,10 +1184,14 @@ ranges_overlap <- function(range_1, range_2) {
 	return(FALSE);
 }
 
-gather_general_props <- function(results) {
+gather_general_dynamic_props <- function(results, debug=FALSE) {
 	points = list()
 	for (i in 1:length(results)) {
 		res = results[[i]]
+        if (debug) {
+            print(paste("Working on", i))
+        }
+
 		points$longevity = c(points$longevity, res$exp_props$longevity)
 		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
 		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
@@ -1148,11 +1203,14 @@ gather_general_props <- function(results) {
 	points
 }
 
-gather_single_image_props <- function(ind_results) {
+gather_static_props <- function(ind_results, debug=FALSE) {
 	ind_data = list();
 	
 	for (i in 1:length(ind_results)) {
 		res = ind_results[[i]]
+        if (debug) {
+            print(paste("Working on", i))
+        }
 		filt_by_area = res$Area >= min(res$Area)# & res$I_num == 1
 		ind_data$Area = c(ind_data$Area, res$Area[filt_by_area]);
 		ind_data$ad_sig = c(ind_data$ad_sig, res$Average_adhesion_signal[filt_by_area]);
@@ -1168,11 +1226,14 @@ gather_single_image_props <- function(ind_results) {
 ################################################################################
 # File Reading/Writing Functions
 ################################################################################
-load_results <- function(dirs,file) {
+load_results <- function(dirs,file, debug=TRUE) {
 	results = list()
 	for (i in 1:length(dirs)) {
 		this_file = file.path(dirs[i],file)
 		if (file.exists(this_file)) {
+            if (debug) {
+                print(paste('Loading File:', this_file))
+            }
 			load(file.path(dirs[i],file))
 			results[[i]] = this_result
 		}
