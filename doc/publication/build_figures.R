@@ -115,7 +115,7 @@ graphics.off()
 svg(file.path(out_folder,'statics','longev_inset.svg'), width=3, height=3/2)
 par(bty='n', mar=c(2,2,0.5,0))
 hist(dynamic_props$wild_type$longevity[!is.na(dynamic_props$wild_type$longevity) & 
-                                        dynamic_props$wild_type$longevity > 20], 
+                                       dynamic_props$wild_type$longevity > 20], 
     main="", ylab = "", xlab = "")
 graphics.off()
 
@@ -145,15 +145,17 @@ mtext('B',adj=-.19,side=3,line=-0.5,cex=1.5)
 par(bty='n', mar=c(4,4.2,4,0))
 plot_ad_seq(raw_data_wt_one, ad_num, main = 'Assembly');
 limits = par("usr");
-text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3,expression(paste(R^2,' = 0.920')))
-text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3, offset=c(-0.65,0),
+text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3,
+     substitute(paste('R' ^2,' = ', x,sep=''), list(x=sprintf('%.03f',raw_data_wt_one$assembly$R_sq[ad_num]))))
+text(3,(limits[4]-limits[3])*0.75+limits[3],pos=3,
 	substitute(paste('Slope = ', x), list(x=sprintf('%.03f',raw_data_wt_one$assembly$slope[ad_num]))))
 mtext('C',adj=-.19,side=3,line=-0.5,cex=1.5)
 
 plot_ad_seq(raw_data_wt_one,ad_num,type='disassembly', main = 'Disassembly')
 limits = par("usr");
-text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3, expression(paste(R^2,' = 0.961')))
-text(3,(limits[4]-limits[3])*0.8+limits[3], offset=c(-0.65,0),
+text(3,(limits[4]-limits[3])*0.8+limits[3],pos=3,
+     substitute(paste('R' ^2,' = ', x,sep=''), list(x=sprintf('%.03f',raw_data_wt_one$disassembly$R_sq[ad_num]))))
+text(3,(limits[4]-limits[3])*0.75+limits[3],pos=3,
 	substitute(paste('Slope = ', x), list(x=sprintf('%.03f',raw_data_wt_one$disassembly$slope[ad_num]))))
 mtext('D',adj=-.19,side=3,line=-0.5,cex=1.5)
 par(bty='n', mar=c(2.1,4.2,1.1,0))
@@ -161,7 +163,8 @@ par(bty='n', mar=c(2.1,4.2,1.1,0))
 boxplot_with_points(list(processed$only_signif$wild_type$intensity$assembly$slope,
                          processed$only_signif$wild_type$intensity$disassembly$slope),
 		    names=c('Assembly', 'Disassembly'), boxwex=0.6, 
-		    ylab=expression(paste('Rate (',min^-1,')',sep='')), point_cex=0.6, with.median.props=FALSE)
+		    ylab=expression(paste('Rate (',min^-1,')',sep='')), 
+            point_cex=0.6, with.median.props=FALSE)
 #95% confidence intervals on the mean from Webb 2004
 #segments(1.4,0.04,1.4,0.2,lwd=2)
 #segments(1.35,0.12,1.45,0.12,lwd=2)
@@ -178,50 +181,52 @@ dir.create(dirname(file.path(out_folder,'supplemental','R_squared.svg')),
 svg(file.path(out_folder,'supplemental','R_squared.svg'), width=7, height=7)
 layout(rbind(c(1,2),c(3,4)))
 
-R_sq_data = processed$no_filt$wild_type$intensity;
+wt_R_sq_data = processed$no_filt$wild_type$intensity;
+S178A_R_sq_data = processed$no_filt$S178A$intensity;
 
 par(bty='n', mar=c(4,4.2,2,0))
 
-hist(R_sq_data$assembly$R_sq, main='Wild-type Assembly', freq=TRUE,
-	 xlab=expression(paste('Adjusted R' ^2,' Values (n=1183)', sep='')), 
+hist(wt_R_sq_data$assembly$R_sq, main='Wild-type Assembly', freq=TRUE,
+	 xlab=substitute(paste('Adjusted R' ^2,' Values (n=', x, ')', sep=''), 
+                     list(x=length(wt_R_sq_data$assembly$R_sq))), 
 	 ylab='# of Focal Adhesions')
 
 plot_dims = par("usr");
-sorted_r_vals = sort(R_sq_data$assem$R)
+sorted_r_vals = sort(wt_R_sq_data$assem$R)
 segments(sorted_r_vals[floor(length(sorted_r_vals)/2)],0, 
          sorted_r_vals[floor(length(sorted_r_vals)/2)],plot_dims[4], col='red', lwd=2)
 mtext('A',adj=-.2,side=3,line=-0.5,cex=1.5)
 
-hist(R_sq_data$dis$R,main='Wild-type Disassembly', freq=TRUE,
-	 xlab=expression(paste('Adjusted R' ^2,' Values (n=1487)', sep='')), 
+hist(wt_R_sq_data$dis$R,main='Wild-type Disassembly', freq=TRUE,
+	 xlab=substitute(paste('Adjusted R' ^2,' Values (n=', x, ')', sep=''), 
+                     list(x=length(wt_R_sq_data$disassembly$R_sq))), 
 	 ylab='# of Focal Adhesions')
 
 plot_dims = par("usr");
-sorted_r_vals = sort(R_sq_data$dis$R)
+sorted_r_vals = sort(wt_R_sq_data$dis$R)
 segments(sorted_r_vals[floor(length(sorted_r_vals)/2)],0, 
          sorted_r_vals[floor(length(sorted_r_vals)/2)],plot_dims[4], col='red', lwd=2)
 mtext('B',adj=-.2,side=3,line=-0.5,cex=1.5)
 
-R_sq_data = processed$no_filt$S178A$intensity;
-
 par(bty='n', mar=c(4,4.2,2,0))
 
-hist(R_sq_data$assembly$R_sq, main='S178A Assembly', freq=TRUE,
-	 xlab=expression(paste('Adjusted R' ^2,' Values (n=2353)', sep='')), 
+hist(S178A_R_sq_data$assembly$R_sq, main='S178A Assembly', freq=TRUE,
+	 xlab=substitute(paste('Adjusted R' ^2,' Values (n=', x, ')', sep=''), 
+                     list(x=length(S178A_R_sq_data$assembly$R_sq))), 
 	 ylab='# of Focal Adhesions')
 
 plot_dims = par("usr");
-sorted_r_vals = sort(R_sq_data$assem$R)
+sorted_r_vals = sort(S178A_R_sq_data$assem$R)
 segments(sorted_r_vals[floor(length(sorted_r_vals)/2)],0, 
          sorted_r_vals[floor(length(sorted_r_vals)/2)],plot_dims[4], col='red', lwd=2)
 mtext('C',adj=-.2,side=3,line=-0.5,cex=1.5)
 
-hist(R_sq_data$dis$R,main='S178A Disassembly', freq=TRUE,
+hist(S178A_R_sq_data$dis$R,main='S178A Disassembly', freq=TRUE,
 	 xlab=expression(paste('Adjusted R' ^2,' Values (n=2046)', sep='')), 
 	 ylab='# of Focal Adhesions')
 
 plot_dims = par("usr");
-sorted_r_vals = sort(R_sq_data$dis$R)
+sorted_r_vals = sort(S178A_R_sq_data$dis$R)
 segments(sorted_r_vals[floor(length(sorted_r_vals)/2)],0, 
          sorted_r_vals[floor(length(sorted_r_vals)/2)],plot_dims[4], col='red', lwd=2)
 mtext('D',adj=-.2,side=3,line=-0.5,cex=1.5)
@@ -340,14 +345,45 @@ boxplot_with_points(
              processed$only_signif$wild_type$intensity$joint$stable_mean, 
              processed$only_signif$S178A$intensity$joint$stable_mean
             ),
-        names=c('Local WT','Local S189A', 'WT','S178A'), ylab='Mean Stable Intensity', with.median.props=FALSE)
+        names=c('Local WT','Local S179A', 'WT','S178A'), ylab='Mean Stable Intensity', with.median.props=FALSE)
 graphics.off()
 
 print('Done with Stable Lifetime Averages')
 
+boxplot_with_points(list(dynamic_props$wild_type$longevity[dynamic_props$wild_type$longevity > 19], 
+        dynamic_props$S178A$longevity[dynamic_props$S178A$longevity > 19]), names=c(1,2))
+
 ########################################
 #Lifetime Phases
 ########################################
+
+pos_slope = c(); p_val = c(); long_enough = c(); all_death = c();
+for (set in hold) {
+    long_enough = c(long_enough, set$filter_sets$disassembly$long_enough)
+    all_death = c(all_death, set$filter_sets$disassembly$merged)
+    pos_slope = c(pos_slope, set$filter_sets$disassembly$pos_slope[set$filter_sets$disassembly$long_enough])
+    p_val = c(p_val, set$filter_sets$disassembly$low_p_val[set$filter_sets$disassembly$long_enough])
+}
+
+all = cbind(pos_slope, p_val)
+counts = vennCounts(all)
+vennDiagram(counts)
+
+counts = vennCounts(cbind(long_enough, all_death))
+vennDiagram(counts)
+
+sb = c(); pos_slope = c(); p_val = c(); long_enough = c();
+
+for (set in hold) {
+    long_enough = c(long_enough, set$filter_sets$assembly$long_enough)
+    sb = c(sb, set$filter_sets$assembly$split_birth[set$filter_sets$assembly$long_enough])
+    pos_slope = c(pos_slope, set$filter_sets$assembly$pos_slope[set$filter_sets$assembly$long_enough])
+    p_val = c(p_val, set$filter_sets$assembly$low_p_val[set$filter_sets$assembly$long_enough])
+}
+
+all = cbind(sb, pos_slope, p_val)
+counts = vennCounts(all)
+vennDiagram(counts)
 
 stage_data <- gather_stage_lengths(processed$only_signif$wild_type$corrected_intensity, 
                                    processed$only_signif$S178A$corrected_intensity)
