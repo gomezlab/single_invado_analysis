@@ -702,10 +702,13 @@ gather_exp_win_residuals <- function(resid, window) {
 
 boxplot_with_points <- function(data,
     colors=c('darkgreen','red','yellow','blue','pink','cyan','gray','orange','brown','purple'),
-    notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, pch=20,
+    notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, pch=20, na.omit = TRUE,
     point_cex=0.5, return_output = FALSE, with.median.props = TRUE, 
-    median.props.pos = rbind(c(0,0.8),c(0,0.9)), median.props.color = 'blue', ...) {
+    median.props.pos = c(0.8,0.9), median.props.color = 'blue', ...) {
 		
+    if (na.omit) {
+        data = lapply(data,na.omit)
+    }
 	if (inc.n.counts) {
 		for (i in 1:length(data)) {
 			names[i] = paste(names[i], ' (n=', length(data[[i]]), ')', sep ='');
@@ -727,11 +730,12 @@ boxplot_with_points <- function(data,
         median_ratio_low = sprintf('%.0f', 100*p_vals$ratio_conf[1]);
         median_ratio_high = sprintf('%.0f', 100*p_vals$ratio_conf[2]);
         
-        x_pos = plot_dims[1]*median.props.pos[1,1] + plot_dims[2]*median.props.pos[1,2]
-        y_pos = plot_dims[3]*median.props.pos[2,1] + plot_dims[4]*median.props.pos[2,2]
+        x_pos = (plot_dims[2] - plot_dims[1])*median.props.pos[1] + plot_dims[1]
+        y_pos = (plot_dims[4] - plot_dims[3])*median.props.pos[2] + plot_dims[3]
 
         text(x_pos,y_pos,
-             paste(p_vals$p_val,'\n(',median_ratio_low, ',', median_ratio_high, ')%',sep=''), col=median.props.color);
+             paste(p_vals$p_val,'\n(',median_ratio_low, ',', median_ratio_high, ')%',sep=''), 
+             col=median.props.color);
     }
     if (return_output) {
         return(box.data);
@@ -976,7 +980,6 @@ produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slo
     vars_to_filter = c("assembly", "disassembly")
     for (var in vars_to_filter) {
         filter_sets[[var]]$total = length(raw_data[[var]]$length)
-        filter_sets[[var]]$long_enough = ! is.na(raw_data[[var]]$R_sq)
         filter_sets[[var]]$good_R_sq = ! is.na(raw_data[[var]]$R_sq) & raw_data[[var]]$R_sq >= min_R_sq
         filter_sets[[var]]$low_p_val = ! is.na(raw_data[[var]]$p_val) & raw_data[[var]]$p_val < max_p_val
         filter_sets[[var]]$pos_slope = ! is.na(raw_data[[var]]$slope) & raw_data[[var]]$slope > 0; 
@@ -1035,8 +1038,6 @@ determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 
 determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 	require(boot);
-	boot_samp_1 = boot(data_1, function(values,indexes) median(values[indexes],na.rm=T), bootstrap.rep);
-	boot_samp_2 = boot(data_2, function(values,indexes) median(values[indexes],na.rm=T), bootstrap.rep);
     
     data_package = list(one = data_1, two = data_2);
     boot_ratio = boot(data_package, function(values, indexes) ratio_samp(values$one, values$two), bootstrap.rep);
@@ -1045,7 +1046,9 @@ determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
     results = list()
 	
     results$ratio_conf = boot_ratio_conf$perc[4:5];
-
+	
+    boot_samp_1 = boot(data_1, function(values,indexes) median(values[indexes],na.rm=T), bootstrap.rep);
+	boot_samp_2 = boot(data_2, function(values,indexes) median(values[indexes],na.rm=T), bootstrap.rep);
 	results$p_val = find_p_val_from_bootstrap(boot_samp_1, boot_samp_2);
 	results$median_vals = c(boot_samp_1$t0, boot_samp_2$t0);
 
@@ -1166,7 +1169,7 @@ find_p_val_from_bootstrap <- function(boot_one, boot_two,
 	if (length(overlap_indexes) == 0) {
 		return(p_vals_to_test[length(p_vals_to_test)])
 	} else if (overlap_indexes[1] == 1) {
-		return(NA);
+		return(overlap_indexes[1]);
 	} else {
 		return(p_vals_to_test[overlap_indexes[1] - 1])
 	}	
@@ -1192,12 +1195,15 @@ gather_general_dynamic_props <- function(results, debug=FALSE) {
             print(paste("Working on", i))
         }
 
-		points$longevity = c(points$longevity, res$exp_props$longevity)
-		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge)
-		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge)
-		points$largest_area = c(points$largest_area, res$exp_props$largest_area)
-		points$ad_sig = c(points$ad_sig, res$exp_props$ad_sig)
-		points$average_speed = c(points$average_speed, res$exp_props$average_speeds)
+        filt = ! res$exp_props$split_birth_status & res$exp_props$death_status
+
+		points$longevity = c(points$longevity, res$exp_props$longevity[filt])
+		points$ending_edge = c(points$ending_edge, res$exp_props$ending_edge[filt])
+		points$starting_edge = c(points$starting_edge, res$exp_props$starting_edge[filt])
+		points$largest_area = c(points$largest_area, res$exp_props$largest_area[filt])
+		points$ad_sig = c(points$ad_sig, res$exp_props$ad_sig[filt])
+		points$average_speed = c(points$average_speed, res$exp_props$average_speeds[filt])
+		points$exp_num = c(points$exp_num, rep(i,length(which(filt))))
 	}	
 	points = as.data.frame(points)
 	points
