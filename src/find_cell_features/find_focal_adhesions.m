@@ -114,10 +114,6 @@ end
 imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file),'bitdepth',16);
 imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file_perim),'bitdepth',16);
 imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_file_binary));
-if (exist('cell_mask','var'))
-    imwrite(im2bw(ad_zamir,0) | bwperim(cell_mask),fullfile(i_p.Results.output_dir, 'ad_binary_cell_edge.png'));
-end
-
 
 if (nargout > 0)
     varargout{1} = struct('adhesions',im2bw(ad_zamir,0),'ad_zamir',ad_zamir);
