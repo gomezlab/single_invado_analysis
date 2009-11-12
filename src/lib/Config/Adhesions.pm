@@ -79,7 +79,7 @@ sub split_config_variables {
     }
 
     if (not defined $cfg->{exclude_image_nums}) {
-        $cfg->{exclude_image_nums} = [0];
+        $cfg->{exclude_image_nums} = ();
     } 
 }
 
