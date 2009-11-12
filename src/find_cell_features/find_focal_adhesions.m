@@ -58,7 +58,6 @@ else
     filter_thresh = i_p.Results.filter_thresh;
 end
     
-
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
 
@@ -75,14 +74,16 @@ threshed_image = remove_edge_adhesions(threshed_image);
 
 min_pixel_size = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
 if (i_p.Results.no_ad_splitting)
-    %if splitting is off, the minimum pixel count for splitting is set to a
-    %super high number, so no adhesions fall above the threshold
-    min_pixel_size = Inf;
+    %if splitting is off, there is no need to use the fancy watershed based
+    %segmentation methods, just identify the connected areas
+    ad_zamir = bwlabel(threshed_image,4);
+else
+    ad_zamir = find_ad_zamir(high_passed_image,threshed_image,min_pixel_size,'debug',i_p.Results.debug);
 end
 
-ad_zamir = find_ad_zamir(high_passed_image,threshed_image,min_pixel_size,'debug',i_p.Results.debug);
-
-%remove adhesions that are not inside or touching the cell mask
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Remove adhesions outside mask
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (exist('cell_mask','var'))
     for i = 1:max(ad_zamir(:))
         assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
@@ -94,14 +95,37 @@ if (exist('cell_mask','var'))
     end
 end
 
-%renumber the found adhesions to start at one
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Find and fill holes in single adhesions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ad_nums = unique(ad_zamir);
+assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
+for i = 2:length(ad_nums)
+    this_num = ad_nums(i);
+    
+    %first make a binary image of the current adhesion and then run imfill
+    %to fill any holes present
+    this_ad = zeros(size(ad_zamir));
+    this_ad(ad_zamir == this_num) = 1;
+    filled_ad = imfill(this_ad);
+    
+    assert(all(unique(filled_ad(:)) == [0;1]))
+    
+    ad_zamir(logical(filled_ad)) = this_num;    
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Renumber adhesions to be sequential
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_nums = unique(ad_zamir);
 assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
 for i = 2:length(ad_nums)
     ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
 end
 
-%find all the adhesion perimeters and save those into another variable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Build adhesion perimeters image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_zamir_perim = zeros(size(ad_zamir));
 for i = 1:max(ad_zamir(:))
     assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
@@ -110,7 +134,9 @@ for i = 1:max(ad_zamir(:))
     ad_zamir_perim(bwperim(this_ad)) = i;
 end
 
-%write the results to files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Write the output files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file),'bitdepth',16);
 imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file_perim),'bitdepth',16);
 imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_file_binary));

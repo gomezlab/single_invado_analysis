@@ -165,10 +165,10 @@ sub create_matlab_code_single {
             warn "Unable to find image number in: $file_name, skipping this image.";
             next;
         }
-
+		
         next if grep $i_num == $_,          @{ $cfg{exclude_image_nums} };
         next if grep $original_i_num == $_, @{ $cfg{exclude_image_nums} };
-
+		
         my $padded_num = sprintf("%0" . length(scalar(@image_files)) . "d", $i_num);
 
         my $output_path = catdir($cfg{individual_results_folder}, $padded_num);
