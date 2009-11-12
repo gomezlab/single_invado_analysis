@@ -141,6 +141,14 @@ imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.outpu
 imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file_perim),'bitdepth',16);
 imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_file_binary));
 
+addpath(genpath('..'))
+
+scaled_image = focal_image;
+scaled_image = scaled_image - min(focal_image(:));
+scaled_image = scaled_image .* (1/max(scaled_image(:)));
+
+imwrite(create_highlighted_image(scaled_image, im2bw(ad_zamir,0)),fullfile(i_p.Results.output_dir, 'highlights.png')); 
+
 if (nargout > 0)
     varargout{1} = struct('adhesions',im2bw(ad_zamir,0),'ad_zamir',ad_zamir);
 end
