@@ -705,13 +705,18 @@ boxplot_with_points <- function(data,
     notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, pch=20, na.omit = TRUE,
     point_cex=0.5, return_output = FALSE, with.median.props = TRUE, 
     median.props.pos = c(0.8,0.9), median.props.color = 'blue', ...) {
-		
+	
+    if (any(is.null(data))) {
+        print(paste("The data in position", which(is.null(data)), "is null"))
+        stop()
+    }
+
     if (na.omit) {
         data = lapply(data,na.omit)
     }
 	if (inc.n.counts) {
 		for (i in 1:length(data)) {
-			names[i] = paste(names[i], ' (n=', length(data[[i]]), ')', sep ='');
+            names[i] = paste(names[i], ' (n=', length(data[[i]]), ')', sep ='');
 		}
 	}
 	
@@ -979,7 +984,6 @@ produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slo
     # fulfill which criteria
     vars_to_filter = c("assembly", "disassembly")
     for (var in vars_to_filter) {
-        filter_sets[[var]]$total = length(raw_data[[var]]$length)
         filter_sets[[var]]$good_R_sq = ! is.na(raw_data[[var]]$R_sq) & raw_data[[var]]$R_sq >= min_R_sq
         filter_sets[[var]]$low_p_val = ! is.na(raw_data[[var]]$p_val) & raw_data[[var]]$p_val < max_p_val
         filter_sets[[var]]$pos_slope = ! is.na(raw_data[[var]]$slope) & raw_data[[var]]$slope > 0; 
@@ -989,11 +993,11 @@ produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slo
     # (split birth events and deaths due to merges), we will keep all those in
     # the logic table "extra" and the in named variables so we can access the
     # named variables separated if needed
-    filter_sets$assembly$split_birth = ! raw_data$exp_props$split_birth_status
-    filter_sets$assembly$extra = ! raw_data$exp_props$split_birth_status
+    filter_sets$assembly$not_split_birth = ! raw_data$exp_props$split_birth_status
+    filter_sets$assembly$extra = filter_sets$assembly$not_split_birth
     
-    filter_sets$disassembly$merged = raw_data$exp_props$death_status
-    filter_sets$disassembly$extra = raw_data$exp_props$death_status
+    filter_sets$disassembly$death_status = raw_data$exp_props$death_status
+    filter_sets$disassembly$extra = filter_sets$disassembly$death_status
     
     # Now all the filters are cascaded to produce the final filter set, then
     # the pos_slope variable is checked and applied if requested

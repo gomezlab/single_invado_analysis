@@ -1,4 +1,3 @@
-
 for i=10:20
     output_dir = fullfile('..','..','data','simulation',['phases_',num2str(i)],'Images','Paxillin'); 
     build_phase_data('output_dir', output_dir, 'phase_length', i)

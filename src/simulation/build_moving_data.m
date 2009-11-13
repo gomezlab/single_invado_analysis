@@ -101,7 +101,7 @@ for image_number = 2:(total_images - 1)
         for inten_index = 1:size(image_frames,2)
             frame_background = mean(image_frames{size_index,inten_index}(:));
             
-            this_intensity = intensity_sequence(j) - frame_background;
+            this_intensity = intensity_sequence(inten_index) - frame_background;
             
             
             this_ad = make_ad_matrix([this_size,this_size],this_intensity);
@@ -118,7 +118,7 @@ for image_number = 2:(total_images - 1)
             assert(size(this_ad,1) == length(row_range))
             assert(size(this_ad,2) == length(col_range));
             
-            image_frames{size_index,j}(row_range,col_range) = image_frames{size_index,j}(row_range,col_range) + this_ad;
+            image_frames{size_index,inten_index}(row_range,col_range) = image_frames{size_index,inten_index}(row_range,col_range) + this_ad;
         end
     end
     
