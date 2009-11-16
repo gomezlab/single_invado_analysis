@@ -25,6 +25,7 @@ i_p.FunctionName = 'REGISTER_GEL_IMAGES';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('first_image',@(x)exist(x,'file') == 2);
+i_p.addParamValue('search_grid_resolution',10, @(x)isnumeric(x) & x >= 1);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -48,11 +49,13 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[row_shifts,col_shifts] = meshgrid(-100:10:100);
+[row_shifts,col_shifts] = meshgrid(-100:i_p.Results.search_grid_resolution:100);
 ms_diff = zeros(size(row_shifts));
 
 for i = 1:size(row_shifts,1)
-    disp(i)
+    if (i_p.Results.debug)
+        disp(col_shifts(i,1))
+    end
     for j = 1:size(col_shifts,2)
         this_row_shift = row_shifts(i,j);
         this_col_shift = col_shifts(i,j);
@@ -67,7 +70,7 @@ for i = 1:size(row_shifts,1)
     end
 end
 
-best_index = find(ms_diff == min(min(ms_diff)),1)
+best_index = find(ms_diff == min(min(ms_diff)),1);
 transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shifts(best_index)];
 transform = maketform('affine', transform_matrix);
 
