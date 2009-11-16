@@ -26,7 +26,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l") or die;
+GetOptions(\%opt, "cfg|c=s", "grid_res|search_grid_resolution=s", "debug|d", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -72,8 +72,11 @@ sub create_all_matlab_commands {
 
     foreach my $file_name (@image_files) {
         my $extra_opt = "";
+        if (defined $opt{grid_res}) {
+            $extra_opt .= ",'search_grid_resolution',$opt{grid_res}";
+        }
 
-		$matlab_code[0] .= "find_focal_adhesions('$file_name','$image_files[0]'$extra_opt)\n";
+		$matlab_code[0] .= "register_gel_images('$file_name','$image_files[0]'$extra_opt)\n";
     }
 
     return @matlab_code;
