@@ -1,17 +1,17 @@
-function [varargout] = register_gel_images(I_file,first_image,varargin)
-% FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
-%                         optionally returns the segmented image or writes
-%                         the segmented image to a file
+function register_gel_images(I_file,first_image,varargin)
+% REGISTER_GEL_IMAGES    Performs a simple x-y translation registration on
+%                        the two images provided, finding the optimum x-y
+%                        shift by searching for the minimum in the mean
+%                        difference
 %
-%   find_focal_adhesions(I,OPTIONS) locate the focal adhesions in image
-%   file, 'I'
+%   register_gel_images(I1,I2,OPTIONS) Register the first image (I1) to the
+%   second image (I2)
 %
 %   Options:
 %
-%       -cell_mask: file which contains the cell mask
-%       -filter_size: size of the averaging filter to use, defaults to 23
-%       -filter_thresh: threshold used to identify focal adhesions in the
-%        average filtered image, defaults to 0.1
+%       -search_grid_resolution: number of pixels to jump in search for
+%        optimum location on the -100 to 100 search grid space, defaults to
+%        0
 %       -output_dir: folder used to hold all the results, defaults to the
 %        same folder as the image file, 'I'
 %       -debug: set to 1 to output debugging information, defaults to 0
@@ -49,7 +49,7 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[row_shifts,col_shifts] = meshgrid(-100:i_p.Results.search_grid_resolution:100);
+[row_shifts,col_shifts] = meshgrid(-10:i_p.Results.search_grid_resolution:10);
 ms_diff = zeros(size(row_shifts));
 
 for i = 1:size(row_shifts,1)

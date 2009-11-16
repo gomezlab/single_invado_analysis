@@ -70,13 +70,16 @@ sub create_all_matlab_commands {
 	my @image_files = @_;
     my @matlab_code;
 
-    foreach my $file_name (@image_files) {
+    foreach (1..$#image_files) {
+		my $file_1 = $image_files[$_ - 1];
+		my $file_2 = $image_files[$_];
+
         my $extra_opt = "";
         if (defined $opt{grid_res}) {
             $extra_opt .= ",'search_grid_resolution',$opt{grid_res}";
         }
 
-		$matlab_code[0] .= "register_gel_images('$file_name','$image_files[0]'$extra_opt)\n";
+		$matlab_code[0] .= "register_gel_images('$file_2','$file_1'$extra_opt)\n";
     }
 
     return @matlab_code;
