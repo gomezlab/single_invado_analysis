@@ -1,14 +1,13 @@
-function [varargout] = find_degraded_regions(I_file,first_image,varargin)
-% FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
-%                         optionally returns the segmented image or writes
-%                         the segmented image to a file
-%
-%   find_focal_adhesions(I,OPTIONS) locate the focal adhesions in image
-%   file, 'I'
+function find_degraded_regions(I_file,first_image,varargin)
+% FIND_DEGRADED_REGIONS    locates the regions of degradation (decrease in
+%                          fluorescence intensity) between two images
+%                         
+%   find_degraded_regions(I1,I2,OPTIONS) searches for regions in the first
+%   image (I1) where the fluorescence has decreased as compared to the
+%   second image (I2)
 %
 %   Options:
 %
-%       -cell_mask: file which contains the cell mask
 %       -filter_size: size of the averaging filter to use, defaults to 23
 %       -filter_thresh: threshold used to identify focal adhesions in the
 %        average filtered image, defaults to 0.1
@@ -28,12 +27,11 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.parse(I_file);
 
 i_p.addRequired('first_image',@(x)exist(x,'file') == 2);
-i_p.addParamValue('pixel_size',0.215051,@(x)isnumeric(x) && x > 0);
+i_p.addParamValue('registration_binary',@(x)exist(x,'file') == 2);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addParamValue('filter_thresh',-0.02,@isnumeric);
+i_p.addParamValue('filter_thresh',-0.075,@isnumeric);
 i_p.addParamValue('scale_filter_thresh',0,@(x)islogical(x) || (isnumeric(x) && (x == 1 || x == 0)));
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
-i_p.addParamValue('no_ad_splitting', 0, @(x) islogical(x) || x == 1 || x == 0);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,first_image,varargin{:});
@@ -48,6 +46,12 @@ first_image  = imread(first_image);
 scale_factor = double(intmax(class(first_image)));
 first_image  = double(first_image)/scale_factor;
 
+%read in and normalize the registration binary image
+if (isempty(strmatch('registration_binary',i_p.UsingDefaults)))
+    binary_shift = logical(imread(i_p.Results.registration_binary));
+    first_image = first_image .* binary_shift;
+end
+
 if (i_p.Results.scale_filter_thresh)
     filter_thresh = i_p.Results.filter_thresh * (max(gel_image(:)) - min(gel_image(:)));
 else
@@ -61,100 +65,40 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 I_filt = fspecial('disk',i_p.Results.filter_size);
-blurred_image = imfilter(gel_image,I_filt,'same',mean(gel_image(:)));
-high_passed_image = gel_image - blurred_image;
-threshed_gel = high_passed_image < filter_thresh;
-
-I_filt = fspecial('disk',i_p.Results.filter_size);
-blurred_image = imfilter(first_image,I_filt,'same',mean(first_image(:)));
-high_passed_image = first_image - blurred_image;
-threshed_first = high_passed_image < filter_thresh;
+% blurred_image = imfilter(gel_image,I_filt,'same',mean(gel_image(:)));
+% high_passed_image = gel_image - blurred_image;
+% threshed_gel = high_passed_image < filter_thresh;
+% 
+% I_filt = fspecial('disk',i_p.Results.filter_size);
+% blurred_image = imfilter(first_image,I_filt,'same',mean(first_image(:)));
+% high_passed_image = first_image - blurred_image;
+% threshed_first = high_passed_image < filter_thresh;
 
 diff_image = gel_image - first_image;
+threshed_diff = diff_image < i_p.Results.filter_thresh;
+
+
+
 blurred_image = imfilter(diff_image,I_filt,'same',mean(diff_image(:)));
 high_passed_image = diff_image - blurred_image;
-threshed_diff = high_passed_image < -0.03;
+threshed_diff_filt = high_passed_image < i_p.Results.filter_thresh;
+threshed_diff_filt = logical(threshed_diff_filt .* binary_shift);
 
+addpath(genpath('..'))
 
+both_diff = zeros(size(gel_image));
+both_diff(threshed_diff) = 1;
+both_diff(threshed_diff_filt) = 2;
 
-1;
-% min_pixel_size = floor((sqrt(i_p.Results.min_size)/i_p.Results.pixel_size)^2);
-% if (i_p.Results.no_ad_splitting)
-%     %if splitting is off, there is no need to use the fancy watershed based
-%     %segmentation methods, just identify the connected areas
-%     ad_zamir = bwlabel(threshed_image,4);
-% else
-%     ad_zamir = find_ad_zamir(high_passed_image,threshed_image,min_pixel_size,'debug',i_p.Results.debug);
-% end
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %Remove adhesions outside mask
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% if (exist('cell_mask','var'))
-%     for i = 1:max(ad_zamir(:))
-%         assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
-%         this_ad = zeros(size(ad_zamir));
-%         this_ad(ad_zamir == i) = 1;
-%         if (sum(sum(this_ad & cell_mask)) == 0)
-%             ad_zamir(ad_zamir == i) = 0;
-%         end
-%     end
-% end
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %Find and fill holes in single adhesions
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ad_nums = unique(ad_zamir);
-% assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
-% for i = 2:length(ad_nums)
-%     this_num = ad_nums(i);
-%     
-%     %first make a binary image of the current adhesion and then run imfill
-%     %to fill any holes present
-%     this_ad = zeros(size(ad_zamir));
-%     this_ad(ad_zamir == this_num) = 1;
-%     filled_ad = imfill(this_ad);
-%     
-%     assert(all(unique(filled_ad(:)) == [0;1]))
-%     
-%     ad_zamir(logical(filled_ad)) = this_num;    
-% end
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % Renumber adhesions to be sequential
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ad_nums = unique(ad_zamir);
-% assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
-% for i = 2:length(ad_nums)
-%     ad_zamir(ad_zamir == ad_nums(i)) = i - 1;
-% end
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % Build adhesion perimeters image
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ad_zamir_perim = zeros(size(ad_zamir));
-% for i = 1:max(ad_zamir(:))
-%     assert(any(any(ad_zamir == i)), 'Error: can''t find ad number %d', i);
-%     this_ad = zeros(size(ad_zamir));
-%     this_ad(ad_zamir == i) = 1;
-%     ad_zamir_perim(bwperim(this_ad)) = i;
-% end
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %Write the output files
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file),'bitdepth',16);
-% imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file_perim),'bitdepth',16);
-% imwrite(im2bw(ad_zamir,0),fullfile(i_p.Results.output_dir, i_p.Results.output_file_binary));
-% 
-% addpath(genpath('..'))
-% 
-% scaled_image = focal_image;
-% scaled_image = scaled_image - min(focal_image(:));
-% scaled_image = scaled_image .* (1/max(scaled_image(:)));
-% 
-% imwrite(create_highlighted_image(scaled_image, im2bw(ad_zamir,0)),fullfile(i_p.Results.output_dir, 'highlights.png')); 
-% 
-% if (nargout > 0)
-%     varargout{1} = struct('adhesions',im2bw(ad_zamir,0),'ad_zamir',ad_zamir);
-% end
+if (i_p.Results.debug)
+    imshow(create_highlighted_image(gel_image,both_diff, 'color_map', [1 0 0; 0 1 0]));
+    figure;
+    imshow(create_highlighted_image(gel_image,threshed_diff));
+    figure;
+    imshow(create_highlighted_image(gel_image,threshed_diff_filt));
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Write the output files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+imwrite(threshed_diff,fullfile(i_p.Results.output_dir, 'degradation_binary.png')); 
