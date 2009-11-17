@@ -55,5 +55,7 @@ gel_shift = imtransform(gel_image, transform, 'XData',[1 size(gel_image,2)], 'YD
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[path, name, ext, version] = fileparts(i_p.Results.I_file);
+
 imwrite(binary_shift,fullfile(i_p.Results.output_dir, 'binary_shift.png'));
-imwrite(gel_shift,fullfile(i_p.Results.output_dir, 'registered_gel.png'));
+imwrite(gel_shift,fullfile(i_p.Results.output_dir, ['registered_' name '.png']));
