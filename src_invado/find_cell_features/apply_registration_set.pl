@@ -53,6 +53,21 @@ if ($opt{debug}) {
 
 my @matlab_code = &create_all_matlab_commands(@image_files);
 
+my @image_files   = sort <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})." if (scalar(@image_files) != scalar(@image_folders));
+
+if ($opt{debug}) {
+    if (scalar(@image_files) > 1) {
+        print "Puncta image files found: $image_files[0] - $image_files[$#image_files]\n";
+    } elsif (scalar(@image_files) == 0) {
+        warn "Couldn't find any puncta image files in $cfg{individual_results_folder} subfolders\n\n";
+    } else {
+        print "Puncta image file found: $image_folders[0]\n";
+    }
+}
+
+push @matlab_code, &create_all_matlab_commands(@image_files);
+
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'Gel_register');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'Gel_register', 'error.txt');
 $opt{runtime} = "1";

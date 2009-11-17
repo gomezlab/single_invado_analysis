@@ -36,7 +36,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 # Main Program
 ################################################################################
-my @matlab_code = ("cascade_registation_transformations('$cfg{individual_results_folder}')");
+my @matlab_code = ("cascade_registration_transformations('$cfg{individual_results_folder}')");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'register_cascade');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
