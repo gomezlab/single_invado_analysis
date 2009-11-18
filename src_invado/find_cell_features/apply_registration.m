@@ -30,9 +30,9 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.parse(I_file,varargin{:});
 
 %read in and normalize the input focal adhesion image
-gel_image  = imread(I_file);
-scale_factor = double(intmax(class(gel_image)));
-gel_image  = double(gel_image)/scale_factor;
+orig_image  = imread(I_file);
+scale_factor = double(intmax(class(orig_image)));
+orig_image  = double(orig_image)/scale_factor;
 
 if (isempty(strmatch('transform_file',i_p. UsingDefaults)))
     transform_matrix = csvread(i_p.Results.transform_file);
@@ -48,9 +48,9 @@ addpath('matlab_scripts');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 transform = maketform('affine', transform_matrix);
 
-binary_image = ones(size(gel_image));
-binary_shift = imtransform(binary_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
-gel_shift = imtransform(gel_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
+binary_image = ones(size(orig_image));
+binary_shift = imtransform(binary_image, transform, 'XData',[1 size(orig_image,2)], 'YData', [1 size(orig_image,1)]);
+image_shift = imtransform(orig_image, transform, 'XData',[1 size(orig_image,2)], 'YData', [1 size(orig_image,1)]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
@@ -58,4 +58,4 @@ gel_shift = imtransform(gel_image, transform, 'XData',[1 size(gel_image,2)], 'YD
 [path, name, ext, version] = fileparts(i_p.Results.I_file);
 
 imwrite(binary_shift,fullfile(i_p.Results.output_dir, 'binary_shift.png'));
-imwrite(gel_shift,fullfile(i_p.Results.output_dir, ['registered_' name '.png']));
+imwrite(image_shift,fullfile(i_p.Results.output_dir, ['registered_' name '.png']),'bitdepth',16);

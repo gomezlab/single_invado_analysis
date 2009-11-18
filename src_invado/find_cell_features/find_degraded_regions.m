@@ -28,9 +28,7 @@ i_p.parse(I_file);
 
 i_p.addRequired('first_image',@(x)exist(x,'file') == 2);
 i_p.addParamValue('registration_binary',@(x)exist(x,'file') == 2);
-i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addParamValue('filter_thresh',-0.075,@isnumeric);
-i_p.addParamValue('scale_filter_thresh',0,@(x)islogical(x) || (isnumeric(x) && (x == 1 || x == 0)));
+i_p.addParamValue('thresh_file',fullfile(fileparts(I_file),'gel_threshold.csv'),@(x)exist(x,'file') == 2)
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -46,59 +44,27 @@ first_image  = imread(first_image);
 scale_factor = double(intmax(class(first_image)));
 first_image  = double(first_image)/scale_factor;
 
+%read in the threshold value
+threshold = csvread(i_p.Results.thresh_file);
+
 %read in and normalize the registration binary image
 if (isempty(strmatch('registration_binary',i_p.UsingDefaults)))
     binary_shift = logical(imread(i_p.Results.registration_binary));
     first_image = first_image .* binary_shift;
 end
 
-if (i_p.Results.scale_filter_thresh)
-    filter_thresh = i_p.Results.filter_thresh * (max(gel_image(:)) - min(gel_image(:)));
-else
-    filter_thresh = i_p.Results.filter_thresh;
-end
-    
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-I_filt = fspecial('disk',i_p.Results.filter_size);
-% blurred_image = imfilter(gel_image,I_filt,'same',mean(gel_image(:)));
-% high_passed_image = gel_image - blurred_image;
-% threshed_gel = high_passed_image < filter_thresh;
-% 
-% I_filt = fspecial('disk',i_p.Results.filter_size);
-% blurred_image = imfilter(first_image,I_filt,'same',mean(first_image(:)));
-% high_passed_image = first_image - blurred_image;
-% threshed_first = high_passed_image < filter_thresh;
+threshed_diff = gel_image - first_image < threshold;
 
-diff_image = gel_image - first_image;
-threshed_diff = diff_image < i_p.Results.filter_thresh;
-
-
-
-blurred_image = imfilter(diff_image,I_filt,'same',mean(diff_image(:)));
-high_passed_image = diff_image - blurred_image;
-threshed_diff_filt = high_passed_image < i_p.Results.filter_thresh;
-threshed_diff_filt = logical(threshed_diff_filt .* binary_shift);
-
-addpath(genpath('..'))
-
-both_diff = zeros(size(gel_image));
-both_diff(threshed_diff) = 1;
-both_diff(threshed_diff_filt) = 2;
-
-if (i_p.Results.debug)
-    imshow(create_highlighted_image(gel_image,both_diff, 'color_map', [1 0 0; 0 1 0]));
-    figure;
-    imshow(create_highlighted_image(gel_image,threshed_diff));
-    figure;
-    imshow(create_highlighted_image(gel_image,threshed_diff_filt));
-end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+addpath(genpath('..'))
 
-imwrite(threshed_diff,fullfile(i_p.Results.output_dir, 'degradation_binary.png')); 
+imwrite(threshed_diff,fullfile(i_p.Results.output_dir, 'degradation_binary.png'));
+imwrite(create_highlighted_image(gel_image,threshed_diff,'mix_percent',0.5),fullfile(i_p.Results.output_dir, 'degradation_highlight.png'));
