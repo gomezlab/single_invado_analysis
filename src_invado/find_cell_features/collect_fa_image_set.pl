@@ -53,7 +53,7 @@ if ($opt{debug}) {
     }
 }
 
-my @matlab_code = &create_all_matlab_commands;
+my @matlab_code = &create_all_matlab_commands(@image_files);
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA', 'error.txt');
@@ -69,12 +69,10 @@ if (defined $cfg{job_group}) {
 ################################################################################
 
 sub create_all_matlab_commands {
+	my @image_files = @_;
     my @matlab_code;
 
-    my @image_files = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
     foreach my $file_name (@image_files) {
-        my $cell_mask = catfile(dirname($file_name), $cfg{cell_mask_file});
-
         my $extra_opt = "";
         if (defined $cfg{filter_thresh}) {
             $extra_opt .= ",'filter_thresh',$cfg{filter_thresh}";
@@ -82,15 +80,15 @@ sub create_all_matlab_commands {
         if (defined $cfg{scale_filter_thresh}) {
             $extra_opt .= ",'scale_filter_thresh',$cfg{scale_filter_thresh}";
         }
-        if (defined $cfg{no_ad_splitting}) {
-            $extra_opt .= ",'no_ad_splitting',$cfg{no_ad_splitting}";
-        }
 
-        if (-e $cell_mask) {
-            $matlab_code[0] .= "find_focal_adhesions('$file_name','cell_mask','$cell_mask'$extra_opt)\n";
-        } else {
-            $matlab_code[0] .= "find_focal_adhesions('$file_name'$extra_opt)\n";
-        }
+		my $binary_shift_file = catfile(dirname($file_name), 'binary_shift.png');
+		if (-e $binary_shift_file) {
+			$extra_opt .= ",'binary_shift_file','$binary_shift_file'";
+		} else {
+			die "Unable to find binary shift file in same folder as: $file_name";
+		}
+
+		$matlab_code[0] .= "find_focal_adhesions('$file_name'$extra_opt)\n";
     }
 
     return @matlab_code;
