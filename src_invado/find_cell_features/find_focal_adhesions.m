@@ -8,7 +8,6 @@ function find_focal_adhesions(I_file,varargin)
 %
 %   Options:
 %
-%       -cell_mask: file which contains the cell mask
 %       -filter_size: size of the averaging filter to use, defaults to 23
 %       -filter_thresh: threshold used to identify focal adhesions in the
 %        average filtered image, defaults to 0.1

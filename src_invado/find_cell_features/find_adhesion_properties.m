@@ -1,4 +1,4 @@
-function find_adhesion_properties(focal_file,adhesions_file,varargin)
+function find_adhesion_properties(focal_file,adhesions_file,gel_binary_file,varargin)
 % FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
 %                             properties associated with the adhesions
 %                             located in prior steps
@@ -11,8 +11,6 @@ function find_adhesion_properties(focal_file,adhesions_file,varargin)
 %
 %   Options:
 %
-%       -cell_mask: file which contains the cell mask, defaults to not
-%        present
 %       -debug: set to 1 to output debugging information, defaults to 0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,20 +22,14 @@ i_p.FunctionName = 'FIND_ADHESION_PROPERTIES';
 
 i_p.addRequired('focal_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('adhesions_file',@(x)exist(x,'file') == 2);
+i_p.addRequired('gel_binary_file',@(x)exist(x,'file') == 2);
 
-i_p.parse(focal_file, adhesions_file);
+i_p.parse(focal_file, adhesions_file,gel_binary_file);
 
 i_p.addParamValue('output_dir', fileparts(focal_file), @(x)exist(x,'dir')==7);
-i_p.addOptional('cell_mask',0,@(x)exist(x,'file') == 2);
-i_p.addOptional('protrusion_file',0,@(x)exist(x,'file') == 2);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(focal_file, adhesions_file, varargin{:});
-
-%read in the cell mask image if defined in parameter set
-if (isempty(strmatch('cell_mask',i_p.UsingDefaults)))
-    cell_mask = imread(i_p.Results.cell_mask);
-end
+i_p.parse(focal_file, adhesions_file, gel_binary_file, varargin{:});
 
 %read in and normalize the input focal adhesion image
 focal_image  = imread(focal_file);
@@ -47,28 +39,13 @@ focal_image  = double(focal_image)/scale_factor;
 %read in the labeled adhesions
 adhesions = imread(adhesions_file);
 
-%check if protrusion_file is specified, read it in if specified
-if (isempty(strmatch('protrusion_file',i_p.UsingDefaults)))
-    load(i_p.Results.protrusion_file);
-end
+%read in the labeled adhesions
+gel_binary = logical(imread(gel_binary_file));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if (exist('cell_mask','var'))
-    if (exist('protrusion','var'))
-        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'cell_mask',cell_mask,'protrusion_data',protrusion,'debug',i_p.Results.debug);
-    else
-        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'cell_mask',cell_mask,'debug',i_p.Results.debug);
-    end
-else
-    if (exist('protrusion_matrix','var'))
-        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'protrusion_data',protrusion,'debug',i_p.Results.debug);
-    else
-        adhesion_properties = collect_adhesion_properties(focal_image,adhesions,'debug',i_p.Results.debug);
-    end
-end
+adhesion_properties = collect_adhesion_properties(focal_image,adhesions,gel_binary,'debug',i_p.Results.debug);
 if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
@@ -79,7 +56,7 @@ write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_di
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,varargin)
+function adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,gel_binary,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
@@ -105,22 +82,12 @@ i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
 i_p.addRequired('orig_I',@isnumeric);
 i_p.addRequired('labeled_adhesions',@(x)isnumeric(x));
+i_p.addRequired('gel_binary',@(x)islogical(x));
 
-i_p.addParamValue('cell_mask',0,@(x)isnumeric(x) || islogical(x));
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
-i_p.addParamValue('protrusion_data',0,@(x)iscell(x));
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(labeled_adhesions,orig_I,varargin{:});
-
-%read in the cell mask image if defined in parameter set
-if (isempty(strmatch('cell_mask',i_p.UsingDefaults)))
-    cell_mask = i_p.Results.cell_mask;
-end
-
-if (isempty(strmatch('protrusion_data',i_p.UsingDefaults)))
-    protrusion_data = i_p.Results.protrusion_data;
-end
+i_p.parse(labeled_adhesions,orig_I,gel_binary,varargin{:});
 
 adhesion_props = regionprops(labeled_adhesions,'all');
 
@@ -143,9 +110,11 @@ for i=1:max(labeled_adhesions(:))
     this_ad = logical(this_ad);
     background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
     background_region = and(background_region,not(labeled_adhesions));
-    if (exist('cell_mask','var'))
-        background_region = and(background_region,cell_mask);
-    end
+    
+    adhesion_props(i).Degrade_overlap = any(any(this_ad .* gel_binary));
+    adhesion_props(i).Degrade_overlap_percent = sum(sum(this_ad .* gel_binary))/adhesion_props(i).Area;
+    assert(adhesion_props(i).Degrade_overlap_percent >= 0 && adhesion_props(i).Degrade_overlap_percent <= 1);
+    
     adhesion_props(i).Background_adhesion_signal = mean(orig_I(background_region));
     adhesion_props(i).Background_area = sum(background_region(:));
     adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
@@ -161,108 +130,6 @@ end
 
 adhesion_mask = im2bw(labeled_adhesions,0);
 adhesion_props(1).Adhesion_mean_intensity = sum(sum(orig_I(adhesion_mask)))/sum(sum(adhesion_mask));
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Properites Extracted If Protrusion Data Available
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if (exist('protrusion_data','var'))
-    all_data = [];
-    for i=1:size(protrusion_data,2)
-        all_data = [all_data, sqrt(protrusion_data{i}(:,3).^2 + protrusion_data{i}(:,4).^2)']; %#ok<AGROW>
-    end
-    median_velo = median(all_data); %#ok<NASGU>
-    
-    for i=1:size(protrusion_data,2)
-        protrusion_matrix = protrusion_data{i};
-        for j=1:max(labeled_adhesions(:))
-            dists = sqrt((protrusion_matrix(:,1) - adhesion_props(j).Centroid(1)).^2 + (protrusion_matrix(:,2) - adhesion_props(j).Centroid(2)).^2);
-            sorted_dists = sort(dists);
-            best_line_nums = find(dists <= sorted_dists(5), 5,'first');
-            
-            edge_projection = [];
-            edge_speed = [];
-            for k=1:length(best_line_nums)
-                this_line_num = best_line_nums(k);
-                
-                adhesion_to_edge = [protrusion_matrix(this_line_num,1) - adhesion_props(j).Centroid(1), protrusion_matrix(this_line_num,2) - adhesion_props(j).Centroid(2)];
-                adhesion_to_edge = adhesion_to_edge / sqrt(adhesion_to_edge(1)^2 + adhesion_to_edge(2)^2);
-                edge_vector = protrusion_matrix(this_line_num,3:4);
-                if (sqrt(edge_vector(1)^2 + edge_vector(2)^2) > 10) 
-                    edge_vector = (edge_vector / sqrt(edge_vector(1)^2 + edge_vector(2)^2))  * 10;
-                end
-                
-                edge_projection(k) = sqrt(sum(edge_vector.^2))*(dot(edge_vector,adhesion_to_edge)/(sqrt(sum(edge_vector.^2)) * sqrt(sum(adhesion_to_edge.^2)))); %#ok<AGROW>
-                edge_speed(k) = sqrt(sum(edge_vector.^2)); %#ok<AGROW>
-            end
-            adhesion_props(j).Edge_projection(i,1) = mean(edge_projection);
-            adhesion_props(j).Edge_speed(i,1) = mean(edge_speed);
-        end
-    end
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Properites Extracted If Cell Mask Available
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if (exist('cell_mask','var'))
-    cell_centroid = regionprops(bwlabel(cell_mask),'centroid');
-    cell_centroid = cell_centroid.Centroid;
-    
-    [border_row,border_col] = ind2sub(size(cell_mask),find(bwperim(cell_mask)));
-    adhesion_props(1).Border_pix = [border_col,border_row];
-    
-    adhesion_props(1).Cell_size = sum(cell_mask(:));
-    
-    adhesion_props(1).Cell_mean_intensity = sum(sum(orig_I(cell_mask)))/adhesion_props(1).Cell_size;
-    
-    cell_not_ad_mask = cell_mask & not(adhesion_mask);
-    adhesion_props(1).Cell_not_ad_mean_intensity = sum(sum(orig_I(cell_not_ad_mask)))/sum(sum(cell_not_ad_mask));
-    
-    not_cell_mask = not(cell_mask);
-    adhesion_props(1).Outside_mean_intensity = sum(sum(orig_I(not_cell_mask)))/sum(sum(not_cell_mask));
-    
-    [dists, indices] = bwdist(~cell_mask);
-    
-    %Now we search for the pixels which are closest to an edge of the cell
-    %mask that is also touching the edge of image. We want to find these
-    %pixels because the true closest cell edge may be off the microscope
-    %field of view. To be safe, we will set those
-    %distance-to-nearest-cell-edge values to NaN.
-    black_border_mask = cell_mask;
-    black_border_mask(1,:) = 0; black_border_mask(end,:) = 0; 
-    black_border_mask(:,1) = 0; black_border_mask(:,end) = 0;
-    
-    [bb_dists, bb_indexes] = bwdist(~black_border_mask);
-    
-    dists(bb_dists < dists) = NaN;
-    for i=1:max(labeled_adhesions(:))
-        centroid_pos = round(adhesion_props(i).Centroid);
-        centroid_unrounded = adhesion_props(i).Centroid;
-        if(size(centroid_pos,1) == 0)
-            warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
-            adhesion_props(i).Centroid_dist_from_edge = NaN;
-        else
-            adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
-            [cep_x,cep_y] = ind2sub(size(cell_mask), indices(centroid_pos(2), centroid_pos(1)));
-            adhesion_props(i).Closest_edge_pixel = [cep_x,cep_y];
-            
-            adhesion_props(i).Centroid_dist_from_center = sqrt((cell_centroid(1) - centroid_unrounded(1))^2 + (cell_centroid(2) - centroid_unrounded(2))^2);
-            adhesion_props(i).Angle_to_center = acos((centroid_unrounded(1) - cell_centroid(1))/adhesion_props(i).Centroid_dist_from_center);
-            assert(adhesion_props(i).Angle_to_center >= 0 && adhesion_props(i).Angle_to_center <= pi, 'Error: angle to center out of range: %d',adhesion_props(i).Angle_to_center);
-            if (centroid_unrounded(2) - cell_centroid(2) < 0)
-                if (centroid_unrounded(1) - cell_centroid(1) < 0)
-                    assert(adhesion_props(i).Angle_to_center >= pi/2 && adhesion_props(i).Angle_to_center <= pi)
-                    adhesion_props(i).Angle_to_center = 2*pi - adhesion_props(i).Angle_to_center;
-                elseif (centroid_unrounded(1) - cell_centroid(1) >= 0)
-                    assert(adhesion_props(i).Angle_to_center >= 0 && adhesion_props(i).Angle_to_center <= pi/2)
-                    adhesion_props(i).Angle_to_center = 2*pi - adhesion_props(i).Angle_to_center;
-                end
-            end
-        end
-        adhesion_props(i).CB_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(1).Cell_not_ad_mean_intensity;
-    end
-end
 
 function write_adhesion_data(S,varargin)
 % WRITE_STRUCT_DATA     write most the data stored in a given struct to a

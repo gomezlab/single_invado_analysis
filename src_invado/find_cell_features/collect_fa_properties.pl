@@ -52,10 +52,10 @@ if ($opt{debug}) {
     }
 }
 
-my @matlab_code = &create_all_matlab_commands;
+my @matlab_code = &create_all_matlab_commands(@image_files);
 
-$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA_props');
-$opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'FA_props', 'error.txt');
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'puncta_props');
+$opt{error_file} = catfile($opt{error_folder}, 'puncta_props', 'error.txt');
 $opt{runtime} = "1";
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
@@ -68,35 +68,23 @@ if (defined $cfg{job_group}) {
 ################################################################################
 
 sub create_all_matlab_commands {
+	my @image_files = @_;
     my @matlab_code;
 
-    my @raw_image_files = grep -e $_, <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
-    my @adhesion_image_files = grep -e $_, <$cfg{individual_results_folder}/*/adhesions.png>;
-    if (scalar(@raw_image_files) != scalar(@adhesion_image_files)) {
-        die "Expected to find equal number of raw data adhesion image and adhesion mask images." . 
-            "Instead found " . scalar(@raw_image_files) . " and " . scalar(@adhesion_image_files);
-    }
-    
-    foreach (0..$#raw_image_files) {
-        my $raw_image_file = $raw_image_files[$_];
-        my $adhesion_image_file = $adhesion_image_files[$_];
-        my $cell_mask = catfile(dirname($raw_image_file), $cfg{cell_mask_file});
-        
-	    #protrusion_data_file is not defined in any config file
-        my $protrusion_file = catfile($cfg{exp_results_folder}, $cfg{protrusion_data_file});
-        
-        my $extra_opt = "";
-        if (-e $cell_mask) {
-            $extra_opt .= ",'cell_mask','$cell_mask'";
-        }
-        if (-e $protrusion_file) {
-            $extra_opt .= ",'protrusion_file','$protrusion_file'";
-        }
-        
-        my $this_command = "find_adhesion_properties('$raw_image_file','$adhesion_image_file'";
-        $this_command .= "$extra_opt);\n";
+    foreach my $file (@image_files) {
+		
+		my $gel_binary_file = catfile(dirname($file), "degradation_binary.png");
+		my $puncta_file = catfile(dirname($file), "puncta_labeled.png");
 
-        $matlab_code[0] .= $this_command;
+        my $extra_opt = "";
+        if (not(-e $gel_binary_file)) {
+			die "Unable to find the gel binary file in: $gel_binary_file";
+        }
+        if (not(-e $puncta_file)) {
+			die "Unable to find the labeled puncta file in: $file";
+        }
+        
+		$matlab_code[0] .= "find_adhesion_properties('$file','$puncta_file','$gel_binary_file'$extra_opt)\n";
     }
 
     return @matlab_code;
