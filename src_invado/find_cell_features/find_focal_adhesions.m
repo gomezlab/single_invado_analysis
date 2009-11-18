@@ -29,7 +29,7 @@ i_p.parse(I_file);
 i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('binary_shift_file',fullfile(fileparts(I_file),'binary_shift.png'),@(x)exist(x,'file')==2);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addParamValue('filter_thresh',0.2,@isnumeric);
+i_p.addParamValue('filter_thresh',0.5,@isnumeric);
 i_p.addParamValue('scale_filter_thresh',0,@(x)islogical(x) || (isnumeric(x) && (x == 1 || x == 0)));
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
@@ -68,9 +68,21 @@ threshed_image = full_size_thresh;
 puncta = bwlabel(threshed_image,4);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Build adhesion perimeters image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+puncta_perim = zeros(size(puncta));
+for i = 1:max(puncta(:))
+    assert(any(any(puncta == i)), 'Error: can''t find ad number %d', i);
+    this_ad = zeros(size(puncta));
+    this_ad(puncta == i) = 1;
+    puncta_perim(bwperim(this_ad)) = i;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 imwrite(double(puncta)/2^16,fullfile(i_p.Results.output_dir, 'puncta_labeled.png'),'bitdepth',16);
+imwrite(double(puncta_perim)/2^16,fullfile(i_p.Results.output_dir, 'puncta_labeled_perim.png'),'bitdepth',16);
 imwrite(threshed_image,fullfile(i_p.Results.output_dir, 'puncta_binary.png'));
 
 addpath(genpath('..'))
