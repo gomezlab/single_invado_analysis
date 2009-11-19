@@ -36,7 +36,7 @@ assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string 
 assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
 assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be image set one') %#ok<ST2NM>
 
-image_dirs = image_dirs(4:end);
+image_dirs = image_dirs(3:end);
 
 x_transform = 0;
 y_transform = 0;

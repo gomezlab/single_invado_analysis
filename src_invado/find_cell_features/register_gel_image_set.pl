@@ -78,6 +78,12 @@ sub create_all_matlab_commands {
         if (defined $opt{grid_res}) {
             $extra_opt .= ",'search_grid_resolution',$opt{grid_res}";
         }
+        
+        #catch the first image and set it up to aligh to itself, just to produce
+        #the files the verification scripts will look for
+        if ($_ == 1) {
+		    $matlab_code[0] .= "register_gel_images('$file_1','$file_1'$extra_opt)\n";
+        }
 
 		$matlab_code[0] .= "register_gel_images('$file_2','$file_1'$extra_opt)\n";
     }

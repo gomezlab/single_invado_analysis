@@ -47,7 +47,7 @@ for i = 1:size(image_dirs)
     all_diff = [all_diff diff_image(:)']; %#ok<AGROW>
 end
 
-threshold = mean(all_diff(:)) - 4*std(all_diff(:));
+threshold = mean(all_diff(:)) - 3*std(all_diff(:));
 
 for i = 1:size(image_dirs)
     csvwrite(fullfile(base_dir,image_dirs(i).name,'gel_threshold.csv'),threshold)
