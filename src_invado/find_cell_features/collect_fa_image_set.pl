@@ -74,13 +74,6 @@ sub create_all_matlab_commands {
 
     foreach my $file_name (@image_files) {
         my $extra_opt = "";
-        if (defined $cfg{filter_thresh}) {
-            $extra_opt .= ",'filter_thresh',$cfg{filter_thresh}";
-        }
-        if (defined $cfg{scale_filter_thresh}) {
-            $extra_opt .= ",'scale_filter_thresh',$cfg{scale_filter_thresh}";
-        }
-
 		my $binary_shift_file = catfile(dirname($file_name), 'binary_shift.png');
 		if (-e $binary_shift_file) {
 			$extra_opt .= ",'binary_shift_file','$binary_shift_file'";

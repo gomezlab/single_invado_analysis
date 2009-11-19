@@ -1,24 +1,11 @@
 function find_gel_thresh(I_folder, varargin)
-% CASCADE_REGISTRATION_TRANSFORMATIONS    takes a set of adjacent image
-%       registrations and maintains a running total of the x and y
-%       transformations, writing these new cascaded transformations to the
-%       same folder  
-%
-%   cascade_registration_transformations(I_dir) reads in all the
-%   transformation matrices in image folders (I_dir) starting at image 2
-%   and keeps a running total of the x and y transformations, writing those
-%   cascaded transformations back to the same transformation matrices
-%
-%   Options:
-%
-%       -debug: set to 1 to output debugging information, defaults to 0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 i_p = inputParser;
-i_p.FunctionName = 'CASCADE_REGISTRATION_TRANSFORMATIONS';
+i_p.FunctionName = 'FIND_GEL_THRESH';
 
 i_p.addRequired('I_folder',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);

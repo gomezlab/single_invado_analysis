@@ -27,10 +27,11 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.parse(I_file);
 
 i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
-i_p.addParamValue('binary_shift_file',fullfile(fileparts(I_file),'binary_shift.png'),@(x)exist(x,'file')==2);
+i_p.addParamValue('binary_shift_file',fullfile(fileparts(I_file),'binary_shift.png'), ... 
+    @(x)exist(x,'file')==2);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addParamValue('filter_thresh',0.05,@isnumeric);
-i_p.addParamValue('scale_filter_thresh',0,@(x)islogical(x) || (isnumeric(x) && (x == 1 || x == 0)));
+i_p.addParamValue('filter_file',fullfile(fileparts(I_file),'puncta_threshold.csv'), ... 
+    @(x)exist(x,'file')==2);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -44,16 +45,14 @@ focal_image  = imread(I_file);
 scale_factor = double(intmax(class(focal_image)));
 focal_image  = double(focal_image)/scale_factor;
 
-only_reg_focal_image =[];
-for i=1:size(focal_image,1)
-    only_reg_focal_image = [only_reg_focal_image; focal_image(i,binary_shift(i,:))]; %#ok<AGROW>
-end
+min_row = find(sum(binary_shift,2),1,'first');
+max_row = find(sum(binary_shift,2),1,'last');
+min_col = find(sum(binary_shift),1,'first');
+max_col = find(sum(binary_shift),1,'last');
 
-if (i_p.Results.scale_filter_thresh) 
-    filter_thresh = i_p.Results.filter_thresh * (max(focal_image(:)) - min(focal_image(:)));
-else
-    filter_thresh = i_p.Results.filter_thresh;
-end
+only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
+
+filter_thresh = csvread(i_p.Results.filter_file);
     
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
