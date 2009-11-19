@@ -7,7 +7,7 @@
 ################################################################################
 
 sub wait_till_LSF_jobs_finish {
-    for (1 .. 3) {
+    for (1 .. 1) {
         my $sleep_time = 5;
         do {
             sleep($sleep_time);

@@ -24,7 +24,7 @@ GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization",
         "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
 chomp(my $lsf_check = `which bjobs`);
-die "LSF appear to be installed on this machine, don't you want to use it?" 
+die "LSF appears to be installed on this machine, don't you want to use it?" 
   if ($lsf_check && not $opt{lsf});
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -53,16 +53,18 @@ my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 if ($opt{lsf}) {
     my @overall_command_seq = (
         [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
+        [ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
+        [ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
+        [ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
+        [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
+        [ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
-        [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
-        [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-        [ [ "../visualize_cell_features", "./collect_visualizations.pl -only_config" ], ],
-        [ [ "../analyze_cell_features",   "./collect_box_intensity.pl" ], ],
-        [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-        [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
-        [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
+#        [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
+#        [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
+#        [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
+#        [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
+#        [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
+        [ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
     );
     if ($opt{skip_vis}) {
         @overall_command_seq = @overall_command_seq[ 0 .. $#overall_command_seq - 1 ];
