@@ -38,7 +38,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
-my @image_files   = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+my @image_files   = <$cfg{individual_results_folder}/*/registered_focal_image.png>;
 die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
   if (scalar(@image_files) != scalar(@image_folders));
 

@@ -29,7 +29,7 @@ i_p.parse(I_file);
 i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('binary_shift_file',fullfile(fileparts(I_file),'binary_shift.png'),@(x)exist(x,'file')==2);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
-i_p.addParamValue('filter_thresh',0.5,@isnumeric);
+i_p.addParamValue('filter_thresh',0.05,@isnumeric);
 i_p.addParamValue('scale_filter_thresh',0,@(x)islogical(x) || (isnumeric(x) && (x == 1 || x == 0)));
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
@@ -44,6 +44,11 @@ focal_image  = imread(I_file);
 scale_factor = double(intmax(class(focal_image)));
 focal_image  = double(focal_image)/scale_factor;
 
+only_reg_focal_image =[];
+for i=1:size(focal_image,1)
+    only_reg_focal_image = [only_reg_focal_image; focal_image(i,binary_shift(i,:))]; %#ok<AGROW>
+end
+
 if (i_p.Results.scale_filter_thresh) 
     filter_thresh = i_p.Results.filter_thresh * (max(focal_image(:)) - min(focal_image(:)));
 else
@@ -57,13 +62,13 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 I_filt = fspecial('disk',i_p.Results.filter_size);
-blurred_image = imfilter(focal_image(binary_shift),I_filt,'same',mean(focal_image(:)));
-high_passed_image = focal_image(binary_shift) - blurred_image;
+blurred_image = imfilter(only_reg_focal_image,I_filt,'same',mean(only_reg_focal_image(:)));
+high_passed_image = only_reg_focal_image - blurred_image;
 threshed_image = logical(im2bw(high_passed_image,filter_thresh));
 
-full_size_thresh = zeros(size(focal_image));
-full_size_thresh(binary_shift) = threshed_image;
-threshed_image = full_size_thresh;
+threshed_temp = zeros(size(focal_image));
+threshed_temp(binary_shift) = threshed_image;
+threshed_image = threshed_temp;
 
 puncta = bwlabel(threshed_image,4);
 
@@ -94,4 +99,4 @@ scaled_image = scaled_image - min(only_registered(:));
 scaled_image = scaled_image .* (1/max(only_registered(:)));
 scaled_image(not(binary_shift)) = 0;
 
-imwrite(create_highlighted_image(scaled_image, threshed_image),fullfile(i_p.Results.output_dir, 'puncta_highlight.png')); 
+imwrite(create_highlighted_image(scaled_image, threshed_image,'color_map',[1 0 0]),fullfile(i_p.Results.output_dir, 'puncta_highlight.png')); 
