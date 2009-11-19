@@ -20,7 +20,7 @@ function bbox = find_time_series_bbox(folder,varargin)
 i_p = inputParser;
 i_p.addRequired('folder',@(x)exist(x,'dir')==7);
 i_p.addParamValue('image_filename','cell_mask.png',@ischar);
-i_p.addParamValue('backup_image_filename','adhesions.png',@ischar);
+i_p.addParamValue('backup_image_filename','puncta_labeled.png',@ischar);
 
 i_p.parse(folder,varargin{:});
 
