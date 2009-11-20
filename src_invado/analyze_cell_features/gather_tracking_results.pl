@@ -64,6 +64,11 @@ push @data_files, @{ $cfg{lineage_analysis_data_files} };
 my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 %data_sets = &convert_data_to_units(\%data_sets, \%cfg);
 my @available_data_types = &gather_data_types;
+if ($opt{debug}) {
+	print "Data types detected:\n";
+	print join("\n", @available_data_types);
+	print "\n";
+}
 
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
@@ -97,7 +102,8 @@ sub convert_data_to_units {
 	  qw(Class Centroid_x Centroid_y Eccentricity Solidity
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
-	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal);
+	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
+	  Degrade_overlap_percent Degrade_overlap);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -290,6 +296,10 @@ sub gather_and_output_lineage_properties {
     $props{end_y} = &gather_last_entry($props{Centroid_y});
     &output_prop_time_series($props{Centroid_y}, "Centroid_y");
     undef $props{Centroid_y};
+	
+	$props{Degrade_overlap} = &gather_prop_seq("Degrade_overlap");
+	$props{degrade_average} = &gather_average_value($props{Degrade_overlap});
+	
 
     ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
     &output_prop_time_series($props{speeds}{All}, "All_speeds");
@@ -726,7 +736,7 @@ sub gather_lineage_summary_data {
 	my @possible_props = qw(longevity largest_area mean_area starting_edge_dist
 		ending_edge_dist starting_center_dist ending_center_dist merge_count
 		death_status split_birth_status average_speeds max_speeds ad_sig birth_i_num
-		start_x start_y death_i_num end_x end_y);
+		start_x start_y death_i_num end_x end_y degrade_average);
 	
     my @lin_summary_data;
     for (@possible_props) {

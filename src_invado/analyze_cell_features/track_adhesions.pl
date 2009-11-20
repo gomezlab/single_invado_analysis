@@ -742,9 +742,7 @@ Optional parameter(s):
 file name, which should be a Storable object created by an earlier program
 execution 
 
-=item * output or o: Create files using the spectified file name in each
-individual directory with Storable containing FA information; can be loaded
-using the -i flag
+=item * keep_data_files: do not delete the tracking data files
 
 =item * debug or d: print debuging information during program execution
 
