@@ -24,13 +24,23 @@ puncta_binary = logical(imread(fullfile(base_dir,'puncta_binary.png')));
 gel_binary = logical(imread(fullfile(base_dir,'degradation_binary.png')));
 
 puncta_image = double(imread(fullfile(base_dir,'registered_focal_image.png')));
-puncta_image = puncta_image - min(puncta_image(binary_shift));
-puncta_image = puncta_image .* (1/max(puncta_image(binary_shift)));
+if (exist(fullfile(base_dir,'puncta_image_range.csv'),'file'))
+    punta_limits = csvread(fullfile(base_dir,'puncta_image_range.csv'));
+else
+    punta_limits = [min(gel_image(binary_shift)) max(gel_image(binary_shift))];
+end
+puncta_image = puncta_image - punta_limits(1);
+puncta_image = puncta_image .* (1/punta_limits(2));
 puncta_image(not(binary_shift)) = 0;
 
 gel_image = double(imread(fullfile(base_dir,'registered_gel.png')));
-gel_image = gel_image - min(gel_image(binary_shift));
-gel_image = gel_image .* (1/max(gel_image(binary_shift)));
+if (exist(fullfile(base_dir,'gel_image_range.csv'),'file'))
+    gel_limits = csvread(fullfile(base_dir,'gel_image_range.csv'));
+else
+    gel_limits = [min(gel_image(binary_shift)) max(gel_image(binary_shift))];
+end
+gel_image = gel_image - gel_limits(1);
+gel_image = gel_image .* (1/gel_limits(2));
 gel_image(not(binary_shift)) = 0;
 
 labeled_all = zeros(size(binary_shift));
