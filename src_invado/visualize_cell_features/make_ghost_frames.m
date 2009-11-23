@@ -103,10 +103,6 @@ for i = 1:max_image_num
     end
     ad_label = temp_ad_label;
     ad_label_perim = temp_ad_label_perim;
-    
-    if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
-        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename))); %#ok<NASGU>
-    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Build the matrices translating number to colormap
