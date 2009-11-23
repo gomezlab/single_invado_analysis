@@ -33,9 +33,6 @@ for i = 1:size(image_dirs)
     binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,'binary_shift.png')));
     
     gel_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_gel.png'));
-    scale_factor = double(intmax(class(gel_image)));
-    gel_image  = double(gel_image)/scale_factor;
-
     if (min(gel_image(binary_shift)) < gel_image_range(1))
         gel_image_range(1) = min(gel_image(binary_shift));
     end
@@ -44,9 +41,6 @@ for i = 1:size(image_dirs)
     end
     
     puncta_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_focal_image.png'));
-    scale_factor = double(intmax(class(puncta_image)));
-    puncta_image  = double(puncta_image)/scale_factor;
-
     if (min(puncta_image(binary_shift)) < puncta_image_range(1))
         puncta_image_range(1) = min(puncta_image(binary_shift));
     end

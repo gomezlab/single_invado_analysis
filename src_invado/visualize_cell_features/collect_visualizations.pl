@@ -140,10 +140,9 @@ sub build_matlab_visualization_config {
         
         "lin_time_series_folder = fullfile(base_results_folder, '$cfg{adhesion_props_folder}', '$cfg{lineage_ts_folder}');\n",
 
-        "focal_image = '$cfg{adhesion_image_file}';",
+        "focal_image = 'registered_focal_image.png';",
         "adhesions_filename = 'puncta_labeled.png';",
         "adhesions_perim_filename = 'puncta_labeled_perim.png';",
-        "edge_filename = '$cfg{cell_mask_file}';",
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
 

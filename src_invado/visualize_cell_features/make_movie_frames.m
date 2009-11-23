@@ -106,9 +106,15 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input adhesion image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
-    scale_factor = double(intmax(class(orig_i)));
-    orig_i = double(orig_i)/scale_factor;
+    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,'binary_shift.png')));
+    puncta_image = double(imread(fullfile(I_folder,padded_i_num,focal_image)));
+    puncta_limits = [min(puncta_image(binary_shift)) max(puncta_image(binary_shift))];
+    if (exist(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'),'file'))
+        puncta_limits = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
+    end
+    puncta_image = puncta_image - puncta_limits(1);
+    puncta_image = puncta_image .* (1/puncta_limits(2));
+    puncta_image(not(binary_shift)) = 0;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
@@ -124,10 +130,6 @@ for i = 1:max_image_num
     ad_label = temp_ad_label;
     ad_label_perim = temp_ad_label_perim;
     
-    if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
-        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename))); %#ok<NASGU>
-    end
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Build the matrices translating number to colormap
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,24 +173,20 @@ for i = 1:max_image_num
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',padded_i_num);
     this_cmap = zeros(max(ad_label_perim(:)),3);
     this_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
-    highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
+    highlighted_all = create_highlighted_image(puncta_image,ad_label_perim,'color_map',this_cmap);
 
     %Build the birth time highlighted image
     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in birth time image %d',padded_i_num);
     this_cmap = zeros(max(ad_label_perim(:)),3);
     this_cmap(ad_nums,:) = time_cmap(cmap_nums,:);
-    highlighted_time = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
+    highlighted_time = create_highlighted_image(puncta_image,ad_label_perim,'color_map',this_cmap);
 
-    if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
-        cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
-        edge_image_ad = create_highlighted_image(edge_image_ad,cell_edge,'color_map',edge_cmap(i_seen,:));
-    end
     edge_image_ad = create_highlighted_image(edge_image_ad,im2bw(ad_label_perim,0),'color_map',edge_cmap(i_seen,:));
     
     %Bound the images according to the bounding box found towards the top
     %of the program
-    orig_i = orig_i(b_box(2):b_box(4), b_box(1):b_box(3));
+    puncta_image = puncta_image(b_box(2):b_box(4), b_box(1):b_box(3));
     highlighted_all = highlighted_all(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     highlighted_time = highlighted_time(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
     edge_image_ad_bounded = edge_image_ad(b_box(2):b_box(4), b_box(1):b_box(3), 1:3);
@@ -197,7 +195,7 @@ for i = 1:max_image_num
     
     frame = cell(1,3);
     frame{1} = [edge_image_ad_bounded,spacer,highlighted_all];
-    frame{2} = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
+    frame{2} = [cat(3,puncta_image,puncta_image,puncta_image),spacer,highlighted_all];
     frame{3} = [edge_image_ad_bounded,spacer,highlighted_time];
     
     %Add scale bars if the pixel size is available
@@ -209,8 +207,8 @@ for i = 1:max_image_num
     
     %Output the original unaltered image if requested
     if (output_original_image)
-        if (not(exist(fullfile(out_path,'orig_i'),'dir'))), mkdir(fullfile(out_path,'orig_i')); end
-        imwrite(orig_i,fullfile(out_path,'orig_i',[padded_i_seen,'.png']));
+        if (not(exist(fullfile(out_path,'orig_image'),'dir'))), mkdir(fullfile(out_path,'orig_i')); end
+        imwrite(puncta_image,fullfile(out_path,'orig_i',[padded_i_seen,'.png']));
     end
     
     %Output all the other images
