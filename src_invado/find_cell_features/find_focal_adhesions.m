@@ -1,19 +1,4 @@
 function find_focal_adhesions(I_file,varargin)
-% FIND_FOCAL_ADHESIONS    locates the focal adhesions in a given image,
-%                         optionally returns the segmented image or writes
-%                         the segmented image to a file
-%
-%   find_focal_adhesions(I,OPTIONS) locate the focal adhesions in image
-%   file, 'I'
-%
-%   Options:
-%
-%       -filter_size: size of the averaging filter to use, defaults to 23
-%       -filter_thresh: threshold used to identify focal adhesions in the
-%        average filtered image, defaults to 0.1
-%       -output_dir: folder used to hold all the results, defaults to the
-%        same folder as the image file, 'I'
-%       -debug: set to 1 to output debugging information, defaults to 0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -27,18 +12,19 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.parse(I_file);
 
 i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
-i_p.addParamValue('binary_shift_file',fullfile(fileparts(I_file),'binary_shift.png'), ... 
+i_p.addParamValue('registration_binary',fullfile(fileparts(I_file),'binary_shift.png'), ... 
     @(x)exist(x,'file')==2);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('filter_file',fullfile(fileparts(I_file),'puncta_threshold.csv'), ... 
     @(x)exist(x,'file')==2);
+i_p.addParamValue('filter_invert',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,varargin{:});
 
 %read in binary shift file
-binary_shift = logical(imread(i_p.Results.binary_shift_file));
+binary_shift = logical(imread(i_p.Results.registration_binary));
 
 %read in and normalize the input focal adhesion image
 focal_image  = imread(I_file);
@@ -64,6 +50,9 @@ I_filt = fspecial('disk',i_p.Results.filter_size);
 blurred_image = imfilter(only_reg_focal_image,I_filt,'same',mean(only_reg_focal_image(:)));
 high_passed_image = only_reg_focal_image - blurred_image;
 threshed_image = logical(im2bw(high_passed_image,filter_thresh));
+if (i_p.Results.filter_invert)
+    threshed_image = not(threshed_image);
+end
 
 threshed_temp = zeros(size(focal_image));
 threshed_temp(binary_shift) = threshed_image;
