@@ -34,7 +34,7 @@ i_p.parse(I_file,reg_target,varargin{:});
 
 if (not(i_p.Results.do_registration))
     csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), ... 
-        [cos(0) sin(0);-sin(0) cos(0); 1 1])
+        [cos(0) sin(0);-sin(0) cos(0); 0 0])
     return
 end
 
