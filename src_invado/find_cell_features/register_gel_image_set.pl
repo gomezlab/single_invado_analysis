@@ -78,6 +78,9 @@ sub create_all_matlab_commands {
         if (defined $opt{grid_res}) {
             $extra_opt .= ",'search_grid_resolution',$opt{grid_res}";
         }
+        if (defined $cfg{do_registration}) {
+            $extra_opt .= ",'do_registration',$cfg{do_registration}";
+        }
         
         #catch the first image and set it up to aligh to itself, just to produce
         #the files the verification scripts will look for

@@ -26,10 +26,17 @@ i_p.FunctionName = 'REGISTER_GEL_IMAGES';
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('reg_target',@(x)exist(x,'file') == 2);
 i_p.addParamValue('search_grid_resolution',1, @(x)isnumeric(x) & x >= 1);
+i_p.addParamValue('do_registration',1, @(x)isnumeric(x) & x == 1 || x == 0);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,reg_target,varargin{:});
+
+if (not(i_p.Results.do_registration))
+    csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), ... 
+        [cos(0) sin(0);-sin(0) cos(0); 1 1])
+    return
+end
 
 %read in and normalize the input focal adhesion image
 gel_image  = imread(I_file);
@@ -41,7 +48,6 @@ reg_target  = imread(reg_target);
 scale_factor = double(intmax(class(reg_target)));
 reg_target  = double(reg_target)/scale_factor;
 
-    
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
 
