@@ -77,67 +77,20 @@ sub collect_ad_props {
 
 sub filter_tracking_matrix {
     my %matrix_set;
-
-    for my $required_longevity (split(/\s+/, $cfg{required_longevity_filter})) {
-        for my $i (0 .. $#{ $lin_props{'longevity'} }) {
-            my $this_longev = $lin_props{'longevity'}[$i];
-            next if ($this_longev eq "NA");
-            if ($this_longev >= $required_longevity) {
-                push @{ $matrix_set{'longevity'}{$required_longevity} }, $tracking_mat[$i];
-            }
-            if ($this_longev >= $required_longevity && $lin_props{'death_status'}[$i]) {
-                push @{ $matrix_set{'dead'}{$required_longevity} }, $tracking_mat[$i];
-            }
-            if ($this_longev >= $required_longevity && $lin_props{'split_birth_status'}[$i]) {
-                push @{ $matrix_set{'split_birth'}{$required_longevity} }, $tracking_mat[$i];
-            }
-        }
-        @{ $matrix_set{'split_birth'}{$required_longevity} } =
-          &add_split_birth_parents(@{ $matrix_set{'split_birth'}{$required_longevity} });
-    }
-
-    #ad-hoc line to pick out specific lineages
-    #@{$matrix_set{'special'}{'high_speed'}} = map $tracking_mat[$_], (146,262,516);
-
-    #Filter the tracking matrix if a 'for_vis' folder is available
-    my $R_sq_folder = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'for_vis');
-    if (-d $R_sq_folder) {
-        for my $file_name (<$R_sq_folder/*.csv>) {
-            $file_name =~ /$R_sq_folder\/(.*).csv/;
-
-            my $parser = Text::CSV::Simple->new;
-            eval {
-                my @data = $parser->read_file($file_name);
-                @{ $matrix_set{$1} } = map $tracking_mat[ $_->[0] - 1 ], (@data);
-            };
-        }
-    }
+	
+	my $min_longevity = 5;
+	my $min_degrade = 0.25;
+	
+	for my $i (0 .. $#{ $lin_props{'longevity'} }) {
+		my $this_longev = $lin_props{'longevity'}[$i];
+		my $this_degrade = $lin_props{'degrade_average'}[$i];
+		next if ($this_longev eq "NA");
+		if ($this_longev >= $min_longevity && $this_degrade > $min_degrade) {
+			push @{ $matrix_set{'invadopodia'}}, $tracking_mat[$i];
+		}
+	}
 
     return %matrix_set;
-}
-
-sub add_split_birth_parents {
-    my @mat_set = @_;
-
-    my @set_with_parents;
-    for my $i (0 .. $#mat_set) {
-        my $pre_birth_index =
-          (grep $mat_set[$i][$_] >= 0 && $mat_set[$i][ $_ - 1 ] <= -2, (1 .. $#{ $mat_set[$i] }))[0] - 1;
-        die "Error identifying matrix index of split birth event" if ($mat_set[$i][$pre_birth_index] >= -1);
-
-        my $ad_parent_num = -1 * ($mat_set[$i][$pre_birth_index] + 2);
-
-        my @parent_lin_num = grep $tracking_mat[$_][ $pre_birth_index + 1 ] == $ad_parent_num, (0 .. $#tracking_mat);
-        die "Expected to only find one parent lineage" if (scalar(@parent_lin_num) > 1);
-        die "Unable to find any parent lineages\n", join(" ", @{ $mat_set[$i] }), "\n"
-          if (scalar(@parent_lin_num) == 0);
-
-        push @set_with_parents, $tracking_mat[ $parent_lin_num[0] ];
-        push @set_with_parents, $mat_set[$i];
-    }
-    die if 2 * scalar(@mat_set) != scalar(@set_with_parents);
-
-    return @set_with_parents;
 }
 
 sub output_filtered_matrices {
