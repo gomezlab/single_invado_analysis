@@ -5,6 +5,7 @@
 ###############################################################################
 use strict;
 use File::Basename;
+use File::Find::Rule;
 use File::Spec::Functions;
 use Cwd 'abs_path';
 use Getopt::Long;
@@ -29,7 +30,7 @@ print "Collecting Configuration\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
 
 ###############################################################################
-#Main Program
+# Main Program
 ###############################################################################
 chdir(dirname($opt{program}));
 
@@ -40,10 +41,7 @@ my $debug_string = ($opt{debug}) ? "-d" : "";
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
-my @config_files = <$cfg{data_folder}/*/*$cfg_suffix>;
-if (exists($opt{exp_filter})) {
-   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
-}
+my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
 
 foreach (@config_files) {
     next if /config\/default/;
@@ -56,7 +54,7 @@ foreach (@config_files) {
 }
 
 ###############################################################################
-#Documentation
+# Documentation
 ###############################################################################
 
 =head1 NAME

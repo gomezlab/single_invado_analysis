@@ -10,7 +10,7 @@ use threads;
 use threads::shared;
 use File::Spec::Functions;
 use File::Basename;
-use File::Find;
+use File::Find::Rule;
 use Benchmark;
 use Getopt::Long;
 use Cwd;
@@ -44,10 +44,16 @@ my %cfg = ParseConfig(\%opt);
 $t1 = new Benchmark;
 $|  = 1;
 
-my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
-if (exists($opt{exp_filter})) {
-   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
-}
+# my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
+# if (exists($opt{exp_filter})) {
+#    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+# }
+
+my $cfg_suffix = basename($opt{cfg});
+$cfg_suffix =~ s/.*\.(.*)/$1/;
+
+my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
+
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
 if ($opt{lsf}) {
