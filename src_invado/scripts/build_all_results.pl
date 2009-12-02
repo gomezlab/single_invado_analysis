@@ -65,6 +65,7 @@ if ($opt{lsf}) {
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
         [ [ "../visualize_cell_features", "./find_min_max.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
+        [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
     );
     if ($opt{skip_vis}) {
         @overall_command_seq = @overall_command_seq[ 0 .. $#overall_command_seq - 1 ];
