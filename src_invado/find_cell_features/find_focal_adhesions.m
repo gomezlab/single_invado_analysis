@@ -26,25 +26,24 @@ i_p.parse(I_file,varargin{:});
 
 %read in binary shift file
 binary_shift = logical(imread(i_p.Results.registration_binary));
-
-%read in and normalize the input focal adhesion image
-focal_image  = imread(I_file);
-scale_factor = double(intmax(class(focal_image)));
-focal_image  = double(focal_image)/scale_factor;
-
 min_row = find(sum(binary_shift,2),1,'first');
 max_row = find(sum(binary_shift,2),1,'last');
 min_col = find(sum(binary_shift),1,'first');
 max_col = find(sum(binary_shift),1,'last');
 
+%read in and normalize the input focal adhesion image
+focal_image  = imread(I_file);
 only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
-
 if (exist(i_p.Results.min_max_file, 'file'))
     min_max = csvread(i_p.Results.min_max_file);
 else
     min_max = [min(only_reg_focal_image(:)), max(only_reg_focal_image(:))];
 end
+scale_factor = double(intmax(class(focal_image)));
+focal_image  = double(focal_image)/scale_factor;
 
+%read in the threshold from the file produced by the threshold selection
+%script
 filter_thresh = csvread(i_p.Results.filter_file);
     
 %Add the folder with all the scripts used in this master program

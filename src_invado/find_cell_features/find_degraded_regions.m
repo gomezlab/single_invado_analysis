@@ -37,7 +37,6 @@ i_p.parse(I_file,first_image,varargin{:});
 
 %read in and normalize the registration binary image
 binary_shift = logical(imread(i_p.Results.registration_binary));
-first_image = first_image .* binary_shift;
 
 %read in and normalize the input focal adhesion image
 gel_image  = imread(I_file);
@@ -54,6 +53,7 @@ gel_image  = double(gel_image)/scale_factor;
 first_image  = imread(first_image);
 scale_factor = double(intmax(class(first_image)));
 first_image  = double(first_image)/scale_factor;
+first_image = first_image .* binary_shift;
 
 %read in the threshold value
 threshold = csvread(i_p.Results.thresh_file);
