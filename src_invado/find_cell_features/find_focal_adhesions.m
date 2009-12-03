@@ -19,6 +19,7 @@ i_p.addParamValue('filter_file',fullfile(fileparts(I_file),'puncta_threshold.csv
     @(x)exist(x,'file')==2);
 i_p.addParamValue('filter_invert',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
+i_p.addParamValue('min_max_file',fullfile(fileparts(I_file),'puncta_image_range.csv'),@(x)exist(x,'file') == 2)
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,varargin{:});
@@ -37,6 +38,12 @@ min_col = find(sum(binary_shift),1,'first');
 max_col = find(sum(binary_shift),1,'last');
 
 only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
+
+if (exist(i_p.Results.min_max_file, 'file'))
+    min_max = csvread(i_p.Results.min_max_file);
+else
+    min_max = [min(only_reg_focal_image(:)), max(only_reg_focal_image(:))];
+end
 
 filter_thresh = csvread(i_p.Results.filter_file);
     
@@ -80,11 +87,9 @@ imwrite(threshed_image,fullfile(i_p.Results.output_dir, 'puncta_binary.png'));
 
 addpath(genpath('..'))
 
-only_registered = focal_image(binary_shift);
-
 scaled_image = focal_image;
-scaled_image = scaled_image - min(only_registered(:));
-scaled_image = scaled_image .* (1/max(only_registered(:)));
+scaled_image = scaled_image - min_max(1);
+scaled_image = scaled_image .* (1/min_max(2));
 scaled_image(not(binary_shift)) = 0;
 
 imwrite(create_highlighted_image(scaled_image, threshed_image,'color_map',[1 0 0]),fullfile(i_p.Results.output_dir, 'puncta_highlight.png')); 

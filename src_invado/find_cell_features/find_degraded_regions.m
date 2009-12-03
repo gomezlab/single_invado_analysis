@@ -29,6 +29,7 @@ i_p.parse(I_file);
 i_p.addRequired('first_image',@(x)exist(x,'file') == 2);
 i_p.addParamValue('registration_binary',@(x)exist(x,'file') == 2);
 i_p.addParamValue('thresh_file',fullfile(fileparts(I_file),'gel_threshold.csv'),@(x)exist(x,'file') == 2)
+i_p.addParamValue('min_max_file',fullfile(fileparts(I_file),'gel_image_range.csv'),@(x)exist(x,'file') == 2)
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -48,10 +49,16 @@ first_image  = double(first_image)/scale_factor;
 threshold = csvread(i_p.Results.thresh_file);
 
 %read in and normalize the registration binary image
-if (isempty(strmatch('registration_binary',i_p.UsingDefaults)))
-    binary_shift = logical(imread(i_p.Results.registration_binary));
-    first_image = first_image .* binary_shift;
+binary_shift = logical(imread(i_p.Results.registration_binary));
+first_image = first_image .* binary_shift;
+
+if (exist(i_p.Results.min_max_file, 'file'))
+    min_max = csvread(i_p.Results.min_max_file);
+else
+    only_registered = gel_image(binary_shift);
+    min_max = [min(only_registered(:)), max(only_registered(:))];     
 end
+
 
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
@@ -67,4 +74,10 @@ threshed_diff = gel_image - first_image < threshold;
 addpath(genpath('..'))
 
 imwrite(threshed_diff,fullfile(i_p.Results.output_dir, 'degradation_binary.png'));
-imwrite(create_highlighted_image(gel_image,threshed_diff,'mix_percent',0.5),fullfile(i_p.Results.output_dir, 'degradation_highlight.png'));
+
+scaled_image = gel_image;
+scaled_image = scaled_image - min_max(1);
+scaled_image = scaled_image .* (1/min_max(2));
+scaled_image(not(binary_shift)) = 0;
+
+imwrite(create_highlighted_image(scaled_image,threshed_diff,'mix_percent',0.5),fullfile(i_p.Results.output_dir, 'degradation_highlight.png'));
