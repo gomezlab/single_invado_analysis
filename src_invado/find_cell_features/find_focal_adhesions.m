@@ -87,7 +87,7 @@ imwrite(threshed_image,fullfile(i_p.Results.output_dir, 'puncta_binary.png'));
 
 addpath(genpath('..'))
 
-scaled_image = focal_image;
+scaled_image = double(imread(I_file));
 scaled_image = scaled_image - min_max(1);
 scaled_image = scaled_image .* (1/min_max(2));
 scaled_image(not(binary_shift)) = 0;

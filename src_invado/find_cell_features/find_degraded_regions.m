@@ -35,8 +35,18 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,first_image,varargin{:});
 
+%read in and normalize the registration binary image
+binary_shift = logical(imread(i_p.Results.registration_binary));
+first_image = first_image .* binary_shift;
+
 %read in and normalize the input focal adhesion image
 gel_image  = imread(I_file);
+if (exist(i_p.Results.min_max_file, 'file'))
+    min_max = csvread(i_p.Results.min_max_file);
+else
+    only_registered = gel_image(binary_shift);
+    min_max = [min(only_registered(:)), max(only_registered(:))];     
+end
 scale_factor = double(intmax(class(gel_image)));
 gel_image  = double(gel_image)/scale_factor;
 
@@ -48,16 +58,6 @@ first_image  = double(first_image)/scale_factor;
 %read in the threshold value
 threshold = csvread(i_p.Results.thresh_file);
 
-%read in and normalize the registration binary image
-binary_shift = logical(imread(i_p.Results.registration_binary));
-first_image = first_image .* binary_shift;
-
-if (exist(i_p.Results.min_max_file, 'file'))
-    min_max = csvread(i_p.Results.min_max_file);
-else
-    only_registered = gel_image(binary_shift);
-    min_max = [min(only_registered(:)), max(only_registered(:))];     
-end
 
 
 %Add the folder with all the scripts used in this master program
@@ -75,7 +75,7 @@ addpath(genpath('..'))
 
 imwrite(threshed_diff,fullfile(i_p.Results.output_dir, 'degradation_binary.png'));
 
-scaled_image = gel_image;
+scaled_image = double(imread(I_file));
 scaled_image = scaled_image - min_max(1);
 scaled_image = scaled_image .* (1/min_max(2));
 scaled_image(not(binary_shift)) = 0;
