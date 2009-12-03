@@ -74,9 +74,9 @@ sub create_all_matlab_commands {
 
     foreach my $file_name (@image_files) {
         my $extra_opt = "";
-		my $binary_shift_file = catfile(dirname($file_name), 'binary_shift.png');
-		if (-e $binary_shift_file) {
-			$extra_opt .= ",'binary_shift_file','$binary_shift_file'";
+		my $registration_binary_file = catfile(dirname($file_name), 'binary_shift.png');
+		if (-e $registration_binary_file) {
+			$extra_opt .= ",'registration_binary','$registration_binary_file'";
 		} else {
 			die "Unable to find binary shift file in same folder as: $file_name";
 		}

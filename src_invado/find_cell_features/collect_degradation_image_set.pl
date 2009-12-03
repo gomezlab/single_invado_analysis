@@ -81,7 +81,7 @@ sub create_all_matlab_commands {
 			die "Unable to find registration binary in: $file_name";
 		}
 
-		$matlab_code[0] .= "find_degraded_regions_hp('$file_name','$image_files[0]'$extra_opt)\n";
+		$matlab_code[0] .= "find_degraded_regions('$file_name','$image_files[0]'$extra_opt)\n";
     }
 
     return @matlab_code;
