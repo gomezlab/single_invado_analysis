@@ -46,7 +46,7 @@ foreach (@folders) {
     @file_list = ();
     find(\&collect_all, ($_));
     
-    die if scalar(@file_list) != $first_file_count;
+    die "$_ " . scalar(@file_list) . " $first_file_count" if scalar(@file_list) != $first_file_count;
 }
 
 ################################################################################
@@ -54,7 +54,9 @@ foreach (@folders) {
 ################################################################################
 
 sub collect_all {
-    push @file_list, $File::Find::name;
+    if (not($File::Find::dir =~ /raw_data/)) {
+        push @file_list, $File::Find::name;
+    }
 }
 
 ################################################################################

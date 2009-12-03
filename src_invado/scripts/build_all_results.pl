@@ -44,15 +44,13 @@ my %cfg = ParseConfig(\%opt);
 $t1 = new Benchmark;
 $|  = 1;
 
-# my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
-# if (exists($opt{exp_filter})) {
-#    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
-# }
-
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
 my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
+if (exists($opt{exp_filter})) {
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
 
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
@@ -62,6 +60,7 @@ if ($opt{lsf}) {
         [ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
         [ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
+        [ [ "../visualize_cell_features", "./find_min_max.pl" ], ],
         [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
         [ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
@@ -69,7 +68,7 @@ if ($opt{lsf}) {
         [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
         [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-        [ [ "../visualize_cell_features", "./find_min_max.pl" ], ],
+        [ [ "../analyze_cell_features",   "./filter_tracking_matrix.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
     );
@@ -119,12 +118,12 @@ if ($opt{lsf}) {
         }
     }
 
-    my @error_dirs = <$cfg{results_folder}/*/$cfg{errors_folder}>;
-    if (@error_dirs) {
-        find(\&remove_unimportant_errors, @error_dirs);
-    }
+    #Find and clean up the error files produced during program execution
+    our @error_files;
+    &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
+    
     if (not($opt{debug})) {
-    	system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
+    	system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
     }
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
@@ -267,6 +266,8 @@ sub check_file_sets {
 
 sub remove_unimportant_errors {
     if ($File::Find::name =~ /error.txt/) {
+        push @error_files, $File::Find::name;
+
         open INPUT, "$_" or die "$!";
         my @errors = <INPUT>;
         close INPUT;
@@ -281,7 +282,6 @@ sub remove_unimportant_errors {
             }
             push @cleaned_errors, $line;
         }
-
         unlink $_;
 
         open OUTPUT, ">$_";
