@@ -1,4 +1,4 @@
-function find_adhesion_properties(focal_file,adhesions_file,gel_binary_file,varargin)
+function find_adhesion_properties(puncta_file,gel_file,adhesions_file,binary_shift_file,varargin)
 % FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
 %                             properties associated with the adhesions
 %                             located in prior steps
@@ -20,32 +20,38 @@ function find_adhesion_properties(focal_file,adhesions_file,gel_binary_file,vara
 i_p = inputParser;
 i_p.FunctionName = 'FIND_ADHESION_PROPERTIES';
 
-i_p.addRequired('focal_file',@(x)exist(x,'file') == 2);
+i_p.addRequired('puncta_file',@(x)exist(x,'file') == 2);
+i_p.addRequired('gel_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('adhesions_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('gel_binary_file',@(x)exist(x,'file') == 2);
+i_p.addRequired('binary_shift_file',@(x)exist(x,'file') == 2);
 
-i_p.parse(focal_file, adhesions_file,gel_binary_file);
+i_p.parse(puncta_file,gel_file,adhesions_file,binary_shift_file);
 
-i_p.addParamValue('output_dir', fileparts(focal_file), @(x)exist(x,'dir')==7);
+i_p.addParamValue('output_dir', fileparts(puncta_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(focal_file, adhesions_file, gel_binary_file, varargin{:});
+i_p.parse(puncta_file,gel_file,adhesions_file,binary_shift_file,varargin{:});
 
 %read in and normalize the input focal adhesion image
-focal_image  = imread(focal_file);
-scale_factor = double(intmax(class(focal_image)));
-focal_image  = double(focal_image)/scale_factor;
+puncta_image  = imread(puncta_file);
+scale_factor = double(intmax(class(puncta_image)));
+puncta_image  = double(puncta_image)/scale_factor;
+
+%read in and normalize the input focal adhesion image
+gel_image  = imread(gel_file);
+scale_factor = double(intmax(class(gel_image)));
+gel_image  = double(gel_image)/scale_factor;
 
 %read in the labeled adhesions
 adhesions = imread(adhesions_file);
 
 %read in the labeled adhesions
-gel_binary = logical(imread(gel_binary_file));
+binary_shift = logical(imread(binary_shift_file));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-adhesion_properties = collect_adhesion_properties(focal_image,adhesions,gel_binary,'debug',i_p.Results.debug);
+adhesion_properties = collect_adhesion_properties(puncta_image,gel_image,adhesions,binary_shift,'debug',i_p.Results.debug);
 if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
@@ -56,16 +62,16 @@ write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_di
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,gel_binary,varargin)
+function adhesion_props = collect_adhesion_properties(puncta_image,gel_image,labeled_adhesions,binary_shift,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
 %                                adhesions
 %
-%   ad_p = collect_adhesion_properties(ad_I,c_m,orig_I) collects the
+%   ad_p = collect_adhesion_properties(ad_I,c_m,puncta_image) collects the
 %   properties of the adhesions identified in the binary image 'ad_I',
 %   using the cell mask in 'c_m' and the original focal image data in
-%   'orig_I', returning a structure 'ad_p' containing properties
+%   'puncta_image', returning a structure 'ad_p' containing properties
 %
 %   Properties Collected:
 %       -all of the properties collected by regioprops(...,'all')
@@ -80,14 +86,15 @@ function adhesion_props = collect_adhesion_properties(orig_I,labeled_adhesions,g
 i_p = inputParser;
 i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
-i_p.addRequired('orig_I',@isnumeric);
+i_p.addRequired('puncta_image',@isnumeric);
+i_p.addRequired('gel_image',@isnumeric);
 i_p.addRequired('labeled_adhesions',@(x)isnumeric(x));
-i_p.addRequired('gel_binary',@(x)islogical(x));
+i_p.addRequired('binary_shift',@(x)islogical(x));
 
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(labeled_adhesions,orig_I,gel_binary,varargin{:});
+i_p.parse(labeled_adhesions,puncta_image,gel_image,binary_shift,varargin{:});
 
 adhesion_props = regionprops(labeled_adhesions,'all');
 
@@ -100,36 +107,36 @@ adhesion_props = regionprops(labeled_adhesions,'all');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i=1:max(labeled_adhesions(:))
-    adhesion_props(i).Average_adhesion_signal = mean(orig_I(labeled_adhesions == i));
-    adhesion_props(i).Variance_adhesion_signal = var(orig_I(labeled_adhesions == i));
-    adhesion_props(i).Max_adhesion_signal = max(orig_I(labeled_adhesions == i));
-    adhesion_props(i).Min_adhesion_signal = min(orig_I(labeled_adhesions == i));
+    adhesion_props(i).Average_adhesion_signal = mean(puncta_image(labeled_adhesions == i));
+    adhesion_props(i).Variance_adhesion_signal = var(puncta_image(labeled_adhesions == i));
+    adhesion_props(i).Max_adhesion_signal = max(puncta_image(labeled_adhesions == i));
+    adhesion_props(i).Min_adhesion_signal = min(puncta_image(labeled_adhesions == i));
     
     this_ad = labeled_adhesions;
     this_ad(labeled_adhesions ~= i) = 0;
     this_ad = logical(this_ad);
     background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
     background_region = and(background_region,not(labeled_adhesions));
+    background_region = logical(background_region .* binary_shift);
+    assert(sum(sum(background_region)) > 0)
     
-    adhesion_props(i).Degrade_overlap = any(any(this_ad .* gel_binary));
-    adhesion_props(i).Degrade_overlap_percent = sum(sum(this_ad .* gel_binary))/adhesion_props(i).Area;
-    assert(adhesion_props(i).Degrade_overlap_percent >= 0 && adhesion_props(i).Degrade_overlap_percent <= 1);
+    adhesion_props(i).Gel_diff = mean(gel_image(this_ad)) - mean(gel_image(background_region));
     
-    adhesion_props(i).Background_adhesion_signal = mean(orig_I(background_region));
+    adhesion_props(i).Background_adhesion_signal = mean(puncta_image(background_region));
     adhesion_props(i).Background_area = sum(background_region(:));
     adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
     
     shrunk_region = logical(imerode(this_ad,strel('disk',1,0)));
     if (sum(shrunk_region(:)) == 0), shrunk_region = this_ad; end
     adhesion_props(i).Shrunk_area = sum(shrunk_region(:));
-    adhesion_props(i).Shrunk_adhesion_signal = mean(orig_I(shrunk_region));
+    adhesion_props(i).Shrunk_adhesion_signal = mean(puncta_image(shrunk_region));
     adhesion_props(i).Shrunk_corrected_signal = adhesion_props(i).Shrunk_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(labeled_adhesions(:)))]); end
 end
 
 adhesion_mask = im2bw(labeled_adhesions,0);
-adhesion_props(1).Adhesion_mean_intensity = sum(sum(orig_I(adhesion_mask)))/sum(sum(adhesion_mask));
+adhesion_props(1).Adhesion_mean_intensity = sum(sum(puncta_image(adhesion_mask)))/sum(sum(adhesion_mask));
 
 function write_adhesion_data(S,varargin)
 % WRITE_STRUCT_DATA     write most the data stored in a given struct to a

@@ -38,7 +38,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
-my @image_files   = <$cfg{individual_results_folder}/*/$cfg{adhesion_image_file}>;
+my @image_files   = <$cfg{individual_results_folder}/*/registered_focal_image.png>;
 die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
   if (scalar(@image_files) != scalar(@image_folders));
 
@@ -72,19 +72,16 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $file (@image_files) {
-		
-		my $gel_binary_file = catfile(dirname($file), "degradation_binary.png");
-		my $puncta_file = catfile(dirname($file), "puncta_labeled.png");
-
-        my $extra_opt = "";
-        if (not(-e $gel_binary_file)) {
-			die "Unable to find the gel binary file in: $gel_binary_file";
-        }
-        if (not(-e $puncta_file)) {
-			die "Unable to find the labeled puncta file in: $file";
-        }
+		my $gel_file = catfile(dirname($file), "registered_gel.png");
+		my $labeled_puncta = catfile(dirname($file), "puncta_labeled.png");
+		my $binary_shift = catfile(dirname($file), "binary_shift.png");
         
-		$matlab_code[0] .= "find_adhesion_properties('$file','$puncta_file','$gel_binary_file'$extra_opt)\n";
+		die "Can't find puncta image file." if (not -e $file);
+		die "Can't find gel image file." if (not -e $gel_file);
+		die "Can't find labeled puncta image." if (not -e $labeled_puncta);
+		die "Can't find binary shift image." if (not -e $binary_shift);
+
+		$matlab_code[0] .= "find_adhesion_properties('$file','$gel_file','$labeled_puncta','$binary_shift')\n";
     }
 
     return @matlab_code;
