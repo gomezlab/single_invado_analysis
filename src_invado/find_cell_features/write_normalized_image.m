@@ -55,7 +55,7 @@ input_image = input_image(1:size(input_image,1)-50,:);
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-possible_ranges = [2^8, 2^12, 2^16];
+possible_ranges = 2^16;
 max_val = possible_ranges(find(possible_ranges > max(input_image(:)), 1, 'first'));
 
 if (i_p.Results.ir_norm)
