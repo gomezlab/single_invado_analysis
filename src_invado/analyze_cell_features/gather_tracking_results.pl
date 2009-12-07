@@ -103,7 +103,7 @@ sub convert_data_to_units {
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
-	  Degrade_overlap_percent Degrade_overlap);
+	  Global_gel_diff Local_gel_diff);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -123,7 +123,7 @@ sub convert_data_to_units {
                 #This is the arbitrary units place, don't do any unit
                 #conversion
             } else {
-                die "Unable to determine the appropriate conversion factor for $data_type.";
+                die "Unable to determine the appropriate conversion factor (if any) for $data_type.";
             }
         }
     }
@@ -266,7 +266,7 @@ sub gather_and_output_lineage_properties {
     #Pure Time Series Props
 	my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal
 		Background_corrected_signal Shrunk_corrected_signal MajorAxisLength
-		MinorAxisLength CB_corrected_signal);
+		MinorAxisLength CB_corrected_signal Global_gel_diff Local_gel_diff);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
@@ -297,10 +297,6 @@ sub gather_and_output_lineage_properties {
     &output_prop_time_series($props{Centroid_y}, "Centroid_y");
     undef $props{Centroid_y};
 	
-	$props{Degrade_overlap} = &gather_prop_seq("Degrade_overlap");
-	$props{degrade_average} = &gather_average_value($props{Degrade_overlap});
-	
-
     ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
     &output_prop_time_series($props{speeds}{All}, "All_speeds");
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = 
@@ -736,7 +732,7 @@ sub gather_lineage_summary_data {
 	my @possible_props = qw(longevity largest_area mean_area starting_edge_dist
 		ending_edge_dist starting_center_dist ending_center_dist merge_count
 		death_status split_birth_status average_speeds max_speeds ad_sig birth_i_num
-		start_x start_y death_i_num end_x end_y degrade_average);
+		start_x start_y death_i_num end_x end_y);
 	
     my @lin_summary_data;
     for (@possible_props) {
