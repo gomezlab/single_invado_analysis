@@ -120,7 +120,8 @@ for i=1:max(labeled_adhesions(:))
     background_region = logical(background_region .* binary_shift);
     assert(sum(sum(background_region)) > 0)
     
-    adhesion_props(i).Gel_diff = mean(gel_image(this_ad)) - mean(gel_image(background_region));
+    adhesion_props(i).Local_gel_diff = mean(gel_image(this_ad)) - mean(gel_image(background_region));
+    adhesion_props(i).Global_gel_diff = mean(gel_image(this_ad)) - mean(gel_image(binary_shift));
     
     adhesion_props(i).Background_adhesion_signal = mean(puncta_image(background_region));
     adhesion_props(i).Background_area = sum(background_region(:));
