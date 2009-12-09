@@ -2,6 +2,7 @@ function adhesion_matrix = make_ad_matrix(ad_size, intensity, varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+maxNumCompThreads(2);
 
 i_p = inputParser;
 i_p.FunctionName = 'make_ad_matrix';

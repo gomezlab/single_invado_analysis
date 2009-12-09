@@ -11,6 +11,7 @@ function build_moving_data(varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+maxNumCompThreads(2);
 
 i_p = inputParser;
 i_p.FunctionName = 'BUILD_MOVING_DATA';

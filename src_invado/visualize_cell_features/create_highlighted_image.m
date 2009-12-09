@@ -11,6 +11,8 @@ function high_image = create_highlighted_image(I,high,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+maxNumCompThreads(2);
+
 i_p = inputParser;
 i_p.FunctionName = 'CREATE_HIGHLIGHTED_IMAGE';
 

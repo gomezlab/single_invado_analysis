@@ -4,6 +4,7 @@ function write_montage_image_set(image_set,output_file,varargin)
 %                           the given output file
 %
 %   write_montage_image_set(i_set, out_f) 
+maxNumCompThreads(2);
 
 i_p = inputParser;
 i_p.FunctionName = 'WRITE_MONTAGE_IMAGE_SET';

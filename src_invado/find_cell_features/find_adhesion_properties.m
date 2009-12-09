@@ -16,6 +16,7 @@ function find_adhesion_properties(puncta_file,gel_file,adhesions_file,binary_shi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+maxNumCompThreads(2);
 
 i_p = inputParser;
 i_p.FunctionName = 'FIND_ADHESION_PROPERTIES';

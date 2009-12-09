@@ -3,6 +3,7 @@ function find_focal_adhesions(I_file,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+maxNumCompThreads(2);
 
 i_p = inputParser;
 i_p.FunctionName = 'FIND_FOCAL_ADHESIONS';
