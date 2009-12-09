@@ -10,6 +10,7 @@ use File::Spec::Functions;
 use Getopt::Long;
 use IO::File;
 use Benchmark;
+use Data::Dumper;
 
 use lib "../lib";
 use Config::Adhesions;
@@ -40,6 +41,29 @@ chdir "../visualize_cell_features";
 #Build Movies 
 my @image_numbers = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg);
 my $image_num_length = length(scalar(@image_numbers));
+
+my @commands = (
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/gel.png -sameq $cfg{exp_results_folder}/gel.mov 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1"
+);
+
+for (@commands) {
+	if ($opt{debug}) {
+		print $_, "\n";
+	} else {
+		system $_;
+	}
+}
+
+# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/gel.png -sameq $cfg{exp_results_folder}/gel.mov 2>&1";
+# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1";
+# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1";
+# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1";
+
+die;
+# die Dumper(\%cfg);
 
 print "\n\nBuild Movies\n\n" if $opt{debug};
 $t1 = new Benchmark;

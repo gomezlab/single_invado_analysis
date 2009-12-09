@@ -1,5 +1,5 @@
 ################################################################################
-#linear_regions.R: various functions used to find and plot the linear regions
+#FA_analysis_lib.R: various functions used to find and plot the linear regions
 #  and associated data from the focal adhesion identification/analysis programs
 ################################################################################
 
@@ -1034,7 +1034,7 @@ determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
     results = list();
 
     results$p_val = find_p_val_from_bootstrap(boot_samp_1, boot_samp_2);
-    results$median_vals = c(boot_samp_1$t0, boot_samp_2$t0);
+    results$mean_vals = c(boot_samp_1$t0, boot_samp_2$t0);
     results$conf_ints = rbind(conf_int_one$percent[4:5], conf_int_two$percent[4:5])
 
     return(results);
@@ -1058,6 +1058,19 @@ determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 
 	return(results);
 }
+
+find_mean_bootstrap_conf_int <- function(data, bootstrap.rep = 10000, conf=0.95) {
+	require(boot);
+	boot_samp = boot(data, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep);
+
+    results = list();
+    results$mean = boot_samp$t0;
+
+    results$conf_int = boot.ci(boot_samp, type="perc", conf=conf)$percent[4:5]
+
+    return(results)
+}
+
 
 ratio_samp <- function(data_1, data_2) {
     no_na_data_1 = na.omit(data_1);

@@ -51,7 +51,7 @@ for i = 1:size(image_dirs)
     high_passed_image = only_reg_image - blurred_image;
     
     all_filt = [all_filt high_passed_image(:)']; %#ok<AGROW>
-    if (i_p.Results.debug), disp(i); end
+    disp(i);
 end
 
 threshold = mean(all_filt(:)) + i_p.Results.std_coeff*std(all_filt(:));

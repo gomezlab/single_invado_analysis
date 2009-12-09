@@ -29,6 +29,10 @@ image_dirs = image_dirs(3:end);
 
 gel_image_range = [Inf -Inf];
 puncta_image_range = [Inf -Inf];
+ranges = zeros(size(image_dirs), 1);
+maxes = zeros(size(image_dirs), 1);
+mins = zeros(size(image_dirs), 1);
+
 for i = 1:size(image_dirs)
     binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,'binary_shift.png')));
     
@@ -39,6 +43,10 @@ for i = 1:size(image_dirs)
     if (max(gel_image(binary_shift)) > gel_image_range(2))
         gel_image_range(2) = max(gel_image(binary_shift));
     end
+    
+    ranges(i) = max(gel_image(binary_shift)) - min(gel_image(binary_shift));
+    maxes(i) = max(gel_image(binary_shift));
+    mins(i) = min(gel_image(binary_shift));
     
     puncta_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_focal_image.png'));
     if (min(puncta_image(binary_shift)) < puncta_image_range(1))
