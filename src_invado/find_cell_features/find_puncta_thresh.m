@@ -9,7 +9,7 @@ i_p.FunctionName = 'find_puncta_thresh';
 
 i_p.addRequired('I_folder',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('image_file','registered_focal_image.png',@ischar);
-i_p.addParamValue('std_coeff',4,@(x)isnumeric(x))
+i_p.addParamValue('std_coeff',5,@(x)isnumeric(x))
 i_p.addParamValue('output_file_name','puncta_threshold.csv',@(x)ischar(x))
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
