@@ -704,7 +704,7 @@ boxplot_with_points <- function(data,
     colors=c('darkgreen','red','yellow','blue','pink','cyan','gray','orange','brown','purple'),
     notch=F, names, range=1.5, inc.n.counts = TRUE, inc.points = TRUE, pch=20, na.omit = TRUE,
     point_cex=0.5, return_output = FALSE, with.median.props = TRUE, 
-    median.props.pos = c(0.8,0.9), median.props.color = 'blue', ...) {
+    median.props.pos = c(0.5,0.9), median.props.color = 'blue', ...) {
 	
     if (any(is.null(data))) {
         print(paste("The data in position", which(is.null(data)), "is null"))
