@@ -160,26 +160,22 @@ par(bty='n', mar=c(3,4.2,0,0));
 
 boxplot_with_points(list(processed$only_signif$FA$"0_10"$assembly$slope,
                          processed$only_signif$FA_reduced$assembly$slope/2), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), 
+                    names=c('All', 'Sampled'), ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), 
                     inc.points=F)
 
 boxplot_with_points(list(processed$only_signif$FA$"0_10"$disassembly$slope,
                          processed$only_signif$FA_reduced$disassembly$slope/2), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), 
+                    names=c('All', 'Sampled'), ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), 
                     inc.points=F)
 
 boxplot_with_points(list(processed$only_signif$FA$"0_10"$assembly$R_sq,
                          processed$only_signif$FA_reduced$assembly$R_sq), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Assembly ',R^2,sep='')), 
+                    names=c('All', 'Sampled'), ylab=expression(paste('Assembly ',R^2,sep='')), 
                     inc.points=F, median.props.pos=c(0.5,0.2))
 
 boxplot_with_points(list(processed$only_signif$FA$"0_10"$disassembly$R_sq,
                          processed$only_signif$FA_reduced$disassembly$R_sq), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Disassembly ',R^2,sep='')), 
+                    names=c('All', 'Sampled'), ylab=expression(paste('Disassembly ',R^2,sep='')), 
                     inc.points=F, median.props.pos=c(0.5,0.2))
 graphics.off()
 print("done with image resampling in wild-type")
@@ -191,26 +187,22 @@ par(bty='n', mar=c(3,4.2,0,0));
 
 boxplot_with_points(list(processed$only_signif$S178A$"0_10"$assembly$slope,
                          processed$only_signif$S178A_reduced$assembly$slope/2), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')),
-                    inc.points=F, median.props.pos=c(0.9,0.8))
+                    names=c('All', 'Sampled'), ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')),
+                    inc.points=F)
 
 boxplot_with_points(list(processed$only_signif$S178A$"0_10"$disassembly$slope,
                          processed$only_signif$S178A_reduced$disassembly$slope/2), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')),
-                    inc.points=F, median.props.pos=c(0.9,0.8))
+                    names=c('All', 'Sampled'), ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')),
+                    inc.points=F)
 
 boxplot_with_points(list(processed$only_signif$S178A$"0_10"$assembly$R_sq,
                          processed$only_signif$S178A_reduced$assembly$R_sq), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Assembly Adjusted ',R^2,sep='')), 
-                    inc.points=F, median.props.pos=c(0.9,0.2))
+                    names=c('All', 'Sampled'), ylab=expression(paste('Assembly Adjusted ',R^2,sep='')), 
+                    median.props.pos=c(0.5,0.2), inc.points=F)
 
 boxplot_with_points(list(processed$only_signif$S178A$"0_10"$disassembly$R_sq,
                          processed$only_signif$S178A_reduced$disassembly$R_sq), 
-                    names=c('All', 'Sampled'), notch=T, 
-                    ylab=expression(paste('Disassembly Adjusted ',R^2,sep='')), 
-                    inc.points=F, median.props.pos=c(0.9,0.2))
+                    names=c('All', 'Sampled'), ylab=expression(paste('Disassembly Adjusted ',R^2,sep='')), 
+                    median.props.pos=c(0.5,0.2), inc.points=F)
 graphics.off()
 print("done with image resampling in S178A")
