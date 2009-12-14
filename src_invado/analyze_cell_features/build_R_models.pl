@@ -40,15 +40,12 @@ my %cfg = ParseConfig(\%opt);
 ################################################################################
 # Main Program
 ################################################################################
-my @model_types = qw(average cell_background local_background area box_intensity);
-#push @model_types, "background_correlation_model";
 if ($opt{lsf}) {
     my @commands;
-    foreach (@model_types) {
-        #$0 - the name of the program currently running, used to protect against
-        #future file name changes
-        push @commands, "$0 -cfg $opt{cfg} -model_type $_";
-    }
+	
+	#$0 - the name of the program currently running, used to protect against
+	#future file name changes
+	push @commands, "$0 -cfg $opt{cfg}";
     
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
     if (defined $cfg{job_group}) {
@@ -60,7 +57,7 @@ if ($opt{lsf}) {
     exit(0);
 }
 
-my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder});
+my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder});
 
 my $output_base = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
 if (! -e $output_base) {
@@ -68,19 +65,9 @@ if (! -e $output_base) {
 }
 
 my @R_cmds;
-if (defined($opt{model_type})) {
-	my $output_file = catfile($output_base, 'R_out_' . $opt{model_type} . '.txt');
-	push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir " .
-	  "model_type=$opt{model_type} min_length=$cfg{min_linear_model_length}\" " . 
-	  "FA_analysis_lib.R $output_file";
-} else {
-	for (@model_types) {
-		my $output_file = catfile($output_base, 'R_out_' . $_ . '.txt');
-		push @R_cmds, "R CMD BATCH --vanilla \"--args data_dir=$data_dir " .
-		  "model_type=$_ min_length=$cfg{min_linear_model_length}\" " . 
-		  "FA_analysis_lib.R $output_file";
-	}
-}
+
+my $output_file = catfile($output_base, 'R_out.txt');
+push @R_cmds, "R CMD BATCH --vanilla \'--args data_dir=$data_dir\' invado_analysis_lib.R $output_file";
 
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models', 'error.txt');
 

@@ -90,49 +90,9 @@ if (length(args) != 0) {
         exp_props = gather_invado_properties(data_dir);
         invado_lineage_nums = exp_props$longev_filter[exp_props$high_conf_int < 0];
         non_invado_lineage_nums = exp_props$longev_filter[exp_props$high_conf_int >= 0];
-
-
-        # if (model_type == 'average') {
-        #     average_model = gather_bilinear_models_from_dirs(data_dir,
-        #             data_file='Average_adhesion_signal.csv', min_length = min_length,
-        #             results.file=file.path('..','models','intensity.Rdata'), debug=debug)
-        #         write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
-        # }
-        # if (model_type == 'cell_background') {
-        #     temp = gather_bilinear_models_from_dirs(data_dir, 
-        #             data_file='CB_corrected_signal.csv', min_length = min_length,
-        #             results.file=file.path('..','models','CB_corrected.Rdata'), debug=debug)
-        # }
-        # if (model_type == 'local_background') {
-        #     temp = gather_bilinear_models_from_dirs(data_dir, 
-        #             data_file='Background_corrected_signal.csv', min_length = min_length,
-        #             results.file=file.path('..','models','local_corrected.Rdata'), debug=debug)
-        # }
-        # if (model_type == 'area') {
-        #     temp = gather_bilinear_models_from_dirs(data_dir, 
-        #             data_file='Area.csv', min_length = min_length, log.trans = FALSE,
-        #             results.file=file.path('..','models','area.Rdata'), debug=debug)
-        # }
-        # if (model_type == 'box_intensity') {
-        #     temp = gather_bilinear_models_from_dirs(data_dir, 
-        #             data_file='Box_intensity.csv', min_length = min_length,
-        #             results.file=file.path('..','models','box.Rdata'), debug=TRUE)
-        # }
-        # if (model_type == 'background_correlation_model') {
-        #     intensity_data <- 
-        #         read.table(file.path(data_dir,'Background_corrected_signal.csv'), 
-        #                 sep=',', header=FALSE);
-
-        #     centroid_x <- read.table(file.path(data_dir,'Centroid_x.csv'), sep=',', header=FALSE);
-        #     centroid_y <- read.table(file.path(data_dir,'Centroid_y.csv'), sep=',', header=FALSE);
-
-        #     results = correlate_signal_vs_dist(intensity_data, centroid_x, centroid_y)
-        #         output_file = file.path(data_dir,'..','models','background_corr.Rdata')
-        #         if (! file.exists(dirname(output_file))) {
-        #             dir.create(dirname(output_file),recursive=TRUE)
-        #         }
-        #     save(results,file = output_file);
-        # }
+        
+        write.table(t(invado_lineage_nums), file.path(data_dir, 'invado_num.csv'), row.names=F, col.names=F, sep=',')
+        write.table(t(non_invado_lineage_nums), file.path(data_dir, 'non_invado_num.csv'), row.names=F, col.names=F, sep=',')
     }
 }
 

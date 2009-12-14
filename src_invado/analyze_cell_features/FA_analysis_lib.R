@@ -1,6 +1,6 @@
 ################################################################################
-#FA_analysis_lib.R: various functions used to find and plot the linear regions
-#  and associated data from the focal adhesion identification/analysis programs
+# FA_analysis_lib.R: various functions used to find and plot the linear regions
+# and associated data from the focal adhesion identification/analysis programs
 ################################################################################
 
 ########################################
