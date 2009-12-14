@@ -91,8 +91,8 @@ if (length(args) != 0) {
         invado_lineage_nums = exp_props$longev_filter[exp_props$high_conf_int < 0];
         non_invado_lineage_nums = exp_props$longev_filter[exp_props$high_conf_int >= 0];
         
-        write.table(t(invado_lineage_nums), file.path(data_dir, 'invado_num.csv'), row.names=F, col.names=F, sep=',')
-        write.table(t(non_invado_lineage_nums), file.path(data_dir, 'non_invado_num.csv'), row.names=F, col.names=F, sep=',')
+        write.table(t(invado_lineage_nums), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        write.table(t(non_invado_lineage_nums), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
     }
 }
 

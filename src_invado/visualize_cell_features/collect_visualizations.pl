@@ -52,6 +52,8 @@ my @movie_params = map {
     }
 } @files;
 
+my @image_folders = <$cfg{individual_results_folder}/*>;
+
 my @matlab_code;
 my %single_ad_params;
 foreach (@movie_params) {
@@ -65,21 +67,25 @@ foreach (@movie_params) {
     
     &write_matlab_config(%params);
     
-	my $extra_opt = "";
-	if (defined $opt{movie_debug}) {
-		$extra_opt .= ",'debug',1";
+	for (1..$#image_folders) {
+		push @matlab_code, "highlight_puncta_sets('" . $params{'config_file'} . "',$_)";
 	}
-	if (defined $cfg{no_scale_bar}) {
-		$extra_opt .= ",'no_scale_bar',$cfg{no_scale_bar}";
-	}
-	if (defined $cfg{no_b_box}) {
-		$extra_opt .= ",'no_b_box',$cfg{no_b_box}";
-	}
-    push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$extra_opt)";
-    push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "')";
-    if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
-        %single_ad_params = %params;
-    }
+
+	# my $extra_opt = "";
+	# if (defined $opt{movie_debug}) {
+	# 	$extra_opt .= ",'debug',1";
+	# }
+	# if (defined $cfg{no_scale_bar}) {
+	# 	$extra_opt .= ",'no_scale_bar',$cfg{no_scale_bar}";
+	# }
+	# if (defined $cfg{no_b_box}) {
+	# 	$extra_opt .= ",'no_b_box',$cfg{no_b_box}";
+	# }
+    # push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$extra_opt)";
+    # push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "')";
+    # if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
+    #     %single_ad_params = %params;
+    # }
 }
 
 push @matlab_code, &build_single_ad_commands(%single_ad_params);
