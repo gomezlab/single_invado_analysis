@@ -65,6 +65,10 @@ threshed_temp = zeros(size(focal_image));
 threshed_temp(binary_shift) = threshed_image;
 threshed_image = threshed_temp;
 
+%identify and remove adhesions on the immediate edge of the image
+threshed_image = remove_edge_adhesions(threshed_image,'binary_shift',binary_shift);
+threshed_image = remove_edge_adhesions(threshed_image);
+
 puncta = bwlabel(threshed_image,4);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
