@@ -67,7 +67,7 @@ foreach (@movie_params) {
     
     &write_matlab_config(%params);
     
-	for (1..$#image_folders) {
+	for (1..scalar(@image_folders)) {
 		push @matlab_code, "highlight_puncta_sets('" . $params{'config_file'} . "',$_)";
 	}
 
