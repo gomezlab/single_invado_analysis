@@ -1023,7 +1023,7 @@ produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slo
     return(final_filters)
 }
 
-determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
+determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 50000) {
 	require(boot);
 	boot_samp_1 = boot(data_1, function(data_1,indexes) mean(data_1[indexes],na.rm=T), bootstrap.rep);
 	boot_samp_2 = boot(data_2, function(data_1,indexes) mean(data_1[indexes],na.rm=T), bootstrap.rep);
@@ -1040,7 +1040,7 @@ determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
     return(results);
 }
 
-determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
+determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 50000) {
 	require(boot);
     
     data_package = list(one = data_1, two = data_2);
@@ -1059,7 +1059,7 @@ determine_median_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 	return(results);
 }
 
-find_mean_bootstrap_conf_int <- function(data, bootstrap.rep = 10000, conf=0.95) {
+find_mean_bootstrap_conf_int <- function(data, bootstrap.rep = 50000, conf=0.95) {
 	require(boot);
 	boot_samp = boot(data, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep);
 
@@ -1070,7 +1070,6 @@ find_mean_bootstrap_conf_int <- function(data, bootstrap.rep = 10000, conf=0.95)
 
     return(results)
 }
-
 
 ratio_samp <- function(data_1, data_2) {
     no_na_data_1 = na.omit(data_1);

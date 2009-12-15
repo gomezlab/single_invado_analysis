@@ -21,11 +21,16 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         stopifnot(dim(lineage_data)[[1]] == dim(degrade_data)[[1]])
 
         longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
-        all_props$longev_filter = c(all_props$longev_filter,which(longev_filter));
-        all_props$longevity = c(all_props$longevity, lineage_data$longevity[longev_filter]);
+        no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
+        death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
+        
+        overall_filt = longev_filter & no_split_birth_filt & death_filt;
+
+        all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
+        all_props$longevity = c(all_props$longevity, lineage_data$longevity[overall_filt]);
 
         final_conf_ints = matrix(ncol=2);
-        for (i in which(longev_filter)) {
+        for (i in which(overall_filt)) {
             only_data = na.omit(as.numeric(degrade_data[i,]));
             conf_int = t.test(only_data,conf.level=conf.level)$conf.int;
             final_conf_ints = rbind(final_conf_ints, conf_int[1:2]); 
@@ -36,13 +41,13 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         all_props$high_conf_int = c(all_props$high_conf_int, final_conf_ints[,2]);
 
         if (build_degrade_plots) {
-            min_diff = min(degrade_data[which(longev_filter),], na.rm=T);
-            max_diff = max(degrade_data[which(longev_filter),], na.rm=T);
+            min_diff = min(degrade_data[which(overall_filt),], na.rm=T);
+            max_diff = max(degrade_data[which(overall_filt),], na.rm=T);
             
-            filtered_longev = lineage_data$longevity[longev_filter];
+            filtered_longev = lineage_data$longevity[overall_filt];
 
             pdf(paste('degrade_mats_', this_exp, '.pdf',sep=''))
-            for (i in which(longev_filter)) {
+            for (i in which(overall_filt)) {
                 
                 only_data = na.omit(as.numeric(degrade_data[i,]));
 
@@ -88,8 +93,8 @@ if (length(args) != 0) {
 	print(data_dir);
     if (exists('data_dir')) {
         exp_props = gather_invado_properties(data_dir);
-        invado_lineage_nums = exp_props$longev_filter[exp_props$high_conf_int < 0];
-        non_invado_lineage_nums = exp_props$longev_filter[exp_props$high_conf_int >= 0];
+        invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int < 0];
+        non_invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int >= 0];
         
         write.table(t(invado_lineage_nums), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
         write.table(t(non_invado_lineage_nums), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
