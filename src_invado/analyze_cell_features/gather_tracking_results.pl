@@ -264,9 +264,7 @@ sub gather_and_output_lineage_properties {
     }
 
     #Pure Time Series Props
-	my @ts_props = qw(Angle_to_center Orientation Max_adhesion_signal
-		Background_corrected_signal Shrunk_corrected_signal MajorAxisLength
-		MinorAxisLength CB_corrected_signal Global_gel_diff Local_gel_diff);
+	my @ts_props = qw(Global_gel_diff Local_gel_diff);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
@@ -278,6 +276,7 @@ sub gather_and_output_lineage_properties {
     $props{merge_count}             = &gather_merge_count;
     $props{death_status}            = &gather_death_status;
     $props{split_birth_status}      = &gather_split_birth_status;
+    $props{average_eccentricity}    = &gather_average_eccentricity;
     $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
     &output_prop_time_series($props{Average_adhesion_signal}, "Average_adhesion_signal");
     $props{ad_sig} = &gather_average_value($props{Average_adhesion_signal});
@@ -605,16 +604,16 @@ sub gather_average_value {
     my @signal = @{ $_[0] };
 
     print "\r", " " x 80, "\rGathering Average Values" if $opt{debug};
-    my @pax_sig;
+    my @average_sig;
     for my $i (0 .. $#signal) {
         my $stat = Statistics::Descriptive::Full->new();
         for my $j (0 .. $#{ $signal[$i] }) {
-            $stat->add_data($signal[$i][$j]) if ($signal[$i][$j] ne "NaN");
+            $stat->add_data($signal[$i][$j]) if ($signal[$i][$j] ne "NaN" && $signal[$i][$j] ne "nan");
         }
 
-        push @pax_sig, $stat->mean();
+        push @average_sig, $stat->mean();
     }
-    return \@pax_sig;
+    return \@average_sig;
 }
 
 sub gather_adhesion_speeds {
@@ -712,6 +711,24 @@ sub gather_death_status {
     return \@death_status;
 }
 
+sub gather_average_eccentricity {
+    print "\r", " " x 80, "\rGathering Average Eccentricity" if $opt{debug};
+	my @major_axis = @{&gather_prop_seq("MajorAxisLength")};
+	my @minor_axis = @{&gather_prop_seq("MinorAxisLength")};
+	
+	my @eccentricity;
+
+    for my $i (0 .. $#major_axis) {
+        for my $j (0 .. $#{ $major_axis[$i] }) {
+			$eccentricity[$i][$j] = $major_axis[$i][$j]/$minor_axis[$i][$j];
+        }
+    }
+	
+	my @average_eccentricity = @{&gather_average_value(\@eccentricity)};
+
+	return \@average_eccentricity;
+}
+
 sub gather_split_birth_status {
     my @sb_status = map 0, (0 .. $#tracking_mat);
     print "\r", " " x 80, "\rGathering Spilt Birth Status" if $opt{debug};
@@ -732,8 +749,8 @@ sub gather_lineage_summary_data {
 	my @possible_props = qw(longevity largest_area mean_area starting_edge_dist
 		ending_edge_dist starting_center_dist ending_center_dist merge_count
 		death_status split_birth_status average_speeds max_speeds ad_sig birth_i_num
-		start_x start_y death_i_num end_x end_y);
-	
+		start_x start_y death_i_num end_x end_y average_eccentricity);
+
     my @lin_summary_data;
     for (@possible_props) {
         my $this_prop = $_;

@@ -19,12 +19,14 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         degrade_data = read.table(file.path(this_exp_dir,'lin_time_series/Local_gel_diff.csv'), 
             sep=",",header=F);
         stopifnot(dim(lineage_data)[[1]] == dim(degrade_data)[[1]])
+        
 
         longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
         no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
         death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
-        
-        overall_filt = longev_filter & no_split_birth_filt & death_filt;
+        eccentricity_filt = ! is.na(lineage_data$average_eccentricity) & lineage_data$average_eccentricity > 3;
+
+        overall_filt = longev_filter & no_split_birth_filt & death_filt & eccentricity_filt;
 
         all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
         all_props$longevity = c(all_props$longevity, lineage_data$longevity[overall_filt]);
