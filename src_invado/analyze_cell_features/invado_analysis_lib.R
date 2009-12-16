@@ -24,7 +24,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
         no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
         death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
-        eccentricity_filt = ! is.na(lineage_data$average_eccentricity) & lineage_data$average_eccentricity > 3;
+        eccentricity_filt = ! is.na(lineage_data$average_eccentricity) & lineage_data$average_eccentricity < 3;
 
         overall_filt = longev_filter & no_split_birth_filt & death_filt & eccentricity_filt;
 

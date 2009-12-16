@@ -287,23 +287,19 @@ sub gather_and_output_lineage_properties {
     $props{end_x} = &gather_last_entry($props{Centroid_x});
     $props{birth_i_num} = &gather_birth_i_num($props{Centroid_x});
     $props{death_i_num} = &gather_death_i_num($props{Centroid_x});
-    &output_prop_time_series($props{Centroid_x}, "Centroid_x");
     undef $props{Centroid_x};
 
     $props{Centroid_y} = &gather_prop_seq("Centroid_y");
     $props{start_y} = &gather_first_entry($props{Centroid_y});
     $props{end_y} = &gather_last_entry($props{Centroid_y});
-    &output_prop_time_series($props{Centroid_y}, "Centroid_y");
     undef $props{Centroid_y};
 	
     ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
-    &output_prop_time_series($props{speeds}{All}, "All_speeds");
     ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = 
 		&gather_speed_props($props{speeds}{All});
 
     if (grep "Area" eq $_, @available_data_types) {
         $props{Area} = &gather_prop_seq("Area");
-        &output_prop_time_series($props{Area}, "Area");
         $props{largest_area} = &gather_largest_entry($props{Area});
         $props{mean_area} = &gather_average_value($props{Area});
         undef $props{Area};
@@ -311,7 +307,6 @@ sub gather_and_output_lineage_properties {
 
     if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
         $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
-        &output_prop_time_series($props{Centroid_dist_from_center}, "Centroid_dist_from_center");
         $props{starting_center_dist} = &gather_first_entry($props{Centroid_dist_from_center});
         $props{ending_center_dist}   = &gather_last_entry($props{Centroid_dist_from_center});
         undef $props{Centroid_dist_from_center};
@@ -319,7 +314,6 @@ sub gather_and_output_lineage_properties {
 
     if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
         $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
-        &output_prop_time_series($props{Centroid_dist_from_edge}, "Centroid_dist_from_edge");
         $props{starting_edge_dist} = &gather_first_entry($props{Centroid_dist_from_edge});
         $props{ending_edge_dist}   = &gather_last_entry($props{Centroid_dist_from_edge});
         undef $props{Centroid_dist_from_edge};
@@ -720,6 +714,7 @@ sub gather_average_eccentricity {
 
     for my $i (0 .. $#major_axis) {
         for my $j (0 .. $#{ $major_axis[$i] }) {
+			die "Minor Axis value of zero: $i $j" if ($minor_axis[$i][$j] == 0);
 			$eccentricity[$i][$j] = $major_axis[$i][$j]/$minor_axis[$i][$j];
         }
     }
