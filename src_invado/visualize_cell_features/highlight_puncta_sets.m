@@ -57,6 +57,10 @@ for i=1:size(image_directories,1)
     assert(str2num(image_directories(i).name) == i) %#ok<ST2NM>
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Read in all the files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 puncta_perim = imread(fullfile(I_folder,image_directories(i_num).name,adhesions_perim_filename));
 
 binary_shift = imread(fullfile(I_folder,image_directories(i_num).name,'binary_shift.png'));
@@ -64,13 +68,22 @@ binary_shift = imread(fullfile(I_folder,image_directories(i_num).name,'binary_sh
 puncta_image = imread(fullfile(I_folder,image_directories(i_num).name,focal_image));
 puncta_image_range = csvread(fullfile(I_folder,image_directories(i_num).name,'puncta_image_range.csv'));
 puncta_image = normalize_image(puncta_image,binary_shift,puncta_image_range);
+orig_puncta = puncta_image;
 
 gel_image = imread(fullfile(I_folder,image_directories(i_num).name,'registered_gel.png'));
 gel_image_range = csvread(fullfile(I_folder,image_directories(i_num).name,'gel_image_range.csv'));
 gel_image = normalize_image(gel_image,binary_shift,gel_image_range);
+orig_gel = gel_image;
 
 invado_nums = csvread(fullfile(lin_time_series_folder, '../invado_nums.csv'));
 non_invado_nums = csvread(fullfile(lin_time_series_folder, '../non_invado_nums.csv'));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Highlight the appropriate adhesions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+puncta_image = create_highlighted_image(puncta_image,im2bw(puncta_perim,0),'color_map',[0,0,1]);
+gel_image = create_highlighted_image(gel_image,im2bw(puncta_perim,0),'color_map',[0,0,1]);
 
 invado_tracking = tracking_seq(invado_nums,:);
 non_invado_tracking = tracking_seq(non_invado_nums,:);
@@ -102,14 +115,9 @@ if (not(all(non_invado_image_nums <= 0)))
     gel_image = create_highlighted_image(gel_image,highlight_binary,'color_map',[1,0,0]);
 end
 
-if (size(gel_image,3) < 3)
-    gel_image = cat(3,gel_image,gel_image,gel_image);
-end
-
-if (size(puncta_image,3) < 3)
-    puncta_image = cat(3,puncta_image,puncta_image,puncta_image);
-end
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Composite and Output the Images
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 dual_image = [gel_image, 0.5*ones(size(puncta_image,1),1,3), puncta_image];
 
