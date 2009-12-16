@@ -68,6 +68,7 @@ if ($opt{lsf}) {
         [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
         [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
+        [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
         [ [ "../analyze_cell_features",   "./filter_tracking_matrix.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
