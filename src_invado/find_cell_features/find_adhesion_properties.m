@@ -28,6 +28,7 @@ i_p.addRequired('binary_shift_file',@(x)exist(x,'file') == 2);
 
 i_p.parse(puncta_file,gel_file,adhesions_file,binary_shift_file);
 
+i_p.addParamValue('cell_mask_file', @(x)exist(x,'file') == 2);
 i_p.addParamValue('output_dir', fileparts(puncta_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
@@ -49,10 +50,19 @@ adhesions = imread(adhesions_file);
 %read in the labeled adhesions
 binary_shift = logical(imread(binary_shift_file));
 
+%read in the cell mask file if defined
+if(not(any(strmatch('cell_mask_file',i_p.UsingDefaults))))
+    cell_mask = logical(imread(i_p.Results.cell_mask_file));
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-adhesion_properties = collect_adhesion_properties(puncta_image,gel_image,adhesions,binary_shift,'debug',i_p.Results.debug);
+if (exist('cell_mask','var'))
+    adhesion_properties = collect_adhesion_properties(puncta_image,gel_image,adhesions,binary_shift,'debug',i_p.Results.debug,'cell_mask',cell_mask);
+else
+    adhesion_properties = collect_adhesion_properties(puncta_image,gel_image,adhesions,binary_shift,'debug',i_p.Results.debug);
+end
 if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
@@ -93,11 +103,17 @@ i_p.addRequired('labeled_adhesions',@(x)isnumeric(x));
 i_p.addRequired('binary_shift',@(x)islogical(x));
 
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
+i_p.addParamValue('cell_mask',@(x)islogical(x));
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(labeled_adhesions,puncta_image,gel_image,binary_shift,varargin{:});
 
 adhesion_props = regionprops(labeled_adhesions,'all');
+
+%move the cell mask variable into a simpler name, if defined
+if(not(any(strmatch('cell_mask',i_p.UsingDefaults))))
+    cell_mask = i_p.Results.cell_mask;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -139,6 +155,51 @@ end
 
 adhesion_mask = im2bw(labeled_adhesions,0);
 adhesion_props(1).Adhesion_mean_intensity = sum(sum(puncta_image(adhesion_mask)))/sum(sum(adhesion_mask));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Properites Extracted If Cell Mask Available
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if (exist('cell_mask','var'))
+    [dists, indicies] = bwdist(~cell_mask);
+    dists(not(binary_shift)) = NaN;
+    
+    min_row = find(sum(binary_shift,2),1,'first');
+    max_row = find(sum(binary_shift,2),1,'last');
+    min_col = find(sum(binary_shift),1,'first');
+    max_col = find(sum(binary_shift),1,'last');
+    
+    only_reg_mask = cell_mask(min_row:max_row, min_col:max_col);
+    assert(size(only_reg_mask,1)*size(only_reg_mask,2) == sum(sum(binary_shift)));
+    
+    %Now we search for the pixels which are closest to an edge of the cell
+    %mask that is also touching the edge of image. We want to find these
+    %pixels because the true closest cell edge may be off the microscope
+    %field of view. To be safe, we will set those
+    %distance-to-nearest-cell-edge values to NaN.
+    black_border_mask = only_reg_mask;
+    black_border_mask(1,:) = 0; black_border_mask(end,:) = 0; 
+    black_border_mask(:,1) = 0; black_border_mask(:,end) = 0;
+    
+    bb_dists_temp = bwdist(~black_border_mask);
+    
+    bb_dists = zeros(size(cell_mask));
+    bb_dists(min_row:max_row, min_col:max_col) = bb_dists_temp;
+    dists(not(binary_shift)) = NaN;
+    
+    dists(bb_dists < dists) = NaN;
+    for i=1:max(labeled_adhesions(:))
+        centroid_pos = round(adhesion_props(i).Centroid);
+        centroid_unrounded = adhesion_props(i).Centroid;
+        if(size(centroid_pos,1) == 0)
+            warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
+            adhesion_props(i).Centroid_dist_from_edge = NaN;
+        else
+            adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
+        end
+    end
+end
+
 
 function write_adhesion_data(S,varargin)
 % WRITE_STRUCT_DATA     write most the data stored in a given struct to a

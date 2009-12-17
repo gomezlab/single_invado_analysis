@@ -19,6 +19,7 @@ function register_gel_images(I_file,reg_target,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+profile on;
 maxNumCompThreads(2);
 
 i_p = inputParser;
@@ -56,7 +57,7 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[row_shifts,col_shifts] = meshgrid(-10:i_p.Results.search_grid_resolution:10);
+[row_shifts,col_shifts] = meshgrid(-25:i_p.Results.search_grid_resolution:25);
 ms_diff = zeros(size(row_shifts));
 
 for i = 1:size(row_shifts,1)
@@ -84,3 +85,8 @@ transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shi
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), transform_matrix)
+
+if (i_p.Results.debug)
+    profile viewer;
+end
+profile off;
