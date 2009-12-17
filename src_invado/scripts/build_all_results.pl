@@ -60,7 +60,7 @@ if ($opt{lsf}) {
         [ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
         [ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
-        [ [ "../visualize_cell_features", "./find_min_max.pl" ], ],
+        [ [ "../find_cell_features",      "./find_min_max.pl" ], ],
         [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
         [ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
@@ -69,8 +69,6 @@ if ($opt{lsf}) {
         [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
         [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
         [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
-        [ [ "../analyze_cell_features",   "./filter_tracking_matrix.pl" ], ],
-        [ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
         [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
     );
     if ($opt{skip_vis}) {

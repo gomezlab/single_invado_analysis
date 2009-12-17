@@ -56,7 +56,6 @@ for i = 1:size(image_dirs)
     if (max(puncta_image(binary_shift)) > puncta_image_range(2))
         puncta_image_range(2) = max(puncta_image(binary_shift));
     end
-    
 end
 
 for i = 1:size(image_dirs)
