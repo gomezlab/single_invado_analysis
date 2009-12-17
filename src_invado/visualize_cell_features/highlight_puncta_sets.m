@@ -35,10 +35,6 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-max_image_num = find_max_image_num(I_folder);
-folder_char_length = length(num2str(max_image_num));
-i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
-
 tracking_seq = load(tracking_seq_file) + 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,9 +42,9 @@ tracking_seq = load(tracking_seq_file) + 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_directories = dir(I_folder);
 
-assert(not(isempty(strmatch(image_directories(1).name,'.','exact'))), ... 
+assert(not(isempty(strmatch(image_directories(1).name,'.','exact'))), ...
     'Expected first entry in image_directories to be "."');
-assert(not(isempty(strmatch(image_directories(2).name,'..','exact'))), ... 
+assert(not(isempty(strmatch(image_directories(2).name,'..','exact'))), ...
     'Expected second entry in image_directories to be ".."');
 
 image_directories = image_directories(3:end);
@@ -62,21 +58,25 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 puncta_perim = imread(fullfile(I_folder,image_directories(i_num).name,adhesions_perim_filename));
+i_size = size(puncta_perim);
 
 binary_shift = imread(fullfile(I_folder,image_directories(i_num).name,'binary_shift.png'));
 
 puncta_image = imread(fullfile(I_folder,image_directories(i_num).name,focal_image));
 puncta_image_range = csvread(fullfile(I_folder,image_directories(i_num).name,'puncta_image_range.csv'));
 puncta_image = normalize_image(puncta_image,binary_shift,puncta_image_range);
-orig_puncta = puncta_image;
 
 gel_image = imread(fullfile(I_folder,image_directories(i_num).name,'registered_gel.png'));
 gel_image_range = csvread(fullfile(I_folder,image_directories(i_num).name,'gel_image_range.csv'));
 gel_image = normalize_image(gel_image,binary_shift,gel_image_range);
-orig_gel = gel_image;
 
 invado_nums = csvread(fullfile(lin_time_series_folder, '../invado_nums.csv'));
 non_invado_nums = csvread(fullfile(lin_time_series_folder, '../non_invado_nums.csv'));
+
+if (exist(fullfile(I_folder,image_directories(i_num).name,'cell_mask.png'),'file'))
+    cell_mask = imread(fullfile(I_folder,image_directories(i_num).name,'cell_mask.png'));
+    cell_mask_perim = bwperim(cell_mask);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Highlight the appropriate adhesions
@@ -115,6 +115,10 @@ if (not(all(non_invado_image_nums <= 0)))
     gel_image = create_highlighted_image(gel_image,highlight_binary,'color_map',[1,0,0]);
 end
 
+if (exist('cell_mask_perim','var'))
+    puncta_image = create_highlighted_image(puncta_image,cell_mask_perim,'color_map',[125/255,0,125/255]);
+    gel_image = create_highlighted_image(gel_image,cell_mask_perim,'color_map',[125/255,0,125/255]);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Composite and Output the Images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
