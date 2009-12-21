@@ -48,6 +48,7 @@ my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
 my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
+@config_files = sort @config_files;
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
@@ -60,6 +61,7 @@ if ($opt{lsf}) {
         [ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
         [ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
+        [ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
         [ [ "../find_cell_features",      "./find_min_max.pl" ], ],
         [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
         [ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
@@ -117,12 +119,12 @@ if ($opt{lsf}) {
         }
     }
 
-    #Find and clean up the error files produced during program execution
-    our @error_files;
-    &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
-    
     if (not($opt{debug})) {
-    	system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
+        #Find and clean up the error files produced during program execution
+        our @error_files;
+        &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
+    	
+        system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
     }
 } else {
     unlink(<$cfg{data_folder}/time_series_*/stat*>);
@@ -272,20 +274,25 @@ sub remove_unimportant_errors {
         close INPUT;
 
         my @cleaned_errors;
+        my $hits = 0;
         foreach my $line (@errors) {
             if ($line =~ /Pending job threshold reached./) {
+                $hits++;
                 next;
             }
             if ($line =~ /which: no shopt in/) {
+                $hits++;
                 next;
             }
             push @cleaned_errors, $line;
         }
-        unlink $_;
+        if ($hits) {
+            unlink $_;
 
-        open OUTPUT, ">$_";
-        print OUTPUT @cleaned_errors;
-        close OUTPUT;
+            open OUTPUT, ">$_";
+            print OUTPUT @cleaned_errors;
+            close OUTPUT;
+        }
     }
 }
 
