@@ -75,6 +75,7 @@ my @matlab_code = ("find_future_degrade_values('$cfg{individual_results_folder}'
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'future_degrade');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
+$opt{resource} = "mem32";
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
