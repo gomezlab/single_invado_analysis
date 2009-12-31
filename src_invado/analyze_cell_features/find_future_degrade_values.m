@@ -1,4 +1,4 @@
-function find_future_degrade_values(base_dir,tracking_mat,lineage_nums,start_nums,output_file,varargin)
+function find_future_degrade_values(base_dir,tracking_mat,lineage_and_start,output_file,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Setup variables and parse command line
@@ -11,8 +11,7 @@ i_p.FunctionName = 'FIND_FUTURE_DEGRAD_VALUES';
 
 i_p.addRequired('base_dir',@(x)exist(x,'dir') == 7);
 i_p.addRequired('tracking_mat',@(x)exist(x,'file') == 2);
-i_p.addRequired('lineage_nums',@isnumeric);
-i_p.addRequired('start_nums',@isnumeric);
+i_p.addRequired('lineage_and_start',@(x)exist(x,'file') == 2);
 i_p.addRequired('output_file',@ischar);
 
 i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
@@ -22,9 +21,12 @@ i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
 % i_p.addParamValue('output_dir', fileparts(adhesions_file), @(x)exist(x,'dir')==7);
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
-i_p.parse(base_dir,tracking_mat,lineage_nums,start_nums,output_file,varargin{:});
+i_p.parse(base_dir,tracking_mat,lineage_and_start,output_file,varargin{:});
 
 tracking_mat = csvread(i_p.Results.tracking_mat);
+lineage_and_start = csvread(i_p.Results.lineage_and_start);
+lineage_nums = lineage_and_start(1,:);
+start_nums = lineage_and_start(2,:);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Main Program

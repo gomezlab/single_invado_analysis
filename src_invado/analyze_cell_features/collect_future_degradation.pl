@@ -58,17 +58,20 @@ my @all_lin_nums = (@invado_nums, @non_invado_nums);
 my $area_data_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}, 'Area.csv');
 my @start_cols = &find_max_area_indexes(\$area_data_file, \@all_lin_nums);
 
+my $lineage_and_start_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'lineage_and_start.csv');
+
+open OUTPUT, ">$lineage_and_start_file" or die;
+print OUTPUT join(",",@all_lin_nums),"\n",join(",",@start_cols);
+close OUTPUT;
+
 ########################################
 #Prepare and send off the matlab command
 ########################################
-my $lin_num_matlab = "[" . join(",",@all_lin_nums)  . "]";
-my $start_cols_matlab = "[" . join(",",@start_cols)  . "]";
-
 my $tracking_file = catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
 
 my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_ts_folder}, 'Local_diff_future.csv');
 
-my @matlab_code = ("find_future_degrade_values('$cfg{individual_results_folder}','$tracking_file',$lin_num_matlab, $start_cols_matlab, '$output_file')");
+my @matlab_code = ("find_future_degrade_values('$cfg{individual_results_folder}','$tracking_file','$lineage_and_start_file', '$output_file')");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'future_degrade');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
