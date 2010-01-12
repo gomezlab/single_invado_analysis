@@ -1075,7 +1075,7 @@ ratio_samp <- function(data_1, data_2) {
     no_na_data_1 = na.omit(data_1);
     no_na_data_2 = na.omit(data_2);
     samp_1 = sample(no_na_data_1, length(no_na_data_1), replace=TRUE);
-    samp_2= sample(no_na_data_2, length(no_na_data_2), replace=TRUE);
+    samp_2 = sample(no_na_data_2, length(no_na_data_2), replace=TRUE);
 
     return((median(samp_2) - median(samp_1))/median(samp_1));
 }
