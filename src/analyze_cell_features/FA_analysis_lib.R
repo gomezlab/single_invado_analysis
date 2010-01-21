@@ -1,5 +1,5 @@
 ################################################################################
-#linear_regions.R: various functions used to find and plot the linear regions
+# FA_analysis_lib.R: various functions used to find and plot the linear regions
 #  and associated data from the focal adhesion identification/analysis programs
 ################################################################################
 
@@ -735,17 +735,34 @@ boxplot_with_points <- function(data,
         median_ratio_low = sprintf('%.0f', 100*p_vals$ratio_conf[1]);
         median_ratio_high = sprintf('%.0f', 100*p_vals$ratio_conf[2]);
         
+        median_ratio_average = (p_vals$median_vals[2] - p_vals$median_vals[1])/p_vals$median_vals[1];
+        median_ratio_average = sprintf('%.0f', 100*median_ratio_average);
+
         x_pos = (plot_dims[2] - plot_dims[1])*median.props.pos[1] + plot_dims[1]
         y_pos = (plot_dims[4] - plot_dims[3])*median.props.pos[2] + plot_dims[3]
 
         text(x_pos,y_pos,
-             paste(p_vals$p_val,'\n(',median_ratio_low, ',', median_ratio_high, ')%',sep=''), 
+             paste('p<',p_vals$p_val, sep=''), 
              col=median.props.color);
     }
     if (return_output) {
         return(box.data);
     }
 }
+
+print_ratio_conf_string <- function(data_1,data_2) {
+        p_vals = determine_median_p_value(data_1, data_2);
+        
+        median_ratio_low = sprintf('%.0f', 100*p_vals$ratio_conf[1]);
+        median_ratio_high = sprintf('%.0f', 100*p_vals$ratio_conf[2]);
+        
+        median_ratio_average = (p_vals$median_vals[2] - p_vals$median_vals[1])/p_vals$median_vals[1];
+        median_ratio_average = sprintf('%.0f', 100*median_ratio_average);
+
+        print(paste(median_ratio_average, "% (", median_ratio_low, "%,", median_ratio_high, "%)", sep=''));
+        return(paste(median_ratio_average, "% (", median_ratio_low, "%,", median_ratio_high, "%)", sep=''));
+}
+
 
 hist_with_percents <- function(data, ...) {
 	hist_data = hist(data, ...);
@@ -1073,7 +1090,7 @@ gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, de
 	bar_lengths = matrix(NA,3,2);
 	conf_ints = matrix(NA,6,4);
 	p_vals = rep(NA,3);
-	counts = matrix(NA,3,2);
+	counts = matrix(NA,3,2, dimnames=list(c('Assembly', 'Stability', 'Disassembly'), c('Results_1','Results_2')));
 	
 	#Assembly phase lengths
 	boot_samp = boot(results_1$a$length, function(data,indexes) mean(data[indexes], na.rm=T), bootstrap.rep)
@@ -1144,6 +1161,8 @@ gather_stage_lengths <- function(results_1, results_2, bootstrap.rep = 50000, de
 	rm(boot_samp, boot_samp_2)
 	gc()
 	
+    # counts = data.frame(counts, row.names = c('Assembly', 'Stability', 'Disassembly'));
+
 	return_data <- list(bar_lengths = bar_lengths, conf_ints = conf_ints, p_vals = p_vals, counts = counts)
 	return_data
 }
