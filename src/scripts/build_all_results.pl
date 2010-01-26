@@ -44,26 +44,42 @@ my %cfg = ParseConfig(\%opt);
 $t1 = new Benchmark;
 $|  = 1;
 
+#config file processing
 my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
+#collect all the config information 
+my %all_configs;
+for my $file (@config_files) {
+	my %temp_opt = %opt;
+	$temp_opt{cfg} = $file;
+	%{$all_configs{$file}} = ParseConfig(\%temp_opt);
+}
+
+#This data structure acts as the overall control mechanism for which programs
+#are run to perform the analysis. The first layer of the array are another set
+#of arrays with sets of commands that can be executed simultaneously. The next
+#layer holds all of those commands with the appropriate directory to execute the
+#commands in.
+my @overall_command_seq = (
+	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
+	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
+	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_visualizations.pl -only_config" ], ],
+	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
+	[ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
+);
+
+#Now to the meat of the program, the main decision here rests on whether the LSF
+#system is available. LSF is the queuing system used on emerald.unc.edu.
 if ($opt{lsf}) {
-    my @overall_command_seq = (
-        [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
-        [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
-        [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-        [ [ "../visualize_cell_features", "./collect_visualizations.pl -only_config" ], ],
-        [ [ "../analyze_cell_features",   "./collect_box_intensity.pl" ], ],
-        [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-        [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
-        [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
-    );
     if ($opt{skip_vis}) {
         @overall_command_seq = @overall_command_seq[ 0 .. $#overall_command_seq - 1 ];
     } elsif ($opt{only_vis}) {
@@ -118,33 +134,50 @@ if ($opt{lsf}) {
     	system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
     }
 } else {
-    unlink(<$cfg{data_folder}/time_series_*/stat*>);
+    for (@overall_command_seq) {
+		my @command_seq = @{$_};
+		$command_seq[0][1] =~ m#/(.*)\.pl#;
+		
+		print "Starting on $1\n";
+        
+		my $command_start_bench = new Benchmark;
+        
+        &execute_command_seq(\@command_seq, $starting_dir);
+		
+		my $command_end_bench = new Benchmark;
+		my $td = timediff($command_end_bench, $command_start_bench);
+		print "The command took:",timestr($td),"\n\n";
+	}
 
-    my $max_processes = 4;
+    # unlink(<$cfg{data_folder}/time_series_*/stat*>);
 
-    my @processes : shared;
+    # my $max_processes = 4;
 
-    @processes =
-      map { "nice -20 ./build_results.pl -cfg $config_files[$_] -d > $runtime_files[$_]" } (0 .. $#config_files);
+    # my @processes : shared;
 
-    my @started;
-    while (@processes) {
-        while (@processes && &gather_running_status(@started) < $max_processes) {
-            my $command = shift @processes;
-            my $config  = shift @config_files;
-            push @started, $config;
+    # @processes =
+    #   map { "nice -20 ./build_results.pl -cfg $config_files[$_] -d > $runtime_files[$_]" } (0 .. $#config_files);
 
-            print "Executing $command\n" if $opt{debug};
-            threads->create('execute_process', $command)->detach;
-        }
-    }
+    # my @started;
+    # while (@processes) {
+    #     while (@processes && &gather_running_status(@started) < $max_processes) {
+    #         my $command = shift @processes;
+    #         my $config  = shift @config_files;
+    #         push @started, $config;
 
-    while (&gather_running_status(@started)) {
-        sleep 100;
-    }
+    #         print "Executing $command\n" if $opt{debug};
+    #         threads->create('execute_process', $command)->detach;
+    #     }
+    # }
+
+    # while (&gather_running_status(@started)) {
+    #     sleep 100;
+    # }
 }
 
 $t2 = new Benchmark;
+$td = timediff($t2, $t1);
+print "\nThe pipeline took:",timestr($td),"\n\n";
 
 ################################################################################
 # Functions
@@ -216,18 +249,22 @@ sub execute_command_seq {
     my @these_config_files = @config_files;
     if (scalar(@_) > 2) {
         @these_config_files = @{$_[2]};
-    } 
+    }
+	
     foreach my $set (@command_seq) {
         my $dir     = $set->[0];
         my $command = $set->[1];
         foreach my $cfg_file (@these_config_files) {
             my $config_command = "$command -cfg $cfg_file";
+			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
             chdir $dir;
             my $return_code = 0;
             if ($opt{debug}) {
+				print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
                 $return_code = system $config_command;
+				print "RETURN CODE: $return_code\n";
             }
             chdir $starting_dir;
 
@@ -235,6 +272,7 @@ sub execute_command_seq {
             #with the program exit, remove that config file from the run and
             #continue
             if ($return_code) {
+				print "REMOVING\n";
                 @config_files = grep $cfg_file ne $_, @config_files;
             }
         }
