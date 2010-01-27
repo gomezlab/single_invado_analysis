@@ -6,6 +6,7 @@
 use lib "../lib";
 use lib "../lib/perl";
 
+use strict;
 use threads;
 use threads::shared;
 use File::Spec::Functions;
@@ -41,7 +42,7 @@ my %cfg = ParseConfig(\%opt);
 ################################################################################
 # Main
 ################################################################################
-$t1 = new Benchmark;
+my $t1 = new Benchmark;
 $|  = 1;
 
 #config file processing
@@ -65,7 +66,7 @@ for my $file (@config_files) {
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
@@ -134,6 +135,7 @@ if ($opt{lsf}) {
     	system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
     }
 } else {
+    my $starting_dir = getcwd;
     for (@overall_command_seq) {
 		my @command_seq = @{$_};
 		$command_seq[0][1] =~ m#/(.*)\.pl#;
@@ -175,8 +177,8 @@ if ($opt{lsf}) {
     # }
 }
 
-$t2 = new Benchmark;
-$td = timediff($t2, $t1);
+my $t2 = new Benchmark;
+my $td = timediff($t2, $t1);
 print "\nThe pipeline took:",timestr($td),"\n\n";
 
 ################################################################################
@@ -263,7 +265,8 @@ sub execute_command_seq {
 				print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
-                $return_code = system $config_command;
+                print "RUNNING: $config_command\n";
+                $return_code = system($config_command);
 				print "RETURN CODE: $return_code\n";
             }
             chdir $starting_dir;
@@ -272,7 +275,7 @@ sub execute_command_seq {
             #with the program exit, remove that config file from the run and
             #continue
             if ($return_code) {
-				print "REMOVING\n";
+				print "REMOVING: $cfg_file\n";
                 @config_files = grep $cfg_file ne $_, @config_files;
             }
         }
