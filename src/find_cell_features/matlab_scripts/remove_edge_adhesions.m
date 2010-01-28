@@ -3,7 +3,6 @@ function cleaned_binary = remove_edge_adhesions(threshed_image,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
 
 i_p = inputParser;
 i_p.FunctionName = 'REMOVE_EDGE_ADHESIONS';
