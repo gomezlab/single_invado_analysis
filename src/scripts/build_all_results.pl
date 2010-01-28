@@ -21,12 +21,17 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
+$opt{lsf} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
         "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
-chomp(my $lsf_check = `which bjobs`);
-die "LSF appear to be installed on this machine, don't you want to use it?" 
-  if ($lsf_check && not $opt{lsf});
+#chomp(my $lsf_check = `which bjobs`);
+#die "LSF appear to be installed on this machine ($lsf_check), don't you want to use it?" 
+#  if ($lsf_check && not $opt{lsf});
+
+if (-e '/opt/lsf/bin/bjobs' && not $opt{lsf}) {
+	die "LSF appear to be installed on this machine, don't you want to use it?" 
+}	
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -43,7 +48,7 @@ my %cfg = ParseConfig(\%opt);
 # Main
 ################################################################################
 my $t1 = new Benchmark;
-$|  = 1;
+$| = 1;
 
 #config file processing
 my @config_files = sort <$cfg{data_folder}/*/*.cfg>;

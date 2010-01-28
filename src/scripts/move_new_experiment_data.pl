@@ -30,7 +30,10 @@ my $base_data_dir = '/Volumes/Data/projects/fa_webapp/data/';
 # Main
 ################################################################################
 my @files = <$base_search_dir*>;
-die "No Files to work on" if (scalar(@files) == 0);
+if (scalar(@files) == 0) {
+    die "No Files to work on" if $opt{debug};
+    exit;
+}
 
 my %current_file_ages;
 foreach (@files) {
@@ -45,7 +48,11 @@ foreach (@files) {
         $current_file_ages{$_} = $mtime;
     }
 }
-die "No finished uploads to work on" if (scalar keys %current_file_ages == 0);
+if (scalar keys %current_file_ages == 0) {
+    die "No finished uploads to work on" if $opt{debug};
+    exit;
+}
+
 
 my @sorted_file_names = sort { $current_file_ages{$a} <=> $current_file_ages{$b} } keys %current_file_ages;
 

@@ -29,7 +29,8 @@ my $base_results_dir = '/Volumes/Data/projects/fa_webapp/results/';
 my $run_file = '/tmp/run/FA_processing';
 
 if (-e $run_file) {
-    die "Processing occuring, exiting";
+    die "Processing occuring, exiting" if $opt{debug};
+    exit;
 } else {
     &create_run_file;
 }
@@ -50,7 +51,8 @@ my @dirs = <$base_data_dir*>;
 } @dirs;
 if (scalar(@dirs) == 0) {
     &remove_run_file;
-    die "No Files to work on";
+    die "No Files to work on" if $opt{debug};
+    exit;
 }
 
 my %current_dir_ages;
@@ -69,17 +71,20 @@ foreach my $this_dir (@dirs) {
 }
 if (scalar keys %current_dir_ages == 0) {
     &remove_run_file;
-    die "No finished data folders to work on";
+    die "No finished data folders to work on" if $opt{debug};
+    exit;
 }
 
 my @sorted_dir_names = sort { $current_dir_ages{$a} <=> $current_dir_ages{$b} } keys %current_dir_ages;
 
 my $oldest_dir_num = basename($sorted_dir_names[0]);
 
-chdir('../scripts');
-
-print "./build_all_results.pl -cfg ../../data/config/webapp_default.cfg -exp_filter $oldest_dir_num\n";
-system("./build_all_results.pl -cfg ../../data/config/webapp_default.cfg -exp_filter $oldest_dir_num");
+my $command = "./build_all_results.pl -cfg ../../data/config/webapp_default.cfg -exp_filter $oldest_dir_num\n";
+if ($opt{debug}) {
+    print $command;
+} else {
+    system $command;
+}
 
 chdir('../../results');
 
@@ -90,7 +95,7 @@ chdir('../../results');
 ################################################################################
 
 sub remove_run_file {
-    unlink($run_file);
+    unlink($run_file) or die "$!";
 }
 
 sub create_run_file {
