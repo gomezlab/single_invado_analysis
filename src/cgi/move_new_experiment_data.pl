@@ -103,8 +103,7 @@ sub move_image_data {
     my $exp_data_dir = $_[1];
     
     my $target_name = catdir($exp_data_dir, basename($data_file));
-    #move $data_file, $target_name or die "$!";
-    copy $data_file, $target_name or die "$!";
+    move $data_file, $target_name or die "$!";
     
     system("unzip -d $exp_data_dir $target_name");
     unlink $target_name;
