@@ -53,7 +53,6 @@ if (scalar keys %current_file_ages == 0) {
     exit;
 }
 
-
 my @sorted_file_names = sort { $current_file_ages{$a} <=> $current_file_ages{$b} } keys %current_file_ages;
 
 my $lowest_dir_num = &find_lowest_available_directory_number;
@@ -112,7 +111,7 @@ sub move_image_data {
     my $target_name = catdir($exp_data_dir, basename($data_file));
     move $data_file, $target_name or die "$!";
     
-    system("unzip -d $exp_data_dir $target_name");
+    system("unzip -q -d $exp_data_dir $target_name");
     unlink $target_name;
 
     my @data_files = <$exp_data_dir/*>;
@@ -148,17 +147,20 @@ sub send_files_moved_email {
     my %cfg = %{$_[0]};
     
     my $short_exp_name = sprintf('%d', $cfg{exp_name});
+    
+    my $URL_address = "http://balder.bme.unc.edu/cgi-bin/mbergins/fa_webapp_status.pl?exp_num=$short_exp_name";
 
-    my $body_text = "Your job $short_exp_name has been moved into the processing queue. You can see the status of your job at:\n\nURL ADDRESS\n";
+    my $body_text = "Your job (#$short_exp_name) has been moved into the processing queue. You can see the status of your job at:\n\n$URL_address\n";
     
     if (defined $cfg{self_note} && $cfg{self_note} ne "") {
         $body_text .= "\nThe note you submitted with this experiment was:\n\n$cfg{self_note}\n";
     }
 
-    $body_text .= "\nThank you for using the focal adhesion analysis Server.";
-    
-    my $system_command = "echo '$body_text' | mail -s 'Focal Adhesion Analysis Job #: $cfg{exp_name}' -b 'fa_webapp\@berginski.com' '$cfg{email}'";
+    $body_text .= "\nThank you for using the focal adhesion analysis server.";
+   
+    my $system_command = "echo '$body_text' | mail -s 'Focal Adhesion Analysis Job #$short_exp_name' '$cfg{email}'";
 
     my $return_code = system $system_command;
+    print $system_command;
     print "EMAIL RETURN CODE: $return_code";
 }

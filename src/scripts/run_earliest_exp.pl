@@ -29,8 +29,10 @@ my $base_results_dir = '/Volumes/Data/projects/fa_webapp/results/';
 my $run_file = '/tmp/run/FA_processing';
 
 if (-e $run_file) {
-    die "Processing occuring, exiting" if $opt{debug};
-    exit;
+    if (not $opt{debug}) {
+        die "Processing occuring, exiting" if $opt{debug};
+        exit;
+    }
 } else {
     &create_run_file;
 }
@@ -88,8 +90,17 @@ if ($opt{debug}) {
 
 chdir('../../results');
 
+my $command = "zip -q -r /Library/WebServer/Documents/FA_webapp_results/$oldest_dir_num.zip $oldest_dir_num/";
+if ($opt{debug}) {
+    print $command;
+} else {
+    system $command;
+}
 
-&remove_run_file;
+if (not $opt{debug}) {
+    &remove_run_file;
+    &send_exp_completed_email;
+}
 ################################################################################
 # Functions
 ################################################################################
@@ -103,4 +114,25 @@ sub create_run_file {
     #the $$ variable is the PID of the currently running program
     print OUTPUT $$;
     close OUTPUT;
+}
+
+sub send_exp_completed_email {
+    my %cfg = %{$_[0]};
+    
+    my $short_exp_name = sprintf('%d', $cfg{exp_name});
+    
+    my $URL_address = "http://balder.bme.unc.edu/cgi-bin/mbergins/fa_webapp_status.pl?exp_num=$short_exp_name";
+
+    my $body_text = "Your job $short_exp_name has finished. You can download the results here:\n\n$URL_address\n";
+    
+    if (defined $cfg{self_note} && $cfg{self_note} ne "") {
+        $body_text .= "\nThe note you submitted with this experiment was:\n\n$cfg{self_note}\n";
+    }
+
+    $body_text .= "\nThank you for using the focal adhesion analysis Server.";
+    
+    my $system_command = "echo '$body_text' | mail -s 'Focal Adhesion Analysis Job #: $short_exp_name' '$cfg{email}'";
+
+    my $return_code = system $system_command;
+    print "EMAIL RETURN CODE: $return_code";
 }
