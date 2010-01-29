@@ -108,8 +108,6 @@ if (defined $lightweight_fh) {
     print "Whatever you put in this box will be send back to you in any email
     the system sends concerning your experiment. It is limited to 80
     characters.";
-
-
 }
 
 print $q->end_html;                  # end the HTML
