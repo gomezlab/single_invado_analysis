@@ -23,6 +23,10 @@ my $file_location_prefix = "../../";
 my $base_data_dir = '/Volumes/Data/projects/fa_webapp/data/';
 my $base_results_dir = '/Volumes/Data/projects/fa_webapp/results/';
 
+################################################################################
+# Main Program
+################################################################################
+
 my $q = CGI->new();
 
 print $q->header,                    # create the HTTP header
@@ -64,20 +68,20 @@ if (defined $q->param('exp_num')) {
     if (@final_matches) {
         #print $available_nums{$matches[0]};
         
-        my $link_address = $available_nums{$final_matches[0]};
-        if ($link_address =~ /$file_location_strip(.*)/) {
-            $link_address = $1;
-        } else {
-            print $q->h1('File name creation error');
-        }
+        my $link_address = &convert_local_to_web_filename($available_nums{$final_matches[0]});
 
-        #print $q->h1($link_address);
-        $link_address = $file_location_prefix . $link_address;
-        #print $q->h1($link_address);
-        
         print $q->h2('Your Results are Ready');
-
+        
         print "<A HREF=$link_address>Download Your Results</A>";
+        
+        my $vis_file = $available_nums{$final_matches[0]};
+        $vis_file =~ /(.*)\.zip/;
+        $vis_file = $1 . ".png";
+
+        if (-e "$vis_file") {
+            print $q->h2("Visualization of Your Experiment");
+            print $q->p, "<img src=" . &convert_local_to_web_filename($vis_file) . ">";
+        }
     } else {
         #The query experiment number was not found in the final matches, now
         #we see if we can determine how far back in the queue the experiment is
@@ -146,3 +150,21 @@ if (defined $q->param('exp_num')) {
 }
 
 print $q->end_html;                  # end the HTML
+
+################################################################################
+# Functions
+################################################################################
+
+sub convert_local_to_web_filename {
+    my $link_address = $_[0];
+    if ($link_address =~ /$file_location_strip(.*)/) {
+        $link_address = $1;
+    } else {
+        print $q->h1('File name creation error');
+    }
+
+    #print $q->h1($link_address);
+    $link_address = $file_location_prefix . $link_address;
+    #print $q->h1($link_address);
+    return $link_address;
+}
