@@ -39,6 +39,9 @@ if (defined $lightweight_fh) {
     my %new_cfg;
     $new_cfg{email} = $q->param('email_address');
     $new_cfg{self_note} = $q->param('self_note');
+    if (defined $q->param('filter_thresh')) {
+        $new_cfg{filter_thresh} = $q->param('filter_thresh');
+    }
     my $conf = new Config::General(\%new_cfg);
     $conf->save_file("$output_file.cfg");
     chmod 0666, "$output_file.cfg" or die "$!";
@@ -69,11 +72,17 @@ if (defined $lightweight_fh) {
     print $q->h2('Adhesion Image Zip File'), 
           $q->filefield('uploaded_file','',50,80);
     print $q->h2('Your Email Address'),
-          $q->textfield('email_address','Your Email Address',50,80);
+          $q->textfield('email_address','',50,80);
     print $q->h2('Note to Self About Experiment'),
           $q->textfield('self_note','',50,80);
+
+    if ($q->param('advanced') == 1) {
+        print $q->h2('Advanced Settings - See Notes Below for Description'), $q->h2('Adhesion Detection Threshold'),
+              $q->textfield('filter_thresh','0.1',50,80);
+    }
     print $q->p,
           $q->submit(-name=>"Submit Data");
+
     print $q->end_form;
 
     print $q->hr;
@@ -108,6 +117,20 @@ if (defined $lightweight_fh) {
     print "Whatever you put in this box will be send back to you in any email
     the system sends concerning your experiment. It is limited to 80
     characters.";
+    
+    if ($q->param('advanced') == 1) {
+        print $q->h2('Adhesion Detection Threshold');
+
+        print "This number is used by the adhesion detection script to determine
+        when a pixel is or isn't part of an adhesion. After appling a high pass
+        filter to the images, pixels above this level are considered part of an
+        adhesion, while the pixels below are classified as background. The lower
+        this number, the more pixels will be classified as part of an adhesion.
+        The default value of 0.1 works well in most cases, but values down to
+        around 0.05 may be appropriate for image sets with more subtle
+        differences in the fluoresence intensities between adhesions and
+        background. Also be aware that lower values will lengthen the runtime.";
+    }
 }
 
 print $q->end_html;                  # end the HTML
