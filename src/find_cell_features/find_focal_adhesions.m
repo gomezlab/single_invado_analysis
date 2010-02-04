@@ -82,7 +82,7 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Remove adhesions outside mask
+% Remove adhesions outside mask
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (exist('cell_mask','var'))
     for i = 1:max(ad_zamir(:))
@@ -96,7 +96,7 @@ if (exist('cell_mask','var'))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Find and fill holes in single adhesions
+% Find and fill holes in single adhesions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_nums = unique(ad_zamir);
 assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
@@ -108,8 +108,6 @@ for i = 2:length(ad_nums)
     this_ad = zeros(size(ad_zamir));
     this_ad(ad_zamir == this_num) = 1;
     filled_ad = imfill(this_ad);
-    
-    assert(all(unique(filled_ad(:)) == [0;1]))
     
     ad_zamir(logical(filled_ad)) = this_num;    
 end
@@ -135,7 +133,7 @@ for i = 1:max(ad_zamir(:))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Write the output files
+% Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 imwrite(double(ad_zamir)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file),'bitdepth',16);
 imwrite(double(ad_zamir_perim)/2^16,fullfile(i_p.Results.output_dir, i_p.Results.output_file_perim),'bitdepth',16);
@@ -147,7 +145,11 @@ scaled_image = focal_image;
 scaled_image = scaled_image - min(focal_image(:));
 scaled_image = scaled_image .* (1/max(scaled_image(:)));
 
-imwrite(create_highlighted_image(scaled_image, im2bw(ad_zamir,0)),fullfile(i_p.Results.output_dir, 'highlights.png')); 
+highlighted_image = create_highlighted_image(scaled_image, im2bw(ad_zamir,0));
+if (exist('cell_mask','var'))
+    highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask),'color_map',[1,0,0]);
+end
+imwrite(highlighted_image,fullfile(i_p.Results.output_dir, 'highlights.png')); 
 
 if (nargout > 0)
     varargout{1} = struct('adhesions',im2bw(ad_zamir,0),'ad_zamir',ad_zamir);

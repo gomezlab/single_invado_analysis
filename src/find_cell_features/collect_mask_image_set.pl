@@ -44,10 +44,9 @@ my @image_folders = <$cfg{individual_results_folder}/*>;
 my @image_files   = <$cfg{individual_results_folder}/*/$cfg{raw_mask_file}>;
 if (scalar(@image_files) == 0) {
     print "Didn't find any cell mask image files, aborting.\n";
-    exit(0);
+    exit 0;
 }
-die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
-  if (scalar(@image_files) != scalar(@image_folders));
+warn "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})." if (scalar(@image_files) != scalar(@image_folders));
 
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
