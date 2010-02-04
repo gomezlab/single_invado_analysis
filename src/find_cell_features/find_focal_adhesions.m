@@ -145,7 +145,7 @@ scaled_image = focal_image;
 scaled_image = scaled_image - min(focal_image(:));
 scaled_image = scaled_image .* (1/max(scaled_image(:)));
 
-highlighted_image = create_highlighted_image(scaled_image, im2bw(ad_zamir,0));
+highlighted_image = create_highlighted_image(scaled_image, im2bw(ad_zamir_perim,0));
 if (exist('cell_mask','var'))
     highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask),'color_map',[1,0,0]);
 end
