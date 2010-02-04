@@ -1382,6 +1382,24 @@ write_high_r_rows <- function(result, dir, file=c('assembly_R_sq.csv','disassemb
 	}
 }
 
+write_model_data_to_csv <- function(model, output_file, pre_filt = FALSE) {
+    props_to_keep = c('slope','R_sq','p_val','length');
+    compiled_props = list();
+    for (type in c('assembly','disassembly')) {
+        model_set = subset(model[[type]],!is.na(R_sq))
+        model_set$lineage_nums = c(model_set$lineage_nums, which(!is.na(model[[type]]$R_sq)));
+        if (pre_filt) {
+            model_set = subset(model_set, p_val < 0.05 & slope > 0);
+        }
+        compiled_props$type = c(compiled_props$type, rep(type, dim(model_set)[[1]]));
+        compiled_props$lineage_num = c(compiled_props$lineage_num, model_set$lineage_num);
+        for (i in props_to_keep) {
+            compiled_props[[i]] = c(compiled_props[[i]], model_set[[i]]);
+        }
+    }
+    compiled_props = as.data.frame(compiled_props);
+    write.csv(compiled_props, file=output_file, row.names=F)
+}
 ########################################
 #Spacial Functions
 ########################################
@@ -1509,7 +1527,10 @@ if (length(args) != 0) {
             average_model = gather_bilinear_models_from_dirs(data_dir,
                     data_file='Average_adhesion_signal.csv', min_length = min_length,
                     results.file=file.path('..','models','intensity.Rdata'), debug=debug)
-                write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
+            print(class(average_model))
+            write_model_data_to_csv(average_model[[1]], file.path(data_dir,'..','assemb_disassem_rates.csv'))
+            write_model_data_to_csv(average_model[[1]], file.path(data_dir,'..','assemb_disassem_rates_filtered.csv'))
+            write_assembly_disassembly_periods(average_model[[1]],file.path(data_dir,'..'))	
         }
         if (model_type == 'cell_background') {
             temp = gather_bilinear_models_from_dirs(data_dir, 
