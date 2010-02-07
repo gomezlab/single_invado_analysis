@@ -25,7 +25,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{min_ad_size} = 5;
-GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity", "white_background") or die;
+GetOptions(\%opt, "cfg=s", "debug|d", "min_ad_size=s", "opacity", "white_background", "sequential_vis") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -174,9 +174,39 @@ sub build_full_svg_file {
             }
         }
         close SVG_FILE;
+		if (! $opt{sequential_vis}) {
+			next;
+		}
+
+		if (! -e catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}, 'sequential_ghost')) {
+			mkpath(catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}, 'sequential_ghost'));
+		}
+		my $padded_num = sprintf("%0" . length($#svg_files) . "d", $_ + 1);
+		my $output_file = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, 
+								  'sequential_ghost', "$padded_num" . ".svg");
+		
+		&print_svg_file(\@svg_path_data, \$output_file);
     }
 
     return @svg_path_data;
+}
+
+sub print_svg_file {
+	my @svg_data = @{$_[0]};
+	my $target_file = ${$_[1]};
+	
+	open SVG_OUT, ">$target_file";
+	print SVG_OUT @svg_header;
+	print SVG_OUT @svg_data;
+	print SVG_OUT "</g>\n";
+	print SVG_OUT '</svg>';
+	close SVG_OUT;
+	
+	
+	my $target_png = $target_file;
+	$target_png =~ s/\.svg/\.png/;
+
+	system "inkscape -z -d 100 $target_file --export-png $target_png --export-background-opacity=1.0";
 }
 
 sub build_jet_color_map {
