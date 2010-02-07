@@ -60,7 +60,7 @@ unlink(@svg_files);
 
 my $output_file = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost.svg");
 
-open SVG_OUT, ">$output_file";
+open SVG_OUT, ">$output_file" or die "Unable to open ghost.svg";
 print SVG_OUT @svg_header;
 print SVG_OUT @full_svg_file;
 print SVG_OUT "</g>\n";
@@ -70,8 +70,8 @@ close SVG_OUT;
 my $output_png = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost.png");
 my $output_png_small = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, "ghost_small.png");
 
-system "convert -density 100x100 $output_file $output_png_small";
-system "convert -density 300x300 $output_file $output_png";
+system "inkscape -z $output_file -d 100 --export-png=$output_png_small --export-background-opacity=1.0";
+system "inkscape -z $output_file -d 300 --export-png=$output_png --export-background-opacity=1.0";
 
 ###############################################################################
 #Functions
@@ -105,6 +105,8 @@ sub convert_using_potrace {
         $svg_file =~ s/\.bmp/\.svg/;
         push @svg_files, $svg_file;
         system "potrace -t $opt{min_ad_size} -s --fillcolor=#$color $bmp_file\n";
+
+        die "SVG file $svg_file was not created.\n" if(! -e $svg_file);
     }
     return @svg_files;
 }
