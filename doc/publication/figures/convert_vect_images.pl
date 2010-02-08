@@ -6,9 +6,9 @@ use File::Find;
 my %opt;
 $opt{debug} = 0;
 $opt{resample} = 300;
-$opt{output_format} = "tiff";
 $opt{dir} = '.';
-GetOptions(\%opt, "debug|d", "resample=s", "dir=s", "output_format=s");
+$opt{convert_to} = "tiff";
+GetOptions(\%opt, "debug|d", "resample=s", "dir=s", "convert_to=s");
 
 find(\&find_vect_files, $opt{dir});
 
@@ -23,13 +23,25 @@ sub find_vect_files {
 sub convert_vect_images {
     my $image_name = $_[0];
     my $output_name = $image_name;
-    $output_name =~ s/(.*)\..*/$1.$opt{output_format}/;
+    $output_name =~ s/(.*)\..*/$1.png/;
     
-    my $command = "time inkscape $image_name -d $opt{resample} --export-png=$output_name --export-background-opacity=1.0";
+    my $command = "time inkscape -z $image_name -d $opt{resample} --export-png=$output_name --export-background-opacity=1.0";
     
 	if ($opt{debug}) {
         print $command, "\n";
+		if (defined $opt{convert_to}) {
+			my $converted_file = $output_name;
+			$converted_file =~ s/\.png/\.$opt{convert_to}/;
+			print "convert $output_name $converted_file\n";
+			print "unlink $output_name";
+		}
     } else {
         system($command);
+		if (defined $opt{convert_to}) {
+			my $converted_file = $output_name;
+			$converted_file =~ s/\.png/\.$opt{convert_to}/;
+			system "convert $output_name $converted_file";
+			system "unlink $output_name";
+		}
     }
 }
