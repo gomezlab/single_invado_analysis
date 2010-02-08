@@ -273,6 +273,7 @@ sub gather_and_output_lineage_properties {
     }
 
     $props{longevity}               = &gather_longevities;
+    $props{uncertain_longevity}     = &gather_uncertain_longevities;
     $props{merge_count}             = &gather_merge_count;
     $props{death_status}            = &gather_death_status;
     $props{split_birth_status}      = &gather_split_birth_status;
@@ -301,6 +302,7 @@ sub gather_and_output_lineage_properties {
     if (grep "Area" eq $_, @available_data_types) {
         $props{Area} = &gather_prop_seq("Area");
         $props{largest_area} = &gather_largest_entry($props{Area});
+        $props{largest_area_inum} = &gather_largest_entry_inum($props{Area});
         $props{mean_area} = &gather_average_value($props{Area});
         undef $props{Area};
     }
@@ -489,6 +491,20 @@ sub gather_longevities {
     return \@longevities;
 }
 
+sub gather_uncertain_longevities {
+    my @longevities;
+    my $default_val = "NA";
+    $default_val = $_[0] if (scalar(@_) > 0);
+
+    print "\r", " " x 80, "\rGathering Uncertain Longevity" if $opt{debug};
+    my $default_count = 0;
+    for my $i (0 .. $#tracking_mat) {
+		my $count = scalar(grep $tracking_mat[$i][$_] > -1, 0..$#{$tracking_mat[$i]});
+		push @longevities, $count;
+    }
+    return \@longevities;
+}
+
 sub gather_prop_seq {
     my $prop        = $_[0];
     my $default_val = "NaN";
@@ -533,6 +549,27 @@ sub gather_largest_entry {
         push @largest_data, $largest;
     }
     return \@largest_data;
+}
+
+sub gather_largest_entry_inum {
+    my @data = @{ $_[0] };
+
+    print "\r", " " x 80, "\rGathering Largest Entries" if $opt{debug};
+    my @largest_inum;
+    for my $i (0 .. $#data) {
+        my $largest = 0;
+		my $largest_inum = -1;
+        for my $j (0 .. $#{ $data[$i] }) {
+            next if ($data[$i][$j] eq "NaN");
+			if ($largest < $data[$i][$j]) {
+            	$largest = $data[$i][$j];
+				$largest_inum = $j;
+			}
+        }
+		die if ($largest_inum == -1);
+        push @largest_inum, $largest_inum;
+    }
+    return \@largest_inum;
 }
 
 sub gather_birth_i_num {
@@ -741,10 +778,11 @@ sub gather_split_birth_status {
 
 sub gather_lineage_summary_data {
     my %props          = %{ $_[0] };
-	my @possible_props = qw(longevity largest_area mean_area starting_edge_dist
-		ending_edge_dist starting_center_dist ending_center_dist merge_count
-		death_status split_birth_status average_speeds max_speeds ad_sig birth_i_num
-		start_x start_y death_i_num end_x end_y average_eccentricity);
+	my @possible_props = qw(longevity uncertain_longevity largest_area mean_area
+		largest_area_inum starting_edge_dist ending_edge_dist
+		starting_center_dist ending_center_dist merge_count death_status
+		split_birth_status average_speeds max_speeds ad_sig birth_i_num start_x
+		start_y death_i_num end_x end_y average_eccentricity);
 
     my @lin_summary_data;
     for (@possible_props) {
