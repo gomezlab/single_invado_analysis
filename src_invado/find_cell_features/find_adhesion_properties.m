@@ -1,58 +1,81 @@
-function find_adhesion_properties(puncta_file,gel_file,adhesions_file,binary_shift_file,varargin)
+function find_adhesion_properties(current_dir,final_dir,varargin)
 % FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
 %                             properties associated with the adhesions
 %                             located in prior steps
 %
-%   find_adhesion_properties(ff,af,OPTIONS) determines the quantitative
-%   properites of the adhesions identified in the file 'af', using
-%   information in the focal image file 'ff', the properties are written
-%   to a set of csv files located a folder named 'raw_data' in the same
-%   directory as the focal image file 'ff'
-%
-%   Options:
-%
-%       -debug: set to 1 to output debugging information, defaults to 0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
-i_p.FunctionName = 'FIND_ADHESION_PROPERTIES';
+i_p.FunctionName = 'FIND_PUNCTA_PROPERTIES';
 
-i_p.addRequired('puncta_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('gel_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('adhesions_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('binary_shift_file',@(x)exist(x,'file') == 2);
+i_p.addRequired('current_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('final_dir',@(x)exist(x,'dir') == 7);
 
-i_p.parse(puncta_file,gel_file,adhesions_file,binary_shift_file);
+i_p.parse(current_dir, final_dir);
 
-i_p.addParamValue('cell_mask_file', @(x)exist(x,'file') == 2);
-i_p.addParamValue('output_dir', fileparts(puncta_file), @(x)exist(x,'dir')==7);
-i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('output_dir',current_dir,@ischar);
+i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
+i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
+i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
+i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
+i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
 
-i_p.parse(puncta_file,gel_file,adhesions_file,binary_shift_file,varargin{:});
+i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
+
+i_p.parse(current_dir, final_dir,varargin{:});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Pull in data from the current directory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+current_data = struct;
 
 %read in and normalize the input focal adhesion image
-puncta_image  = imread(puncta_file);
-scale_factor = double(intmax(class(puncta_image)));
-puncta_image  = double(puncta_image)/scale_factor;
+current_data.puncta_image  = imread(fullfile(current_dir, i_p.Results.puncta_filename));
+scale_factor = double(intmax(class(current_data.puncta_image)));
+current_data.puncta_image  = double(current_data.puncta_image)/scale_factor;
 
 %read in and normalize the input focal adhesion image
-gel_image  = imread(gel_file);
-scale_factor = double(intmax(class(gel_image)));
-gel_image  = double(gel_image)/scale_factor;
+current_data.gel_image  = imread(fullfile(current_dir, i_p.Results.gel_filename));
+scale_factor = double(intmax(class(current_data.gel_image)));
+current_data.gel_image  = double(current_data.gel_image)/scale_factor;
 
 %read in the labeled adhesions
-adhesions = imread(adhesions_file);
+current_data.adhesions = imread(fullfile(current_dir, i_p.Results.adhesions_filename));
 
 %read in the labeled adhesions
-binary_shift = logical(imread(binary_shift_file));
+current_data.binary_shift = logical(imread(fullfile(current_dir, i_p.Results.binary_shift_filename)));
 
 %read in the cell mask file if defined
-if(not(any(strmatch('cell_mask_file',i_p.UsingDefaults))))
-    cell_mask = logical(imread(i_p.Results.cell_mask_file));
+if(exist(fullfile(current_dir, i_p.Results.cell_mask_filename), 'file'))
+    current_data.cell_mask = logical(imread(fullfile(current_dir, i_p.Results.cell_mask_filename)));
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Pull in data from the final directory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+final_data = struct;
+
+%read in and normalize the input focal adhesion image
+final_data.puncta_image  = imread(fullfile(final_dir, i_p.Results.puncta_filename));
+scale_factor = double(intmax(class(final_data.puncta_image)));
+final_data.puncta_image  = double(final_data.puncta_image)/scale_factor;
+
+%read in and normalize the input focal adhesion image
+final_data.gel_image  = imread(fullfile(final_dir, i_p.Results.gel_filename));
+scale_factor = double(intmax(class(final_data.gel_image)));
+final_data.gel_image  = double(final_data.gel_image)/scale_factor;
+
+%read in the labeled adhesions
+final_data.adhesions = imread(fullfile(final_dir, i_p.Results.adhesions_filename));
+
+%read in the labeled adhesions
+final_data.binary_shift = logical(imread(fullfile(final_dir, i_p.Results.binary_shift_filename)));
+
+%read in the cell mask file if defined
+if(exist(fullfile(final_dir, i_p.Results.cell_mask_filename), 'file'))
+    final_data.cell_mask = logical(imread(fullfile(final_dir, i_p.Results.cell_mask_filename)));
 end
 
 %Add the folder with all the scripts used in this master program
@@ -61,11 +84,8 @@ addpath(genpath('matlab_scripts'));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (exist('cell_mask','var'))
-    adhesion_properties = collect_adhesion_properties(puncta_image,gel_image,adhesions,binary_shift,'debug',i_p.Results.debug,'cell_mask',cell_mask);
-else
-    adhesion_properties = collect_adhesion_properties(puncta_image,gel_image,adhesions,binary_shift,'debug',i_p.Results.debug);
-end
+adhesion_properties = collect_adhesion_properties(current_data, final_data,'debug',i_p.Results.debug);
+
 if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
@@ -76,23 +96,11 @@ write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_di
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function adhesion_props = collect_adhesion_properties(puncta_image,gel_image,labeled_adhesions,binary_shift,varargin)
+function adhesion_props = collect_adhesion_properties(c_d,f_d,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
 %                                adhesions
-%
-%   ad_p = collect_adhesion_properties(ad_I,c_m,puncta_image) collects the
-%   properties of the adhesions identified in the binary image 'ad_I',
-%   using the cell mask in 'c_m' and the original focal image data in
-%   'puncta_image', returning a structure 'ad_p' containing properties
-%
-%   Properties Collected:
-%       -all of the properties collected by regioprops(...,'all')
-%       -the distance of each adhesion's centroid from the nearest cell
-%        edge
-%       -the average and variance of the normalized fluorescence signal
-%        within each adhesion
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -100,23 +108,15 @@ function adhesion_props = collect_adhesion_properties(puncta_image,gel_image,lab
 i_p = inputParser;
 i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
-i_p.addRequired('puncta_image',@isnumeric);
-i_p.addRequired('gel_image',@isnumeric);
-i_p.addRequired('labeled_adhesions',@(x)isnumeric(x));
-i_p.addRequired('binary_shift',@(x)islogical(x));
+i_p.addRequired('c_d',@isstruct);
+i_p.addRequired('f_d',@isstruct);
 
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
-i_p.addParamValue('cell_mask',@(x)islogical(x));
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(labeled_adhesions,puncta_image,gel_image,binary_shift,varargin{:});
+i_p.parse(c_d,f_d,varargin{:});
 
-adhesion_props = regionprops(labeled_adhesions,'all');
-
-%move the cell mask variable into a simpler name, if defined
-if(not(any(strmatch('cell_mask',i_p.UsingDefaults))))
-    cell_mask = i_p.Results.cell_mask;
-end
+adhesion_props = regionprops(c_d.adhesions,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -126,54 +126,59 @@ end
 %%Properites Always Extracted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i=1:max(labeled_adhesions(:))
-    adhesion_props(i).Average_adhesion_signal = mean(puncta_image(labeled_adhesions == i));
-    adhesion_props(i).Variance_adhesion_signal = var(puncta_image(labeled_adhesions == i));
-    adhesion_props(i).Max_adhesion_signal = max(puncta_image(labeled_adhesions == i));
-    adhesion_props(i).Min_adhesion_signal = min(puncta_image(labeled_adhesions == i));
+for i=1:max(c_d.adhesions(:))
+    adhesion_props(i).Average_adhesion_signal = mean(c_d.puncta_image(c_d.adhesions == i));
+    adhesion_props(i).Variance_adhesion_signal = var(c_d.puncta_image(c_d.adhesions == i));
+    adhesion_props(i).Max_adhesion_signal = max(c_d.puncta_image(c_d.adhesions == i));
+    adhesion_props(i).Min_adhesion_signal = min(c_d.puncta_image(c_d.adhesions == i));
     
-    this_ad = labeled_adhesions;
-    this_ad(labeled_adhesions ~= i) = 0;
+    %this bit of code isolates a single object as a logical image and
+    %then builds another logical image of the region around the object,
+    %excluding certain areas
+    this_ad = c_d.adhesions;
+    this_ad(c_d.adhesions ~= i) = 0;
     this_ad = logical(this_ad);
     background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
-    background_region = and(background_region,not(labeled_adhesions));
-    background_region = logical(background_region .* binary_shift);
+    %we don't want to include any areas that have been identified as other
+    %objects
+    background_region = and(background_region,not(c_d.adhesions));
+    %also exclude areas outside the registered image
+    background_region = logical(background_region .* c_d.binary_shift);
     assert(sum(sum(background_region)) > 0)
     
-    adhesion_props(i).Local_gel_diff = mean(gel_image(this_ad)) - mean(gel_image(background_region));
-    adhesion_props(i).Global_gel_diff = mean(gel_image(this_ad)) - mean(gel_image(binary_shift));
+    adhesion_props(i).Local_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(background_region));
+    adhesion_props(i).Global_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(c_d.binary_shift));
     
-    adhesion_props(i).Background_adhesion_signal = mean(puncta_image(background_region));
+    adhesion_props(i).Background_adhesion_signal = mean(c_d.puncta_image(background_region));
     adhesion_props(i).Background_area = sum(background_region(:));
     adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
     
-    shrunk_region = logical(imerode(this_ad,strel('disk',1,0)));
-    if (sum(shrunk_region(:)) == 0), shrunk_region = this_ad; end
-    adhesion_props(i).Shrunk_area = sum(shrunk_region(:));
-    adhesion_props(i).Shrunk_adhesion_signal = mean(puncta_image(shrunk_region));
-    adhesion_props(i).Shrunk_corrected_signal = adhesion_props(i).Shrunk_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
+    final_background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
+    final_background_region = and(final_background_region,not(f_d.adhesions));
+    final_background_region = logical(final_background_region .* f_d.binary_shift);
+    assert(sum(sum(final_background_region)) > 0)
     
-    if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(labeled_adhesions(:)))]); end
+    adhesion_props(i).End_local_gel_diff = mean(f_d.gel_image(this_ad)) - mean(f_d.gel_image(final_background_region));
+    
+    if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.adhesions(:)))]); end
 end
 
-adhesion_mask = im2bw(labeled_adhesions,0);
-adhesion_props(1).Adhesion_mean_intensity = sum(sum(puncta_image(adhesion_mask)))/sum(sum(adhesion_mask));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Properites Extracted If Cell Mask Available
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if (exist('cell_mask','var'))
-    [dists, indicies] = bwdist(~cell_mask);
-    dists(not(binary_shift)) = NaN;
+if (isfield(c_d, 'cell_mask'))
+    [dists, indicies] = bwdist(~c_d.cell_mask);
+    dists(not(c_d.binary_shift)) = NaN;
     
-    min_row = find(sum(binary_shift,2),1,'first');
-    max_row = find(sum(binary_shift,2),1,'last');
-    min_col = find(sum(binary_shift),1,'first');
-    max_col = find(sum(binary_shift),1,'last');
+    min_row = find(sum(c_d.binary_shift,2),1,'first');
+    max_row = find(sum(c_d.binary_shift,2),1,'last');
+    min_col = find(sum(c_d.binary_shift),1,'first');
+    max_col = find(sum(c_d.binary_shift),1,'last');
     
-    only_reg_mask = cell_mask(min_row:max_row, min_col:max_col);
-    assert(size(only_reg_mask,1)*size(only_reg_mask,2) == sum(sum(binary_shift)));
+    only_reg_mask = c_d.cell_mask(min_row:max_row, min_col:max_col);
+    assert(size(only_reg_mask,1)*size(only_reg_mask,2) == sum(sum(c_d.binary_shift)));
     
     %Now we search for the pixels which are closest to an edge of the cell
     %mask that is also touching the edge of image. We want to find these
@@ -186,12 +191,12 @@ if (exist('cell_mask','var'))
     
     bb_dists_temp = bwdist(~black_border_mask);
     
-    bb_dists = zeros(size(cell_mask));
+    bb_dists = zeros(size(c_d.cell_mask));
     bb_dists(min_row:max_row, min_col:max_col) = bb_dists_temp;
-    dists(not(binary_shift)) = NaN;
+    dists(not(c_d.binary_shift)) = NaN;
     
     dists(bb_dists < dists) = NaN;
-    for i=1:max(labeled_adhesions(:))
+    for i=1:max(c_d.adhesions(:))
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid;
         if(size(centroid_pos,1) == 0)

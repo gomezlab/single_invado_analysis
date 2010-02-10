@@ -37,22 +37,20 @@ my %cfg     = $ad_conf->get_cfg_hash;
 # Main Program
 ################################################################################
 
-my @image_folders = <$cfg{individual_results_folder}/*>;
-my @image_files   = <$cfg{individual_results_folder}/*/registered_focal_image.png>;
-die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
-  if (scalar(@image_files) != scalar(@image_folders));
+my @image_folders = sort <$cfg{individual_results_folder}/*>;
+die "Expected to find results directories." if (scalar(@image_folders) == 0);
 
 if ($opt{debug}) {
-    if (scalar(@image_files) > 1) {
-        print "Focal image files found: $image_files[0] - $image_files[$#image_files]\n";
-    } elsif (scalar(@image_files) == 0) {
-        warn "Couldn't find any focal image files in $cfg{individual_results_folder} subfolders\n\n";
+    if (scalar(@image_folders) > 1) {
+        print "Individual results folders found: $image_folders[0] - $image_folders[$#image_folders]\n";
+    } elsif (scalar(@image_folders) == 0) {
+        warn "Couldn't find any results folders in $cfg{individual_results_folder} subfolders\n\n";
     } else {
-        print "Focal image file found: $image_folders[0]\n";
+        print "Results folder found: $image_folders[0]\n";
     }
 }
 
-my @matlab_code = &create_all_matlab_commands(@image_files);
+my @matlab_code = &create_all_matlab_commands(@image_folders);
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'puncta_props');
 $opt{error_file} = catfile($opt{error_folder}, 'puncta_props', 'error.txt');
@@ -67,20 +65,11 @@ if (defined $cfg{job_group}) {
 ################################################################################
 
 sub create_all_matlab_commands {
-	my @image_files = @_;
+	my @image_folders = @_;
     my @matlab_code;
 
-    foreach my $file (@image_files) {
-		my $gel_file = catfile(dirname($file), "registered_gel.png");
-		my $labeled_puncta = catfile(dirname($file), "puncta_labeled.png");
-		my $binary_shift = catfile(dirname($file), "binary_shift.png");
-        
-		die "Can't find puncta image file." if (not -e $file);
-		die "Can't find gel image file." if (not -e $gel_file);
-		die "Can't find labeled puncta image." if (not -e $labeled_puncta);
-		die "Can't find binary shift image." if (not -e $binary_shift);
-
-		$matlab_code[0] .= "find_adhesion_properties('$file','$gel_file','$labeled_puncta','$binary_shift')\n";
+    foreach (@image_folders) {
+		$matlab_code[0] .= "find_adhesion_properties('$_','$image_folders[$#image_folders]')\n";
     }
 
     return @matlab_code;
