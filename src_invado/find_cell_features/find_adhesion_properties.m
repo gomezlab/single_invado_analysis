@@ -156,9 +156,11 @@ for i=1:max(c_d.adhesions(:))
     final_background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
     final_background_region = and(final_background_region,not(f_d.adhesions));
     final_background_region = logical(final_background_region .* f_d.binary_shift);
-    assert(sum(sum(final_background_region)) > 0)
-    
-    adhesion_props(i).End_local_gel_diff = mean(f_d.gel_image(this_ad)) - mean(f_d.gel_image(final_background_region));
+    if (sum(sum(final_background_region)) > 0) 
+        adhesion_props(i).End_local_gel_diff = mean(f_d.gel_image(this_ad)) - mean(f_d.gel_image(final_background_region));
+    else 
+        adhesion_props(i).End_local_gel_diff = NaN;
+    end
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.adhesions(:)))]); end
 end
