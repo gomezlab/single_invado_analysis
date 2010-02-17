@@ -31,7 +31,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         
         all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
         all_props$experiment = c(all_props$experiment,rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
-        props_to_include = c("longevity","largest_area");
+        props_to_include = c("longevity","largest_area", "last_local_gel_diff");
         for (i in props_to_include) {
             all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
         }
@@ -135,8 +135,7 @@ if (length(args) != 0) {
         invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int < 0];
         non_invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int >= 0];
         
-        write.table(t(invado_lineage_nums), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
-        write.table(t(non_invado_lineage_nums), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        write.table(invado_lineage_nums, file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        write.table(non_invado_lineage_nums, file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
     }
 }
-

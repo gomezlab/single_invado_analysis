@@ -71,6 +71,9 @@ foreach (@movie_params) {
 		push @matlab_code, "highlight_puncta_sets('" . $params{'config_file'} . "',$_)";
 	}
 
+    if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
+        %single_ad_params = %params;
+    }
 	# my $extra_opt = "";
 	# if (defined $opt{movie_debug}) {
 	# 	$extra_opt .= ",'debug',1";
@@ -83,9 +86,6 @@ foreach (@movie_params) {
 	# }
     # push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$extra_opt)";
     # push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "')";
-    # if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
-    #     %single_ad_params = %params;
-    # }
 }
 
 push @matlab_code, &build_single_ad_commands(%single_ad_params);
@@ -149,6 +149,7 @@ sub build_matlab_visualization_config {
         "focal_image = 'registered_focal_image.png';",
         "adhesions_filename = 'puncta_labeled.png';",
         "adhesions_perim_filename = 'puncta_labeled_perim.png';",
+        "edge_filename = 'cell_mask.png';",
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
 
@@ -163,6 +164,7 @@ sub build_matlab_visualization_config {
 
         "image_padding_min = $cfg{padding_min};",
         "single_image_padding_min = $cfg{single_ad_padding_min};\n",
+
     );
     
     #Add the config file flag for outputing the original images, trimmed with
@@ -199,7 +201,7 @@ sub build_single_ad_commands {
     
     my $ad_per_run = 250;
     my @commands;
-    my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'assembly_rows_lengths.csv');
+    my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_nums.csv');
     if (-e $assembly_file) {
         my $assembly_option = "'adhesion_file','$assembly_file'";
         for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
