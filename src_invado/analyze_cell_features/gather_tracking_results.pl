@@ -103,7 +103,7 @@ sub convert_data_to_units {
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
-	  Global_gel_diff Local_gel_diff);
+	  Global_gel_diff Local_gel_diff End_local_gel_diff);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -282,7 +282,7 @@ sub gather_and_output_lineage_properties {
     &output_prop_time_series($props{Average_adhesion_signal}, "Average_adhesion_signal");
     $props{ad_sig} = &gather_average_value($props{Average_adhesion_signal});
     undef $props{Average_adhesion_signal};
-    
+    	
     $props{Centroid_x} = &gather_prop_seq("Centroid_x");
     $props{start_x} = &gather_first_entry($props{Centroid_x});
     $props{end_x} = &gather_last_entry($props{Centroid_x});
@@ -306,6 +306,10 @@ sub gather_and_output_lineage_properties {
         $props{mean_area} = &gather_average_value($props{Area});
         undef $props{Area};
     }
+	
+	$props{End_local_gel_diff} = &gather_prop_seq("End_local_gel_diff");
+	$props{last_local_gel_diff} = &gather_entry_by_inum($props{End_local_gel_diff}, $props{largest_area_inum});
+	undef $props{End_local_gel_diff};
 
     if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
         $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
@@ -325,6 +329,8 @@ sub gather_and_output_lineage_properties {
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
     &output_mat_csv(\@lin_summary_data, $output_file);
     %props = ();
+
+	print "\n\n" if $opt{debug};
 }
 
 sub gather_edge_velo_data {
@@ -552,24 +558,35 @@ sub gather_largest_entry {
 }
 
 sub gather_largest_entry_inum {
-    my @data = @{ $_[0] };
+	my @data = @{ $_[0] };
 
-    print "\r", " " x 80, "\rGathering Largest Entries" if $opt{debug};
-    my @largest_inum;
-    for my $i (0 .. $#data) {
-        my $largest = 0;
+	print "\r", " " x 80, "\rGathering Largest Entry Image Numbers" if $opt{debug};
+	my @largest_inum;
+	for my $i (0 .. $#data) {
+		my $largest = 0;
 		my $largest_inum = -1;
-        for my $j (0 .. $#{ $data[$i] }) {
-            next if ($data[$i][$j] eq "NaN");
+		for my $j (0 .. $#{ $data[$i] }) {
+			next if ($data[$i][$j] eq "NaN");
 			if ($largest < $data[$i][$j]) {
-            	$largest = $data[$i][$j];
-				$largest_inum = $j;
+					$largest = $data[$i][$j];
+					$largest_inum = $j;
 			}
-        }
+		}
 		die if ($largest_inum == -1);
-        push @largest_inum, $largest_inum;
-    }
-    return \@largest_inum;
+		push @largest_inum, $largest_inum;
+	}
+	return \@largest_inum;
+}
+
+sub gather_entry_by_inum {
+	my @data = @{ $_[0] };
+	my @inum_data = @{ $_[1] };
+
+	my @entries_by_inum;
+	for my $i (0 .. $#data) {
+		push @entries_by_inum, $data[$i][$inum_data[$i]];
+	}
+	return \@entries_by_inum;
 }
 
 sub gather_birth_i_num {
@@ -782,7 +799,7 @@ sub gather_lineage_summary_data {
 		largest_area_inum starting_edge_dist ending_edge_dist
 		starting_center_dist ending_center_dist merge_count death_status
 		split_birth_status average_speeds max_speeds ad_sig birth_i_num start_x
-		start_y death_i_num end_x end_y average_eccentricity);
+		start_y death_i_num end_x end_y average_eccentricity last_local_gel_diff);
 
     my @lin_summary_data;
     for (@possible_props) {
