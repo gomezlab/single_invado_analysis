@@ -11,7 +11,7 @@ use threads;
 use threads::shared;
 use File::Spec::Functions;
 use File::Basename;
-use File::Find;
+use File::Find::Rule;
 use Benchmark;
 use Getopt::Long;
 use Cwd;
@@ -42,17 +42,22 @@ my %cfg = ParseConfig(\%opt);
 ################################################################################
 # Main
 ################################################################################
-$t1 = new Benchmark;
+my $t1 = new Benchmark;
 $|  = 1;
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
+#config file processing
 my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
 @config_files = sort @config_files;
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
+if (exists($opt{exp_filter})) {
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
+my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
@@ -139,7 +144,7 @@ if ($opt{lsf}) {
         our @error_files;
         &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
     	
-        system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
+		system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
     }
 } else {
     my $starting_dir = getcwd;
@@ -159,7 +164,9 @@ if ($opt{lsf}) {
 	}
 }
 
-$t2 = new Benchmark;
+my $t2 = new Benchmark;
+my $td = timediff($t2, $t1);
+print "\nThe pipeline took:",timestr($td),"\n\n";
 
 ################################################################################
 # Functions
@@ -242,7 +249,7 @@ sub execute_command_seq {
             chdir $dir;
             my $return_code = 0;
             if ($opt{debug}) {
-				print "Working in directory: $dir\n";
+				#print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
                 print "RUNNING: $config_command\n";
