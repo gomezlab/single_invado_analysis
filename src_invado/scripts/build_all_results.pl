@@ -6,11 +6,12 @@
 use lib "../lib";
 use lib "../lib/perl";
 
+use strict;
 use threads;
 use threads::shared;
 use File::Spec::Functions;
 use File::Basename;
-use File::Find::Rule;
+use File::Find;
 use Benchmark;
 use Getopt::Long;
 use Cwd;
@@ -23,9 +24,9 @@ $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
         "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
-chomp(my $lsf_check = `which bjobs`);
-die "LSF appears to be installed on this machine, don't you want to use it?" 
-  if ($lsf_check && not $opt{lsf});
+if (-e '/opt/lsf/bin/bjobs' && not $opt{lsf}) {
+	die "LSF appear to be installed on this machine, don't you want to use it?" 
+}	
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -55,24 +56,38 @@ if (exists($opt{exp_filter})) {
 
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
+#collect all the config information 
+my %all_configs;
+for my $file (@config_files) {
+	my %temp_opt = %opt;
+	$temp_opt{cfg} = $file;
+	%{$all_configs{$file}} = ParseConfig(\%temp_opt);
+}
+
+#This data structure acts as the overall control mechanism for which programs
+#are run to perform the analysis. The first layer of the array are another set
+#of arrays with sets of commands that can be executed simultaneously. The next
+#layer holds all of those commands with the appropriate directory to execute the
+#commands in.
+my @overall_command_seq = (
+	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
+	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
+	[ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
+	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
+	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
+	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
+	[ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
+);
+
 if ($opt{lsf}) {
-    my @overall_command_seq = (
-        [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-        [ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
-        [ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./find_min_max.pl" ], ],
-        [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
-        [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
-        [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
-        [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-        [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-        [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
-        [ [ "../visualize_cell_features", "./collect_visualizations.pl" ], ],
-    );
     if ($opt{skip_vis}) {
         @overall_command_seq = @overall_command_seq[ 0 .. $#overall_command_seq - 1 ];
     } elsif ($opt{only_vis}) {
@@ -127,30 +142,21 @@ if ($opt{lsf}) {
         system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
     }
 } else {
-    unlink(<$cfg{data_folder}/time_series_*/stat*>);
-
-    my $max_processes = 4;
-
-    my @processes : shared;
-
-    @processes =
-      map { "nice -20 ./build_results.pl -cfg $config_files[$_] -d > $runtime_files[$_]" } (0 .. $#config_files);
-
-    my @started;
-    while (@processes) {
-        while (@processes && &gather_running_status(@started) < $max_processes) {
-            my $command = shift @processes;
-            my $config  = shift @config_files;
-            push @started, $config;
-
-            print "Executing $command\n" if $opt{debug};
-            threads->create('execute_process', $command)->detach;
-        }
-    }
-
-    while (&gather_running_status(@started)) {
-        sleep 100;
-    }
+    my $starting_dir = getcwd;
+    for (@overall_command_seq) {
+		my @command_seq = @{$_};
+		$command_seq[0][1] =~ m#/(.*)\.pl#;
+		
+		print "Starting on $1\n";
+        
+		my $command_start_bench = new Benchmark;
+        
+        &execute_command_seq(\@command_seq, $starting_dir);
+		
+		my $command_end_bench = new Benchmark;
+		my $td = timediff($command_end_bench, $command_start_bench);
+		print "The command took:",timestr($td),"\n\n";
+	}
 }
 
 $t2 = new Benchmark;
@@ -225,18 +231,23 @@ sub execute_command_seq {
     my @these_config_files = @config_files;
     if (scalar(@_) > 2) {
         @these_config_files = @{$_[2]};
-    } 
+    }
+	
     foreach my $set (@command_seq) {
         my $dir     = $set->[0];
         my $command = $set->[1];
         foreach my $cfg_file (@these_config_files) {
             my $config_command = "$command -cfg $cfg_file";
+			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
             chdir $dir;
             my $return_code = 0;
             if ($opt{debug}) {
+				print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
-                $return_code = system $config_command;
+                print "RUNNING: $config_command\n";
+                $return_code = system($config_command);
+				print "RETURN CODE: $return_code\n";
             }
             chdir $starting_dir;
 
@@ -244,6 +255,7 @@ sub execute_command_seq {
             #with the program exit, remove that config file from the run and
             #continue
             if ($return_code) {
+				print "REMOVING: $cfg_file\n";
                 @config_files = grep $cfg_file ne $_, @config_files;
             }
         }
@@ -267,69 +279,22 @@ sub check_file_sets {
 
 sub remove_unimportant_errors {
     if ($File::Find::name =~ /error.txt/) {
-        push @error_files, $File::Find::name;
-
         open INPUT, "$_" or die "$!";
         my @errors = <INPUT>;
         close INPUT;
 
         my @cleaned_errors;
-        my $hits = 0;
         foreach my $line (@errors) {
             if ($line =~ /Pending job threshold reached./) {
-                $hits++;
-                next;
-            }
-            if ($line =~ /which: no shopt in/) {
-                $hits++;
                 next;
             }
             push @cleaned_errors, $line;
         }
-        if ($hits) {
-            unlink $_;
 
-            open OUTPUT, ">$_";
-            print OUTPUT @cleaned_errors;
-            close OUTPUT;
-        }
+        unlink $_;
+
+        open OUTPUT, ">$_";
+        print OUTPUT @cleaned_errors;
+        close OUTPUT;
     }
-}
-
-#######################################
-# non-LSF
-#######################################
-
-sub print_sys_line {
-    my $process_string = shift;
-    sleep rand(10) + 5;
-    print "From Func: $process_string\n";
-}
-
-sub execute_process {
-    my $process_string = shift;
-    system($process_string);
-    print "Finished $process_string\n";
-}
-
-sub gather_running_status {
-    my @started_configs = @_;
-
-    my $running = 0;
-    foreach (@started_configs) {
-        my $status_file = catfile(dirname($_), 'status.txt');
-        if (-e $status_file) {
-            open STATUS, $status_file;
-            my $line = <STATUS>;
-            close STATUS;
-
-            chomp($line);
-            if (not($line =~ /DONE/)) {
-                $running++;
-            }
-        } else {
-            $running++;
-        }
-    }
-    return $running;
 }
