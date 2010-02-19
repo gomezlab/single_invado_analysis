@@ -153,6 +153,16 @@ for i=1:max(c_d.adhesions(:))
     adhesion_props(i).Background_area = sum(background_region(:));
     adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
     
+    large_background_region = logical(imdilate(this_ad,strel('disk',10,0)));
+    %we don't want to include any areas that have been identified as other
+    %objects
+    large_background_region = and(large_background_region,not(c_d.adhesions));
+    %also exclude areas outside the registered image
+    large_background_region = logical(large_background_region .* c_d.binary_shift);
+    assert(sum(sum(large_background_region)) > 0)
+    
+    adhesion_props(i).Large_local_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(large_background_region));
+    
     final_background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
     final_background_region = and(final_background_region,not(f_d.adhesions));
     final_background_region = logical(final_background_region .* f_d.binary_shift);
