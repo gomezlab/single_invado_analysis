@@ -52,6 +52,8 @@ max_image_num = find_max_image_num(I_folder);
 folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
 
+%we must add one to the tracking matrix because matlab indexes start at 1,
+%whereas perl indexes start at 0
 tracking_seq = load(tracking_seq_file) + 1;
 tracking_seq_size = size(tracking_seq);
 
@@ -170,6 +172,7 @@ i_seen = 0;
 %each row will hold the images from each lineages, where the columns will
 %hold all the frames from each time point
 all_images = cell(size(tracking_seq,1), 1);
+all_gel = cell(size(tracking_seq,1), 1);
 
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
@@ -183,8 +186,13 @@ for j = 1:max_image_num
     image_range = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
     orig_i = (double(orig_i) - image_range(1))/(image_range(2) - image_range(1));
 
-    %Gather the ad label image
+    gel_i = imread(fullfile(I_folder,padded_i_num,'registered_gel.png'));
+    image_range = csvread(fullfile(I_folder,padded_i_num,'gel_image_range.csv'));
+    gel_i = (double(gel_i) - image_range(1))/(image_range(2) - image_range(1));
+
+    %Gather the ad label images
     ad_label_perim = imread(fullfile(I_folder,padded_i_num,adhesions_perim_filename));
+    ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
 
     %Gather the cell edge image if available
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
@@ -207,25 +215,53 @@ for j = 1:max_image_num
         
         if (any(surrounding_entries > 0))
             ad_num = tracking_row(i_seen);
+            
+            %if the ad_num value is 0, then the adhesion hasn't been born
+            %yet or has recently died, we still want this image, but 0 is
+            %used to mark the background on the label images, so we reset
+            %the ad_num to a value not in any of the label matrices
             if (ad_num <= 0); ad_num = -Inf; end
+            
+            %pull out just the relavent region from the labeled adhesion
+            %perimeters and isolate adhesion of interest
             bounded_ad_label_perim = ad_label_perim(bounding_matrix(row_num,2):bounding_matrix(row_num,4), ...
                 bounding_matrix(row_num,1):bounding_matrix(row_num,3));
             
             this_ad = zeros(size(bounded_ad_label_perim));
             this_ad(bounded_ad_label_perim == ad_num) = 1;
             
+            bounded_ad_label = ad_label(bounding_matrix(row_num,2):bounding_matrix(row_num,4), ...
+                bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+            
+            this_ad_filled = zeros(size(bounded_ad_label));
+            this_ad_filled(bounded_ad_label == ad_num) = 1;           
+            this_ad_search_border = logical(imdilate(this_ad_filled,strel('disk',5,0)));
+            this_ad_search_border = and(this_ad_search_border, not(this_ad_filled));
+            
             not_this_ad = xor(im2bw(bounded_ad_label_perim,0),this_ad);
             assert(sum(sum(not_this_ad)) + sum(sum(this_ad)) == sum(sum(im2bw(bounded_ad_label_perim,0))))
             
             highlighted_image = orig_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
-            highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,1,0],'mix_percent',0.5);
-            highlighted_image = create_highlighted_image(highlighted_image,not_this_ad,'color_map',[0,0,1],'mix_percent',0.5);
+            highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,1,0],'mix_percent',0.25);
+            highlighted_image = create_highlighted_image(highlighted_image,not_this_ad,'color_map',[0,0,1],'mix_percent',0.25);
+            highlighted_image = create_highlighted_image(highlighted_image,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.05);
             if (exist('cell_edge','var'))
                 bounded_edge = cell_edge(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
-                highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0]);
+                highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0],'mix_percent',0.1);
             end
             
             all_images{row_num}{i_seen} = highlighted_image;
+            
+            highlighted_gel = gel_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+            highlighted_gel = create_highlighted_image(highlighted_gel,this_ad,'color_map',[0,1,0],'mix_percent',0.25);
+            highlighted_gel = create_highlighted_image(highlighted_gel,not_this_ad,'color_map',[0,0,1],'mix_percent',0.25);
+            highlighted_gel = create_highlighted_image(highlighted_gel,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.05);
+            if (exist('cell_edge','var'))
+                bounded_edge = cell_edge(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+                highlighted_gel = create_highlighted_image(highlighted_gel,bounded_edge,'color_map',[1,0,1],'mix_percent',0.1);
+            end
+            
+            all_gel{row_num}{i_seen} = highlighted_gel;
         end
         
         if (all(surrounding_entries <= 0) || j == max_image_num)
@@ -236,8 +272,12 @@ for j = 1:max_image_num
                        
             output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
             if (exist('pixel_size','var'))
-                write_montage_image_set(all_images{row_num},output_file, ...
-                    'pixel_size',pixel_size,'bar_size',5);
+                puncta_montage = build_montage_image_set(all_images{row_num},'pixel_size',pixel_size,'bar_size',5);
+                gel_montage = build_montage_image_set(all_gel{row_num});
+                
+                total_montage = [puncta_montage; ones(1,size(puncta_montage,2),3); gel_montage];
+                
+                imwrite(total_montage, output_file);
             else
                 write_montage_image_set(all_images{row_num},output_file);
             end
