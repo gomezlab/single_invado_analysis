@@ -271,6 +271,9 @@ for j = 1:max_image_num
             if (size(all_images{row_num}, 2) == 0), continue; end
                        
             output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
+            if(not(exist(fullfile(out_path_single, 'overall'),'dir')))
+                mkdir(fullfile(out_path_single, 'overall'));
+            end
             if (exist('pixel_size','var'))
                 puncta_montage = build_montage_image_set(all_images{row_num},'pixel_size',pixel_size,'bar_size',5);
                 gel_montage = build_montage_image_set(all_gel{row_num});
