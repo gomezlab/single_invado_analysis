@@ -444,9 +444,9 @@ print('Done with Spatial')
 ########################################
 # Statics Comparisons
 ########################################
-svg(file.path(out_folder,'S178A','statics_comparisons.svg'), width=7)
-layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(2,4,1,0))
+svg(file.path(out_folder,'S178A','statics_comparisons.svg'), height=3.5)
+layout(cbind(1,2))
+par(bty='n', mar=c(2,4,0,0))
 
 max_area = max(c(static_props$wild_type$Area, static_props$S178A$Area));
 
@@ -454,45 +454,44 @@ max_area = max(c(static_props$wild_type$Area, static_props$S178A$Area));
 #     names=c('Wild-type','S178A'), inc.points=FALSE, with.median.props=FALSE, 
 #     ylim=c(0,max_area*1.1), ylab='Area (\u03BCm\u00B2)')
 boxplot(list(static_props$wild_type$Area, static_props$S178A$Area), 
-    names=c('Wild-type','S178A'), inc.points=FALSE, with.median.props=FALSE, 
-    ylim=c(0,max_area*1.1), ylab='Area (\u03BCm\u00B2)')
+    names=c('Wild-type','S178A'), ylab='FA Area (\u03BCm\u00B2)', range=0)
 
-bar_length = max_area*0.05;
-sep_from_data = max_area*0.025;
+(mean(static_props$wild_type$Area) - mean(static_props$S178A$Area))/mean(static_props$wild_type$Area)
 
-upper_left = c(1, max_area + sep_from_data + bar_length);
-lower_right = c(2, max_area + sep_from_data);
-plot_signif_bracket(upper_left, lower_right,over_text='*');
-mtext('A',adj=-.2,side=3,line=-1.5,cex=1.5)	    
+plot_dims = par("usr");
+x_pos = (plot_dims[2] - plot_dims[1])*0.5 + plot_dims[1]
+y_pos = (plot_dims[4] - plot_dims[3])*0.9 + plot_dims[3]
 
+text(x_pos,y_pos, 'p<1e-05', col="blue");
+
+# bar_length = max_area*0.05;
+# sep_from_data = max_area*0.025;
+# 
+# upper_left = c(1, max_area + sep_from_data + bar_length);
+# lower_right = c(2, max_area + sep_from_data);
+# plot_signif_bracket(upper_left, lower_right,over_text='*');
+mtext('A',adj=-.25,side=3,line=-1.5,cex=1.5)	    
 
 max_axial = max(c(static_props$wild_type$ax, static_props$S178A$ax));
-max_axial = 8;
+# max_axial = 8;
 
-boxplot_with_points(list(static_props$wild_type$ax[static_props$wild_type$ax < 8], 
-    static_props$S178A$ax[static_props$S178A$ax < 8]), 
-    names=c('Wild-type','S178A'), inc.points=FALSE, with.median.props=FALSE, 
-    ylim=c(0.9,max_axial*1.1), ylab='Axial Ratio')
+boxplot(list(static_props$wild_type$ax, static_props$S178A$ax), 
+    names=c('Wild-type','S178A'), ylab='Axial Ratio', range = 0, ylim = c(0, max_axial))
 
-bar_length = max_axial*0.05;
-sep_from_data = max_axial*0.025;
+(mean(static_props$wild_type$ax) - mean(static_props$S178A$ax))/mean(static_props$wild_type$ax)
 
-upper_left = c(1, max_axial + sep_from_data + bar_length);
-lower_right = c(2, max_axial + sep_from_data);
-plot_signif_bracket(upper_left, lower_right,over_text='*');
-mtext('B',adj=-.2,side=3,line=-1.5,cex=1.5)	    
+plot_dims = par("usr");
+x_pos = (plot_dims[2] - plot_dims[1])*0.5 + plot_dims[1]
+y_pos = (plot_dims[4] - plot_dims[3])*0.9 + plot_dims[3]
 
-par(bty='n', mar=c(2,4,1.5,0))
-boxplot_with_points(list(dynamic_props$wild_type$longevity, dynamic_props$S178A$longevity), 
-    names=c('Wild-type','S178A'), inc.points=FALSE, with.median.props=FALSE, 
-    ylab='Longevity (min)')
-mtext('C',adj=-.2,side=3,line=-1.5,cex=1.5)	    
-
-boxplot_with_points(list(dynamic_props$wild_type$longevity[dynamic_props$wild_type$longevity > 19],
-    dynamic_props$S178A$longevity[dynamic_props$S178A$longevity > 19]), 
-    names=c('Wild-type','S178A'), inc.points=FALSE, with.median.props=FALSE, 
-    ylab='Longevity (min)')
-mtext('D',adj=-.2,side=3,line=-1.5,cex=1.5)	    
+text(x_pos,y_pos, 'p<1e-05', col="blue");
+# bar_length = max_axial*0.05;
+# sep_from_data = max_axial*0.025;
+# 
+# upper_left = c(1, max_axial + sep_from_data + bar_length);
+# lower_right = c(2, max_axial + sep_from_data);
+# plot_signif_bracket(upper_left, lower_right,over_text='*');
+mtext('B',adj=-.25,side=3,line=-1.5,cex=1.5)	    
 graphics.off()
 
 ########################################
@@ -555,7 +554,7 @@ dir.create(dirname(file.path(out_folder,'S178A','S178A_vs_wild-type.svg')),
     recursive=TRUE, showWarnings=FALSE);
 svg(file.path(out_folder,'S178A','S178A_vs_wild-type.svg'))
 layout(rbind(c(1,2),c(3,4)))
-par(bty='n', mar=c(2,4,0,0))
+par(bty='n', mar=c(2,4.2,0,0))
 
 wt_only_signif = processed$only_signif$wild_type$intensity;
 S178A_only_signif = processed$only_signif$S178A$intensity;
@@ -611,7 +610,12 @@ boxplot_with_points(list(wt_only_signif$dis$edge_dist,S178A_only_signif$dis$edge
 mtext('D',adj=-.25,side=3,line=-1.5,cex=1.5)	    
 
 graphics.off()
-print('Done with S178A Comparisons')
+
+interval_str = list();
+interval_str$assembly = print_ratio_conf_string(wt_only_signif$as$slope,S178A_only_signif$as$slope);
+interval_str$disassembly = print_ratio_conf_string(wt_only_signif$dis$slope,S178A_only_signif$dis$slope);
+interval_str$edge_birth = print_ratio_conf_string(wt_only_signif$as$edge_dist,S178A_only_signif$as$edge_dist);
+interval_str$edge_death = print_ratio_conf_string(wt_only_signif$dis$edge_dist,S178A_only_signif$dis$edge_dist);
 
 ########################################
 #Dynamics - Alternative with significance bar

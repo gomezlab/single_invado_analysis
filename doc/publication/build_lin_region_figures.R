@@ -61,6 +61,7 @@ stop()
 ################################################################################
 dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
 phase_lengths = seq(5,10);
+ratio_conf_str = list();
 
 #Assembly phase length variation
 svg(file.path(out_folder,'controls','assembly_length_variation.svg'));
@@ -69,10 +70,13 @@ par(bty='n',mar=c(3,4.3,2,0))
 
 for (length in phase_lengths) {
     results_str = paste("results_", length,sep = '');
+    
+    data_points = list(processed$only_signif$wild_type[[results_str]]$assembly$slope,
+        processed$only_signif$S178A[[results_str]]$assembly$slope);
 
-    boxplot_with_points(
-        list(processed$only_signif$wild_type[[results_str]]$assembly$slope,
-             processed$only_signif$S178A[[results_str]]$assembly$slope),
+    ratio_conf_str$assembly[[results_str]] = print_ratio_conf_string(data_points[[1]], data_points[[2]]);
+
+    boxplot_with_points(data_points,
         names=c('Wild-type','S178A'), ylab=expression(paste('Assembly Rate (',min^-1,')',sep='')), 
         main=paste("Minimum Phase Length:",length), inc.points=FALSE)
 }
@@ -86,9 +90,12 @@ par(bty='n',mar=c(3,4.3,2,0))
 for (length in phase_lengths) {
     results_str = paste("results_", length,sep = '');
 
-    boxplot_with_points(
-        list(processed$only_signif$wild_type[[results_str]]$disassembly$slope,
-             processed$only_signif$S178A[[results_str]]$disassembly$slope),
+    data_points = list(processed$only_signif$wild_type[[results_str]]$disassembly$slope,
+        processed$only_signif$S178A[[results_str]]$disassembly$slope);
+
+    ratio_conf_str$disassembly[[results_str]] = print_ratio_conf_string(data_points[[1]], data_points[[2]]);
+    
+    boxplot_with_points(data_points,
         names=c('Wild-type','S178A'), ylab=expression(paste('Disassembly Rate (',min^-1,')',sep='')), 
         main=paste("Minimum Phase Length:",length), inc.points=FALSE)
 }
@@ -101,10 +108,13 @@ par(bty='n',mar=c(3,4.3,2,0))
 
 for (length in phase_lengths) {
     results_str = paste("results_", length,sep = '');
+    
+    data_points = list(processed$only_signif$wild_type[[results_str]]$assembly$edge_dist,
+        processed$only_signif$S178A[[results_str]]$assembly$edge_dist);
 
-    boxplot_with_points(
-        list(processed$only_signif$wild_type[[results_str]]$assembly$edge_dist,
-             processed$only_signif$S178A[[results_str]]$assembly$edge_dist),
+    ratio_conf_str$birth_dist[[results_str]] = print_ratio_conf_string(data_points[[1]], data_points[[2]]);
+
+    boxplot_with_points(data_points,
         names=c('Wild-type','S178A'), ylab=expression(paste('Distance from Cell Edge (',mu,'m)',sep='')), 
         main=paste("Minimum Phase Length:",length), inc.points=FALSE)
 }
@@ -117,10 +127,13 @@ par(bty='n',mar=c(3,4.3,2,0))
 
 for (length in phase_lengths) {
     results_str = paste("results_", length,sep = '');
+    
+    data_points = list(processed$only_signif$wild_type[[results_str]]$disassembly$edge_dist,
+        processed$only_signif$S178A[[results_str]]$disassembly$edge_dist);
 
-    boxplot_with_points(
-        list(processed$only_signif$wild_type[[results_str]]$disassembly$edge_dist,
-             processed$only_signif$S178A[[results_str]]$disassembly$edge_dist),
+    ratio_conf_str$death_dist[[results_str]] = print_ratio_conf_string(data_points[[1]], data_points[[2]]);
+
+    boxplot_with_points(data_points,
         names=c('Wild-type','S178A'), ylab=expression(paste('Distance from Cell Edge (',mu,'m)',sep='')), 
         main=paste("Minimum Phase Length:",length), inc.points=FALSE)
 }
