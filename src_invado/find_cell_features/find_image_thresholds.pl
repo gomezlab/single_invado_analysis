@@ -36,8 +36,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 # Main Program
 ################################################################################
-my @matlab_code = ("find_gel_thresh('$cfg{individual_results_folder}')\n");
-$matlab_code[0] .= ("find_puncta_thresh('$cfg{individual_results_folder}')");
+my @matlab_code = ("find_puncta_thresh('$cfg{individual_results_folder}')\n");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'gel_threshold_finding');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');

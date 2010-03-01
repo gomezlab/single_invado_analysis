@@ -34,6 +34,8 @@ image_dirs = image_dirs(3:end);
 
 all_filt = [];
 
+all_no_filt = [];
+
 for i = 1:size(image_dirs)
     image = imread(fullfile(base_dir,image_dirs(i).name,i_p.Results.image_file));
     scale_factor = double(intmax(class(image)));
@@ -46,6 +48,7 @@ for i = 1:size(image_dirs)
     max_col = find(sum(binary_shift),1,'last');
     
     only_reg_image = image(min_row:max_row, min_col:max_col);
+    all_no_filt = [all_no_filt, only_reg_image(:)'];
     
     I_filt = fspecial('disk',i_p.Results.filter_size);
     blurred_image = imfilter(only_reg_image,I_filt,'same',mean(only_reg_image(:)));

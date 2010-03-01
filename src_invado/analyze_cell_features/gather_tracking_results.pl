@@ -768,7 +768,8 @@ sub gather_average_eccentricity {
 
     for my $i (0 .. $#major_axis) {
         for my $j (0 .. $#{ $major_axis[$i] }) {
-			die "Minor Axis value of zero: $i $j" if ($minor_axis[$i][$j] == 0);
+			die "Minor Axis value of zero at position: $i $j, value of $minor_axis[$i][$j]" 
+				if ($minor_axis[$i][$j] == 0);
 			$eccentricity[$i][$j] = $major_axis[$i][$j]/$minor_axis[$i][$j];
         }
     }
