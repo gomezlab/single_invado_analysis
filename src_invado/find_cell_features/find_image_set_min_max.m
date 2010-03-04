@@ -17,7 +17,6 @@ addpath('matlab_scripts');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
 
 base_dir = i_p.Results.I_folder;
 image_dirs = dir(base_dir);

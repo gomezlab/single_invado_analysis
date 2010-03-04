@@ -21,6 +21,7 @@ i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
 i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
 i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
 i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
+i_p.addParamValue('intensity_correction_file','intensity_correction.csv',@ischar);
 
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
@@ -46,6 +47,9 @@ current_data.adhesions = imread(fullfile(current_dir, i_p.Results.adhesions_file
 
 %read in the labeled adhesions
 current_data.binary_shift = logical(imread(fullfile(current_dir, i_p.Results.binary_shift_filename)));
+
+%read in the intensity correction coefficient
+current_data.intensity_correction = csvread(fullfile(current_dir, i_p.Results.intensity_correction_file));
 
 %read in the cell mask file if defined
 if(exist(fullfile(current_dir, i_p.Results.cell_mask_filename), 'file'))
@@ -147,6 +151,7 @@ for i=1:max(c_d.adhesions(:))
     assert(sum(sum(background_region)) > 0)
     
     adhesion_props(i).Local_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(background_region));
+    adhesion_props(i).Local_gel_diff_corr = adhesion_props(i).Local_gel_diff*c_d.intensity_correction;
     adhesion_props(i).Global_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(c_d.binary_shift));
     
     adhesion_props(i).Background_adhesion_signal = mean(c_d.puncta_image(background_region));
