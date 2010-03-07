@@ -261,13 +261,15 @@ sub execute_command_seq {
     foreach my $set (@command_seq) {
         my $dir     = $set->[0];
         my $command = $set->[1];
+        if ($opt{debug}) {
+            print "Working in directory: $dir\n";
+        }
         foreach my $cfg_file (@these_config_files) {
             my $config_command = "$command -cfg $cfg_file";
 			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
             chdir $dir;
             my $return_code = 0;
             if ($opt{debug}) {
-				print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
                 print "RUNNING: $config_command\n";
