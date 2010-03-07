@@ -25,10 +25,6 @@ $opt{lsf} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
         "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
-#chomp(my $lsf_check = `which bjobs`);
-#die "LSF appear to be installed on this machine ($lsf_check), don't you want to use it?" 
-#  if ($lsf_check && not $opt{lsf});
-
 if (-e '/opt/lsf/bin/bjobs' && not $opt{lsf}) {
 	die "LSF appear to be installed on this machine, don't you want to use it?" 
 }	
@@ -155,31 +151,6 @@ if ($opt{lsf}) {
 		my $td = timediff($command_end_bench, $command_start_bench);
 		print "The command took:",timestr($td),"\n\n";
 	}
-
-    # unlink(<$cfg{data_folder}/time_series_*/stat*>);
-
-    # my $max_processes = 4;
-
-    # my @processes : shared;
-
-    # @processes =
-    #   map { "nice -20 ./build_results.pl -cfg $config_files[$_] -d > $runtime_files[$_]" } (0 .. $#config_files);
-
-    # my @started;
-    # while (@processes) {
-    #     while (@processes && &gather_running_status(@started) < $max_processes) {
-    #         my $command = shift @processes;
-    #         my $config  = shift @config_files;
-    #         push @started, $config;
-
-    #         print "Executing $command\n" if $opt{debug};
-    #         threads->create('execute_process', $command)->detach;
-    #     }
-    # }
-
-    # while (&gather_running_status(@started)) {
-    #     sleep 100;
-    # }
 }
 
 my $t2 = new Benchmark;
@@ -324,42 +295,4 @@ sub remove_unimportant_errors {
         print OUTPUT @cleaned_errors;
         close OUTPUT;
     }
-}
-
-#######################################
-# non-LSF
-#######################################
-
-sub print_sys_line {
-    my $process_string = shift;
-    sleep rand(10) + 5;
-    print "From Func: $process_string\n";
-}
-
-sub execute_process {
-    my $process_string = shift;
-    system($process_string);
-    print "Finished $process_string\n";
-}
-
-sub gather_running_status {
-    my @started_configs = @_;
-
-    my $running = 0;
-    foreach (@started_configs) {
-        my $status_file = catfile(dirname($_), 'status.txt');
-        if (-e $status_file) {
-            open STATUS, $status_file;
-            my $line = <STATUS>;
-            close STATUS;
-
-            chomp($line);
-            if (not($line =~ /DONE/)) {
-                $running++;
-            }
-        } else {
-            $running++;
-        }
-    }
-    return $running;
 }

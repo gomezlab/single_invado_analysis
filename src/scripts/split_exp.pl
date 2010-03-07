@@ -29,14 +29,15 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "split_num=i")
+GetOptions(\%opt, "cfg|c=s", "debug|d")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
-die "The split number must be specified on the command line with option \"split_num\"" if not exists $opt{split_num};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
+
+die "The split number must be specified on config file with the option \"split_num\"" if not exists $cfg{split_num};
 
 ################################################################################
 # Main Program
@@ -75,7 +76,7 @@ sub move_target_image_set {
 
 	my $max_digit_count = length($image_nums[-1]);
 
-	my @split_index = grep $image_nums[$_] == $opt{split_num}, (0 .. $#image_nums);
+	my @split_index = grep $image_nums[$_] == $cfg{split_num}, (0 .. $#image_nums);
 	die if (scalar(@split_index) > 1);
 
 	for (0 .. $split_index[0]) {
@@ -91,7 +92,7 @@ sub move_target_image_set {
 	system("sed -i -r 's/$cfg{exp_name}/$new_exp_name/' $new_config_file");
 
 	for (($split_index[0] + 1) .. $#image_files) {
-		my $image_name = sprintf("%0" . $max_digit_count . "d", $_ + 1 - $opt{split_num});
+		my $image_name = sprintf("%0" . $max_digit_count . "d", $_ + 1 - $cfg{split_num});
 		my $target_file = catdir($cfg{data_folder}, $cfg{exp_name} . "_post", 
 								 $cfg{$target_dir}, $image_name . ".png");
 		mkpath(dirname($target_file));
