@@ -3,7 +3,7 @@
 # invaodopodia data
 ################################################################################
 
-gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, conf.level = 0.95) {
+gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, conf.level = 0.95, degrade_file = "Local_gel_diff.csv") {
     all_props = list();
 
     for (this_exp_dir in results_dirs) {
@@ -17,7 +17,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         print(paste('Working on:',this_exp_dir));
         lineage_data = read.table(file.path(this_exp_dir,'single_lin.csv'), 
             sep=",",header=T);
-        degrade_data = read.table(file.path(this_exp_dir,'lin_time_series/Local_gel_diff.csv'), 
+        degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', degrade_file), 
             sep=",",header=F);
         stopifnot(dim(lineage_data)[[1]] == dim(degrade_data)[[1]])
         
@@ -31,24 +31,25 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         
         all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
         all_props$experiment = c(all_props$experiment,rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
-        props_to_include = c("longevity","largest_area", "last_local_gel_diff");
+        props_to_include = c("longevity","largest_area");
         for (i in props_to_include) {
             all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
         }
 
-        final_conf_ints = matrix(ncol=2);
-        mean_vals = c();
-        max_local_diff = c();
-        min_local_diff = c();
         time_to_conf_neg = c();
         time_to_neg = c();
         for (i in which(overall_filt)) {
             only_data = na.omit(as.numeric(degrade_data[i,]));
-            mean_vals = c(mean_vals, mean(only_data));
-            max_local_diff = c(max_local_diff, max(only_data));
-            min_local_diff = c(min_local_diff, min(only_data));
+            
+            all_props$mean_vals = c(all_props$mean_vals, mean(only_data))
+            all_props$max_local_diff = c(all_props$max_local_diff, max(only_data));
+            all_props$min_local_diff = c(all_props$min_local_diff, min(only_data));
+            
             conf_int = t.test(only_data,conf.level=conf.level)$conf.int;
-            final_conf_ints = rbind(final_conf_ints, conf_int[1:2]);
+            
+            all_props$low_conf_int = c(all_props$low_conf_int, conf_int[1]);
+            all_props$high_conf_int = c(all_props$high_conf_int, conf_int[2]);
+            
 
             #search for the minimum number of points (at least five) needed to
             #verify that the local gel difference is negative
@@ -68,14 +69,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
                 time_to_neg = c(time_to_neg, NA)
             }
         }
-        #remove the first row as that row isn't filled in during the above rbind sequence
-        final_conf_ints = final_conf_ints[2:dim(final_conf_ints)[[1]],];
-        
-        all_props$low_conf_int = c(all_props$low_conf_int, final_conf_ints[,1]);
-        all_props$high_conf_int = c(all_props$high_conf_int, final_conf_ints[,2]);
-        all_props$mean_vals = c(all_props$mean_vals, mean_vals);
-        all_props$max_local_diff = c(all_props$max_local_diff, max_local_diff);
-        all_props$min_local_diff = c(all_props$min_local_diff, min_local_diff);
         all_props$time_to_conf_neg = c(all_props$time_to_conf_neg, time_to_conf_neg);
         all_props$time_to_neg = c(all_props$time_to_neg, time_to_neg);
 
