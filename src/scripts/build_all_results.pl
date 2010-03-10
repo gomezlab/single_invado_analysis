@@ -11,7 +11,7 @@ use threads;
 use threads::shared;
 use File::Spec::Functions;
 use File::Basename;
-use File::Find;
+use File::Find::Rule;
 use Benchmark;
 use Getopt::Long;
 use Cwd;
@@ -47,7 +47,8 @@ my $t1 = new Benchmark;
 $| = 1;
 
 #config file processing
-my @config_files = sort <$cfg{data_folder}/*/*.cfg>;
+my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
+@config_files = sort @config_files;
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
@@ -128,12 +129,12 @@ if ($opt{lsf}) {
         }
     }
 
-    my @error_dirs = <$cfg{results_folder}/*/$cfg{errors_folder}>;
-    if (@error_dirs) {
-        find(\&remove_unimportant_errors, @error_dirs);
-    }
     if (not($opt{debug})) {
-    	system("bsub -J \"Job Finished: $opt{cfg}\" tail $cfg{results_folder}/*/$cfg{errors_folder}/*/err*");
+        #Find and clean up the error files produced during program execution
+        our @error_files;
+        &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
+    	
+		system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
     }
 } else {
     my $starting_dir = getcwd;

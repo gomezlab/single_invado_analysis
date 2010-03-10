@@ -54,7 +54,6 @@ my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
-
 my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
 #collect all the config information 
