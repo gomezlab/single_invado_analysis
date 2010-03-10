@@ -77,7 +77,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
 	[ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
-	[ [ "../find_cell_features",      "./collect_degradation_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./find_bleaching_curves.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
