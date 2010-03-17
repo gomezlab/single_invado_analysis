@@ -43,10 +43,10 @@ my @image_numbers = &Image::Data::Collection::gather_sorted_image_numbers(\%cfg)
 my $image_num_length = length(scalar(@image_numbers));
 
 my @commands = (
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/gel.png -sameq $cfg{exp_results_folder}/gel.mov 2>&1",
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1",
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1",
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1",
+	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/gel.png -sameq $cfg{exp_results_folder}/gel.mov 2>&1",
+	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1",
+	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1",
+	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1",
 	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invado_and_not.png -sameq $cfg{exp_results_folder}/invado_and_not.mov 2>&1"
 );
 
@@ -54,38 +54,14 @@ for (@commands) {
 	if ($opt{debug}) {
 		print $_, "\n";
 	} else {
-		system $_;
+		print "\n\nBuild Movies\n\n" if $opt{debug};
+		$t1 = new Benchmark;
+		system "$_ > /dev/null 2> /dev/null";
+		$t2 = new Benchmark;
+		print "Runtime: ",timestr(timediff($t2,$t1)), "\n";
 	}
 }
-
-# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/gel.png -sameq $cfg{exp_results_folder}/gel.mov 2>&1";
-# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1";
-# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1";
-# system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1";
-
-die;
-# die Dumper(\%cfg);
-
-print "\n\nBuild Movies\n\n" if $opt{debug};
-$t1 = new Benchmark;
-
-our @movie_dirs; 
-find(\&add_to_movie_dir, (catdir($cfg{exp_results_folder},$cfg{movie_output_folder})));
-
-foreach my $f1 (@movie_dirs) {
-    foreach my $f2 (@{ $cfg{movie_output_prefix} }) {
-        my $input_folder = catdir($f1,$f2);
-        system "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $input_folder/%0" . $image_num_length . "d.png -sameq $input_folder.mov 2>&1";
-    }
-}
-$t2 = new Benchmark;
-print "Runtime: ",timestr(timediff($t2,$t1)), "\n" if $opt{debug};
 
 ###############################################################################
 # Functions
 ###############################################################################
-sub add_to_movie_dir {
-    if ($File::Find::name =~ /$cfg{vis_config_file}/) {
-        push @movie_dirs, $File::Find::dir;
-    }
-}
