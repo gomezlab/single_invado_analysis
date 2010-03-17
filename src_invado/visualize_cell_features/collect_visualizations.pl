@@ -150,6 +150,7 @@ sub build_matlab_visualization_config {
         "adhesions_filename = 'puncta_labeled.png';",
         "adhesions_perim_filename = 'puncta_labeled_perim.png';",
         "edge_filename = 'cell_mask.png';",
+        "gel_image = 'registered_gel.png';",
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
 
@@ -164,7 +165,6 @@ sub build_matlab_visualization_config {
 
         "image_padding_min = $cfg{padding_min};",
         "single_image_padding_min = $cfg{single_ad_padding_min};\n",
-
     );
     
     #Add the config file flag for outputing the original images, trimmed with

@@ -11,8 +11,6 @@ function high_image = create_highlighted_image(I,high,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
 i_p.FunctionName = 'CREATE_HIGHLIGHTED_IMAGE';
 
@@ -32,28 +30,33 @@ i_p.parse(I,high,varargin{:});
 image_size = size(I);
 
 if (size(image_size) < 3)
-    high_image = cat(3,I,I,I);
+    high_image_red = I;
+    high_image_green = I;
+    high_image_blue = I;
 else
-    high_image = I;
+    high_image_red = I(:,:,1);
+    high_image_green = I(:,:,2);
+    high_image_blue = I(:,:,3);
 end
 
 if (all(high(:) == 0))
     return
 end
 
-for j = 1:size(I,1)
-    for k = 1:size(I,2)
-        if (i_p.Results.high(j,k) == 0), continue; end
+labels = unique(high);
+assert(labels(1) == 0)
+labels = labels(2:end);
 
-        this_cmap = i_p.Results.color_map(i_p.Results.high(j,k),:);
-        
-        if (all(this_cmap == 0)), continue; end
-        
-        assert(length(this_cmap) == size(high_image,3),'Error: wrong number of entries in color map');
-        for l = 1:size(high_image,3)
-            high_image(j,k,l) = this_cmap(l)*i_p.Results.mix_percent + high_image(j,k,l)*(1-i_p.Results.mix_percent);
-        end
-    end
+for i=1:length(labels)
+    indexes = high == labels(i);
+    
+    this_cmap = i_p.Results.color_map(labels(i),:);
+    
+    high_image_red(indexes) = this_cmap(1)*i_p.Results.mix_percent + high_image_red(indexes)*(1-i_p.Results.mix_percent);
+    high_image_green(indexes) = this_cmap(2)*i_p.Results.mix_percent + high_image_green(indexes)*(1-i_p.Results.mix_percent);
+    high_image_blue(indexes) = this_cmap(3)*i_p.Results.mix_percent + high_image_blue(indexes)*(1-i_p.Results.mix_percent);
 end
+
+high_image = cat(3,high_image_red,high_image_green,high_image_blue);
 
 end
