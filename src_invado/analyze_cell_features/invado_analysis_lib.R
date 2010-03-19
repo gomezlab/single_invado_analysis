@@ -3,7 +3,9 @@
 # invaodopodia data
 ################################################################################
 
-gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, conf.level = 0.95, degrade_file = "Local_gel_diff.csv") {
+gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
+    conf.level = 0.95, degrade_file = "Local_gel_diff.csv", results.file = NA) {
+    
     all_props = list();
 
     for (this_exp_dir in results_dirs) {
@@ -25,13 +27,12 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
         no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
         death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
-        eccentricity_filt = ! is.na(lineage_data$average_eccentricity) & lineage_data$average_eccentricity < 3;
 
-        overall_filt = longev_filter & no_split_birth_filt & death_filt & eccentricity_filt;
+        overall_filt = longev_filter & no_split_birth_filt & death_filt;
         
         all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
         all_props$experiment = c(all_props$experiment,rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
-        props_to_include = c("longevity","largest_area");
+        props_to_include = c("longevity","largest_area","birth_i_num");
         for (i in props_to_include) {
             all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
         }
@@ -45,15 +46,15 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
             all_props$max_local_diff = c(all_props$max_local_diff, max(only_data));
             all_props$min_local_diff = c(all_props$min_local_diff, min(only_data));
             
-            conf_int = t.test(only_data,conf.level=conf.level)$conf.int;
+            test_results = t.test(only_data,conf.level=conf.level);
             
-            all_props$low_conf_int = c(all_props$low_conf_int, conf_int[1]);
-            all_props$high_conf_int = c(all_props$high_conf_int, conf_int[2]);
-            
+            all_props$low_conf_int = c(all_props$low_conf_int, test_results$conf.int[1]);
+            all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
+            all_props$p_values = c(all_props$p_values, test_results$p.value);
 
             #search for the minimum number of points (at least five) needed to
             #verify that the local gel difference is negative
-            if (conf_int[2] < 0) {
+            if (test_results$conf.int[2] < 0) {
                 time_to_neg = c(time_to_neg, which(only_data < 0)[[1]])
 
                 min_found = 0;
@@ -71,32 +72,14 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
         }
         all_props$time_to_conf_neg = c(all_props$time_to_conf_neg, time_to_conf_neg);
         all_props$time_to_neg = c(all_props$time_to_neg, time_to_neg);
-
-        if (build_degrade_plots) {
-            min_diff = min(degrade_data[which(overall_filt),], na.rm=T);
-            max_diff = max(degrade_data[which(overall_filt),], na.rm=T);
-            
-            filtered_longev = lineage_data$longevity[overall_filt];
-
-            pdf(paste('degrade_mats_', this_exp, '.pdf',sep=''))
-            for (i in which(overall_filt)) {
-                
-                only_data = na.omit(as.numeric(degrade_data[i,]));
-
-                plot(only_data, ylim=c(min_diff, max_diff), xlab='Time (5 min)', ylab='Local Gel Diff', main=i)
-                lines(c(0,130),c(0,0), col='red')
-                
-                for (j in 1:length(only_data)) {
-                    if (j > 1) {
-                        # tryCatch(conf_int = t.test(only_data[1:j])$conf.int,error=next);
-                        conf_int = t.test(only_data[1:j])$conf.int;
-                        errbar(j,mean(only_data[1:j]), conf_int[2], conf_int[1], col='green', add=T)
-                    } else {
-                        points(j, mean(only_data[1:j]), col='green',pch=19);
-                    }
-                }
+        
+        if (! is.na(results.file)) {
+            this_file = file.path(this_exp_dir,results.file);
+            if (! file.exists(dirname(this_file))) {
+                dir.create(dirname(this_file),recursive=TRUE);
             }
-            graphics.off()
+            all_props_frame = as.data.frame(all_props);
+            save(all_props_frame,file = this_file);
         }
     }
     return(as.data.frame(all_props));
@@ -115,20 +98,26 @@ if (length(args) != 0) {
 	#in the current scope
     for (this_arg in commandArgs()) {
         split_arg = strsplit(this_arg,"=",fixed=TRUE)
-            if (length(split_arg[[1]]) == 1) {
-                assign(split_arg[[1]][1], TRUE);
-            } else {
-                assign(split_arg[[1]][1], split_arg[[1]][2]);
-            }
+        if (length(split_arg[[1]]) == 1) {
+            assign(split_arg[[1]][1], TRUE);
+        } else {
+            assign(split_arg[[1]][1], split_arg[[1]][2]);
+        }
     }
 	
 	print(data_dir);
     if (exists('data_dir')) {
-        exp_props = gather_invado_properties(data_dir);
-        invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int < 0];
-        non_invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int >= 0];
+        exp_props = gather_invado_properties(data_dir, 
+            results.file = file.path('models','puncta_props.Rdata'));
+        exp_props = gather_invado_properties(data_dir, 
+            results.file = file.path('models','puncta_props_corr.Rdata'), degrade_file="Local_gel_diff_corr.csv");
         
-        write.table(invado_lineage_nums, file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
-        write.table(non_invado_lineage_nums, file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int < 0];
+        invado_p_values = exp_props$p_values[exp_props$high_conf_int < 0];
+        non_invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int >= 0];
+        non_invado_p_values = exp_props$p_values[exp_props$high_conf_int >= 0];
+        
+        write.table(cbind(invado_lineage_nums,invado_p_values), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        write.table(cbind(non_invado_lineage_nums,non_invado_p_values), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
     }
 }
