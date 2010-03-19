@@ -1,4 +1,4 @@
-function find_adhesion_properties(current_dir,final_dir,varargin)
+function find_adhesion_properties(current_dir,first_dir,final_dir,varargin)
 % FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
 %                             properties associated with the adhesions
 %                             located in prior steps
@@ -11,9 +11,10 @@ i_p = inputParser;
 i_p.FunctionName = 'FIND_PUNCTA_PROPERTIES';
 
 i_p.addRequired('current_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('first_dir',@(x)exist(x,'dir') == 7);
 i_p.addRequired('final_dir',@(x)exist(x,'dir') == 7);
 
-i_p.parse(current_dir, final_dir);
+i_p.parse(current_dir,first_dir, final_dir);
 
 i_p.addParamValue('output_dir',current_dir,@ischar);
 i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
@@ -25,7 +26,7 @@ i_p.addParamValue('intensity_correction_file','intensity_correction.csv',@ischar
 
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
-i_p.parse(current_dir, final_dir,varargin{:});
+i_p.parse(current_dir, first_dir, final_dir,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pull in data from the current directory
@@ -82,25 +83,37 @@ if(exist(fullfile(final_dir, i_p.Results.cell_mask_filename), 'file'))
     final_data.cell_mask = logical(imread(fullfile(final_dir, i_p.Results.cell_mask_filename)));
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Pull in data from the final directory
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+first_data = struct;
+
+%read in and normalize the input focal adhesion image
+first_data.gel_image  = imread(fullfile(first_dir, i_p.Results.gel_filename));
+scale_factor = double(intmax(class(first_data.gel_image)));
+first_data.gel_image  = double(first_data.gel_image)/scale_factor;
+
+%read in the labeled adhesions
+first_data.binary_shift = logical(imread(fullfile(first_dir, i_p.Results.binary_shift_filename)));
+
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-adhesion_properties = collect_adhesion_properties(current_data, final_data,'debug',i_p.Results.debug);
+adhesion_properties = collect_adhesion_properties(current_data, first_data, final_data,'debug',i_p.Results.debug);
 
 if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function adhesion_props = collect_adhesion_properties(c_d,f_d,varargin)
+function adhesion_props = collect_adhesion_properties(c_d,first_d,f_d,varargin)
 % COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
@@ -113,12 +126,13 @@ i_p = inputParser;
 i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
 i_p.addRequired('c_d',@isstruct);
+i_p.addRequired('first_d',@isstruct);
 i_p.addRequired('f_d',@isstruct);
 
 i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(c_d,f_d,varargin{:});
+i_p.parse(c_d,first_d,f_d,varargin{:});
 
 adhesion_props = regionprops(c_d.adhesions,'all');
 
@@ -168,6 +182,7 @@ for i=1:max(c_d.adhesions(:))
     
     adhesion_props(i).Large_local_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(large_background_region));
     
+    %Find the local difference in the last image of the movie
     final_background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
     final_background_region = and(final_background_region,not(f_d.adhesions));
     final_background_region = logical(final_background_region .* f_d.binary_shift);
@@ -176,6 +191,15 @@ for i=1:max(c_d.adhesions(:))
     else 
         adhesion_props(i).End_local_gel_diff = NaN;
     end
+    
+    %Find the local difference in the first image of the movie
+    first_background_region = logical(background_region .* first_d.binary_shift);
+    if (sum(sum(first_background_region)) > 0) 
+        adhesion_props(i).First_local_gel_diff = mean(first_d.gel_image(this_ad)) - mean(first_d.gel_image(first_background_region));
+    else 
+        adhesion_props(i).First_local_gel_diff = NaN;
+    end
+    
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.adhesions(:)))]); end
 end

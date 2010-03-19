@@ -69,7 +69,7 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach (@image_folders) {
-		$matlab_code[0] .= "find_adhesion_properties('$_','$image_folders[$#image_folders]')\n";
+		$matlab_code[0] .= "find_adhesion_properties('$_','$image_folders[0]','$image_folders[$#image_folders]')\n";
     }
 
     return @matlab_code;
