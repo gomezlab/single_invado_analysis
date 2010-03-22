@@ -114,10 +114,12 @@ if (length(args) != 0) {
         
         invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int < 0];
         invado_p_values = exp_props$p_values[exp_props$high_conf_int < 0];
+        invado_mean_vals = exp_props$mean_vals[exp_props$high_conf_int < 0];
         non_invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int >= 0];
         non_invado_p_values = exp_props$p_values[exp_props$high_conf_int >= 0];
+        non_invado_mean_vals = exp_props$mean_vals[exp_props$high_conf_int >= 0];
         
-        write.table(cbind(invado_lineage_nums,invado_p_values), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
-        write.table(cbind(non_invado_lineage_nums,non_invado_p_values), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        write.table(cbind(invado_lineage_nums,invado_p_values,invado_mean_vals), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        write.table(cbind(non_invado_lineage_nums,non_invado_p_values, non_invado_mean_vals), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
     }
 }
