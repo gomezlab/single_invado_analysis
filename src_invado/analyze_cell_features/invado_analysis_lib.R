@@ -21,6 +21,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             sep=",",header=T);
         degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', degrade_file), 
             sep=",",header=F);
+        first_degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', 'First_local_gel_diff.csv'), 
+            sep=",",header=F);
         stopifnot(dim(lineage_data)[[1]] == dim(degrade_data)[[1]])
         
         #Building the filter sets
@@ -51,38 +53,25 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$low_conf_int = c(all_props$low_conf_int, test_results$conf.int[1]);
             all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
             all_props$p_values = c(all_props$p_values, test_results$p.value);
+            
+            only_first_data = na.omit(as.numeric(first_degrade_data[i,]));
+            
+            test_results = t.test(only_data,only_first_data,conf.level=conf.level);
 
-            #search for the minimum number of points (at least five) needed to
-            #verify that the local gel difference is negative
-            if (test_results$conf.int[2] < 0) {
-                time_to_neg = c(time_to_neg, which(only_data < 0)[[1]])
-
-                min_found = 0;
-                for (i in 5:length(only_data)) {
-                    short_conf_int = t.test(only_data[1:i],conf.level=conf.level)$conf.int;
-                    if (short_conf_int[2] < 0 && ! min_found) {
-                        min_found = 1;
-                        time_to_conf_neg = c(time_to_conf_neg, i);
-                    }
-                }
-            } else {
-                time_to_conf_neg = c(time_to_conf_neg, NA);
-                time_to_neg = c(time_to_neg, NA)
-            }
+            all_props$first_p_values = c(all_props$first_p_values, test_results$p.value);
         }
-        all_props$time_to_conf_neg = c(all_props$time_to_conf_neg, time_to_conf_neg);
-        all_props$time_to_neg = c(all_props$time_to_neg, time_to_neg);
-        
+    
+        all_props = as.data.frame(all_props);
+
         if (! is.na(results.file)) {
             this_file = file.path(this_exp_dir,results.file);
             if (! file.exists(dirname(this_file))) {
                 dir.create(dirname(this_file),recursive=TRUE);
             }
-            all_props_frame = as.data.frame(all_props);
-            save(all_props_frame,file = this_file);
+            save(all_props,file = this_file);
         }
     }
-    return(as.data.frame(all_props));
+    return(all_props);
 }
 
 ################################################################################
@@ -121,5 +110,11 @@ if (length(args) != 0) {
         
         write.table(cbind(invado_lineage_nums,invado_p_values,invado_mean_vals), file.path(data_dir, 'invado_nums.csv'), row.names=F, col.names=F, sep=',')
         write.table(cbind(non_invado_lineage_nums,non_invado_p_values, non_invado_mean_vals), file.path(data_dir, 'non_invado_nums.csv'), row.names=F, col.names=F, sep=',')
+        
+        invado_lineage_nums = exp_props$overall_filt[exp_props$high_conf_int < 0 & exp_props$first_p_values < 0.05];
+        invado_p_values = exp_props$p_values[exp_props$high_conf_int < 0 & exp_props$first_p_values < 0.05];
+        invado_mean_vals = exp_props$mean_vals[exp_props$high_conf_int < 0 & exp_props$first_p_values < 0.05];
+        
+        write.table(cbind(invado_lineage_nums,invado_p_values,invado_mean_vals), file.path(data_dir, 'invado_nums_first_filt.csv'), row.names=F, col.names=F, sep=',')
     }
 }
