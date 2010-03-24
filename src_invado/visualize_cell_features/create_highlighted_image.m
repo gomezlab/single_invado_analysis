@@ -40,6 +40,7 @@ else
 end
 
 if (all(high(:) == 0))
+    high_image = cat(3,high_image_red,high_image_green,high_image_blue);
     return
 end
 
