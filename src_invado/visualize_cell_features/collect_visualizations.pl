@@ -67,25 +67,9 @@ foreach (@movie_params) {
     
     &write_matlab_config(%params);
     
-	for (1..scalar(@image_folders)) {
-		push @matlab_code, "highlight_puncta_sets('" . $params{'config_file'} . "',$_)";
-	}
-
     if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
         %single_ad_params = %params;
     }
-	# my $extra_opt = "";
-	# if (defined $opt{movie_debug}) {
-	# 	$extra_opt .= ",'debug',1";
-	# }
-	# if (defined $cfg{no_scale_bar}) {
-	# 	$extra_opt .= ",'no_scale_bar',$cfg{no_scale_bar}";
-	# }
-	# if (defined $cfg{no_b_box}) {
-	# 	$extra_opt .= ",'no_b_box',$cfg{no_b_box}";
-	# }
-    # push @matlab_code, "make_movie_frames('" . $params{'config_file'} . "'$extra_opt)";
-    # push @matlab_code, "make_ghost_frames('" . $params{'config_file'} . "')";
 }
 
 push @matlab_code, &build_single_ad_commands(%single_ad_params);
@@ -146,11 +130,11 @@ sub build_matlab_visualization_config {
         
         "lin_time_series_folder = fullfile(base_results_folder, '$cfg{adhesion_props_folder}', '$cfg{lineage_ts_folder}');\n",
 
-        "focal_image = 'registered_focal_image.png';",
+        "puncta_image_filename = 'registered_focal_image.png';",
         "adhesions_filename = 'puncta_labeled.png';",
         "adhesions_perim_filename = 'puncta_labeled_perim.png';",
         "edge_filename = 'cell_mask.png';",
-        "gel_image = 'registered_gel.png';",
+        "gel_image_filename = 'registered_gel.png';",
 
         "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
 

@@ -41,7 +41,7 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 invado_data = csvread(invado_file);
 
-%after loading the tracking sequence filter to only include those adhesions
+%after loading the tracking sequence filter to only include those puncta
 %included in the invadopodia list, remember the list formated so the first
 %column contains the lineage number, with the first lineage as 1, so no
 %need to translate
@@ -77,9 +77,29 @@ lineage_to_cmap = 1:size(tracking_seq,1);
 %fill out the p_value based color map
 p_value_ranges = linspace(0.005,0.05,15);
 p_value_cmap = hot(length(p_value_ranges));
+%flip the rows of the color map
+p_value_cmap = p_value_cmap(size(p_value_cmap,1):-1:1,:);
 lineage_to_p_value_cmap = zeros(size(tracking_seq,1),1);
 for i = 1:length(invado_data(:,2))
-    lineage_to_p_value_cmap(i) = find(p_value_ranges >= invado_data(i,2), 1);
+    try
+        lineage_to_p_value_cmap(i) = find(p_value_ranges >= invado_data(i,2), 1);
+    catch
+        lineage_to_p_value_cmap(i) = length(p_value_ranges);
+    end
+end
+
+%fill out the local_diff based color map
+local_diff_ranges = linspace(-0.01,0,15);
+local_diff_cmap = cool(length(local_diff_ranges));
+%flip the rows of the color map
+% local_diff_cmap = local_diff_cmap(size(local_diff_cmap,1):-1:1,:);
+lineage_to_local_diff_cmap = zeros(size(tracking_seq,1),1);
+for i = 1:length(invado_data(:,3))
+    try
+        lineage_to_local_diff_cmap(i) = find(local_diff_ranges >= invado_data(i,3), 1);
+    catch
+        lineage_to_local_diff_cmap(i) = length(local_diff_ranges);
+    end
 end
 
 %final all the image directories
@@ -102,15 +122,7 @@ last_gel_image = cat(3,last_gel_image,last_gel_image,last_gel_image);
 
 last_gel_image_high = last_gel_image;
 last_gel_image_p_val_high = last_gel_image;
-
-%first gel image
-% first_gel_image = double(imread(fullfile(I_folder,image_dirs(1).name,gel_image)));
-% first_binary_shift = logical(imread(fullfile(I_folder,image_dirs(1).name,'binary_shift.png')));
-% 
-% first_gel_image = first_gel_image - gel_limits(1);
-% first_gel_image = first_gel_image .* (1/gel_limits(2));
-% first_gel_image(not(first_binary_shift)) = 0;
-% first_gel_image = cat(3,first_gel_image,first_gel_image,first_gel_image);
+last_gel_image_local_diff_high = last_gel_image;
 
 for i = 1:length(image_dirs)
     %check for the presence of adhesions to map onto the last gel image, if
@@ -120,7 +132,7 @@ for i = 1:length(image_dirs)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather the adhesion label image and perimeters
+    %Gather the adhesion label perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ad_label_perim = imread(fullfile(I_folder,image_dirs(i).name,adhesions_perim_filename));
     
@@ -143,12 +155,19 @@ for i = 1:length(image_dirs)
     this_cmap(ad_nums,:) = lineage_cmap(cmap_nums,:);
     last_gel_image_high = create_highlighted_image(last_gel_image_high,ad_label_perim,'color_map',this_cmap, 'mix_percent',0.5);
     
-    %Build the unique lineage highlighted image
+    %Build the p-value colored highlight image
     cmap_nums = lineage_to_p_value_cmap(tracking_seq(:,i) > 0);
     assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',i);
     this_cmap = zeros(max(ad_label_perim(:)),3);
     this_cmap(ad_nums,:) = p_value_cmap(cmap_nums,:);
     last_gel_image_p_val_high = create_highlighted_image(last_gel_image_p_val_high,ad_label_perim,'color_map',this_cmap, 'mix_percent',0.5);
+
+    %Build the local difference colored highlight image
+    cmap_nums = lineage_to_local_diff_cmap(tracking_seq(:,i) > 0);
+    assert(length(ad_nums) == length(cmap_nums),'Error: the number of adhesions does not match the color map indexes in unique lineage numbers image %d',i);
+    this_cmap = zeros(max(ad_label_perim(:)),3);
+    this_cmap(ad_nums,:) = local_diff_cmap(cmap_nums,:);
+    last_gel_image_local_diff_high = create_highlighted_image(last_gel_image_local_diff_high,ad_label_perim,'color_map',this_cmap, 'mix_percent',0.5);    
     
     if(i_p.Results.debug), disp(i); end
 end
@@ -163,6 +182,11 @@ end
 
 imwrite([last_gel_image, spacer, last_gel_image_high], fullfile(vis_folder,'invado_highlight_last.png'))
 imwrite([last_gel_image, spacer, last_gel_image_p_val_high], fullfile(vis_folder,'invado_highlight_p_val.png'))
+imwrite([last_gel_image, spacer, last_gel_image_local_diff_high], fullfile(vis_folder,'invado_highlight_local_diff.png'))
+
+spacer_long = ones(1,size(last_gel_image,2)*2+1,3);
+
+imwrite([last_gel_image, spacer, last_gel_image_high;spacer_long;last_gel_image_p_val_high,spacer,last_gel_image_local_diff_high], fullfile(vis_folder,'invado_highlight_all.png'))
 
 profile off;
 if (i_p.Results.debug), profile viewer; end
