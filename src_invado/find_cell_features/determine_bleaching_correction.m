@@ -92,13 +92,18 @@ for i=1:length(single_image_folders)
 end
 
 %diagnostic plot
-% plot(gel_levels)
-% xlabel('Time (min)')
-% ylabel('Average Intensity');
+% time_points = (0:(length(gel_levels) - 1))*5;
+% plot(time_points,gel_levels)
+% xlabel('Time (min)', 'Fontsize',16)
+% ylabel('Average Intensity', 'Fontsize',16);
 % hold on;
-% plot(gel_levels_puncta,'g');
-% plot(gel_levels_outside_cell,'r');
-% legend('Overall','Puncta','Outside Cell')
+% plot(time_points,gel_levels_puncta,'g');
+% plot(time_points,gel_levels_outside_cell,'r');
+% 
+% y_limits = ylim();
+% ylim([0 y_limits(2)]);
+% 
+% legend('Overall','Puncta','Outside Cell', 'location','SouthEast')
 
 dlmwrite(fullfile(i_p.Results.output_dir,'bleaching_curves.csv'), ...
     [gel_levels; gel_levels_outside_cell; gel_levels_puncta]);

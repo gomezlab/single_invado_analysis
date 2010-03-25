@@ -78,6 +78,9 @@ final_data.adhesions = imread(fullfile(final_dir, i_p.Results.adhesions_filename
 %read in the labeled adhesions
 final_data.binary_shift = logical(imread(fullfile(final_dir, i_p.Results.binary_shift_filename)));
 
+%read in the intensity correction coefficient
+final_data.intensity_correction = csvread(fullfile(final_dir, i_p.Results.intensity_correction_file));
+
 %read in the cell mask file if defined
 if(exist(fullfile(final_dir, i_p.Results.cell_mask_filename), 'file'))
     final_data.cell_mask = logical(imread(fullfile(final_dir, i_p.Results.cell_mask_filename)));
@@ -94,7 +97,13 @@ scale_factor = double(intmax(class(first_data.gel_image)));
 first_data.gel_image  = double(first_data.gel_image)/scale_factor;
 
 %read in the labeled adhesions
+first_data.adhesions = imread(fullfile(first_dir, i_p.Results.adhesions_filename));
+
+%read in the labeled adhesions
 first_data.binary_shift = logical(imread(fullfile(first_dir, i_p.Results.binary_shift_filename)));
+
+%read in the intensity correction coefficient
+first_data.intensity_correction = csvread(fullfile(first_dir, i_p.Results.intensity_correction_file));
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
@@ -156,50 +165,20 @@ for i=1:max(c_d.adhesions(:))
     this_ad = c_d.adhesions;
     this_ad(c_d.adhesions ~= i) = 0;
     this_ad = logical(this_ad);
-    background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
-    %we don't want to include any areas that have been identified as other
-    %objects
-    background_region = and(background_region,not(c_d.adhesions));
-    %also exclude areas outside the registered image
-    background_region = logical(background_region .* c_d.binary_shift);
-    assert(sum(sum(background_region)) > 0)
     
-    adhesion_props(i).Local_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(background_region));
-    adhesion_props(i).Local_gel_diff_corr = adhesion_props(i).Local_gel_diff*c_d.intensity_correction;
-    adhesion_props(i).Global_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(c_d.binary_shift));
+    current_diffs = collect_local_diff_properties(c_d,this_ad);
     
-    adhesion_props(i).Background_adhesion_signal = mean(c_d.puncta_image(background_region));
-    adhesion_props(i).Background_area = sum(background_region(:));
-    adhesion_props(i).Background_corrected_signal = adhesion_props(i).Average_adhesion_signal - adhesion_props(i).Background_adhesion_signal;
+    adhesion_props(i).Local_gel_diff = current_diffs.Local_gel_diff;
+    adhesion_props(i).Local_gel_diff_corr = current_diffs.Local_gel_diff_corr;
+    adhesion_props(i).Global_gel_diff = current_diffs.Global_gel_diff;
+    adhesion_props(i).Large_local_gel_diff = current_diffs.Large_local_gel_diff;
+    adhesion_props(i).Large_local_gel_diff_corr = current_diffs.Large_local_gel_diff_corr;
     
-    large_background_region = logical(imdilate(this_ad,strel('disk',10,0)));
-    %we don't want to include any areas that have been identified as other
-    %objects
-    large_background_region = and(large_background_region,not(c_d.adhesions));
-    %also exclude areas outside the registered image
-    large_background_region = logical(large_background_region .* c_d.binary_shift);
-    assert(sum(sum(large_background_region)) > 0)
+    first_diffs = collect_local_diff_properties(first_d,this_ad);
+    adhesion_props(i).First_local_gel_diff = first_diffs.Local_gel_diff;
     
-    adhesion_props(i).Large_local_gel_diff = mean(c_d.gel_image(this_ad)) - mean(c_d.gel_image(large_background_region));
-    
-    %Find the local difference in the last image of the movie
-    final_background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
-    final_background_region = and(final_background_region,not(f_d.adhesions));
-    final_background_region = logical(final_background_region .* f_d.binary_shift);
-    if (sum(sum(final_background_region)) > 0) 
-        adhesion_props(i).End_local_gel_diff = mean(f_d.gel_image(this_ad)) - mean(f_d.gel_image(final_background_region));
-    else 
-        adhesion_props(i).End_local_gel_diff = NaN;
-    end
-    
-    %Find the local difference in the first image of the movie
-    first_background_region = logical(background_region .* first_d.binary_shift);
-    if (sum(sum(first_background_region)) > 0) 
-        adhesion_props(i).First_local_gel_diff = mean(first_d.gel_image(this_ad)) - mean(first_d.gel_image(first_background_region));
-    else 
-        adhesion_props(i).First_local_gel_diff = NaN;
-    end
-    
+    final_diffs = collect_local_diff_properties(f_d,this_ad);
+    adhesion_props(i).End_local_gel_diff = final_diffs.Local_gel_diff;
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.adhesions(:)))]); end
 end
@@ -227,7 +206,7 @@ if (isfield(c_d, 'cell_mask'))
     %field of view. To be safe, we will set those
     %distance-to-nearest-cell-edge values to NaN.
     black_border_mask = only_reg_mask;
-    black_border_mask(1,:) = 0; black_border_mask(end,:) = 0; 
+    black_border_mask(1,:) = 0; black_border_mask(end,:) = 0;
     black_border_mask(:,1) = 0; black_border_mask(:,end) = 0;
     
     bb_dists_temp = bwdist(~black_border_mask);
@@ -247,4 +226,60 @@ if (isfield(c_d, 'cell_mask'))
             adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
         end
     end
+end
+
+function diffs = collect_local_diff_properties(data_struct,this_ad,varargin)
+% COLLECT_LOCAL_DIFF_PROPERTIES    find the local difference properties of
+%                                  a provided set of images and a given
+%                                  puncta
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+i_p = inputParser;
+i_p.FunctionName = 'COLLECT_LOCAL_DIFF_PROPERTIES';
+
+i_p.addRequired('data_struct',@isstruct);
+i_p.addRequired('this_ad',@islogical);
+
+i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
+i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
+
+i_p.parse(data_struct,this_ad,varargin{:});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+diffs = struct();
+
+background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background_border_size,0)));
+%we don't want to include any areas that have been identified as other
+%objects
+background_region = and(background_region,not(data_struct.adhesions));
+%also exclude areas outside the registered image
+background_region = logical(background_region .* data_struct.binary_shift);
+
+if (sum(sum(background_region)) == 0)
+    diffs.Local_gel_diff = NaN;
+    diffs.Local_gel_diff_corr = NaN;
+else
+    diffs.Local_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(background_region));
+    diffs.Local_gel_diff_corr = diffs.Local_gel_diff*data_struct.intensity_correction;
+end
+diffs.Global_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(data_struct.binary_shift));
+
+large_background_region = logical(imdilate(this_ad,strel('disk',10,0)));
+%we don't want to include any areas that have been identified as other
+%objects
+large_background_region = and(large_background_region,not(data_struct.adhesions));
+%also exclude areas outside the registered image
+large_background_region = logical(large_background_region .* data_struct.binary_shift);
+
+if (sum(sum(large_background_region)) == 0)
+    diffs.Large_local_gel_diff = NaN;
+    diffs.Large_local_gel_diff_corr = NaN;
+else
+    diffs.Large_local_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(large_background_region));
+    diffs.Large_local_gel_diff_corr = diffs.Large_local_gel_diff*data_struct.intensity_correction;
 end
