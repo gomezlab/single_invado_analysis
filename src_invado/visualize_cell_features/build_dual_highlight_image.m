@@ -1,7 +1,10 @@
 function build_dual_highlight_image(cfg_file,invado_file,non_invado_file,varargin)
-%MAKE_MOVIE_FRAMES    Builds several still image visualizations of the
-%                     invadopodia in a given experiment, highlighting them
-%                     over the final image of the visualization 
+%BUILD_DUAL_HIGHLIGHT_IMAGES    Builds highlighted images showing the
+%                               invadopodia (green), non-invadopodia (red),
+%                               other puncta (blue) and the cell edge
+%                               (purple), placing the image for each frame
+%                               of the movie in the individual image
+%                               folders
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line

@@ -1,7 +1,8 @@
 function make_final_puncta_highlight(cfg_file,invado_file,areas_lineage_ts_file,varargin)
-%MAKE_MOVIE_FRAMES    Builds several still image visualizations of the
-%                     invadopodia in a given experiment, highlighting them
-%                     over the final image of the visualization 
+%MAKE_FINAL_PUNCTA_HIGHLIGHT    Builds several still image visualizations
+%                               of the invadopodia in a given experiment,
+%                               highlighting them over the final image of
+%                               the visualization
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
