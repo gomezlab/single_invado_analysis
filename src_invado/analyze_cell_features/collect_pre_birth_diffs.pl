@@ -45,7 +45,7 @@ die "Found more than one config file:\n", join("\n\t",@config_files) if (scalar(
 my @matlab_code = &create_all_matlab_commands(@image_folders);
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'pre_birth_diffs');
-$opt{error_file} = catfile($opt{errors_folder}, 'error.txt');
+$opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 $opt{runtime} = "1";
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};

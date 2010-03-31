@@ -149,7 +149,7 @@ end
 
 assert(length(transistion_points) <= 2);
 
-if (length(transistion_points) == 2)
+if (length(transistion_points) >= 1)
     birth_i_num = transistion_points(1);
 end
 end
