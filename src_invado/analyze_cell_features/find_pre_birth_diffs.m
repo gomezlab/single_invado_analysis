@@ -140,16 +140,14 @@ function birth_i_num = find_birth_i_num(puncta_present_logical)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 birth_i_num = NaN;
-transistion_points = [];
 for i=2:length(puncta_present_logical)
-    if (xor(puncta_present_logical(i), puncta_present_logical(i-1)))
-        transistion_points = [transistion_points, i]; %#ok<AGROW>
+    if (puncta_present_logical(i) == 0 && puncta_present_logical(i-1) == 1)
+        %if the birth_i_num is not nan, we have an error since we should
+        %only see one transition from 1 to 0
+        assert(isnan(birth_i_num))
+            
+        birth_i_num = i;
     end
 end
 
-assert(length(transistion_points) <= 2);
-
-if (length(transistion_points) >= 1)
-    birth_i_num = transistion_points(1);
-end
 end
