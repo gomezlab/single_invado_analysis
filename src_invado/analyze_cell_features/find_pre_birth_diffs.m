@@ -95,7 +95,7 @@ for i = 1:size(tracking_seq,1)
     image_data.binary_shift = logical(imread(fullfile(I_folder,image_dirs(birth_i_num).name,i_p.Results.binary_shift_filename)));
     
     %read in the gel image and normalize to 0-1
-    image_data.gel_image = double(imread(fullfile(I_folder,image_dirs(birth_i_num).name,gel_image_filename)));
+    image_data.gel_image = double(imread(fullfile(I_folder,image_dirs(birth_i_num).name,i_p.Results.gel_filename)));
     image_data.gel_image = image_data.gel_image - gel_limits(1);
     image_data.gel_image = image_data.gel_image .* (1/gel_limits(2));
     image_data.gel_image(not(image_data.binary_shift)) = 0;
