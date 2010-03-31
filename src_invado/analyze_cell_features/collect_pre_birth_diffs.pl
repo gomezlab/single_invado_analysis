@@ -64,7 +64,7 @@ sub create_all_matlab_commands {
     foreach my $image_number (1..scalar(@image_folders)) {
         my $extra_opt = "";
 
-		$matlab_code[0] .= "build_dual_highlight_image('$config_files[0]',$image_number)\n";
+		$matlab_code[0] .= "find_pre_birth_diffs('$config_files[0]',$image_number)\n";
     }
 
     return @matlab_code;
