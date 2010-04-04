@@ -31,8 +31,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg=s", "debug|d", "movie_debug", "config_only|only_config", 
-                  "lsf|l", "single_ad_folders") or die;
+GetOptions(\%opt, "cfg=s", "debug|d", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 
@@ -47,7 +46,7 @@ my @matlab_code;
 my @config_files = File::Find::Rule->file()->name( "*.m" )->in( catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}) );
 die "Found more than one config file:\n", join("\n\t",@config_files) if (scalar(@config_files) > 1);
 
-my $invado_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_nums.csv');
+my $invado_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_data.csv');
 die "Unable to find: $invado_file" if (! -e $invado_file);
 
 my $area_lineage_ts = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 

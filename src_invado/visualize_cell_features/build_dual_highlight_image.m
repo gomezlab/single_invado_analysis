@@ -79,7 +79,7 @@ for i = 1:length(image_dirs)
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    binary_shift = logical(imread(fullfile(I_folder,image_dirs(end).name,'binary_shift.png')));
+    binary_shift = logical(imread(fullfile(I_folder,image_dirs(i).name,'binary_shift.png')));
     
     %read in the gel image and normalize to 0-1
     gel_image = double(imread(fullfile(I_folder,image_dirs(i).name,gel_image_filename)));

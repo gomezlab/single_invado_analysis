@@ -189,7 +189,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (isfield(c_d, 'cell_mask'))
-    [dists, indicies] = bwdist(~c_d.cell_mask);
+    [dists, indicies] = bwdist(~c_d.cell_mask); %#ok<NASGU>
     dists(not(c_d.binary_shift)) = NaN;
     
     min_row = find(sum(c_d.binary_shift,2),1,'first');
@@ -218,7 +218,7 @@ if (isfield(c_d, 'cell_mask'))
     dists(bb_dists < dists) = NaN;
     for i=1:max(c_d.adhesions(:))
         centroid_pos = round(adhesion_props(i).Centroid);
-        centroid_unrounded = adhesion_props(i).Centroid;
+        centroid_unrounded = adhesion_props(i).Centroid; %#ok<NASGU>
         if(size(centroid_pos,1) == 0)
             warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
             adhesion_props(i).Centroid_dist_from_edge = NaN;

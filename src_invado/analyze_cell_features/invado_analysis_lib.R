@@ -23,15 +23,22 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             sep=",",header=T);
         degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', degrade_file), 
             sep=",",header=F);
-        first_degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', 'First_local_gel_diff.csv'), 
+        pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff.csv'), 
             sep=",",header=F);
         area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
             sep=",",header=F);
         stopifnot(dim(lineage_data)[[1]] == dim(degrade_data)[[1]])
         
         #Building the filter sets
+        
+        #exclude puncta that don't live for at least 5 time steps
         longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
+        
+        #exclude puncta that underwent split births
         no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
+
+        #exclude puncta that disappeared due to merge events (coded as 0 in the
+        #lineage data file)
         death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
 
         overall_filt = longev_filter & no_split_birth_filt & death_filt;
@@ -60,13 +67,12 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
             all_props$p_value = c(all_props$p_value, test_results$p.value);
             
-            only_first_data = na.omit(as.numeric(first_degrade_data[i,]));
+            only_pre_diff_data = na.omit(as.numeric(pre_diff_data[i,]));
             
-            only_first_test = t.test(only_first_data,conf.level=conf.level);
+            only_pre_diff_test = t.test(only_pre_diff_data,conf.level=conf.level);
 
-            first_diff_test = t.test(only_data - only_first_data,conf.level=conf.level);
-
-            all_props$first_p_value = c(all_props$first_p_value, test_results$p.value);
+            local_pre_test = t.test(only_data - only_pre_diff_data,conf.level=conf.level);
+            all_props$local_pre_p_value = c(all_props$local_pre_p_value, local_pre_test$p.value);
             
             only_area_data = na.omit(as.numeric(area_data[i,]));
 
@@ -75,11 +81,11 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 time_points = seq(from=0,by=5,along.with=only_data);
                 
                 par(bty='n', mar=c(5,4,4,5))
-                matplot(time_points, cbind(only_data, only_first_data), typ='l', xlab='Time (min)', ylab='Local Diff', main=i)
+                matplot(time_points, cbind(only_data, only_pre_diff_data), typ='l', xlab='Time (min)', ylab='Local Diff', main=i)
                 legend('topleft',c('Local Diff','First Image Local Diff'), fill=c('black','red'))
                 segments(0,0,max(time_points),0, col='green', lty=4)
                 errbar(max(time_points), test_results$estimate, test_results$conf.int[2], test_results$conf.int[1], add=T)
-                errbar(max(time_points), only_first_test$estimate, only_first_test$conf.int[2], only_first_test$conf.int[1], add=T, col='red')
+                errbar(max(time_points), only_pre_diff_test$estimate, only_pre_diff_test$conf.int[2], only_pre_diff_test$conf.int[1], add=T, col='red')
                 
                 #Adding the areas to the same plot
                 # plot_props = par('usr');
@@ -111,8 +117,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
 
 build_filter_sets <- function(raw_data_set) {
     filter_sets = list();
-    filter_sets$invado_filter = raw_data_set$high_conf_int < 0 & raw_data_set$first_p_value < 0.05;
-    filter_sets$non_invado_filter = raw_data_set$high_conf_int >= 0;
+    filter_sets$invado_filter = raw_data_set$high_conf_int < 0 & raw_data_set$local_pre_p_value < 0.05;
+    filter_sets$non_invado_filter = ! filter_sets$invado_filter;
 
     return(filter_sets);
 }
