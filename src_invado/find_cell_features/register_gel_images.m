@@ -77,6 +77,7 @@ for i = 1:size(row_shifts,1)
         ms_diff(i,j) = sum(sum((reg_target.*binary_shift - gel_shift.*binary_shift).^2))/sum(sum(binary_shift));
     end
 end
+csvwrite(fullfile(i_p.Results.output_dir, 'registration_diffs.csv'), ms_diff)
 
 best_index = find(ms_diff == min(min(ms_diff)),1);
 transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shifts(best_index)];
