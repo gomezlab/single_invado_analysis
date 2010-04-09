@@ -64,24 +64,30 @@ stop()
 # Area Comparisons
 ####################
 
-area_sets_to_use = list(data_sets$invado_control$largest_area, 
-                        data_sets$invado_coro1B_kd$largest_area, 
-                        data_sets$invado_coro1C_kd$largest_area, 
-                        data_sets$invado_CotL_kd$largest_area)
+dir.create('area',recursive=TRUE, showWarnings=FALSE);
+
+area_sets_to_use = list(data_sets$invado_control$mean_area, 
+                        data_sets$invado_coro1B_kd$mean_area, 
+                        data_sets$invado_coro1C_kd$mean_area, 
+                        data_sets$invado_CotL_kd$mean_area)
 
 data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
 
-svg('area_boxplots.svg')
+for (i in 1:length(data_names)) {
+    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
+}
+
+svg(file.path('area','area_boxplots.svg'), width=9)
 boxplot(area_sets_to_use, names=data_names,
-        ylab='Largest Puncta Area (\u03BCm\u00B2)')
+        ylab='Mean Puncta Area (\u03BCm\u00B2)')
 graphics.off()
 
 area_conf_ints = gather_barplot_properties(area_sets_to_use);
 
-svg('area_barplots.svg')
+svg(file.path('area','area_barplots.svg'), width=8)
 par(mar=c(2,4,0.5,0))
 x_pos = barplot(area_conf_ints$mean, names=data_names,
-        ylab='Largest Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
+        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
 errbar(t(x_pos),area_conf_ints$mean,area_conf_ints$yplus, area_conf_ints$yminus,
        add=TRUE,cex=1E-10,lwd=1.5)
 graphics.off()
@@ -90,26 +96,51 @@ graphics.off()
 # Longevity Comparisons
 ####################
 
+dir.create('longevity',recursive=TRUE, showWarnings=FALSE);
+
 longev_sets_to_use = list(data_sets$invado_control$longevity*5, 
-                        data_sets$invado_coro1B_kd$longevity*5, 
-                        data_sets$invado_coro1C_kd$longevity*5, 
-                        data_sets$invado_CotL_kd$longevity*5)
+                          data_sets$invado_coro1B_kd$longevity*5, 
+                          data_sets$invado_coro1C_kd$longevity*5, 
+                          data_sets$invado_CotL_kd$longevity*5)
 
-data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
-
-svg('longevity_boxplots.svg')
+svg(file.path('longevity','longevity_boxplots.svg'), width=9)
 boxplot(longev_sets_to_use, names=data_names,
         ylab='Longevity (min)')
 graphics.off()
 
 longev_conf_ints = gather_barplot_properties(longev_sets_to_use);
 
-svg('longevity_barplots.svg')
+svg(file.path('longevity','longevity_barplots.svg'), width=8)
 par(mar=c(2,4,0.5,0))
 x_pos = barplot(longev_conf_ints$mean, names=data_names,
         ylab='Longevity (min)', ylim=c(0,max(longev_conf_ints$yplus)))
 errbar(t(x_pos),longev_conf_ints$mean,longev_conf_ints$yplus, longev_conf_ints$yminus,
        add=TRUE,cex=1E-10,lwd=1.5)
+graphics.off()
+
+####################
+# Longevity/Area Comparisons
+####################
+
+dir.create('longevity_size_comp',recursive=TRUE, showWarnings=FALSE);
+
+data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
+
+for (i in 1:length(longev_sets_to_use)) {
+    svg(file.path('longevity_size_comp',paste(data_names[[i]], '.svg', sep='')))
+    par(bty='n');
+    plot(longev_sets_to_use[[i]], area_sets_to_use[[i]], main=data_names[[i]],
+        xlab='Longevity (min)', ylab='Mean Puncta Area (\u03BCm\u00B2)')
+    graphics.off()
+}
+
+svg(file.path('longevity_size_comp','all.svg'))
+par(bty='n');
+layout(rbind(c(1,2),c(3,4)))
+for (i in 1:length(longev_sets_to_use)) {
+    plot(longev_sets_to_use[[i]], area_sets_to_use[[i]], main=data_names[[i]],
+        xlab='Longevity (min)', ylab='Mean Puncta Area (\u03BCm\u00B2)')
+}
 graphics.off()
 
 ########################################
@@ -177,19 +208,6 @@ for (i in 1:length(ts_props$bleaching_curve[[1]])) {
     correlations$notcell_vs_puncta = c(correlations$notcell_vs_puncta,
         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][2,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
 }
-
-props_to_look_at = c('longevity','mean_vals', 'largest_area');
-layout(cbind(c(1,2),c(3,4)))
-for (i in props_to_look_at) {
-    min_val = min(c(data_sets$invado_control[[i]], data_sets$invado_coro1B_kd[[i]], data_sets$invado_coro1C_kd[[i]]));
-    if (i == 'mean_vals') {
-        boxplot(data_sets$invado_control_corr[[i]], data_sets$invado_coro1B_kd_corr[[i]], data_sets$invado_coro1C_kd_corr[[i]], data_sets$invado_CotL_kd_corr[[i]], notch=T, main=i, names=c('ctrl','1B','1C', 'CotL'), ylim=c(min_val,0))
-    } else {
-        boxplot(data_sets$invado_control_corr[[i]], data_sets$invado_coro1B_kd_corr[[i]], data_sets$invado_coro1C_kd_corr[[i]], data_sets$invado_CotL_kd_corr[[i]], notch=T, main=i, names=c('ctrl','1B','1C', 'CotL'))
-    }
-}
-
-layout(cbind(1,2,3))
 
 ########################################
 # Longevity Bi-hist
