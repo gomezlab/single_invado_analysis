@@ -39,7 +39,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
 my @image_files   = sort <$cfg{individual_results_folder}/*/$cfg{gel_image_file}>;
-die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})." if (scalar(@image_files) != scalar(@image_folders));
+die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder}), instead found " . scalar(@image_folders) . " image folders and " . scalar(@image_files) . "." if (scalar(@image_files) != scalar(@image_folders));
 
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
