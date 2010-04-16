@@ -6,7 +6,8 @@
 library(Hmisc);
 
 gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
-    conf.level = 0.95, degrade_file = "Local_gel_diff_corr.csv", results.file = NA, build_plots=TRUE) {
+    conf.level = 0.95, degrade_file = "Local_gel_diff_corr.csv", results.file = NA, 
+    build_plots=TRUE, debug=FALSE) {
     
     all_props = list();
 
@@ -24,6 +25,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', degrade_file), 
             sep=",",header=F);
         pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff.csv'), 
+            sep=",",header=F);
+        end_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'End_local_gel_diff.csv'), 
             sep=",",header=F);
         area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
             sep=",",header=F);
@@ -45,7 +48,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         
         all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
         all_props$experiment = c(all_props$experiment,rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
-        props_to_include = c("longevity","largest_area","birth_i_num");
+        props_to_include = c("longevity","largest_area","birth_i_num","mean_area");
         for (i in props_to_include) {
             all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
         }
@@ -61,31 +64,42 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$max_local_diff = c(all_props$max_local_diff, max(only_data));
             all_props$min_local_diff = c(all_props$min_local_diff, min(only_data));
             
-            test_results = t.test(only_data,conf.level=conf.level);
+            test_results = tryCatch(t.test(only_data,conf.level=conf.level), error = t.test.error);
             
             all_props$low_conf_int = c(all_props$low_conf_int, test_results$conf.int[1]);
             all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
             all_props$p_value = c(all_props$p_value, test_results$p.value);
             
+            #Pre-birth local difference data
             only_pre_diff_data = na.omit(as.numeric(pre_diff_data[i,]));
             
-            only_pre_diff_test = t.test(only_pre_diff_data,conf.level=conf.level);
+            only_pre_diff_test = tryCatch(t.test(only_pre_diff_data,conf.level=conf.level), error = t.test.error);
 
-            local_pre_test = t.test(only_data - only_pre_diff_data,conf.level=conf.level);
-            all_props$local_pre_p_value = c(all_props$local_pre_p_value, local_pre_test$p.value);
+            pre_test = tryCatch(t.test(only_data - only_pre_diff_data,conf.level=conf.level), error = t.test.error);
+            all_props$pre_p_value = c(all_props$pre_p_value, pre_test$p.value);
+            all_props$pre_high_conf_int = c(all_props$pre_high_conf_int, pre_test$conf.int[2]);
             
             only_area_data = na.omit(as.numeric(area_data[i,]));
 
             if (build_plots) {
                 #plotting the results of the tests
+                if (test_results$conf.int[2] > 0) {
+                    next;
+                }
                 time_points = seq(from=0,by=5,along.with=only_data);
                 
                 par(bty='n', mar=c(5,4,4,5))
-                matplot(time_points, cbind(only_data, only_pre_diff_data), typ='l', xlab='Time (min)', ylab='Local Diff', main=i)
-                legend('topleft',c('Local Diff','First Image Local Diff'), fill=c('black','red'))
-                segments(0,0,max(time_points),0, col='green', lty=4)
+                matplot(time_points, cbind(only_data, only_pre_diff_data, only_data - only_pre_diff_data), typ='l', xlab='Time (min)', ylab='Difference Metric', main=i)
+                legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), fill=c('black','red', 'green'))
+                segments(0,0,max(time_points),0, col='purple', lty=4)
+
+                plot_limits = par("usr");
+
                 errbar(max(time_points), test_results$estimate, test_results$conf.int[2], test_results$conf.int[1], add=T)
-                errbar(max(time_points), only_pre_diff_test$estimate, only_pre_diff_test$conf.int[2], only_pre_diff_test$conf.int[1], add=T, col='red')
+                errbar(max(time_points)+(plot_limits[2]-max(time_points))*0.4, only_pre_diff_test$estimate, 
+                    only_pre_diff_test$conf.int[2], only_pre_diff_test$conf.int[1], add=T, col='red')
+                errbar(max(time_points)+(plot_limits[2]-max(time_points))*0.8, pre_test$estimate, 
+                    pre_test$conf.int[2], pre_test$conf.int[1], add=T, col='green')
                 
                 #Adding the areas to the same plot
                 # plot_props = par('usr');
@@ -115,9 +129,17 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
     return(all_props);
 }
 
+t.test.error <- function(e) {
+    list(conf.int = c(Inf, -Inf), p.value = 1)
+}
+
 build_filter_sets <- function(raw_data_set) {
     filter_sets = list();
-    filter_sets$invado_filter = raw_data_set$high_conf_int < 0 & raw_data_set$local_pre_p_value < 0.05;
+    
+    filter_sets$local_diff_filter = raw_data_set$high_conf_int < 0;
+    filter_sets$pre_diff_filter = raw_data_set$pre_high_conf_int < 0;
+    
+    filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
     filter_sets$non_invado_filter = ! filter_sets$invado_filter;
 
     return(filter_sets);
@@ -154,10 +176,13 @@ if (length(args) != 0) {
         filter_sets = build_filter_sets(exp_props);
 
         invado_lineage_data = subset(exp_props, filter_sets$invado_filter, select = data_types_to_include);
+        local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, select = data_types_to_include);
         
         non_invado_lineage_data = subset(exp_props, filter_sets$non_invado_filter, select = data_types_to_include);
         
         write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), row.names=F, col.names=F, sep=',')
+        write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), row.names=F, col.names=F, sep=',')
+        
         write.table(non_invado_lineage_data, file.path(data_dir, 'non_invado_data.csv'), row.names=F, col.names=F, sep=',')
     }
 }

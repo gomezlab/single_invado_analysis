@@ -77,32 +77,32 @@ for i = 1:size(tracking_seq,1)
         continue;
     end
     
-    %skip over any rows that don't have a real puncta number
+    %skip over any rows that don't have any puncta
     if (tracking_seq(i,image_num) <= 0)
         continue;
     end
     
     %now we have a real puncta number, lets find the pre-birth image number
-    birth_i_num = find_birth_i_num(tracking_seq(i,:) < 1) - 1;
+    pre_birth_i_num = find_birth_i_num(tracking_seq(i,:) < 1) - 1;
     %the above function returns NaN if there isn't a pre-birth image
     %number, catch that situation and exit out of the loop in that case
-    if (isnan(birth_i_num))
+    if (isnan(pre_birth_i_num))
         continue;
     end
     
     image_data = struct();
     
-    image_data.binary_shift = logical(imread(fullfile(I_folder,image_dirs(birth_i_num).name,i_p.Results.binary_shift_filename)));
+    image_data.binary_shift = logical(imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.binary_shift_filename)));
     
     %read in the gel image and normalize to 0-1
-    image_data.gel_image = double(imread(fullfile(I_folder,image_dirs(birth_i_num).name,i_p.Results.gel_filename)));
+    image_data.gel_image = double(imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.gel_filename)));
     image_data.gel_image = image_data.gel_image - gel_limits(1);
     image_data.gel_image = image_data.gel_image .* (1/gel_limits(2));
     image_data.gel_image(not(image_data.binary_shift)) = 0;
     image_data.gel_image = cat(3,image_data.gel_image,image_data.gel_image,image_data.gel_image);
     
-    image_data.intensity_correction = csvread(fullfile(I_folder,image_dirs(birth_i_num).name,i_p.Results.intensity_correction_file));
-    image_data.adhesions = imread(fullfile(I_folder,image_dirs(birth_i_num).name, i_p.Results.adhesions_filename));
+    image_data.intensity_correction = csvread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.intensity_correction_file));
+    image_data.adhesions = imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name, i_p.Results.adhesions_filename));
     
     puncta_num = tracking_seq(i,image_num);
     
@@ -119,12 +119,12 @@ for i = 1:size(tracking_seq,1)
     
     this_pre_birth_diff = collect_local_diff_properties(image_data,this_ad);
     
-    pre_birth_diffs(puncta_num) = this_pre_birth_diff.Local_gel_diff;
+    pre_birth_diffs(puncta_num) = this_pre_birth_diff.Local_gel_diff_corr;
     
-    if(i_p.Results.debug), disp([puncta_num,birth_i_num]); end
+    if(i_p.Results.debug), disp([puncta_num,pre_birth_i_num]); end
 end
 
-dlmwrite(fullfile(I_folder,image_dirs(image_num).name,'raw_data','Pre_birth_diff.csv'), pre_birth_diffs');
+dlmwrite(fullfile(I_folder,image_dirs(image_num).name,'raw_data','Pre_birth_diff_corr.csv'), pre_birth_diffs');
 
 profile off;
 if (i_p.Results.debug), profile viewer; end

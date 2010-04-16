@@ -266,7 +266,7 @@ sub gather_and_output_lineage_properties {
 
     #Pure Time Series Props
 	my @ts_props = qw(Area Global_gel_diff Local_gel_diff Local_gel_diff_corr
-		First_local_gel_diff Pre_birth_diff);
+		First_local_gel_diff Pre_birth_diff_corr);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
