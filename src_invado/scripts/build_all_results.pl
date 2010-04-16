@@ -82,7 +82,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-	[ [ "../visualize_cell_features", "./collect_visualizations.pl -only_config" ], ],
+	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl -only_config" ], ],
 	[ [ "../analyze_cell_features",   "./gather_pre_birth_diffs.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
