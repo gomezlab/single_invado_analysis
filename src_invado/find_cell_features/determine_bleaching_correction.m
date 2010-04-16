@@ -1,33 +1,36 @@
 function determine_bleaching_correction(image_dir,varargin)
-% FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
-%                             properties associated with the adhesions
-%                             located in prior steps
-%
+% DETERMINE_BLEACHING_CORRECTION    searches through the gel images to
+%                                   determine the photobleaching correction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+profile off; profile on;
+
 i_p = inputParser;
-i_p.FunctionName = 'FIND_PUNCTA_PROPERTIES';
+i_p.FunctionName = 'DETERMINE_BLEACHING_CORRECTION';
 
 i_p.addRequired('image_dir',@(x)exist(x,'dir') == 7);
 
 i_p.parse(image_dir);
 
 i_p.addParamValue('output_dir',fullfile(image_dir,'..','adhesion_props'),@ischar);
-i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
-i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
-i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
-i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
-i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
-
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
-
+% i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
+% i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
+% i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
+% i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
+% i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
 i_p.parse(image_dir,varargin{:});
 
 if (not(exist(i_p.Results.output_dir,'dir')))
     mkdir(i_p.Results.output_dir);
 end
+
+%Add the folder with all the scripts used in this master program
+addpath(genpath('matlab_scripts'));
+
+filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pull in data from the current directory
@@ -44,14 +47,14 @@ single_image_folders = single_image_folders(3:end);
 %read in an image to get the size of the images to preallocate the size of
 %the image that will keep track of which pixels have been in a cell or
 %outside the registered range
-test_image = imread(fullfile(image_dir,single_image_folders(1).name,i_p.Results.cell_mask_filename));
+test_image = imread(fullfile(image_dir,single_image_folders(1).name,filenames.cell_mask_filename));
 
 no_cell_regions = ones(size(test_image));
 inside_registered = ones(size(test_image));
 
 for i=1:length(single_image_folders)
-    binary_shift = imread(fullfile(image_dir,single_image_folders(i).name,i_p.Results.binary_shift_filename));
-    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,i_p.Results.cell_mask_filename));
+    binary_shift = imread(fullfile(image_dir,single_image_folders(i).name,filenames.binary_shift_filename));
+    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask_filename));
     
     no_cell_regions = no_cell_regions & binary_shift;
     no_cell_regions = no_cell_regions & not(cell_mask);
@@ -76,11 +79,11 @@ gel_levels_puncta = zeros(length(single_image_folders),1);
 gel_levels = zeros(length(single_image_folders),1);
 
 for i=1:length(single_image_folders)
-    gel = imread(fullfile(image_dir,single_image_folders(i).name,i_p.Results.gel_filename));
+    gel = imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel_filename));
     scale_factor = double(intmax(class(gel)));
     gel  = double(gel)/scale_factor;
     
-    puncta = imread(fullfile(image_dir,single_image_folders(i).name,i_p.Results.puncta_filename));
+    puncta = imread(fullfile(image_dir,single_image_folders(i).name,filenames.puncta_filename));
     puncta = im2bw(puncta,0);
     
     gel_levels(i) = mean(gel(:));
@@ -106,4 +109,7 @@ end
 % legend('Overall','Puncta','Outside Cell', 'location','SouthEast')
 
 dlmwrite(fullfile(i_p.Results.output_dir,'bleaching_curves.csv'), ...
-    [gel_levels; gel_levels_outside_cell; gel_levels_puncta]);
+    [gel_levels_outside_cell,gel_levels, gel_levels_puncta]);
+
+profile off;
+if (i_p.Results.debug), profile viewer; end

@@ -2,11 +2,12 @@ function find_adhesion_properties(current_dir,first_dir,final_dir,varargin)
 % FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
 %                             properties associated with the adhesions
 %                             located in prior steps
-%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+profile off; profile on;
+
 i_p = inputParser;
 i_p.FunctionName = 'FIND_PUNCTA_PROPERTIES';
 
@@ -17,12 +18,6 @@ i_p.addRequired('final_dir',@(x)exist(x,'dir') == 7);
 i_p.parse(current_dir,first_dir, final_dir);
 
 i_p.addParamValue('output_dir',current_dir,@ischar);
-i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
-i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
-i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
-i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
-i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
-i_p.addParamValue('intensity_correction_file','intensity_correction.csv',@ischar);
 
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
@@ -31,33 +26,35 @@ i_p.parse(current_dir, first_dir, final_dir,varargin{:});
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
 
+filenames = add_filenames_to_struct(struct());
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pull in data from the current directory
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 current_data = struct;
 
 %read in and normalize the input focal adhesion image
-current_data.puncta_image  = imread(fullfile(current_dir, i_p.Results.puncta_filename));
+current_data.puncta_image  = imread(fullfile(current_dir, filenames.puncta_filename));
 scale_factor = double(intmax(class(current_data.puncta_image)));
 current_data.puncta_image  = double(current_data.puncta_image)/scale_factor;
 
 %read in and normalize the input focal adhesion image
-current_data.gel_image  = imread(fullfile(current_dir, i_p.Results.gel_filename));
+current_data.gel_image  = imread(fullfile(current_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(current_data.gel_image)));
 current_data.gel_image  = double(current_data.gel_image)/scale_factor;
 
 %read in the labeled adhesions
-current_data.adhesions = imread(fullfile(current_dir, i_p.Results.adhesions_filename));
+current_data.adhesions = imread(fullfile(current_dir, filenames.adhesions_filename));
 
 %read in the labeled adhesions
-current_data.binary_shift = logical(imread(fullfile(current_dir, i_p.Results.binary_shift_filename)));
+current_data.binary_shift = logical(imread(fullfile(current_dir, filenames.binary_shift_filename)));
 
 %read in the intensity correction coefficient
-current_data.intensity_correction = csvread(fullfile(current_dir, i_p.Results.intensity_correction_file));
+current_data.intensity_correction = csvread(fullfile(current_dir, filenames.intensity_correction_filename));
 
 %read in the cell mask file if defined
-if(exist(fullfile(current_dir, i_p.Results.cell_mask_filename), 'file'))
-    current_data.cell_mask = logical(imread(fullfile(current_dir, i_p.Results.cell_mask_filename)));
+if(exist(fullfile(current_dir, filenames.cell_mask_filename), 'file'))
+    current_data.cell_mask = logical(imread(fullfile(current_dir, filenames.cell_mask_filename)));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,27 +63,27 @@ end
 final_data = struct;
 
 %read in and normalize the input focal adhesion image
-final_data.puncta_image  = imread(fullfile(final_dir, i_p.Results.puncta_filename));
+final_data.puncta_image  = imread(fullfile(final_dir, filenames.puncta_filename));
 scale_factor = double(intmax(class(final_data.puncta_image)));
 final_data.puncta_image  = double(final_data.puncta_image)/scale_factor;
 
 %read in and normalize the input focal adhesion image
-final_data.gel_image  = imread(fullfile(final_dir, i_p.Results.gel_filename));
+final_data.gel_image  = imread(fullfile(final_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(final_data.gel_image)));
 final_data.gel_image  = double(final_data.gel_image)/scale_factor;
 
 %read in the labeled adhesions
-final_data.adhesions = imread(fullfile(final_dir, i_p.Results.adhesions_filename));
+final_data.adhesions = imread(fullfile(final_dir, filenames.adhesions_filename));
 
 %read in the labeled adhesions
-final_data.binary_shift = logical(imread(fullfile(final_dir, i_p.Results.binary_shift_filename)));
+final_data.binary_shift = logical(imread(fullfile(final_dir, filenames.binary_shift_filename)));
 
 %read in the intensity correction coefficient
-final_data.intensity_correction = csvread(fullfile(final_dir, i_p.Results.intensity_correction_file));
+final_data.intensity_correction = csvread(fullfile(final_dir, filenames.intensity_correction_filename));
 
 %read in the cell mask file if defined
-if(exist(fullfile(final_dir, i_p.Results.cell_mask_filename), 'file'))
-    final_data.cell_mask = logical(imread(fullfile(final_dir, i_p.Results.cell_mask_filename)));
+if(exist(fullfile(final_dir, filenames.cell_mask_filename), 'file'))
+    final_data.cell_mask = logical(imread(fullfile(final_dir, filenames.cell_mask_filename)));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,18 +92,18 @@ end
 first_data = struct;
 
 %read in and normalize the input focal adhesion image
-first_data.gel_image  = imread(fullfile(first_dir, i_p.Results.gel_filename));
+first_data.gel_image  = imread(fullfile(first_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(first_data.gel_image)));
 first_data.gel_image  = double(first_data.gel_image)/scale_factor;
 
 %read in the labeled adhesions
-first_data.adhesions = imread(fullfile(first_dir, i_p.Results.adhesions_filename));
+first_data.adhesions = imread(fullfile(first_dir, filenames.adhesions_filename));
 
 %read in the labeled adhesions
-first_data.binary_shift = logical(imread(fullfile(first_dir, i_p.Results.binary_shift_filename)));
+first_data.binary_shift = logical(imread(fullfile(first_dir, filenames.binary_shift_filename)));
 
 %read in the intensity correction coefficient
-first_data.intensity_correction = csvread(fullfile(first_dir, i_p.Results.intensity_correction_file));
+first_data.intensity_correction = csvread(fullfile(first_dir, filenames.intensity_correction_filename));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
@@ -117,6 +114,9 @@ if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
 write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
+
+profile off;
+if (i_p.Results.debug), profile viewer; end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
@@ -179,6 +179,7 @@ for i=1:max(c_d.adhesions(:))
     
     final_diffs = collect_local_diff_properties(f_d,this_ad);
     adhesion_props(i).End_local_gel_diff = final_diffs.Local_gel_diff;
+    adhesion_props(i).End_local_gel_diff_corr = final_diffs.Local_gel_diff_corr;
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.adhesions(:)))]); end
 end
