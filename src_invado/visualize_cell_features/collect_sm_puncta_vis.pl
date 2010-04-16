@@ -178,14 +178,14 @@ sub build_single_ad_folder_command {
 sub build_single_ad_commands {
     my %single_ad_params = @_;
 
-    open TRACKING_FILE, catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file});
+    open TRACKING_FILE, catfile($cfg{exp_results_folder}, $cfg{tracking_folder}, $cfg{tracking_output_file}) or die;
     my @tracking_file = <TRACKING_FILE>;
     my $line_count = scalar(@tracking_file);
     close TRACKING_FILE;
-    
-    my $ad_per_run = 250;
+
+    my $ad_per_run = 1000;
     my @commands;
-    my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_nums.csv');
+    my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_data.csv');
     if (-e $assembly_file) {
         my $assembly_option = "'adhesion_file','$assembly_file'";
         for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
@@ -196,16 +196,6 @@ sub build_single_ad_commands {
         }
     }
     
-    my $disassembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'disassembly_rows_lengths.csv');
-    if (-e $disassembly_file) {
-        my $disassembly_option = "'adhesion_file','$disassembly_file'";
-        for (0 .. (ceil($line_count/$ad_per_run) - 1)) {
-            my $start_row = $_ * $ad_per_run + 1;
-            my $end_row = $start_row + $ad_per_run - 1;
-            $end_row = $line_count if $end_row > $line_count;
-            push @commands, "make_single_ad_frames('" . $single_ad_params{'config_file'} . "','start_row',$start_row,'end_row',$end_row,$disassembly_option)";
-        }
-    }
     return @commands;
 }
 

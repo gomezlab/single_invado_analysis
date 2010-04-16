@@ -15,7 +15,7 @@ function make_single_ad_frames(cfg_file,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+profile off; profile on;
 i_p = inputParser;
 i_p.FunctionName = 'MAKE_SINGLE_AD_FRAMES';
 
@@ -49,7 +49,7 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 max_image_num = find_max_image_num(I_folder);
 folder_char_length = length(num2str(max_image_num));
-i_size = size(imread(fullfile(I_folder,num2str(max_image_num),focal_image)));
+i_size = size(imread(fullfile(I_folder,num2str(max_image_num),puncta_image_filename)));
 
 %we must add one to the tracking matrix because matlab indexes start at 1,
 %whereas perl indexes start at 0
@@ -120,7 +120,7 @@ i_seen = 0;
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
 
-    if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
+    if (not(exist(fullfile(I_folder,padded_i_num,puncta_image_filename),'file'))), continue; end
 
     i_seen = i_seen + 1;
 
@@ -176,12 +176,12 @@ all_gel = cell(size(tracking_seq,1), 1);
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
 
-    if (not(exist(fullfile(I_folder,padded_i_num,focal_image),'file'))), continue; end
+    if (not(exist(fullfile(I_folder,padded_i_num,puncta_image_filename),'file'))), continue; end
 
     i_seen = i_seen + 1;
 
     %Gather and scale the input adhesion image
-    orig_i = imread(fullfile(I_folder,padded_i_num,focal_image));
+    orig_i = imread(fullfile(I_folder,padded_i_num,puncta_image_filename));
     image_range = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
     orig_i = (double(orig_i) - image_range(1))/(image_range(2) - image_range(1));
 

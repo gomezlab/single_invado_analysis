@@ -15,6 +15,7 @@ i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('invado_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('areas_lineage_ts_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('no_scale_bar',0,@(x) islogical(x) || x == 0 || x == 1);
+i_p.addParamValue('output_dir', '.', @ischar);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(cfg_file,invado_file,areas_lineage_ts_file,varargin{:});
@@ -113,7 +114,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 %read in the last gel image and normalize to 0-1
-last_gel_image = double(imread(fullfile(I_folder,image_dirs(end).name,gel_image)));
+last_gel_image = double(imread(fullfile(I_folder,image_dirs(end).name,gel_image_filename)));
 last_binary_shift = logical(imread(fullfile(I_folder,image_dirs(end).name,'binary_shift.png')));
 gel_limits = csvread(fullfile(I_folder,image_dirs(end).name,'gel_image_range.csv'));
 last_gel_image = last_gel_image - gel_limits(1);
@@ -181,13 +182,17 @@ if (exist('pixel_size','var') && not(i_p.Results.no_scale_bar))
     last_gel_image_p_val_high = draw_scale_bar(last_gel_image_p_val_high,pixel_size);
 end
 
-imwrite([last_gel_image, spacer, last_gel_image_high], fullfile(vis_folder,'invado_highlight_last.png'))
-imwrite([last_gel_image, spacer, last_gel_image_p_val_high], fullfile(vis_folder,'invado_highlight_p_val.png'))
-imwrite([last_gel_image, spacer, last_gel_image_local_diff_high], fullfile(vis_folder,'invado_highlight_local_diff.png'))
+if (not(exist(fullfile(vis_folder,i_p.Results.output_dir), 'dir'))) 
+    mkdir(fullfile(vis_folder,i_p.Results.output_dir));
+end
+
+imwrite([last_gel_image, spacer, last_gel_image_high], fullfile(vis_folder,i_p.Results.output_dir,'invado_highlight_last.png'))
+imwrite([last_gel_image, spacer, last_gel_image_p_val_high], fullfile(vis_folder,i_p.Results.output_dir,'invado_highlight_p_val.png'))
+imwrite([last_gel_image, spacer, last_gel_image_local_diff_high], fullfile(vis_folder,i_p.Results.output_dir,'invado_highlight_local_diff.png'))
 
 spacer_long = ones(1,size(last_gel_image,2)*2+1,3);
 
-imwrite([last_gel_image, spacer, last_gel_image_high;spacer_long;last_gel_image_p_val_high,spacer,last_gel_image_local_diff_high], fullfile(vis_folder,'invado_highlight_all.png'))
+imwrite([last_gel_image, spacer, last_gel_image_high;spacer_long;last_gel_image_p_val_high,spacer,last_gel_image_local_diff_high], fullfile(vis_folder,i_p.Results.output_dir,'invado_highlight_all.png'))
 
 profile off;
 if (i_p.Results.debug), profile viewer; end

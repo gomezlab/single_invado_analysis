@@ -42,6 +42,10 @@ my %cfg = ParseConfig(\%opt);
 ###############################################################################
 my @matlab_code;
 
+########################################
+# Full Filter Set 
+########################################
+
 #search for needed files
 my @config_files = File::Find::Rule->file()->name( "*.m" )->in( catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}) );
 die "Found more than one config file:\n", join("\n\t",@config_files) if (scalar(@config_files) > 1);
@@ -53,7 +57,16 @@ my $area_lineage_ts = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_fold
 	$cfg{lineage_ts_folder},'Area.csv');
 die "Unable to find: $area_lineage_ts" if (! -e $area_lineage_ts);
 
-push @matlab_code, "make_final_puncta_highlight('$config_files[0]','$invado_file','$area_lineage_ts')";
+push @matlab_code, "make_final_puncta_highlight('$config_files[0]','$invado_file','$area_lineage_ts','output_dir','all_filt')";
+
+########################################
+# Filter Only By Local Diff
+########################################
+
+my $invado_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'local_invado_data.csv');
+if (-e $invado_file) {
+	push @matlab_code, "make_final_puncta_highlight('$config_files[0]','$invado_file','$area_lineage_ts','output_dir','local_diff')";
+}
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'final_image_highlight');
 $opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'final_image_highlight', 'error.txt');

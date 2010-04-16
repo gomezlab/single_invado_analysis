@@ -21,7 +21,7 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(cfg_file,invado_file,non_invado_file,varargin{:});
 
-if (i_p.Results.debug == 1), profile off; profile on; end
+profile off; profile on;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
