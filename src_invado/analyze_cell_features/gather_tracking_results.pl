@@ -104,7 +104,7 @@ sub convert_data_to_units {
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
 	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr 
-	  First_local_gel_diff Pre_birth_diff);
+	  First_local_gel_diff Pre_birth_diff_corr);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
