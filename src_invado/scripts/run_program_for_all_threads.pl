@@ -4,11 +4,14 @@
 # Global Variables and Modules
 ###############################################################################
 use strict;
+use threads;
+use threads::shared;
 use File::Basename;
 use File::Find::Rule;
 use File::Spec::Functions;
 use Cwd 'abs_path';
 use Getopt::Long;
+use Benchmark qw(:all);
 
 use lib "../lib";
 use Config::Adhesions qw(ParseConfig);
@@ -20,8 +23,9 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 $opt{extra} = "";
+$opt{thread_count} = 1;
 GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", 
-                  "run_all_debug", "exp_filter=s", "filter_negate") or die;
+                  "run_all_debug", "exp_filter=s", "filter_negate", "thread_count=s") or die;
 
 die "Can't find cfg file specified on the command line" if not(exists $opt{cfg});
 die "Can't find program to execute on the command line" if not(exists $opt{program});
@@ -51,14 +55,48 @@ if (exists($opt{exp_filter})) {
 	}
 } 
 
-foreach (@config_files) {
-    next if /config\/default/;
+my @thread_list;
+while (@config_files) {
     if ($opt{debug}) {
-        print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
+		my $this_config = shift @config_files;
+        print("./$program_base -cfg $this_config $debug_string $opt{extra}\n");
     } else {
-        print("$_\n");
-        system("./$program_base -cfg $_ $debug_string $opt{extra}");
+		if (scalar(@thread_list) > 0) {
+			for (1 .. scalar(@thread_list)) {
+				my $this_thread = shift @thread_list;
+				if ($this_thread->is_running()) {
+					push @thread_list, $this_thread;
+				}
+			}
+		}
+
+		if (scalar(@thread_list) >= $opt{thread_count}) {
+			next;
+		} else {
+			my $this_config = shift @config_files;
+			my $new_thread = threads->create('run_command',$program_base, $this_config, $debug_string, $opt{extra});
+			$new_thread->detach();
+			push @thread_list, $new_thread;
+		}
     }
+}
+
+###############################################################################
+# Functions
+###############################################################################
+
+sub run_command {
+	my $program_base = $_[0];
+	my $this_config = $_[1];
+	my $debug_string = $_[2];
+	my $extra_commands = $_[3];
+
+	print "Starting on $this_config\n";
+	my $t0 = Benchmark->new;
+	system("./$program_base -cfg $this_config $debug_string $opt{extra}");
+	my $t1 = Benchmark->new;
+	my  $td = timediff($t1, $t0);
+	print "Done with $this_config, took " . timestr($td, 'noc') . "\n";
 }
 
 ###############################################################################

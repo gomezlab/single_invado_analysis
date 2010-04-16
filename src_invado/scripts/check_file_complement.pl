@@ -41,12 +41,17 @@ my @folders = sort <$cfg{individual_results_folder}/*>;
 our @file_list;
 find(\&collect_all, ($folders[0]));
 
+my @first_file_set = @file_list;
 my $first_file_count = scalar(@file_list);
 foreach (@folders) {
     @file_list = ();
     find(\&collect_all, ($_));
 	
-	die "$_ " . scalar(@file_list) . " $first_file_count" if scalar(@file_list) != $first_file_count;
+
+	if (scalar(@file_list) != $first_file_count) {
+		my $die_str = "\nProblem with Directory: $_\nFound " . scalar(@file_list) . " files in set, while $first_file_count in the first directory.\n\n";
+		die $die_str;
+	};
 }
 
 ################################################################################
@@ -55,6 +60,19 @@ foreach (@folders) {
 
 sub collect_all {
     push @file_list, $File::Find::name;
+}
+
+sub diff_matrices {
+	my @mat_1 = @{$_[0]};
+	my @mat_2 = @{$_[1]};
+	
+	my %file_marks;
+
+	if (scalar(@mat_1) > scalar(@mat_2)) {
+		
+	} else {
+	
+	}
 }
 
 ################################################################################
