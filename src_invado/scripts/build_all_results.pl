@@ -25,7 +25,7 @@ GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization",
         "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
 
 if (-e '/opt/lsf/bin/bjobs' && not $opt{lsf}) {
-	die "LSF appear to be installed on this machine, don't you want to use it?" 
+	die "LSF appears to be installed on this machine, don't you want to use it?" 
 }	
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
