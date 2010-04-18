@@ -39,6 +39,11 @@ sub create_LSF_Matlab_commands {
     if (defined $opt{job_group}) {
         $bsub_command .= " -g $opt{job_group}";
     }
+    if (defined $opt{resource}) {
+        foreach (split(/\s/, $opt{resource})) {
+            $bsub_command .= " -R $_";
+        }
+    }
     my $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
 
     @commands = map { split(/\n/, $_) } @commands;
