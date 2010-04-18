@@ -77,7 +77,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
 	[ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
-	[ [ "../find_cell_features",      "./determine_bleaching_curves.pl" ], ],
+	[ [ "../find_cell_features",      "./determine_bleaching_correction.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
@@ -114,24 +114,28 @@ if ($opt{lsf}) {
         if (not($opt{debug})) {
             &wait_till_LSF_jobs_finish;
             print "Checking for all output files on command $command_seq[0][1]\n";
-            my @exp_to_retry = &check_file_sets(\@config_files);
+            my %exp_sets = &check_file_sets(\@config_files);
 
-            for (1..3) {
+            for (1..2) {
                 #if no experiments are left to retry, we break out and continue
                 #to the next command set
-                if (not(@exp_to_retry)) {
+                if (not(@{$exp_sets{retry}})) {
                     last;
                     next;
                 }
                 print "Retrying these experiments:\n".
-                      join("\n", @exp_to_retry) . "\n";
-                &execute_command_seq(\@command_seq, $starting_dir, \@exp_to_retry);
+                      join("\n", @{$exp_sets{retry}}) . "\n";
+                &execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
                 &wait_till_LSF_jobs_finish;
-                @exp_to_retry = &check_file_sets(\@config_files);
+                %exp_sets = &check_file_sets(\@config_files);
             }
-            if (@exp_to_retry) {
-                die "Problem with collecting full file complement on experiments after three retries:\n" .
-                    join("\n", @exp_to_retry);
+
+            #check if there are any files left in the retry set, if so, clear
+            #out the failed experiments from the next round
+            if (@{$exp_sets{retry}}) {
+                warn "Problem with collecting full file complement on experiments after three tries:\n" .
+                    join("\n", @{$exp_sets{retry}}) . "\n\nRemoving them from the next run";
+                @config_files = @{$exp_sets{good}};  
             } else {
                 print "Output file set complete, moving on.\n\n\n";
             }
@@ -170,6 +174,43 @@ print "\nThe pipeline took:",timestr($td),"\n\n";
 ################################################################################
 # Functions
 ################################################################################
+
+sub execute_command_seq {
+    my @command_seq  = @{ $_[0] };
+    my $starting_dir = $_[1];
+    my @these_config_files = @config_files;
+    if (scalar(@_) > 2) {
+        @these_config_files = @{$_[2]};
+    }
+	
+    foreach my $set (@command_seq) {
+        my $dir     = $set->[0];
+        my $command = $set->[1];
+        foreach my $cfg_file (@these_config_files) {
+            my $config_command = "$command -cfg $cfg_file";
+			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
+            chdir $dir;
+            my $return_code = 0;
+            if ($opt{debug}) {
+				#print "Working in directory: $dir\n";
+                print $config_command, "\n";
+            } else {
+                print "RUNNING: $config_command\n";
+                $return_code = system($config_command);
+				print "RETURN CODE: $return_code\n";
+            }
+            chdir $starting_dir;
+
+            #if the return code was any number beside zero, indicating a problem
+            #with the program exit, remove that config file from the run and
+            #continue
+            if ($return_code) {
+				print "REMOVING: $cfg_file\n";
+                @config_files = grep $cfg_file ne $_, @config_files;
+            }
+        }
+    }
+}
 
 #######################################
 # LSF
@@ -231,56 +272,23 @@ sub move_job_to_week_queue {
     }
 }
 
-sub execute_command_seq {
-    my @command_seq  = @{ $_[0] };
-    my $starting_dir = $_[1];
-    my @these_config_files = @config_files;
-    if (scalar(@_) > 2) {
-        @these_config_files = @{$_[2]};
-    }
-	
-    foreach my $set (@command_seq) {
-        my $dir     = $set->[0];
-        my $command = $set->[1];
-        foreach my $cfg_file (@these_config_files) {
-            my $config_command = "$command -cfg $cfg_file";
-			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
-            chdir $dir;
-            my $return_code = 0;
-            if ($opt{debug}) {
-				#print "Working in directory: $dir\n";
-                print $config_command, "\n";
-            } else {
-                print "RUNNING: $config_command\n";
-                $return_code = system($config_command);
-				print "RETURN CODE: $return_code\n";
-            }
-            chdir $starting_dir;
-
-            #if the return code was any number beside zero, indicating a problem
-            #with the program exit, remove that config file from the run and
-            #continue
-            if ($return_code) {
-				print "REMOVING: $cfg_file\n";
-                @config_files = grep $cfg_file ne $_, @config_files;
-            }
-        }
-    }
-}
-
 sub check_file_sets {
     my @config_files = @{$_[0]};
 
-    my @exp_to_retry;
+    my %exp_sets;
     foreach my $this_config_file (@config_files) {
         my $return_code = system "./check_file_complement.pl -cfg $this_config_file";
         
         #if the return code is anything besides zero, add that config file back
         #to the exp_to_retry list
-        push @exp_to_retry, $this_config_file if ($return_code);
+        if ($return_code) {
+            push @{$exp_sets{retry}}, $this_config_file ;
+        } else {
+            push @{$exp_sets{good}}, $this_config_file ;
+        }
     }
 
-    return @exp_to_retry;
+    return %exp_sets;
 }
 
 sub remove_unimportant_errors {
