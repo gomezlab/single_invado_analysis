@@ -80,15 +80,21 @@ end
 best_index = find(ms_diff == min(min(ms_diff)),1);
 transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shifts(best_index)];
 
-trimmed_ms_diff = ms_diff;
 trimmed_ms_diff_binary = not(isnan(ms_diff));
+row_start = find(sum(trimmed_ms_diff_binary,1) > 0,1,'first');
+row_end = find(sum(trimmed_ms_diff_binary,1) > 0,1,'last');
+col_start = find(sum(trimmed_ms_diff_binary,2) > 0,1,'first');
+col_end = find(sum(trimmed_ms_diff_binary,2) > 0,1,'last');
 
+trimmed_ms_diff = ms_diff(row_start:row_end, col_start:col_end);
+assert(sum(sum(trimmed_ms_diff_binary)) == size(trimmed_ms_diff,1)*size(trimmed_ms_diff,2))
+assert(all(all(isnumeric(trimmed_ms_diff))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), transform_matrix)
-csvwrite(fullfile(i_p.Results.output_dir, 'registration_diffs.csv'), ms_diff)
+csvwrite(fullfile(i_p.Results.output_dir, 'registration_diffs.csv'), trimmed_ms_diff)
 
 if (i_p.Results.debug)
     profile viewer;
