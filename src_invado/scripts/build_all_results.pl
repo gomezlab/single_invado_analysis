@@ -54,7 +54,6 @@ my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
-my @runtime_files = map catfile(dirname($_), "run.txt"), @config_files;
 
 #collect all the config information 
 my %all_configs;
@@ -83,7 +82,7 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl -only_config" ], ],
-	[ [ "../analyze_cell_features",   "./gather_pre_birth_diffs.pl" ], ],
+	[ [ "../analyze_cell_features",   "./collect_pre_birth_diffs.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl" ], ],
@@ -100,10 +99,12 @@ if ($opt{lsf}) {
     
     if (not($opt{debug})) {
         my $job_queue_thread = threads->create('shift_idle_jobs','');
+        $job_queue_thread->detach;
     }
     
     my $starting_dir = getcwd;
     for (@overall_command_seq) {
+		my $command_start_bench = new Benchmark;
         my @command_seq = @{$_};
         my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
         print "Starting on $command_seq[0][1]\n";
@@ -127,22 +128,31 @@ if ($opt{lsf}) {
                       join("\n", @{$exp_sets{retry}}) . "\n";
                 &execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
                 &wait_till_LSF_jobs_finish;
-                %exp_sets = &check_file_sets(\@config_files);
+                %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
+
+                push @{$exp_sets{good}}, @{$these_exp_sets{good}};
+                @{$exp_sets{retry}} = @{$these_exp_sets{retry}};
             }
 
             #check if there are any files left in the retry set, if so, clear
             #out the failed experiments from the next round
             if (@{$exp_sets{retry}}) {
-                warn "Problem with collecting full file complement on experiments after three tries:\n" .
-                    join("\n", @{$exp_sets{retry}}) . "\n\nRemoving them from the next run";
+                print "\nProblem with collecting full file complement on experiments after three tries:\n\t" .
+                    join("\n\t", @{$exp_sets{retry}}) . "\nRemoving them from the next run.\n\n";
                 @config_files = @{$exp_sets{good}};  
             } else {
                 print "Output file set complete, moving on.\n\n\n";
             }
+            my $command_end_bench = new Benchmark;
+            my $td = timediff($command_end_bench, $command_start_bench);
+            print "The command took:",timestr($td),"\n\n";
         }
     }
-
+    
     if (not($opt{debug})) {
+        #with all the jobs finished, lets kill the job queue changing thread
+        # my $job_queue_thread->exit;
+
         #Find and clean up the error files produced during program execution
         our @error_files;
         &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
@@ -186,6 +196,7 @@ sub execute_command_seq {
     foreach my $set (@command_seq) {
         my $dir     = $set->[0];
         my $command = $set->[1];
+        my $executed_scripts_count = 0;
         foreach my $cfg_file (@these_config_files) {
             my $config_command = "$command -cfg $cfg_file";
 			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
@@ -195,7 +206,8 @@ sub execute_command_seq {
 				#print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
-                print "RUNNING: $config_command\n";
+                $executed_scripts_count++;
+                print "RUNNING: $config_command $executed_scripts_count/" . scalar(@these_config_files) . "\n";
                 $return_code = system($config_command);
 				print "RETURN CODE: $return_code\n";
             }
@@ -219,14 +231,16 @@ sub execute_command_seq {
 sub wait_till_LSF_jobs_finish {
     #After each step of the pipeline, we want to wait till all the individual
     #jobs are completed, which will be checked three times
+    print "On check number";
     for (1 .. 3) {
-        print "On check number $_\n";
+        print " $_";
         my $sleep_time = 5;
         do {
             sleep($sleep_time);
             $sleep_time++;
         } while (&running_LSF_jobs);
     }
+    print "\n";
 }
 
 sub running_LSF_jobs {
@@ -268,7 +282,7 @@ sub shift_idle_jobs {
 sub move_job_to_week_queue {
     my $line = pop @_;
     if ($line =~ /^(\d+)/) {
-       system("bmod -q week $1");
+       system("bmod -q week $1 > /dev/null 2>/dev/null");
     }
 }
 
@@ -276,6 +290,10 @@ sub check_file_sets {
     my @config_files = @{$_[0]};
 
     my %exp_sets;
+    #intialize these as the code that checks these matrices in the main program
+    #assumes that a matrix will be present, even if it is empty
+    @{$exp_sets{good}} = ();
+    @{$exp_sets{retry}} = ();
     foreach my $this_config_file (@config_files) {
         my $return_code = system "./check_file_complement.pl -cfg $this_config_file";
         

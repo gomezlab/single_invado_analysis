@@ -6,7 +6,7 @@ my %opt;
 $opt{debug} = 0;
 $opt{server} = "NOSERVER";
 $opt{no_time} = 0;
-$opt{repeat} = 0;
+$opt{repeat} = 1;
 $opt{delay} = 0;
 GetOptions(\%opt,"server=s", "debug|d", "no_progress|np", "no_time|nt", "repeat=s", "delay=s") or die;
 
@@ -20,7 +20,7 @@ if ($opt{no_time}) {
     $time_str = '';
 }
 
-my $command = "$time_str" . "rsync $progress_str" . "-a ../../results/ $opt{server}:~/Documents/Projects/focal_adhesions/results/*";
+my $command = "$time_str" . "rsync $progress_str" . "-a --exclude data.stor ../../results/* $opt{server}:~/Documents/Projects/focal_adhesions/results/";
 if ($opt{server} eq "NOSERVER" || $opt{debug}) {
     print "$command\n";
 } else {
