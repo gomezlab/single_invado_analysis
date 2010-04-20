@@ -24,9 +24,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             sep=",",header=T);
         degrade_data = read.table(file.path(this_exp_dir,'lin_time_series', degrade_file), 
             sep=",",header=F);
-        pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff.csv'), 
-            sep=",",header=F);
-        end_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'End_local_gel_diff.csv'), 
+        pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff_corr.csv'), 
             sep=",",header=F);
         area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
             sep=",",header=F);

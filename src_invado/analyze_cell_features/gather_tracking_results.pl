@@ -66,7 +66,7 @@ my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_
 my @available_data_types = &gather_data_types;
 if ($opt{debug}) {
 	print "Data types detected:\n";
-	print join("\n", @available_data_types);
+	print join("\n", sort @available_data_types);
 	print "\n";
 }
 

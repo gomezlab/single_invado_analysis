@@ -80,6 +80,10 @@ end
 best_index = find(ms_diff == min(min(ms_diff)),1);
 transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shifts(best_index)];
 
+trimmed_ms_diff = ms_diff;
+trimmed_ms_diff_binary = not(isnan(ms_diff));
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -20,6 +20,8 @@ use Config::Adhesions qw(ParseConfig);
 #buffering
 $| = 1;
 
+my $t_start = Benchmark->new();
+
 my %opt;
 $opt{debug} = 0;
 $opt{extra} = "";
@@ -81,6 +83,19 @@ while (@config_files) {
     }
 }
 
+while (@thread_list) {
+	for (1 .. scalar(@thread_list)) {
+		my $this_thread = shift @thread_list;
+		if ($this_thread->is_running()) {
+			push @thread_list, $this_thread;
+		}
+	}
+}
+	
+my $t_end = Benchmark->new;
+my $td = timediff($t_end, $t_start);
+print "Full processing time was " . timestr($td, 'noc') . "\n";
+
 ###############################################################################
 # Functions
 ###############################################################################
@@ -91,7 +106,7 @@ sub run_command {
 	my $debug_string = $_[2];
 	my $extra_commands = $_[3];
 
-	print "Starting on $this_config\n";
+	# print "Starting on $this_config\n";
 	my $t0 = Benchmark->new;
 	system("./$program_base -cfg $this_config $debug_string $opt{extra}");
 	my $t1 = Benchmark->new;
@@ -105,11 +120,11 @@ sub run_command {
 
 =head1 NAME
 
-run_perl_program_for_all.pl
+run_perl_program_for_all_threads.pl
 
 =head1 SYNOPSIS
 
-run_program_for_all.pl -cfg config.cfg -p program 
+run_program_for_all_threads.pl -cfg config.cfg -p program 
 
 =head1 Description
 
@@ -131,15 +146,17 @@ Optional parameter(s):
 
 =item * debug or d: if present do not run the program specified in the program parameter, instead print the commands that would be run
 
+=item * thread_count: number of threads to use when for processing the jobs, defaults to one
+
 =back
 
 =head1 EXAMPLES
 
-run_program_for_all.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl
+run_program_for_all_threads.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl
 
 OR
 
-run_program_for_all.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl -e '-skip_pix_props'
+run_program_for_all_threads.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl -e '-skip_pix_props'
 
 =head1 AUTHORS
 
