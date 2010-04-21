@@ -42,8 +42,17 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tracking matrix reading/filtering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-invado_data = csvread(invado_file);
-non_invado_data = csvread(non_invado_file);
+try 
+    invado_data = csvread(invado_file);
+catch %#ok<CTCH>
+    invado_data = zeros(0,3);
+end
+
+try
+    non_invado_data = csvread(non_invado_file);
+catch %#ok<CTCH>
+    non_invado_data = zeros(0,3);
+end
 
 %after loading the tracking sequence filter to only include those puncta
 %included in the invadopodia list, remember the list formated so the first
