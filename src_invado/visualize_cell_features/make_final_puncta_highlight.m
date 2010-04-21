@@ -41,7 +41,11 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tracking matrix reading/filtering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-invado_data = csvread(invado_file);
+try 
+    invado_data = csvread(invado_file);
+catch %#ok<CTCH>
+    invado_data = zeros(0,3);
+end
 
 %after loading the tracking sequence filter to only include those puncta
 %included in the invadopodia list, remember the list formated so the first
@@ -85,7 +89,7 @@ lineage_to_p_value_cmap = zeros(size(tracking_seq,1),1);
 for i = 1:length(invado_data(:,2))
     try
         lineage_to_p_value_cmap(i) = find(p_value_ranges >= invado_data(i,2), 1);
-    catch
+    catch %#ok<CTCH>
         lineage_to_p_value_cmap(i) = length(p_value_ranges);
     end
 end
@@ -99,7 +103,7 @@ lineage_to_local_diff_cmap = zeros(size(tracking_seq,1),1);
 for i = 1:length(invado_data(:,3))
     try
         lineage_to_local_diff_cmap(i) = find(local_diff_ranges >= invado_data(i,3), 1);
-    catch
+    catch %#ok<CTCH>
         lineage_to_local_diff_cmap(i) = length(local_diff_ranges);
     end
 end
