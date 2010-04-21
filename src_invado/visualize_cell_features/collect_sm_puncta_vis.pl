@@ -77,8 +77,8 @@ if ($opt{single_ad_folders}) {
     push @matlab_code, &build_single_ad_folder_command(%single_ad_params);
 }
 
-$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
-$opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization', 'error.txt');
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'sm_vis');
+$opt{error_file} = catfile($opt{errors_folder}, 'visualization', 'error.txt');
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
