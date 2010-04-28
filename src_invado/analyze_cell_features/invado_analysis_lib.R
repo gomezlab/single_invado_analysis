@@ -64,7 +64,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             
             test_results = tryCatch(t.test(only_data,conf.level=conf.level), error = t.test.error);
             
-            all_props$low_conf_int = c(all_props$low_conf_int, test_results$conf.int[1]);
             all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
             all_props$p_value = c(all_props$p_value, test_results$p.value);
             
@@ -169,7 +168,7 @@ if (length(args) != 0) {
         exp_props = gather_invado_properties(data_dir, 
             results.file = file.path('models','puncta_props_corr.Rdata'));
         
-        data_types_to_include = c('overall_filt','p_value','mean_vals');
+        data_types_to_include = c('overall_filt','p_value','mean_vals', 'pre_p_value');
         
         filter_sets = build_filter_sets(exp_props);
 
