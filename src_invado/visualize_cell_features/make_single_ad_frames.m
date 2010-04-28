@@ -59,8 +59,8 @@ tracking_seq_size = size(tracking_seq);
 %Filter the tracking matrix according to 'start_row' and 'end_row' rules
 %provided via command parameters.
 if (   isempty(strmatch('start_row', i_p.UsingDefaults)) ...
-    && isempty(strmatch('end_row', i_p.UsingDefaults)))
-
+        && isempty(strmatch('end_row', i_p.UsingDefaults)))
+    
     assert(i_p.Results.start_row <= size(tracking_seq,1));
     assert(i_p.Results.end_row <= size(tracking_seq,1));
     tracking_beginning = zeros(i_p.Results.start_row - 1,size(tracking_seq,2));
@@ -84,7 +84,14 @@ end
 assert(all(size(tracking_seq) == tracking_seq_size));
 
 if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
-    ad_to_include = csvread(i_p.Results.adhesion_file);
+    try
+        ad_to_include = csvread(i_p.Results.adhesion_file);
+        if (all(size(invado_data) == [0 1]))
+            ad_to_include = zeros(0,3);
+        end
+    catch %#ok<CTCH>
+        ad_to_include = zeros(0,3);
+    end
     
     temp_tracking_mat = zeros(tracking_seq_size);
     temp_tracking_mat(ad_to_include(:,1),:) = tracking_seq(ad_to_include(:,1),:);
@@ -119,30 +126,30 @@ i_seen = 0;
 
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
-
+    
     if (not(exist(fullfile(I_folder,padded_i_num,puncta_image_filename),'file'))), continue; end
-
+    
     i_seen = i_seen + 1;
-
+    
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
     
     bounds = regionprops(ad_label,'BoundingBox');
-
+    
     for i = 1:size(tracking_seq,1)
         tracking_row = tracking_seq(i,:);
         if (tracking_row(i_seen) <= 0), continue; end
-                
+        
         ad_num = tracking_row(i_seen);
-
+        
         corners = [bounds(ad_num).BoundingBox(1), bounds(ad_num).BoundingBox(2)];
         corners = [corners, corners + bounds(ad_num).BoundingBox(3:4)]; %#ok<AGROW>
-
+        
         if (corners(1) < bounding_matrix(i,1)), bounding_matrix(i,1) = corners(1); end
         if (corners(2) < bounding_matrix(i,2)), bounding_matrix(i,2) = corners(2); end
         if (corners(3) > bounding_matrix(i,3)), bounding_matrix(i,3) = corners(3); end
         if (corners(4) > bounding_matrix(i,4)), bounding_matrix(i,4) = corners(4); end
     end
-
+    
     if (i_p.Results.debug && (mod(i_seen,10) == 0 || j == max_image_num))
         disp(['Bounding image: ',num2str(i_seen)]);
     end
@@ -175,24 +182,24 @@ all_gel = cell(size(tracking_seq,1), 1);
 
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
-
+    
     if (not(exist(fullfile(I_folder,padded_i_num,puncta_image_filename),'file'))), continue; end
-
+    
     i_seen = i_seen + 1;
-
+    
     %Gather and scale the input adhesion image
     orig_i = imread(fullfile(I_folder,padded_i_num,puncta_image_filename));
     image_range = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
     orig_i = (double(orig_i) - image_range(1))/(image_range(2) - image_range(1));
-
+    
     gel_i = imread(fullfile(I_folder,padded_i_num,'registered_gel.png'));
     image_range = csvread(fullfile(I_folder,padded_i_num,'gel_image_range.csv'));
     gel_i = (double(gel_i) - image_range(1))/(image_range(2) - image_range(1));
-
+    
     %Gather the ad label images
     ad_label_perim = imread(fullfile(I_folder,padded_i_num,adhesions_perim_filename));
     ad_label = imread(fullfile(I_folder,padded_i_num,adhesions_filename));
-
+    
     %Gather the cell edge image if available
     if (exist(fullfile(I_folder,padded_i_num,edge_filename),'file'))
         cell_edge = bwperim(imread(fullfile(I_folder,padded_i_num,edge_filename)));
@@ -204,7 +211,7 @@ for j = 1:max_image_num
         padded_num = sprintf(['%0',num2str(length(num2str(tracking_seq_size(1)))),'d'],row_num);
         
         tracking_row = tracking_seq(row_num,:);
-
+        
         %now we do a check to see if there is an adhesion in the next
         %image or the image before, because we also want to render the
         %image immediately before birth and right after death
@@ -233,7 +240,7 @@ for j = 1:max_image_num
                 bounding_matrix(row_num,1):bounding_matrix(row_num,3));
             
             this_ad_filled = zeros(size(bounded_ad_label));
-            this_ad_filled(bounded_ad_label == ad_num) = 1;           
+            this_ad_filled(bounded_ad_label == ad_num) = 1;
             this_ad_search_border = logical(imdilate(this_ad_filled,strel('disk',5,0)));
             this_ad_search_border = and(this_ad_search_border, not(this_ad_filled));
             
@@ -268,7 +275,7 @@ for j = 1:max_image_num
             %exit out of this loop through the tracking matrix if all the
             %current image set is empty, we have yet to hit the adhesions
             if (size(all_images{row_num}, 2) == 0), continue; end
-                       
+            
             output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
             if(not(exist(fullfile(out_path_single, 'overall'),'dir')))
                 mkdir(fullfile(out_path_single, 'overall'));

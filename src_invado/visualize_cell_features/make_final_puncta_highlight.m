@@ -43,6 +43,9 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 try 
     invado_data = csvread(invado_file);
+    if (all(size(invado_data) == [0 1]))
+        invado_data = zeros(0,3);
+    end
 catch %#ok<CTCH>
     invado_data = zeros(0,3);
 end
