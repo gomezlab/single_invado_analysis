@@ -148,161 +148,107 @@ graphics.off()
 ########################################
 
 ####################
+# Area Comparisons
+####################
+
+dir.create('day_to_day',recursive=TRUE, showWarnings=FALSE);
+
+area_sets_to_use = list(
+        data_sets$day_1_control$mean_area,
+        data_sets$day_2_control$mean_area,
+        data_sets$day_3_control$mean_area,
+        data_sets$invado_control$mean_area, 
+        data_sets$invado_coro1B_kd$mean_area, 
+        data_sets$invado_coro1C_kd$mean_area, 
+        data_sets$invado_CotL_kd$mean_area)
+
+data_names = c('Ctrl Day 1','Ctrl Day 2','Ctrl Day 3', 'Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
+
+for (i in 1:length(data_names)) {
+    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
+}
+
+svg(file.path('day_to_day','area_boxplots.svg'), width=15)
+boxplot(area_sets_to_use, names=data_names,
+        ylab='Mean Puncta Area (\u03BCm\u00B2)')
+graphics.off()
+
+area_conf_ints = gather_barplot_properties(area_sets_to_use);
+
+svg(file.path('day_to_day','area_barplots.svg'), width=15)
+par(mar=c(2,4,0.5,0))
+x_pos = barplot(area_conf_ints$mean, names=data_names,
+        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
+errbar(t(x_pos),area_conf_ints$mean,area_conf_ints$yplus, area_conf_ints$yminus,
+       add=TRUE,cex=1E-10,lwd=1.5)
+graphics.off()
+
+####################
 # Longevity Comparisons
 ####################
 
-data_sets_to_use = list(data_sets$day_1_control$longevity*5, 
-                        data_sets$day_2_control$longevity*5, 
-                        data_sets$day_3_control$longevity*5);
+dir.create('day_to_day',recursive=TRUE, showWarnings=FALSE);
 
-data_names = c('Day 1','Day 2', 'Day 3')
+longev_sets_to_use = list(
+        data_sets$day_1_control$longevity*5,
+        data_sets$day_2_control$longevity*5,
+        data_sets$day_3_control$longevity*5,
+        data_sets$invado_control$longevity*5, 
+        data_sets$invado_coro1B_kd$longevity*5, 
+        data_sets$invado_coro1C_kd$longevity*5, 
+        data_sets$invado_CotL_kd$longevity*5
+        )
 
-boxplot(data_sets_to_use, names=data_names,
+svg(file.path('day_to_day','longevity_boxplots.svg'), width=15)
+boxplot(longev_sets_to_use, names=data_names,
         ylab='Longevity (min)')
+graphics.off()
 
-longev_conf_ints = gather_barplot_properties(data_sets_to_use);
+longev_conf_ints = gather_barplot_properties(longev_sets_to_use);
 
+svg(file.path('day_to_day','longevity_barplots.svg'), width=15)
 par(mar=c(2,4,0.5,0))
 x_pos = barplot(longev_conf_ints$mean, names=data_names,
         ylab='Longevity (min)', ylim=c(0,max(longev_conf_ints$yplus)))
 errbar(t(x_pos),longev_conf_ints$mean,longev_conf_ints$yplus, longev_conf_ints$yminus,
        add=TRUE,cex=1E-10,lwd=1.5)
+graphics.off()
 
+########################################
+# Bleaching Comparisons
+########################################
 
-boxplot(data_sets$day_1_control$mean_vals, data_sets$day_2_control$mean_vals,data_sets$day_3_control$mean_vals)
-boxplot(data_sets$day_1_control_uncorr$mean_vals, data_sets$day_2_control_uncorr$mean_vals,data_sets$day_3_control_uncorr$mean_vals)
+bleach_curves_mat = matrix(NA, ncol = length(ts_props$coro1B_kd$bleaching_curve[[1]]), nrow = length(ts_props$coro1B_kd$bleaching_curve[[1]][[1]][,1]))
 
-boxplot_names = c('Ctrl Day 1', 'Coro1C Day 1', 'Coro1C Day 1', 'Ctrl Day 2', 'Coro1C Day 2', 'Ctrl Day 3', 'CotL Day 3')
-boxplot(data_sets$day_1_control$mean_vals, data_sets$day_1_coro1C$mean_vals, data_sets$day_2_coro1C$mean_vals, 
-    data_sets$day_2_control$mean_vals, data_sets$day_3_coro1C$mean_vals, 
-    data_sets$day_3_control$mean_vals, data_sets$invado_CotL_kd$mean_vals, notch=T, names=boxplot_names)
-
-boxplot(data_sets$day_1_control$largest_area, data_sets$day_1_coro1C$largest_area, 
-    data_sets$day_2_coro1C$largest_area, data_sets$day_2_control$largest_area, 
-    data_sets$day_3_coro1C$largest_area, data_sets$day_3_control$largest_area, 
-    data_sets$invado_CotL_kd$largest_area, 
-    notch=T, names=boxplot_names)
-
-boxplot(data_sets$day_1_control$longevity, data_sets$day_1_coro1C$longevity, data_sets$day_2_coro1C$longevity, 
-    data_sets$day_2_control$longevity, data_sets$day_3_coro1C$longevity, 
-    data_sets$day_3_control$longevity, data_sets$invado_CotL_kd$longevity, notch=T, names=boxplot_names)
-
-bleach_curves_mat = matrix(NA,ncol = length(ts_props$bleaching_curve[[1]]), nrow = 121);
 percent_diffs = c();
-for (i in 1:length(ts_props$bleaching_curve[[1]])) {
-    d_s_length = length(ts_props$bleaching_curve[[1]][[i]][1,]);
-    bleach_curves_mat[1:d_s_length,i] = as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]);
-
-    this_percent = min(ts_props$bleaching_curve[[1]][[i]][1,])/max(ts_props$bleaching_curve[[1]][[i]][1,]);
-    percent_diffs = c(percent_diffs, this_percent);
-}
-
-correlations = list();
-for (i in 1:length(ts_props$bleaching_curve[[1]])) {
-    correlations$overall_vs_notcell = c(correlations$overall_vs_notcell,
-        cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][2,])));
+for (i in 1:length(ts_props$coro1B_kd$bleaching_curve[[1]])) {
     
-    correlations$overall_vs_puncta = c(correlations$overall_vs_puncta,
-        cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
+    this_curve = ts_props$coro1B_kd$bleaching_curve[[1]][[i]][,1];
 
-    correlations$notcell_vs_puncta = c(correlations$notcell_vs_puncta,
-        cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][2,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
+    bleach_curves_mat[,i] = this_curve;
+    
+    percent_diffs = c(percent_diffs, min(this_curve)/max(this_curve));
 }
 
-########################################
-# Longevity Bi-hist
-########################################
-bin_size = 50;
-max_data = 5*max(data_sets$invado_control$longevity, data_sets$invado_coro1C_kd$longevity);
-max_data = ceil(max_data/bin_size)*bin_size;
-min_data = 5*min(data_sets$invado_control$longevity, data_sets$invado_coro1C_kd$longevity);
 
-data_1 = hist(data_sets$invado_control$longevity*5, breaks=seq(min_data,max_data,by=bin_size));
-data_2 = hist(data_sets$invado_coro1C_kd$longevity*5, breaks=data_1$breaks);
-graphics.off()
+# bleach_curves_mat = matrix(NA,ncol = length(ts_props$bleaching_curve[[1]]), nrow = 121);
+# percent_diffs = c();
+# for (i in 1:length(ts_props$bleaching_curve[[1]])) {
+#     d_s_length = length(ts_props$bleaching_curve[[1]][[i]][1,]);
+#     bleach_curves_mat[1:d_s_length,i] = as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]);
+# 
+#     this_percent = min(ts_props$bleaching_curve[[1]][[i]][1,])/max(ts_props$bleaching_curve[[1]][[i]][1,]);
+#     percent_diffs = c(percent_diffs, this_percent);
+# }
 
-all_data = rbind(data_1$counts/sum(data_1$counts), data_2$counts/sum(data_2$counts));
-range_names = c()
-for (i in 1:(length(data_1$breaks)-1)) {
-    range_names = c(range_names, paste(data_1$breaks[i],"-",data_1$breaks[i+1],sep=''));
-}
-
-svg('longevity_hist.svg')
-par(mar = c(5.75,4,0.25,0))
-barplot(all_data, beside=T, names = range_names, ylab="Percentage", 
-        #las controls the orientation of the labels, las=2 is perpendicular to axis
-        legend = c('Control', 'Coronin1C KD'), las=2)
-mtext("Longevity Ranges (min)", side=1, line=4.5)
-graphics.off()
-
-plot(data_sets$invado_control$longevity*5, data_sets$invado_control$largest_area, pch=20, cex=0.75)
-points(data_sets$invado_coro1C_kd$longevity*5, data_sets$invado_coro1C_kd$largest_area, col='red', pch=20, cex=0.75)
-
-t.test(data_sets$invado_control$longevity*5, data_sets$invado_coro1C_kd$longevity*5)
-t.test(data_sets$invado_control$largest_area, data_sets$invado_coro1C_kd$largest_area)
-
-########################################
-# Largest Size Bi-hist
-########################################
-bin_size = 0.5;
-max_data = max(data_sets$invado_control$largest_area, data_sets$invado_coro1C_kd$largest_area);
-max_data = ceil(max_data/bin_size)*bin_size;
-min_data = min(data_sets$invado_control$largest_area, data_sets$invado_coro1C_kd$largest_area);
-min_data = floor(min_data/bin_size)*bin_size;
-
-data_1 = hist(data_sets$invado_control$largest_area, breaks=seq(min_data,max_data,by=bin_size));
-data_2 = hist(data_sets$invado_coro1C_kd$largest_area, breaks=data_1$breaks);
-graphics.off()
-
-all_data = rbind(data_1$counts/sum(data_1$counts), data_2$counts/sum(data_2$counts));
-range_names = c()
-for (i in 1:(length(data_1$breaks)-1)) {
-    range_names = c(range_names, paste(data_1$breaks[i],"-",data_1$breaks[i+1],sep=''));
-}
-
-svg('largest_area_hist.svg')
-par(mar = c(4.75,4,0.25,0))
-barplot(all_data, beside=T, names = range_names, ylab="Percentage", 
-        #las controls the orientation of the labels, las=2 is perpendicular to axis
-        legend = c('Control', 'Coronin1C KD'), las=2)
-mtext('Max Invadopodia Area (\u03BCm\u00B2)', side=1, line=3.5)
-graphics.off()
-
-########################################
-# Average Local Diff Values Bi-hist
-########################################
-bin_size = 0.5E-3*10^2;
-
-control_mean_vals = data_sets$invado_control_corr$mean_vals*-10^2;
-coro1C_kd_mean_vals = data_sets$invado_coro1C_kd$mean_vals*-10^2;
-coro1B_kd_mean_vals = data_sets$invado_coro1B_kd_corr$mean_vals*-10^2;
-
-max_data = max(control_mean_vals, coro1C_kd_mean_vals);
-max_data = ceil(max_data/bin_size)*bin_size;
-min_data = min(control_mean_vals, coro1C_kd_mean_vals);
-min_data = floor(min_data/bin_size)*bin_size;
-
-data_1 = hist(control_mean_vals, breaks=seq(min_data,max_data,by=bin_size));
-data_2 = hist(coro1C_kd_mean_vals, breaks=data_1$breaks);
-data_3 = hist(coro1B_kd_mean_vals, breaks=data_1$breaks);
-graphics.off()
-
-all_data = rbind(data_1$counts/sum(data_1$counts), data_2$counts/sum(data_2$counts))
-#, data_3$counts/sum(data_3$counts));
-range_names = c()
-for (i in 1:(length(data_1$breaks)-1)) {
-    range_names = c(range_names, paste(data_1$breaks[i],"-",data_1$breaks[i+1],sep=''));
-}
-
-svg('mean_vals_hist.svg')
-par(mar = c(6,4,0.25,0))
-barplot(all_data, beside=T, names = range_names, ylab="Percentage", 
-        #las controls the orientation of the labels, las=2 is perpendicular to axis
-        las=2)
-mtext('Mean Local Difference (arbitrary units * -10\u00B2)', side=1, line=4.75)
-legend('topright', c('Control', 'Coronin1C KD'), fill = c('gray30','gray90'))
-graphics.off()
-
-plot(data_sets$invado_control$longevity, data_sets$invado_control$mean_vals, ylim=c(min_data,max_data))
-points(data_sets$invado_coro1C_kd$longevity, data_sets$invado_coro1C_kd$mean_vals, col='red')
-
+# correlations = list();
+# for (i in 1:length(ts_props$bleaching_curve[[1]])) {
+#     correlations$overall_vs_notcell = c(correlations$overall_vs_notcell,
+#         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][2,])));
+#     
+#     correlations$overall_vs_puncta = c(correlations$overall_vs_puncta,
+#         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
+# 
+#     correlations$notcell_vs_puncta = c(correlations$notcell_vs_puncta,
+#         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][2,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
+# }
