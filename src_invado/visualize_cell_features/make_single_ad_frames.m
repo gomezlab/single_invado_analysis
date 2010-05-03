@@ -86,10 +86,11 @@ assert(all(size(tracking_seq) == tracking_seq_size));
 if (isempty(strmatch('adhesion_file', i_p.UsingDefaults)))
     try
         ad_to_include = csvread(i_p.Results.adhesion_file);
-        if (all(size(invado_data) == [0 1]))
+        if (all(size(ad_to_include) == [0 1]))
             ad_to_include = zeros(0,3);
         end
-    catch %#ok<CTCH>
+    catch READPROB
+        warning(READPROB.message);
         ad_to_include = zeros(0,3);
     end
     

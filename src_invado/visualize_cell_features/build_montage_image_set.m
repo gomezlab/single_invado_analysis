@@ -6,7 +6,7 @@ function montage=build_montage_image_set(image_set,varargin)
 %   write_montage_image_set(i_set, out_f) 
 
 i_p = inputParser;
-i_p.FunctionName = 'WRITE_MONTAGE_IMAGE_SET';
+i_p.FunctionName = 'BUILD_MONTAGE_IMAGE_SET';
 
 i_p.addRequired('image_set',@iscell);
 

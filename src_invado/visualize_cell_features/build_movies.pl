@@ -47,7 +47,8 @@ my @commands = (
 	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1",
 	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1",
 	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1",
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invado_and_not.png -sameq $cfg{exp_results_folder}/invado_and_not.mov 2>&1"
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invado_and_not.png -sameq $cfg{exp_results_folder}/invado_and_not.mov 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invado_and_not.png -sameq $cfg{exp_results_folder}/puncta_binary.mov 2>&1",
 );
 
 for (@commands) {
