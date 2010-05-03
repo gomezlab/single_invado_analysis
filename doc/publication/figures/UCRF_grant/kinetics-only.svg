@@ -26,7 +26,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -47,8 +47,8 @@
      inkscape:guide-bbox="true"
      borderlayer="true"
      inkscape:zoom="1.2650794"
-     inkscape:cx="129.2409"
-     inkscape:cy="315"
+     inkscape:cx="37.636986"
+     inkscape:cy="417.90729"
      inkscape:window-x="1920"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -59,7 +59,7 @@
        id="guide8536" />
     <sodipodi:guide
        orientation="1,0"
-       position="33.199498,414.99373"
+       position="35.07685,591.76128"
        id="guide8538" />
     <sodipodi:guide
        orientation="1,0"
@@ -11782,9 +11782,9 @@
   </g>
   <image
      y="7.5884562"
-     x="26.559599"
+     x="28.06148"
      id="image8532"
-     height="221.72122"
-     width="227.02133"
+     height="220.25439"
+     width="225.51945"
      xlink:href="file:///home/mbergins/Documents/Projects/focal_adhesions/doc/publication/figures/UCRF_grant/sampled_set.png" />
 </svg>
