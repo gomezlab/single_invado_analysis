@@ -16,6 +16,7 @@ use Benchmark;
 use Getopt::Long;
 use Cwd;
 use Data::Dumper;
+use POSIX;
 
 use Config::Adhesions qw(ParseConfig);
 
@@ -39,29 +40,12 @@ die "Only one of the options skip_vis or only_vis can be selected."
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
 
-################################################################################
-# Main
-################################################################################
 my $t1 = new Benchmark;
 $|  = 1;
 
-my $cfg_suffix = basename($opt{cfg});
-$cfg_suffix =~ s/.*\.(.*)/$1/;
-
-#config file processing
-my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
-@config_files = sort @config_files;
-if (exists($opt{exp_filter})) {
-   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
-}
-
-#collect all the config information 
-my %all_configs;
-for my $file (@config_files) {
-	my %temp_opt = %opt;
-	$temp_opt{cfg} = $file;
-	%{$all_configs{$file}} = ParseConfig(\%temp_opt);
-}
+################################################################################
+# Main
+################################################################################
 
 #This data structure acts as the overall control mechanism for which programs
 #are run to perform the analysis. The first layer of the array are another set
@@ -90,6 +74,25 @@ my @overall_command_seq = (
 	[ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
 );
 
+my $cfg_suffix = basename($opt{cfg});
+$cfg_suffix =~ s/.*\.(.*)/$1/;
+
+#config file processing
+my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
+@config_files = sort @config_files;
+if (exists($opt{exp_filter})) {
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
+
+#collect all the config information 
+my %all_configs;
+for my $file (@config_files) {
+	my %temp_opt = %opt;
+	$temp_opt{cfg} = $file;
+	%{$all_configs{$file}} = ParseConfig(\%temp_opt);
+}
+
+our @error_files;
 if ($opt{lsf}) {
     if ($opt{skip_vis}) {
         @overall_command_seq = @overall_command_seq[ 0 .. $#overall_command_seq - 1 ];
@@ -128,7 +131,7 @@ if ($opt{lsf}) {
                       join("\n", @{$exp_sets{retry}}) . "\n";
                 &execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
                 &wait_till_LSF_jobs_finish;
-                %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
+                my %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
 
                 push @{$exp_sets{good}}, @{$these_exp_sets{good}};
                 @{$exp_sets{retry}} = @{$these_exp_sets{retry}};
@@ -141,11 +144,12 @@ if ($opt{lsf}) {
                     join("\n\t", @{$exp_sets{retry}}) . "\nRemoving them from the next run.\n\n";
                 @config_files = @{$exp_sets{good}};  
             } else {
-                print "Output file set complete, moving on.\n\n\n";
+                print "Output file set complete, moving on.\n";
             }
             my $command_end_bench = new Benchmark;
             my $td = timediff($command_end_bench, $command_start_bench);
-            print "The command took:",timestr($td),"\n\n";
+            print "The command took:",timestr($td),"\n";
+            print "\n\n";
         }
     }
     
@@ -154,10 +158,12 @@ if ($opt{lsf}) {
         # my $job_queue_thread->exit;
 
         #Find and clean up the error files produced during program execution
-        our @error_files;
-        &File::Find::find(\&remove_unimportant_errors, ($cfg{results_folder}));
-    	
-		system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
+        print "Removing unimportant errors.\n";
+        
+        &File::Find::find(\&ID_error_files, ($cfg{results_folder}));
+    	&remove_unimportant_errors(@error_files);
+
+		# system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
     }
 } else {
     my $starting_dir = getcwd;
@@ -246,7 +252,7 @@ sub wait_till_LSF_jobs_finish {
 sub running_LSF_jobs {
     my $bjobs_command = "bjobs";
     if (defined $cfg{job_group}) {
-        $bjobs_command .= " -g $cfg{job_group}";
+        $bjobs_command .= " -g $cfg{job_group} 2>/dev/null";
     }
 
     my @lines = `$bjobs_command`;
@@ -263,8 +269,8 @@ sub shift_idle_jobs {
         $bjobs_command .= " -g $cfg{job_group}";
     }
     
-    my @lines = `$bjobs_command`;
-    my @running_lines = `$bjobs_command -r`;
+    my @lines = `$bjobs_command 2>/dev/null`;
+    my @running_lines = `$bjobs_command -r 2>/dev/null`;
     
     if (scalar(@lines) > 1) {
         #dealing with the strange case where all the idle jobs refuse to be
@@ -289,6 +295,9 @@ sub move_job_to_week_queue {
 sub check_file_sets {
     my @config_files = @{$_[0]};
 
+    print "Out of " . scalar(@config_files) . ", # done:";
+    my $number_configs_run = 0;
+    
     my %exp_sets;
     #intialize these as the code that checks these matrices in the main program
     #assumes that a matrix will be present, even if it is empty
@@ -304,13 +313,27 @@ sub check_file_sets {
         } else {
             push @{$exp_sets{good}}, $this_config_file ;
         }
+
+        $number_configs_run++;
+        if ($number_configs_run % ceil($number_configs_run/10) == 0) {
+            print " $number_configs_run";
+        }
     }
+    print "\n";
 
     return %exp_sets;
 }
 
-sub remove_unimportant_errors {
+sub ID_error_files {
     if ($File::Find::name =~ /error.txt/) {
+        push @error_files, $_;
+    }
+}
+
+sub remove_unimportant_errors {
+    my $count = 0;
+    print "Out of ", scalar(@_), ", # done: ";
+    for (@_) {
         open INPUT, "$_" or die "$!";
         my @errors = <INPUT>;
         close INPUT;
@@ -328,5 +351,10 @@ sub remove_unimportant_errors {
         open OUTPUT, ">$_";
         print OUTPUT @cleaned_errors;
         close OUTPUT;
+        $count++;
+        if ($count % ceil(scalar(@_)/10) == 0) {
+            print " $count";
+        }
     }
+    print "\n";
 }
