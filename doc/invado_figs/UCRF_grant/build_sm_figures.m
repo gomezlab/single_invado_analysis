@@ -23,7 +23,6 @@ spacer = ones(1,size(gel_montage,2),3);
 
 imwrite([puncta_montage;spacer;gel_montage], 'sm_8.png');
 
-
 %sampling 10 images
 sampled_gel = cell(0);
 sampled_puncta = cell(0);
