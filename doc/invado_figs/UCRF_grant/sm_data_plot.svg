@@ -14,7 +14,10 @@
    version="1.1"
    id="svg7155"
    inkscape:version="0.47pre4 r22446"
-   sodipodi:docname="sm_data_plot.svg">
+   sodipodi:docname="sm_data_plot.svg"
+   inkscape:export-filename="/home/mbergins/Documents/Projects/focal_adhesions/doc/invado_figs/UCRF_grant/sm_data_plot.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300">
   <metadata
      id="metadata7640">
     <rdf:RDF>
@@ -43,9 +46,9 @@
      borderlayer="true"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:zoom="1.0361111"
-     inkscape:cx="315"
-     inkscape:cy="359.51743"
+     inkscape:zoom="2.9305648"
+     inkscape:cx="269.71766"
+     inkscape:cy="633.89874"
      inkscape:window-x="0"
      inkscape:window-y="25"
      inkscape:window-maximized="1"
@@ -62,6 +65,22 @@
        orientation="1,0"
        position="621.30489,754.10289"
        id="guide7662" />
+    <sodipodi:guide
+       orientation="0,1"
+       position="6.6540075,581.03135"
+       id="guide7697" />
+    <sodipodi:guide
+       orientation="0,1"
+       position="34.379039,649.5335"
+       id="guide7699" />
+    <sodipodi:guide
+       orientation="1,0"
+       position="40.294906,647.61394"
+       id="guide7701" />
+    <sodipodi:guide
+       orientation="0,1"
+       position="76.265163,648.25389"
+       id="guide7705" />
   </sodipodi:namedview>
   <defs
      id="defs7157">
@@ -465,6 +484,13 @@
     </clipPath>
     <inkscape:perspective
        id="perspective7656"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective7676"
        inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
        inkscape:vp_z="1 : 0.5 : 1"
        inkscape:vp_y="0 : 1000 : 0"
@@ -1248,11 +1274,33 @@
   </g>
   <image
      y="2.524864"
-     x="19.603514"
+     x="32.235924"
      id="image7658"
-     height="111.66431"
-     width="477.4404"
+     height="108.70982"
+     width="464.80798"
      xlink:href="file:///home/mbergins/Documents/Projects/focal_adhesions/doc/invado_figs/UCRF_grant/sm_8.png"
      inkscape:export-xdpi="300"
      inkscape:export-ydpi="300" />
+  <text
+     xml:space="preserve"
+     style="font-size:14.39999962px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Liberation Sans;-inkscape-font-specification:Liberation Sans"
+     x="-45.00919"
+     y="32.235924"
+     id="text7664"
+     transform="matrix(0,-1,1,0,0,0)"><tspan
+       sodipodi:role="line"
+       id="tspan7666"
+       x="-45.00919"
+       y="32.235924">Actin</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-size:14.39999962px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Liberation Sans;-inkscape-font-specification:Liberation Sans"
+     x="-107.00036"
+     y="32.235924"
+     id="text7664-6"
+     transform="matrix(0,-1,1,0,0,0)"><tspan
+       sodipodi:role="line"
+       id="tspan7666-5"
+       x="-107.00036"
+       y="32.235924">Gelatin</tspan></text>
 </svg>
