@@ -22,20 +22,13 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "skip_vis|skip_visualization", 
-        "only_vis|vis_only|only_visualization", "exp_filter=s") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s") or die;
 
 if (-e '/opt/lsf/bin/bjobs' && not $opt{lsf}) {
 	die "LSF appears to be installed on this machine, don't you want to use it?" 
 }	
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
-
-die "The visualization options can't be specified without the lsf option (lsf)"
-  if ($opt{skip_vis} || $opt{only_vis}) && not($opt{lsf});
-
-die "Only one of the options skip_vis or only_vis can be selected."
-  if $opt{skip_vis} && $opt{only_vis};
 
 print "Gathering Config\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
@@ -53,7 +46,7 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
 	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
@@ -84,22 +77,7 @@ if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
 
-#collect all the config information 
-my %all_configs;
-for my $file (@config_files) {
-	my %temp_opt = %opt;
-	$temp_opt{cfg} = $file;
-	%{$all_configs{$file}} = ParseConfig(\%temp_opt);
-}
-
-our @error_files;
 if ($opt{lsf}) {
-    if ($opt{skip_vis}) {
-        @overall_command_seq = @overall_command_seq[ 0 .. $#overall_command_seq - 1 ];
-    } elsif ($opt{only_vis}) {
-        @overall_command_seq = @overall_command_seq[-1];
-    }
-    
     if (not($opt{debug})) {
         my $job_queue_thread = threads->create('shift_idle_jobs','');
         $job_queue_thread->detach;
@@ -157,13 +135,10 @@ if ($opt{lsf}) {
         #with all the jobs finished, lets kill the job queue changing thread
         # my $job_queue_thread->exit;
 
-        #Find and clean up the error files produced during program execution
-        print "Removing unimportant errors.\n";
-        
-        &File::Find::find(\&ID_error_files, ($cfg{results_folder}));
-    	&remove_unimportant_errors(@error_files);
-
-		# system("bsub -J \"Job Finished: $opt{cfg}\" tail " . join(" ", @error_files));
+        my $t_bsub = new Benchmark;
+        my $td = timediff($t_bsub, $t1);
+		
+        system("bsub -J \"Job Finished: $opt{cfg}\" Took: " . timestr($td));
     }
 } else {
     my $starting_dir = getcwd;
@@ -205,7 +180,6 @@ sub execute_command_seq {
         my $executed_scripts_count = 0;
         foreach my $cfg_file (@these_config_files) {
             my $config_command = "$command -cfg $cfg_file";
-			# print $all_configs{$cfg_file}{exp_data_folder}, "\n\n";
             chdir $dir;
             my $return_code = 0;
             if ($opt{debug}) {
@@ -322,39 +296,4 @@ sub check_file_sets {
     print "\n";
 
     return %exp_sets;
-}
-
-sub ID_error_files {
-    if ($File::Find::name =~ /error.txt/) {
-        push @error_files, $_;
-    }
-}
-
-sub remove_unimportant_errors {
-    my $count = 0;
-    print "Out of ", scalar(@_), ", # done: ";
-    for (@_) {
-        open INPUT, "$_" or die "$!";
-        my @errors = <INPUT>;
-        close INPUT;
-
-        my @cleaned_errors;
-        foreach my $line (@errors) {
-            if ($line =~ /Pending job threshold reached./) {
-                next;
-            }
-            push @cleaned_errors, $line;
-        }
-
-        unlink $_;
-
-        open OUTPUT, ">$_";
-        print OUTPUT @cleaned_errors;
-        close OUTPUT;
-        $count++;
-        if ($count % ceil(scalar(@_)/10) == 0) {
-            print " $count";
-        }
-    }
-    print "\n";
 }
