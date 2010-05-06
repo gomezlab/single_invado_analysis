@@ -10,7 +10,6 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 
 i_p.parse(I_file);
 
-i_p.addParamValue('min_size',0.56,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('registration_binary',fullfile(fileparts(I_file),'binary_shift.png'), ... 
     @(x)exist(x,'file')==2);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
@@ -32,7 +31,6 @@ max_col = find(sum(binary_shift),1,'last');
 
 %read in and normalize the input focal adhesion image
 focal_image  = imread(I_file);
-only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
 if (exist(i_p.Results.min_max_file, 'file'))
     min_max = csvread(i_p.Results.min_max_file);
 else
@@ -40,6 +38,7 @@ else
 end
 scale_factor = double(intmax(class(focal_image)));
 focal_image  = double(focal_image)/scale_factor;
+only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
 
 %read in the threshold from the file produced by the threshold selection
 %script
@@ -59,15 +58,15 @@ if (i_p.Results.filter_invert)
     threshed_image = not(threshed_image);
 end
 
+%identify and remove adhesions on the immediate edge of the image
+threshed_image = remove_edge_adhesions(threshed_image);
+
+%place the thresholded image back in place
 threshed_temp = zeros(size(focal_image));
 threshed_temp(binary_shift) = threshed_image;
 threshed_image = threshed_temp;
 
-%identify and remove adhesions on the immediate edge of the image
-threshed_image = remove_edge_adhesions(threshed_image,'binary_shift',binary_shift);
-threshed_image = remove_edge_adhesions(threshed_image);
-
-puncta = bwlabel(threshed_image,4);
+puncta = bwlabel(threshed_image,8);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Build adhesion perimeters image
