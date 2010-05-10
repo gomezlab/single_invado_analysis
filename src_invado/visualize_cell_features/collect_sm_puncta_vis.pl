@@ -183,7 +183,7 @@ sub build_single_ad_commands {
     my $line_count = scalar(@tracking_file);
     close TRACKING_FILE;
 
-    my $ad_per_run = 1000;
+    my $ad_per_run = 5000;
     my @commands;
     my $assembly_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_data.csv');
     if (-e $assembly_file) {
