@@ -46,7 +46,7 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
 	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
@@ -138,7 +138,11 @@ if ($opt{lsf}) {
         my $t_bsub = new Benchmark;
         my $td = timediff($t_bsub, $t1);
 		
-        system("bsub -J \"Job Finished: $opt{cfg}\" Took: " . timestr($td));
+        my $time_diff_str = "\"Took:" . timestr($td) . "\"";
+
+        my $command = "bsub -J \"Job Finished: $opt{cfg}\" echo $time_diff_str";
+
+        system($command);
     }
 } else {
     my $starting_dir = getcwd;
