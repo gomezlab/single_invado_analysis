@@ -12,7 +12,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Getopt::Long;
 use Data::Dumper;
-use Storable;
+use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 use Text::CSV;
 use IO::File;
 use Math::Matrix;
@@ -56,7 +56,7 @@ if ($opt{lsf}) {
     }
     
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'tracking_data');
-    $opt{resource} = "mem32 RH5";
+    $opt{resource} = "mem32";
     $opt{queue} = "week";
     if (defined $cfg{job_group}) {
         $opt{job_group} = $cfg{job_group};
@@ -98,7 +98,7 @@ sub make_comp_matices {
         if ($_ == $#data_keys) {
             if (defined $opt{output}) {
                 my $key_1 = $data_keys[$_];
-                store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
+                nstore \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
                 delete $data_sets{$key_1};
             }
             next;
@@ -137,7 +137,7 @@ sub make_comp_matices {
         print "\r"                if $opt{debug};
 
         if (defined $opt{output}) {
-            store \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
+            nstore \%{ $data_sets{$key_1} }, catfile($cfg{individual_results_folder}, $key_1, $opt{output});
             delete $data_sets{$key_1};
         }
     }

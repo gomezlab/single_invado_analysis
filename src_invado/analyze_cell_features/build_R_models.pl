@@ -29,7 +29,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "model_type=s")
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l")
   or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
@@ -51,7 +51,7 @@ if ($opt{lsf}) {
     if (defined $cfg{job_group}) {
         $opt{job_group} = $cfg{job_group};
     }
-    
+
     &FA_job::send_general_lsf_program(\@commands,\%opt);
 
     exit(0);
@@ -69,7 +69,8 @@ my @R_cmds;
 my $output_file = catfile($output_base, 'R_out.txt');
 push @R_cmds, "R CMD BATCH --vanilla \'--args data_dir=$data_dir\' invado_analysis_lib.R $output_file";
 
-$opt{error_file} = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models', 'error.txt');
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
+$opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 
 for (@R_cmds) {
 	if ($opt{debug}) {
