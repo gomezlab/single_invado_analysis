@@ -40,7 +40,7 @@ my @matlab_code = ("find_puncta_thresh('$cfg{individual_results_folder}')\n");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'puncta_threshold_finding');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
-$opt{runtime} = "1";
+$opt{resource} = "mem32";
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
