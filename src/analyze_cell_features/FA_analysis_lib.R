@@ -55,10 +55,10 @@ gather_bilinear_models_from_dirs <- function (dirs, min_length = 10,
         results[[i]]$parameters$log.trans = log.trans;
 
         if (! is.na(results.file)) {
-            this_file = file.path(dirs[[i]],results.file)
-                if (! file.exists(dirname(this_file))) {
-                    dir.create(dirname(this_file),recursive=TRUE)
-                }
+            this_file = file.path(dirs[[i]],results.file);
+            if (! file.exists(dirname(this_file))) {
+                dir.create(dirname(this_file),recursive=TRUE);
+            }
             this_result = results[[i]];
             save(this_result,file = this_file);
         }
@@ -763,7 +763,6 @@ print_ratio_conf_string <- function(data_1,data_2) {
         return(paste(median_ratio_average, "% (", median_ratio_low, "%,", median_ratio_high, "%)", sep=''));
 }
 
-
 hist_with_percents <- function(data, ...) {
 	hist_data = hist(data, ...);
 
@@ -985,12 +984,32 @@ filter_results <- function(results, min_R_sq=0.9, max_p_val = 0.05, debug = FALS
             points$control$mean_cell_int = c(points$control$mean_cell_int, mean(cell_intensities[[i]]));
         }
     }
+    
+    points$assembly$exp_num = as.factor(points$assembly$exp_num);
+    points$disassembly$exp_num = as.factor(points$disassembly$exp_num);
+    points$joint$exp_num = as.factor(points$joint$exp_num);
 
     points$assembly = as.data.frame(points$assembly);
     points$disassembly = as.data.frame(points$disassembly);
     points$joint = as.data.frame(points$joint);
 
     points
+}
+
+determine_death_rate <- function(lineage_time_series) {
+    total_deaths = sum(lineage_time_series$exp_props$death_status);
+    total_time = dim(lineage_time_series$exp_data)[[2]];
+
+    total_deaths/total_time;
+}
+
+determine_birth_rate <- function(lineage_time_series) {
+    filtered_exp_data = lineage_time_series$exp_data[! lineage_time_series$exp_props$split_birth_status,1]
+
+    total_births = sum(is.nan(filtered_exp_data));
+    total_time = dim(lineage_time_series$exp_data)[[2]];
+
+    total_births/total_time;
 }
 
 produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slope=TRUE) {
@@ -1040,6 +1059,29 @@ produce_rate_filters <- function(raw_data, min_R_sq=0.9, max_p_val=0.05, pos_slo
     return(final_filters)
 }
 
+gather_barplot_properties <- function(data_sets) {
+    plot_props = list()
+    for (i in 1:length(data_sets)) {
+        plot_props$mean = c(plot_props$mean, mean(data_sets[[i]]));
+
+        temp_conf_data = determine_mean_conf_int(data_sets[[i]]);
+
+        plot_props$yminus = c(plot_props$yminus, temp_conf_data[1]);
+        plot_props$yplus = c(plot_props$yplus, temp_conf_data[2]);
+        print(i)
+    }
+    return(plot_props);
+}
+
+determine_mean_conf_int <- function(data, bootstrap.rep = 10000) {
+	require(boot);
+	boot_samp = boot(data, function(data,indexes) mean(data[indexes],na.rm=T), bootstrap.rep);
+		
+    conf_int = boot.ci(boot_samp, type="perc", conf=0.95)$percent[4:5]
+
+    return(conf_int)
+}
+
 determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
 	require(boot);
 	boot_samp_1 = boot(data_1, function(data_1,indexes) mean(data_1[indexes],na.rm=T), bootstrap.rep);
@@ -1051,7 +1093,7 @@ determine_mean_p_value <- function(data_1,data_2, bootstrap.rep = 10000) {
     results = list();
 
     results$p_val = find_p_val_from_bootstrap(boot_samp_1, boot_samp_2);
-    results$median_vals = c(boot_samp_1$t0, boot_samp_2$t0);
+    results$mean_vals = c(boot_samp_1$t0, boot_samp_2$t0);
     results$conf_ints = rbind(conf_int_one$percent[4:5], conf_int_two$percent[4:5])
 
     return(results);
@@ -1227,7 +1269,10 @@ gather_general_dynamic_props <- function(results, debug=FALSE) {
 		points$ad_sig = c(points$ad_sig, res$exp_props$ad_sig[filt])
 		points$average_speed = c(points$average_speed, res$exp_props$average_speeds[filt])
 		points$exp_num = c(points$exp_num, rep(i,length(which(filt))))
-	}	
+	}
+    
+    points$exp_num = as.factor(points$exp_num);
+
 	points = as.data.frame(points)
 	points
 }
@@ -1247,8 +1292,10 @@ gather_static_props <- function(ind_results, debug=FALSE) {
 		ind_data$axial_r = c(ind_data$axial_r, res$MajorAxisLength[filt_by_area]/res$MinorAxisLength[filt_by_area]);
 	
 		ind_data$cent_dist = c(ind_data$cent_dist, res$Centroid_dist_from_edge[filt_by_area]);
+        ind_data$exp_num = c(ind_data$exp_num, rep(i, length(filt_by_area)));
 	}
-	
+    
+    ind_data$exp_num = as.factor(ind_data$exp_num);
 	as.data.frame(ind_data)
 }
 
@@ -1285,8 +1332,31 @@ load_results_2 <- function(dirs,file) {
 	temp_results
 }
 
-load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = FALSE) {
-	results = list()
+load_results_data_frame <- function(dirs,file,variable_name, debug=FALSE) {
+    #simple function to read in all the R data files in each of the specified
+    #dirs, searching for the provided variable name after every load, note that
+    #all the data is concatenated into a single data frame
+	
+    results = data.frame()
+	for (i in 1:length(dirs)) {
+		this_file = file.path(dirs[i],file)
+        if (debug) {
+            print(paste("Loading:", file.path(dirs[i],file)))
+        }
+		if (file.exists(this_file)) {
+			load(file.path(dirs[i],file))
+			results = rbind(results,get(variable_name))
+		}
+	}
+	results
+}
+
+load_data_files <- function(dirs, files, headers = FALSE, inc_exp_names = TRUE, debug = FALSE) {
+    #This function searches through the directories provided "dirs" and looks
+    #for the files "files". If all the files are present in all the dirs, they
+    #are loaded. The headers are included if the matching headers position
+    #is true, otherwise, the headers are excluded
+    results = list()
 	
 	exp_names = list()
 	all_files_present_dirs = c()	
@@ -1307,14 +1377,15 @@ load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = 
 	        if (regex_range[1] == -1) {
         		exp_names[[length(all_files_present_dirs)]] = dirs[[i]];
 	        } else {
-    	    	        exp_names[[length(all_files_present_dirs)]] = 
-                                substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
+    	    	exp_names[[length(all_files_present_dirs)]] = substr(dirs[[i]], regex_range[1], regex_range[1] + attr(regex_range,'match.length'));
         	}
 		}
 	}
 	
 	if (debug) {
+        print("Directories with full sets of files:");
 		print(all_files_present_dirs)
+        print('');
 	}
 	
 	for (i in 1:length(files)) {
@@ -1324,13 +1395,19 @@ load_data_files <- function(dirs, files, headers, inc_exp_names = TRUE, debug = 
 	header_array = array(headers, dim=c(1,length(all_files_present_dirs)))
 
 	for (i in 1:length(all_files_present_dirs)) {
+        if (debug) {
+            print(paste("Working on directory:",all_files_present_dirs[i]))
+        }
 		for (j in 1:length(files)) {
-            if (headers) {
-			    results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[j], sep=",")
-            } else {
-			    results[[j]][[i]] = as.numeric(read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[j], sep=","))
+            if (debug) {
+                print(paste("Working on file:",files[j]))
+                print(j)
             }
-
+		    results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[i], sep=",")
+            # if (headers) {
+            # } else {
+			    # results[[j]][[i]] = read.table(file.path(all_files_present_dirs[i],files[j]), header = header_array[i], sep=",")
+            # }
 		}
 	}
 	if (inc_exp_names) {

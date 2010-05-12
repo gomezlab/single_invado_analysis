@@ -300,6 +300,7 @@ sub gather_and_output_lineage_properties {
         $props{Area} = &gather_prop_seq("Area");
         &output_prop_time_series($props{Area}, "Area");
         $props{largest_area} = &gather_largest_entry($props{Area});
+        $props{largest_area_inum} = &gather_largest_entry_inum($props{Area});
         $props{mean_area} = &gather_average_value($props{Area});
         undef $props{Area};
     }
@@ -534,6 +535,27 @@ sub gather_largest_entry {
         push @largest_data, $largest;
     }
     return \@largest_data;
+}
+
+sub gather_largest_entry_inum {
+    my @data = @{ $_[0] };
+
+    print "\r", " " x 80, "\rGathering Largest Entries" if $opt{debug};
+    my @largest_inum;
+    for my $i (0 .. $#data) {
+        my $largest = 0;
+		my $largest_inum = -1;
+        for my $j (0 .. $#{ $data[$i] }) {
+            next if ($data[$i][$j] eq "NaN");
+			if ($largest < $data[$i][$j]) {
+            	$largest = $data[$i][$j];
+				$largest_inum = $j;
+			}
+        }
+		die if ($largest_inum == -1);
+        push @largest_inum, $largest_inum;
+    }
+    return \@largest_inum;
 }
 
 sub gather_birth_i_num {
