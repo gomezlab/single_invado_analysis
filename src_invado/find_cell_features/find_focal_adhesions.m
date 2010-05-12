@@ -22,6 +22,8 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,varargin{:});
 
+
+
 %read in binary shift file
 binary_shift = logical(imread(i_p.Results.registration_binary));
 min_row = find(sum(binary_shift,2),1,'first');
@@ -29,16 +31,22 @@ max_row = find(sum(binary_shift,2),1,'last');
 min_col = find(sum(binary_shift),1,'first');
 max_col = find(sum(binary_shift),1,'last');
 
+cell_mask = logical(imread(fullfile(fileparts(I_file),'cell_mask.png')));
+only_reg_cell_mask = cell_mask(min_row:max_row, min_col:max_col);
+
 %read in and normalize the input focal adhesion image
 focal_image  = imread(I_file);
+scale_factor = double(intmax(class(focal_image)));
+focal_image  = double(focal_image)/scale_factor;
+only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
+
+%read in the global min max file, if present, will be used in the last part
+%to output a normalized copy of the image with the puncta highlighted
 if (exist(i_p.Results.min_max_file, 'file'))
     min_max = csvread(i_p.Results.min_max_file);
 else
     min_max = [min(only_reg_focal_image(:)), max(only_reg_focal_image(:))];
 end
-scale_factor = double(intmax(class(focal_image)));
-focal_image  = double(focal_image)/scale_factor;
-only_reg_focal_image = focal_image(min_row:max_row, min_col:max_col);
 
 %read in the threshold from the file produced by the threshold selection
 %script
@@ -93,4 +101,5 @@ scaled_image = scaled_image - min_max(1);
 scaled_image = scaled_image .* (1/min_max(2));
 scaled_image(not(binary_shift)) = 0;
 
-imwrite(create_highlighted_image(scaled_image, threshed_image,'color_map',[1 0 0]),fullfile(i_p.Results.output_dir, 'puncta_highlight.png')); 
+imwrite(create_highlighted_image(scaled_image, threshed_image,'color_map',[1 0 0], 'mix_percent',0.5), ...
+    fullfile(i_p.Results.output_dir, 'puncta_highlight.png')); 

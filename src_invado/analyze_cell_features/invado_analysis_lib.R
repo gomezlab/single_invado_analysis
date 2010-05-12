@@ -62,18 +62,26 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$max_local_diff = c(all_props$max_local_diff, max(only_data));
             all_props$min_local_diff = c(all_props$min_local_diff, min(only_data));
             
-            test_results = tryCatch(t.test(only_data,conf.level=conf.level), error = t.test.error);
+            test_results = tryCatch(
+                t.test(only_data,alternative="less",conf.level=conf.level), 
+                error = t.test.error);
             
+            all_props$low_conf_int = c(all_props$low_conf_int, test_results$conf.int[1]);
             all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
             all_props$p_value = c(all_props$p_value, test_results$p.value);
             
             #Pre-birth local difference data
             only_pre_diff_data = na.omit(as.numeric(pre_diff_data[i,]));
             
-            only_pre_diff_test = tryCatch(t.test(only_pre_diff_data,conf.level=conf.level), error = t.test.error);
+            only_pre_diff_test = tryCatch(
+                t.test(only_pre_diff_data,alternative="less",conf.level=conf.level), 
+                error = t.test.error);
 
-            pre_test = tryCatch(t.test(only_data - only_pre_diff_data,conf.level=conf.level), error = t.test.error);
+            pre_test = tryCatch(
+                t.test(only_data - only_pre_diff_data,alternative="less",conf.level=conf.level), 
+                error = t.test.error);
             all_props$pre_p_value = c(all_props$pre_p_value, pre_test$p.value);
+            all_props$pre_low_conf_int = c(all_props$pre_low_conf_int, pre_test$conf.int[1]);
             all_props$pre_high_conf_int = c(all_props$pre_high_conf_int, pre_test$conf.int[2]);
             
             only_area_data = na.omit(as.numeric(area_data[i,]));
@@ -86,13 +94,16 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 time_points = seq(from=0,by=5,along.with=only_data);
                 
                 par(bty='n', mar=c(5,4,4,5))
-                matplot(time_points, cbind(only_data, only_pre_diff_data, only_data - only_pre_diff_data), typ='l', xlab='Time (min)', ylab='Difference Metric', main=i)
-                legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), fill=c('black','red', 'green'))
+                matplot(time_points, cbind(only_data, only_pre_diff_data, only_data - only_pre_diff_data), 
+                    typ='l', xlab='Time (min)', ylab='Difference Metric', main=i)
+                legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), 
+                    fill=c('black','red', 'green'))
                 segments(0,0,max(time_points),0, col='purple', lty=4)
 
                 plot_limits = par("usr");
 
-                errbar(max(time_points), test_results$estimate, test_results$conf.int[2], test_results$conf.int[1], add=T)
+                errbar(max(time_points), test_results$estimate, 
+                    test_results$conf.int[2], test_results$conf.int[1], add=T)
                 errbar(max(time_points)+(plot_limits[2]-max(time_points))*0.4, only_pre_diff_test$estimate, 
                     only_pre_diff_test$conf.int[2], only_pre_diff_test$conf.int[1], add=T, col='red')
                 errbar(max(time_points)+(plot_limits[2]-max(time_points))*0.8, pre_test$estimate, 
@@ -133,8 +144,10 @@ t.test.error <- function(e) {
 build_filter_sets <- function(raw_data_set) {
     filter_sets = list();
     
-    filter_sets$local_diff_filter = raw_data_set$high_conf_int < 0;
-    filter_sets$pre_diff_filter = raw_data_set$pre_high_conf_int < 0;
+    # filter_sets$local_diff_filter = raw_data_set$high_conf_int < 0;
+    # filter_sets$pre_diff_filter = raw_data_set$pre_high_conf_int < 0;
+    filter_sets$local_diff_filter = raw_data_set$p_value < 0.05;
+    filter_sets$pre_diff_filter = raw_data_set$pre_p_value < 0.05;
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
     filter_sets$non_invado_filter = ! filter_sets$invado_filter;

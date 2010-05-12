@@ -8,6 +8,7 @@ package Config::Adhesions;
 use strict;
 use warnings;
 use File::Spec;
+use Config::General;
 
 use base qw(Config::General);
 

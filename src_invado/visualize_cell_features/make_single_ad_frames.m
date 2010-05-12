@@ -249,23 +249,23 @@ for j = 1:max_image_num
             assert(sum(sum(not_this_ad)) + sum(sum(this_ad)) == sum(sum(im2bw(bounded_ad_label_perim,0))))
             
             highlighted_image = orig_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
-            highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,1,0],'mix_percent',0.25);
+            highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,0.75,0],'mix_percent',1);
+            highlighted_image = create_highlighted_image(highlighted_image,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.25);
             highlighted_image = create_highlighted_image(highlighted_image,not_this_ad,'color_map',[0,0,1],'mix_percent',0.25);
-            highlighted_image = create_highlighted_image(highlighted_image,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.05);
             if (exist('cell_edge','var'))
                 bounded_edge = cell_edge(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
-                highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0],'mix_percent',0.1);
+                highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0],'mix_percent',0.25);
             end
             
             all_images{row_num}{i_seen} = highlighted_image;
             
             highlighted_gel = gel_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
-            highlighted_gel = create_highlighted_image(highlighted_gel,this_ad,'color_map',[0,1,0],'mix_percent',0.25);
+            highlighted_gel = create_highlighted_image(highlighted_gel,this_ad,'color_map',[0,0.75,0],'mix_percent',1);
+            highlighted_gel = create_highlighted_image(highlighted_gel,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.25);
             highlighted_gel = create_highlighted_image(highlighted_gel,not_this_ad,'color_map',[0,0,1],'mix_percent',0.25);
-            highlighted_gel = create_highlighted_image(highlighted_gel,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.05);
             if (exist('cell_edge','var'))
                 bounded_edge = cell_edge(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
-                highlighted_gel = create_highlighted_image(highlighted_gel,bounded_edge,'color_map',[1,0,1],'mix_percent',0.1);
+                highlighted_gel = create_highlighted_image(highlighted_gel,bounded_edge,'color_map',[1,0,0],'mix_percent',0.25);
             end
             
             all_gel{row_num}{i_seen} = highlighted_gel;
@@ -297,7 +297,7 @@ for j = 1:max_image_num
         end
         
     end
-    if (mod(j,1) == 0 && i_p.Results.debug)
+    if (mod(j,5) == 0 && i_p.Results.debug)
         disp(['Highlight image: ',num2str(i_seen)]);
     end
 end

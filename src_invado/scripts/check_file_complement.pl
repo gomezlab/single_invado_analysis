@@ -8,8 +8,8 @@ use lib "../lib";
 use lib "../lib/perl";
 
 use strict;
-use File::Path;
 use File::Find;
+use File::Path;
 use File::Spec::Functions;
 use File::Basename;
 use File::Copy;
@@ -37,6 +37,8 @@ my %cfg = ParseConfig(\%opt);
 ################################################################################
 
 my @folders = sort <$cfg{individual_results_folder}/*>;
+
+die "Unable to find image results folders" if scalar(@folders) == 0;
 
 our @file_list;
 find(\&collect_all, ($folders[0]));

@@ -18,7 +18,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "src=s", "target=s", "debug") or die;
+GetOptions(\%opt, "src=s", "target=s", "copy_mode", "debug|d") or die;
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
 
@@ -83,16 +83,28 @@ for (keys %file_sets) {
 	
 	if ($opt{debug}) {
 		print "mkpath($exp_dir)\n";
-		print "move($src_gel_file[0], $gel_file)\n";
-		print "move($src_puncta_file[0], $puncta_file)\n";
-		print "move($src_log_file[0], $log_file)\n";
+		if ($opt{copy_mode}) {
+			print "copy($src_gel_file[0], $gel_file)\n";
+			print "copy($src_puncta_file[0], $puncta_file)\n";
+			print "copy($src_log_file[0], $log_file)\n";
+		} else {
+			print "move($src_gel_file[0], $gel_file)\n";
+			print "move($src_puncta_file[0], $puncta_file)\n";
+			print "move($src_log_file[0], $log_file)\n";
+		}
 		print "&write_standard_config_file($config_file, $exp_name)\n";
 		print "\n";
 	} else {
 		mkpath($exp_dir);
-		move($src_gel_file[0], $gel_file);
-		move($src_puncta_file[0], $puncta_file);
-		move($src_log_file[0], $log_file);
+		if ($opt{copy_mode}) {
+			copy($src_gel_file[0], $gel_file);
+			copy($src_puncta_file[0], $puncta_file);
+			copy($src_log_file[0], $log_file);
+		} else {
+			move($src_gel_file[0], $gel_file);
+			move($src_puncta_file[0], $puncta_file);
+			move($src_log_file[0], $log_file);
+		}
 		&write_standard_config_file($config_file, $exp_name);
 	}
 }
