@@ -4,23 +4,38 @@ library(lattice);
 library(geneplotter);
 library(Hmisc);
 
+debug = TRUE;
+
 ################################################################################
 #Result loading
 ################################################################################
 raw_data <- list()
 
 #Rapamycin results
-exp_dirs_rap <- Sys.glob('../../results/rap_src/*/adhesion_props/models/');
-exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)];
-raw_data$rap = load_results(exp_dirs_rap,file.path('intensity.Rdata'));
+# exp_dirs_rap <- Sys.glob('../../results/rap_src/*/adhesion_props/models/');
+# exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)];
+# raw_data$rap = load_results(exp_dirs_rap,file.path('intensity.Rdata'));
+# 
+# exp_dirs_rap <- Sys.glob('../../results/rap_src_control/*/adhesion_props/models/');
+# exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)];
+# raw_data$rap_ctrl = load_results(exp_dirs_rap,file.path('intensity.Rdata'));
+# 
+# exp_dirs_rap <- Sys.glob('../../results/rap_src_pax/*/adhesion_props/models/');
+# exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)];
+# raw_data$rap_pax = load_results(exp_dirs_rap,file.path('intensity.Rdata'));
 
-exp_dirs_rap <- Sys.glob('../../results/rap_src_control/*/adhesion_props/models/');
-exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)];
-raw_data$rap_ctrl = load_results(exp_dirs_rap,file.path('intensity.Rdata'));
+exp_dirs_rap <- Sys.glob('../../results/rap_fak_no_split/*/adhesion_props/models/');
+post_dirs = exp_dirs_rap[regexpr('post', exp_dirs_rap) > -1];
+pre_dirs = exp_dirs_rap[regexpr('pre', exp_dirs_rap) > -1];
+stopifnot(length(post_dirs) + length(pre_dirs) == length(exp_dirs_rap));
 
-exp_dirs_rap <- Sys.glob('../../results/rap_src_pax/*/adhesion_props/models/');
-exp_dirs_rap <- exp_dirs_rap[file_test('-d',exp_dirs_rap)];
-raw_data$rap_pax = load_results(exp_dirs_rap,file.path('intensity.Rdata'));
+raw_data$rap_fak_pre$intensity = load_results(pre_dirs,file.path('intensity.Rdata'));
+raw_data$rap_fak_pre$static_props <- load_data_files(pre_dirs, 
+    file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
+
+raw_data$rap_fak_post$intensity = load_results(post_dirs,file.path('intensity.Rdata'));
+raw_data$rap_fak_post$static_props <- load_data_files(post_dirs, 
+    file.path('..','individual_adhesions.csv'), headers=T, debug=FALSE, inc_exp_names=FALSE);
 
 print('Done Loading Data')
 
@@ -28,87 +43,64 @@ print('Done Loading Data')
 #Processing
 ################################################################################
 
-results_rap_onlysignif = filter_results(raw_data$rap, min_R_sq = -Inf, max_p_val = 0.05);
-results_rap_ctrl_onlysignif = filter_results(raw_data$rap_ctrl, min_R_sq = -Inf, max_p_val = 0.05);
-results_rap_pax_onlysignif = filter_results(raw_data$rap_pax, min_R_sq = -Inf, max_p_val = 0.05);
+processed = list();
+dynamic_props = list();
+static_props = list();
+for (exp_type in names(raw_data)) {
+    for (property in names(raw_data[[exp_type]])) {
+        if (property == "static_props") {
+            next;
+        }
+        if (debug) {
+            print(paste("Filtering", exp_type, property));
+        }
 
-results_rap = filter_results(raw_data$rap);
-results_rap_ctrl = filter_results(raw_data$rap_ctrl);
-results_rap_pax = filter_results(raw_data$rap_pax);
+        processed$no_filt[[exp_type]] = filter_results(raw_data[[exp_type]]$intensity, 
+            min_R_sq = -Inf, max_p_val = Inf, pos_slope=FALSE);
+        
+        processed$only_signif[[exp_type]] = filter_results(raw_data[[exp_type]]$intensity, 
+            min_R_sq = -Inf, max_p_val = 0.05);
+    }
+    
+    dynamic_props[[exp_type]] = gather_general_dynamic_props(raw_data[[exp_type]]$intensity)
+    static_props[[exp_type]] = gather_static_props(raw_data[[exp_type]]$static_props) 
+}
 
-#Data splitting
 
-#Rap Src FAK image splitting
-rap_src_pre = list();
-rap_src_post = list();
-
-assembly_pre_filt = results_rap_onlysignif$assembly$exp_num %% 2 == 0;
-assembly_post_filt = results_rap_onlysignif$assembly$exp_num %% 2 == 1;
-rap_src_pre$assembly = results_rap_onlysignif$assembly[assembly_pre_filt,];
-rap_src_post$assembly = results_rap_onlysignif$assembly[assembly_post_filt,];
-
-disassembly_pre_filt = results_rap_onlysignif$disassembly$exp_num %% 2 == 0;
-disassembly_post_filt = results_rap_onlysignif$disassembly$exp_num %% 2 == 1;
-rap_src_pre$disassembly = results_rap_onlysignif$disassembly[disassembly_pre_filt,];
-rap_src_post$disassembly = results_rap_onlysignif$disassembly[disassembly_post_filt,];
-
-joint_pre_filt = results_rap_onlysignif$joint$exp_num %% 2 == 0;
-joint_post_filt = results_rap_onlysignif$joint$exp_num %% 2 == 1;
-rap_src_pre$joint = results_rap_onlysignif$joint[joint_pre_filt,];
-rap_src_post$joint = results_rap_onlysignif$joint[joint_post_filt,];
-
-rap_src_stage_lengths = gather_stage_lengths(rap_src_pre,rap_src_post);
-
-#Rap Src FAK Control image splitting
-rap_src_pre_ctrl = list();
-rap_src_post_ctrl = list();
-
-assembly_pre_filt = results_rap_ctrl_onlysignif$assembly$exp_num %% 2 == 0;
-assembly_post_filt = results_rap_ctrl_onlysignif$assembly$exp_num %% 2 == 1;
-rap_src_pre_ctrl$assembly = results_rap_ctrl_onlysignif$assembly[assembly_pre_filt,];
-rap_src_post_ctrl$assembly = results_rap_ctrl_onlysignif$assembly[assembly_post_filt,];
-
-disassembly_pre_filt = results_rap_ctrl_onlysignif$disassembly$exp_num %% 2 == 0;
-disassembly_post_filt = results_rap_ctrl_onlysignif$disassembly$exp_num %% 2 == 1;
-rap_src_pre_ctrl$disassembly = results_rap_ctrl_onlysignif$disassembly[disassembly_pre_filt,];
-rap_src_post_ctrl$disassembly = results_rap_ctrl_onlysignif$disassembly[disassembly_post_filt,];
-
-joint_pre_filt = results_rap_ctrl_onlysignif$joint$exp_num %% 2 == 0;
-joint_post_filt = results_rap_ctrl_onlysignif$joint$exp_num %% 2 == 1;
-rap_src_pre_ctrl$joint = results_rap_ctrl_onlysignif$joint[joint_pre_filt,];
-rap_src_post_ctrl$joint = results_rap_ctrl_onlysignif$joint[joint_post_filt,];
-
-rap_src_ctrl_stage_lengths = gather_stage_lengths(rap_src_pre_ctrl,rap_src_post_ctrl);
-
-#Paxillin Imaging splitting
-rap_pax_pre = list();
-rap_pax_post = list();
-
-assembly_pre_filt = results_rap_pax_onlysignif$assembly$exp_num %% 2 == 0;
-assembly_post_filt = results_rap_pax_onlysignif$assembly$exp_num %% 2 == 1;
-rap_pax_pre$assembly = results_rap_pax_onlysignif$assembly[assembly_pre_filt,];
-rap_pax_post$assembly = results_rap_pax_onlysignif$assembly[assembly_post_filt,];
-
-disassembly_pre_filt = results_rap_pax_onlysignif$disassembly$exp_num %% 2 == 0;
-disassembly_post_filt = results_rap_pax_onlysignif$disassembly$exp_num %% 2 == 1;
-rap_pax_pre$disassembly = results_rap_pax_onlysignif$disassembly[disassembly_pre_filt,];
-rap_pax_post$disassembly = results_rap_pax_onlysignif$disassembly[disassembly_post_filt,];
-
-joint_pre_filt = results_rap_pax_onlysignif$joint$exp_num %% 2 == 0;
-joint_post_filt = results_rap_pax_onlysignif$joint$exp_num %% 2 == 1;
-rap_pax_pre$joint = results_rap_pax_onlysignif$joint[joint_pre_filt,];
-rap_pax_post$joint = results_rap_pax_onlysignif$joint[joint_post_filt,];
-
-rap_pax_stage_lengths = gather_stage_lengths(rap_pax_pre,rap_pax_post);
-
-pax_lifetimes = determine_mean_p_value(rap_pax_pre$joint$total_lifetime, rap_pax_post$joint$total_lifetime)
-fak_lifetimes = determine_mean_p_value(rap_src_pre$joint$total_lifetime, rap_src_post$joint$total_lifetime)
+out_folder = '../../doc/publication/figures'
+stop();
 
 ################################################################################
 #Plotting
 ################################################################################
-out_folder = '../../doc/publication/figures'
 dir.create(out_folder,recursive=TRUE, showWarnings=FALSE);
+
+pre = list()
+post = list()
+
+pre$dynamic$death_rate = unlist(lapply(raw_data$rap_fak_pre$intensity, determine_death_rate))
+post$dynamic$death_rate = unlist(lapply(raw_data$rap_fak_post$intensity, determine_death_rate))
+
+pre$dynamic$birth_rate = unlist(lapply(raw_data$rap_fak_pre$intensity, determine_birth_rate))
+post$dynamic$birth_rate = unlist(lapply(raw_data$rap_fak_post$intensity, determine_birth_rate))
+
+for (i in names(static_props$rap_fak_pre)) {
+    if (i == "exp_num") {
+        next;
+    }
+    print(i);
+    pre$static[[i]] = tapply(static_props$rap_fak_pre[[i]], static_props$rap_fak_pre$exp_num, mean)
+    post$static[[i]] = tapply(static_props$rap_fak_post[[i]], static_props$rap_fak_post$exp_num, mean)
+}
+
+for (i in names(dynamic_props$rap_fak_pre)) {
+    if (i == "exp_num") {
+        next;
+    }
+    print(i);
+    pre$dynamic[[i]] = tapply(dynamic_props$rap_fak_pre[[i]], dynamic_props$rap_fak_pre$exp_num, mean, na.rm=T)
+    post$dynamic[[i]] = tapply(dynamic_props$rap_fak_post[[i]], dynamic_props$rap_fak_post$exp_num, mean, na.rm=T)
+}
 
 ########################################
 #RAP-SRC Plotting
