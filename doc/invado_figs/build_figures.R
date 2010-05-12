@@ -17,11 +17,13 @@ dirs_to_load$control = Sys.glob('../../results/Invadopodia/control/*/adhesion_pr
 dirs_to_load$coro1C_kd = Sys.glob('../../results/Invadopodia/Coro1C/*/adhesion_props/');
 dirs_to_load$coro1B_kd = Sys.glob('../../results/Invadopodia/Coro1B/*/adhesion_props/');
 dirs_to_load$CotL_kd = Sys.glob('../../results/Invadopodia/CotL/*/adhesion_props/');
+dirs_to_load$Cort_kd = Sys.glob('../../results/Invadopodia/Cort/*/adhesion_props/');
+dirs_to_load$BB94 = Sys.glob('../../results/Invadopodia/BB94/*/adhesion_props/');
 
 raw_data = list();
 for (exp_type in names(dirs_to_load)) {
     raw_data[[exp_type]] = load_results_data_frame(dirs_to_load[[exp_type]], 
-        file.path('models','puncta_props_corr.Rdata'), 'all_props');
+        file.path('models','puncta_props_corr.Rdata'), 'all_props',debug=TRUE);
 }
 
 data_sets = list();
@@ -36,14 +38,14 @@ for (i in names(raw_data)) {
     data_sets[[non_invado_name]] = subset(raw_data[[i]], filter_sets$non_invado_filter);
 }
 
-data_sets$day_1_control = subset(data_sets$invado_control, regexpr('11_16',data_sets$invado_control$experiment) == 1)
-data_sets$day_2_control = subset(data_sets$invado_control, regexpr('11_22',data_sets$invado_control$experiment) == 1)
-data_sets$day_3_control = subset(data_sets$invado_control, regexpr('02_23',data_sets$invado_control$experiment) == 1)
-
-data_sets$day_1_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_14',data_sets$invado_coro1C_kd$experiment) == 1)
-data_sets$day_2_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_15',data_sets$invado_coro1C_kd$experiment) == 1)
-data_sets$day_3_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_22',data_sets$invado_coro1C_kd$experiment) == 1)
-
+# data_sets$day_1_control = subset(data_sets$invado_control, regexpr('11_16',data_sets$invado_control$experiment) == 1)
+# data_sets$day_2_control = subset(data_sets$invado_control, regexpr('11_22',data_sets$invado_control$experiment) == 1)
+# data_sets$day_3_control = subset(data_sets$invado_control, regexpr('02_23',data_sets$invado_control$experiment) == 1)
+# 
+# data_sets$day_1_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_14',data_sets$invado_coro1C_kd$experiment) == 1)
+# data_sets$day_2_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_15',data_sets$invado_coro1C_kd$experiment) == 1)
+# data_sets$day_3_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_22',data_sets$invado_coro1C_kd$experiment) == 1)
+# 
 ts_props = list()
 
 for (exp_type in names(dirs_to_load)) {
@@ -69,9 +71,12 @@ dir.create('area',recursive=TRUE, showWarnings=FALSE);
 area_sets_to_use = list(data_sets$invado_control$mean_area, 
                         data_sets$invado_coro1B_kd$mean_area, 
                         data_sets$invado_coro1C_kd$mean_area, 
-                        data_sets$invado_CotL_kd$mean_area)
+                        data_sets$invado_CotL_kd$mean_area,
+                        data_sets$invado_Cort_kd$mean_area,
+                        data_sets$invado_BB94$mean_area
+                        )
 
-data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
+data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD', 'Cortactin KD', 'BB94')
 
 for (i in 1:length(data_names)) {
     data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
@@ -101,7 +106,10 @@ dir.create('longevity',recursive=TRUE, showWarnings=FALSE);
 longev_sets_to_use = list(data_sets$invado_control$longevity*5, 
                           data_sets$invado_coro1B_kd$longevity*5, 
                           data_sets$invado_coro1C_kd$longevity*5, 
-                          data_sets$invado_CotL_kd$longevity*5)
+                          data_sets$invado_CotL_kd$longevity*5,
+                          data_sets$invado_Cort_kd$longevity*5,
+                          data_sets$invado_BB94$longevity*5
+                          )
 
 svg(file.path('longevity','longevity_boxplots.svg'), width=9)
 boxplot(longev_sets_to_use, names=data_names,
