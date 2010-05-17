@@ -1,6 +1,6 @@
 rm(list = ls())
-source('../../src_invado/analyze_cell_features/invado_analysis_lib.R')
-source('../../src/analyze_cell_features/FA_analysis_lib.R')
+source('../../src/analyze_cell_features/invado_analysis_lib.R')
+source('../../fa_src/analyze_cell_features/FA_analysis_lib.R')
 library(lattice)
 library(geneplotter)
 library(Hmisc)
@@ -23,19 +23,28 @@ dirs_to_load$BB94 = Sys.glob('../../results/Invadopodia/BB94/*/adhesion_props/')
 raw_data = list();
 for (exp_type in names(dirs_to_load)) {
     raw_data[[exp_type]] = load_results_data_frame(dirs_to_load[[exp_type]], 
-        file.path('models','puncta_props_corr.Rdata'), 'all_props',debug=TRUE);
+        file.path('models','puncta_props_corr.Rdata'), 'all_props',debug=F);
 }
 
 data_sets = list();
+diff_conf = list();
 for (i in names(raw_data)) {
     invado_name = paste("invado_", i, sep='');
     non_invado_name = paste("non_invado_", i, sep='');
     
+    #Filter set of 0.95
     filter_sets = build_filter_sets(raw_data[[i]]);
-    
     data_sets[[invado_name]] = subset(raw_data[[i]], filter_sets$invado_filter);
-    
     data_sets[[non_invado_name]] = subset(raw_data[[i]], filter_sets$non_invado_filter);
+    
+    for (this_conf in as.character(seq(0.9,0.25,by=-0.05))) {
+        if (! is.list(diff_conf[[this_conf]])) {
+            diff_conf[[this_conf]] = list();
+        }
+        filter_sets = build_filter_sets(raw_data[[i]], conf.level=as.numeric(this_conf));
+        diff_conf[[this_conf]][[invado_name]] = subset(raw_data[[i]], filter_sets$invado_filter);
+        diff_conf[[this_conf]][[non_invado_name]] = subset(raw_data[[i]], filter_sets$non_invado_filter);
+    }
 }
 
 # data_sets$day_1_control = subset(data_sets$invado_control, regexpr('11_16',data_sets$invado_control$experiment) == 1)
@@ -82,20 +91,52 @@ for (i in 1:length(data_names)) {
     data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
 }
 
-svg(file.path('area','area_boxplots.svg'), width=9)
+svg(file.path('area','area_boxplots.svg'), width=12)
 boxplot(area_sets_to_use, names=data_names,
         ylab='Mean Puncta Area (\u03BCm\u00B2)')
 graphics.off()
 
 area_conf_ints = gather_barplot_properties(area_sets_to_use);
 
-svg(file.path('area','area_barplots.svg'), width=8)
+svg(file.path('area','area_barplots.svg'), width=12)
 par(mar=c(2,4,0.5,0))
 x_pos = barplot(area_conf_ints$mean, names=data_names,
         ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
 errbar(t(x_pos),area_conf_ints$mean,area_conf_ints$yplus, area_conf_ints$yminus,
        add=TRUE,cex=1E-10,lwd=1.5)
 graphics.off()
+
+####################
+# Area p-value Comparisons
+####################
+
+area_sets_to_use = list(data_sets$invado_control$mean_area,
+                        data_sets$non_invado_control$mean_area);
+
+data_names = c('Invado 0.95', 'Non-invado 0.95');
+
+for (conf_level in names(diff_conf)) {
+    area_sets_to_use = push(area_sets_to_use, diff_conf[[conf_level]]$invado_control$mean_area);
+    data_names = push(data_names, paste('Invado', conf_level));
+    
+    area_sets_to_use = push(area_sets_to_use, diff_conf[[conf_level]]$non_invado_control$mean_area);
+    data_names = push(data_names, paste('Non-invado', conf_level));
+}
+
+for (i in 1:length(data_names)) {
+    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
+}
+
+area_conf_ints = gather_barplot_properties(area_sets_to_use);
+
+svg(file.path('area','area_p_value.svg'), width=7)
+par(mar=c(2,4,0.5,0))
+x_pos = barplot(area_conf_ints$mean, names=data_names,
+        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
+errbar(t(x_pos),area_conf_ints$mean,area_conf_ints$yplus, area_conf_ints$yminus,
+       add=TRUE,cex=1E-10,lwd=1.5)
+graphics.off()
+
 
 ####################
 # Longevity Comparisons
@@ -111,14 +152,20 @@ longev_sets_to_use = list(data_sets$invado_control$longevity*5,
                           data_sets$invado_BB94$longevity*5
                           )
 
-svg(file.path('longevity','longevity_boxplots.svg'), width=9)
+data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD', 'Cortactin KD', 'BB94')
+
+for (i in 1:length(longev_sets_to_use)) {
+    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(longev_sets_to_use[[i]])), ")", sep='');
+}
+
+svg(file.path('longevity','longevity_boxplots.svg'), width=12)
 boxplot(longev_sets_to_use, names=data_names,
         ylab='Longevity (min)')
 graphics.off()
 
 longev_conf_ints = gather_barplot_properties(longev_sets_to_use);
 
-svg(file.path('longevity','longevity_barplots.svg'), width=8)
+svg(file.path('longevity','longevity_barplots.svg'), width=12)
 par(mar=c(2,4,0.5,0))
 x_pos = barplot(longev_conf_ints$mean, names=data_names,
         ylab='Longevity (min)', ylim=c(0,max(longev_conf_ints$yplus)))
