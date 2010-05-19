@@ -11,6 +11,7 @@ use File::Copy;
 use Getopt::Long;
 use Cwd;
 use Data::Dumper;
+use Config::General qw(ParseConfig);
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -18,9 +19,12 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "src=s", "target=s", "copy_mode", "debug|d") or die;
+GetOptions(\%opt, "src=s", "target=s", "debug|d") or die;
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
+	
+my $default_config_file_location = "../../data/config/Invado_default.cfg";
+my $relative_config_file = "config/Invado_default.cfg";
 
 ###############################################################################
 # Main Program
@@ -56,12 +60,23 @@ for (keys %file_sets) {
 	$pos_code_to_date{$_} = &get_data_from_log_file($log_file[0]);
 }
 
+#we will use this variable to parse out the exp_name value
+my $data_folder = &determine_data_folder_name;
+
 #sort through each of the file sets and move everything into place
-for (keys %file_sets) {
+for (sort keys %file_sets) {
 	my $exp_dir = catdir($opt{target}, $pos_code_to_date{$_} . "_" . $_);
 	
 	my $config_file = catfile($exp_dir, "analysis.cfg");
-	my $exp_name = catdir(basename($opt{target}), basename($exp_dir));
+	
+	my $exp_name;
+	if ($exp_dir =~ /$data_folder(.*)/) {
+		$exp_name = $1;
+	} else {
+		die "Unable to find the data folder in the specified target directory:
+			data_folder: $data_folder
+			exp_dir: $exp_dir\n";
+	}
 
 	my $puncta_file = catfile($exp_dir, "Images", "puncta", "puncta.tiff");
 	mkpath(dirname($puncta_file));
@@ -83,28 +98,17 @@ for (keys %file_sets) {
 	
 	if ($opt{debug}) {
 		print "mkpath($exp_dir)\n";
-		if ($opt{copy_mode}) {
-			print "copy($src_gel_file[0], $gel_file)\n";
-			print "copy($src_puncta_file[0], $puncta_file)\n";
-			print "copy($src_log_file[0], $log_file)\n";
-		} else {
-			print "move($src_gel_file[0], $gel_file)\n";
-			print "move($src_puncta_file[0], $puncta_file)\n";
-			print "move($src_log_file[0], $log_file)\n";
-		}
+		print "copy($src_gel_file[0], $gel_file)\n";
+		print "copy($src_puncta_file[0], $puncta_file)\n";
+		print "copy($src_log_file[0], $log_file)\n";
+		
 		print "&write_standard_config_file($config_file, $exp_name)\n";
 		print "\n";
 	} else {
 		mkpath($exp_dir);
-		if ($opt{copy_mode}) {
-			copy($src_gel_file[0], $gel_file);
-			copy($src_puncta_file[0], $puncta_file);
-			copy($src_log_file[0], $log_file);
-		} else {
-			move($src_gel_file[0], $gel_file);
-			move($src_puncta_file[0], $puncta_file);
-			move($src_log_file[0], $log_file);
-		}
+		copy($src_gel_file[-1], $gel_file);
+		copy($src_puncta_file[0], $puncta_file);
+		copy($src_log_file[0], $log_file);
 		&write_standard_config_file($config_file, $exp_name);
 	}
 }
@@ -135,9 +139,13 @@ sub write_standard_config_file {
 	my $file_name = shift;
 	my $exp_name = shift;
 
+	my $default_config_depth = &find_main_config_depth($file_name);
+	my $config_prefix = "../" x $default_config_depth;
+	
+
 	open OUTPUT, ">$file_name";
 	print OUTPUT 
-"<<include ../../../config/Invado_default.cfg>>
+"<<include " . $config_prefix . $relative_config_file . ">>
 
 ###############################################################################
 # Required Experiment Parameters
@@ -151,8 +159,26 @@ exp_name = $exp_name
 ";
 
 	close OUTPUT;
+}
 
+sub determine_data_folder_name {
+	my %cfg = ParseConfig(
+        -ConfigFile            => $default_config_file_location,
+        -MergeDuplicateOptions => 1,
+        -IncludeRelative       => 1,
+	);
+	
+	return $cfg{data_folder};
+}
 
+sub find_main_config_depth {
+	my $file_name = shift;
+
+	my @split_file_parts = split(/\//,$file_name);
 	
+	while ($split_file_parts[0] eq "..") {
+		@split_file_parts = @split_file_parts[1..$#split_file_parts];
+	}
 	
+	return scalar(@split_file_parts) - 2;
 }
