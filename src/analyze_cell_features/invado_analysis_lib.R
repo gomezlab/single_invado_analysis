@@ -1,9 +1,10 @@
 ################################################################################
-# invaod_analysis_lib.R: the R functions associated with processing the
+# invado_analysis_lib.R: the R functions associated with processing the
 # invaodopodia data
 ################################################################################
 
 library(Hmisc);
+# source('../../fa_src/analyze_cell_features/FA_analysis_lib.R')
 
 gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
     conf.level = 0.95, degrade_file = "Local_gel_diff_corr.csv", results.file = NA, 
@@ -141,20 +142,30 @@ t.test.error <- function(e) {
     list(conf.int = c(Inf, -Inf), p.value = 1)
 }
 
-build_filter_sets <- function(raw_data_set) {
+build_filter_sets <- function(raw_data_set, conf.level = 0.95) {
     filter_sets = list();
-    
+
     # filter_sets$local_diff_filter = raw_data_set$high_conf_int < 0;
     # filter_sets$pre_diff_filter = raw_data_set$pre_high_conf_int < 0;
-    filter_sets$local_diff_filter = raw_data_set$p_value < 0.05;
-    filter_sets$pre_diff_filter = raw_data_set$pre_p_value < 0.05;
+    filter_sets$local_diff_filter = raw_data_set$p_value < 1 - conf.level;
+    filter_sets$pre_diff_filter = raw_data_set$pre_p_value < 1 - conf.level;
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
-    filter_sets$non_invado_filter = ! filter_sets$invado_filter;
+    filter_sets$not_invado_filter = ! filter_sets$invado_filter;
 
     return(filter_sets);
 }
 
+push <- function(data_set, new_data) {
+    if (is.list(data_set)) {
+        curr_length = length(data_set);
+        new_data_pos = curr_length + 1;
+        data_set[[new_data_pos]] = new_data;
+    } else {
+        data_set = c(data_set, new_data);
+    }
+    return(data_set);
+}
 
 ################################################################################
 # Main Program
@@ -163,7 +174,6 @@ build_filter_sets <- function(raw_data_set) {
 args = commandArgs(TRUE);
 if (length(args) != 0) {
     debug = FALSE;
-    min_length = 10;
     
 	#split out the arguments from the passed in parameters and assign variables 
 	#in the current scope
@@ -175,10 +185,10 @@ if (length(args) != 0) {
             assign(split_arg[[1]][1], split_arg[[1]][2]);
         }
     }
-	
+
 	print(data_dir);
     if (exists('data_dir')) {
-        exp_props = gather_invado_properties(data_dir, 
+        exp_props = gather_invado_properties(data_dir,
             results.file = file.path('models','puncta_props_corr.Rdata'));
         
         data_types_to_include = c('overall_filt','p_value','mean_vals', 'pre_p_value');
