@@ -36,7 +36,7 @@ my %cfg = ParseConfig(\%opt);
 if ($opt{lsf}) {
     my @command = "$0 -cfg $opt{cfg}";
     $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'track_filter');
-    &FA_job::send_general_lsf_program(\@command,\%opt);
+    &FA_job::send_general_program(\@command,\%opt);
     
     exit;
 }

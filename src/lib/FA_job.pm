@@ -42,7 +42,7 @@ sub run_matlab_progam {
     }
 }
 
-sub send_general_lsf_program {
+sub send_general_program {
     my @commands = @{$_[0]};
     my %opt = %{$_[1]};
 
@@ -52,12 +52,22 @@ sub send_general_lsf_program {
 
     mkpath($opt{error_folder});
     
-    @commands = &Emerald::create_general_LSF_commands(\@commands,\%opt);
-    if ($opt{debug}) {
-        print join("\n", @commands);
-    } else {
-        &Emerald::send_LSF_commands(\@commands);
-    }
+	if ($opt{lsf}) {
+		@commands = &Emerald::create_general_LSF_commands(\@commands,\%opt);
+		if ($opt{debug}) {
+			print join("\n", @commands);
+		} else {
+			&Emerald::send_LSF_commands(\@commands);
+		}
+	} else {
+		if ($opt{debug}) {
+			print join("\n", @commands);
+		} else {
+			foreach (@commands) {
+				system $_
+			}
+		}
+	}
 }
 
 1;

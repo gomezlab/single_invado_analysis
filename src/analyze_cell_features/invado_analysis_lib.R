@@ -4,15 +4,14 @@
 ################################################################################
 
 library(Hmisc);
-# source('../../fa_src/analyze_cell_features/FA_analysis_lib.R')
 
 gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
     conf.level = 0.95, degrade_file = "Local_gel_diff_corr.csv", results.file = NA, 
     build_plots=TRUE, debug=FALSE) {
     
-    all_props = list();
-
     for (this_exp_dir in results_dirs) {
+        all_props = list();
+        
         if (! file.exists(file.path(this_exp_dir,'single_lin.csv'))) {
             warning(paste("Unable to find", file.path(this_exp_dir,'single_lin.csv'),
                   "moving on to the next file."))
@@ -59,13 +58,18 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         for (i in which(overall_filt)) {
             only_data = na.omit(as.numeric(degrade_data[i,]));
             
+            last_five_filt = as.logical(c(rep(F, length(only_data) - 4), rep(T, 5)));
+
             all_props$mean_vals = c(all_props$mean_vals, mean(only_data))
             all_props$max_local_diff = c(all_props$max_local_diff, max(only_data));
             all_props$min_local_diff = c(all_props$min_local_diff, min(only_data));
             
             test_results = tryCatch(
-                t.test(only_data,alternative="less",conf.level=conf.level), 
+                t.test(only_data[last_five_filt],alternative="less",conf.level=conf.level), 
                 error = t.test.error);
+            # test_results = tryCatch(
+            #     t.test(only_data,alternative="less",conf.level=conf.level), 
+            #     error = t.test.error);
             
             all_props$low_conf_int = c(all_props$low_conf_int, test_results$conf.int[1]);
             all_props$high_conf_int = c(all_props$high_conf_int, test_results$conf.int[2]);
@@ -75,12 +79,18 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             only_pre_diff_data = na.omit(as.numeric(pre_diff_data[i,]));
             
             only_pre_diff_test = tryCatch(
-                t.test(only_pre_diff_data,alternative="less",conf.level=conf.level), 
+                t.test(only_pre_diff_data[last_five_filt],alternative="less",conf.level=conf.level), 
                 error = t.test.error);
+            # only_pre_diff_test = tryCatch(
+            #     t.test(only_pre_diff_data,alternative="less",conf.level=conf.level), 
+            #     error = t.test.error);
 
             pre_test = tryCatch(
-                t.test(only_data - only_pre_diff_data,alternative="less",conf.level=conf.level), 
+                t.test(only_data[last_five_filt] - only_pre_diff_data[last_five_filt],alternative="less",conf.level=conf.level), 
                 error = t.test.error);
+            # pre_test = tryCatch(
+            #     t.test(only_data - only_pre_diff_data,alternative="less",conf.level=conf.level), 
+            #     error = t.test.error);
             all_props$pre_p_value = c(all_props$pre_p_value, pre_test$p.value);
             all_props$pre_low_conf_int = c(all_props$pre_low_conf_int, pre_test$conf.int[1]);
             all_props$pre_high_conf_int = c(all_props$pre_high_conf_int, pre_test$conf.int[2]);
@@ -135,7 +145,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             save(all_props,file = this_file);
         }
     }
-    return(all_props);
 }
 
 t.test.error <- function(e) {
@@ -198,11 +207,11 @@ if (length(args) != 0) {
         invado_lineage_data = subset(exp_props, filter_sets$invado_filter, select = data_types_to_include);
         local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, select = data_types_to_include);
         
-        non_invado_lineage_data = subset(exp_props, filter_sets$non_invado_filter, select = data_types_to_include);
+        not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, select = data_types_to_include);
         
         write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), row.names=F, col.names=F, sep=',')
         write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), row.names=F, col.names=F, sep=',')
         
-        write.table(non_invado_lineage_data, file.path(data_dir, 'non_invado_data.csv'), row.names=F, col.names=F, sep=',')
+        write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), row.names=F, col.names=F, sep=',')
     }
 }

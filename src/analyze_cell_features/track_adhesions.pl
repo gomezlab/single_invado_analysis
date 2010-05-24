@@ -52,7 +52,7 @@ if ($opt{lsf}) {
         $opt{job_group} = $cfg{job_group};
     }
     
-    &FA_job::send_general_lsf_program(\@command,\%opt);
+    &FA_job::send_general_program(\@command,\%opt);
     
     exit;
 }
