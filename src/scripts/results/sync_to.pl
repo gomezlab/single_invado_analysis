@@ -20,7 +20,7 @@ if ($opt{no_time}) {
     $time_str = '';
 }
 
-my $command = "$time_str" . "rsync $progress_str" . "-a --exclude data.stor ../../results/* $opt{server}:~/Documents/Projects/focal_adhesions/results/";
+my $command = "$time_str" . "rsync $progress_str" . "-a --exclude data.stor ../../results/* $opt{server}:~/Documents/Projects/invadopodia/results/";
 if ($opt{server} eq "NOSERVER" || $opt{debug}) {
     print "$command\n";
 } else {
