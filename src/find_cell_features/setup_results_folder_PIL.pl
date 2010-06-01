@@ -146,13 +146,16 @@ sub build_python_commands {
 	my $base_target = catdir($cfg{individual_results_folder});
 
 	my @commands;
+	my $image_num = 0;
+	my $padding_length = scalar(split("", @src_image_files));
 	foreach (@src_image_files) {
-		my $image_num;
 		if ($_ =~ /\/(\d+).tif/) {
 			$image_num = $1;
 		} else {
-			die "Unable to find the image number in $_";
+			$image_num++;
+			# warn "Unable to find the image number in $_";
 		}
+		$image_num = sprintf("%0$padding_length" ."d", $image_num);
 
 		my $target_name = catfile($base_target, $image_num, $output_file_name);
 
@@ -203,7 +206,7 @@ Optional parameter(s):
 
 =item * debug or d: print debuging information during program execution
 
-=item * emerald: submit jobs through the emerald queuing system
+=item * lsf: submit jobs through the emerald queuing system
 
 =back
 
@@ -219,6 +222,6 @@ setup_results_folder.pl -cfg FA_config -d
 
 Matthew Berginski (mbergins@unc.edu)
 
-Documentation last updated: 4/10/2008 
+Documentation last updated: 5/24/2010
 
 =cut
