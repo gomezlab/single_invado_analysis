@@ -22,8 +22,12 @@ binary_shift = logical(imread(binary_shift_file));
 only_reg_pixels = mask_image(binary_shift);
 assert(length(only_reg_pixels) == sum(sum(binary_shift)));
 
+puncta_min_max = csvread(fullfile(fileparts(I_file),'puncta_image_range.csv'));
+puncta_min_max = puncta_min_max/scale_factor;
+
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
+addpath(genpath('../visualize_cell_features'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -33,9 +37,22 @@ addpath(genpath('matlab_scripts'));
 sorted_mask_pixels = sort(only_reg_pixels);
 % sorted_mask_pixels(1:0.05*round(length(sorted_mask_pixels))) = 0;
 
-[heights, intensity] = hist(sorted_mask_pixels,1000);
+%when there are very few unique pixel values, having a large number of bins
+%causes the extrema values found to be fairly random, fixing with a simple
+%check for the number of uniques
+if (length(unique(sorted_mask_pixels)) < 1000)
+    [heights, intensity] = hist(sorted_mask_pixels,100);
+else
+    [heights, intensity] = hist(sorted_mask_pixels,1000);
+end
 
-smoothed_heights = smooth(heights,0.05,'loess');
+if (length(unique(sorted_mask_pixels)) < 1000)
+    smoothed_heights = smooth(heights,0.15,'loess');
+else
+    smoothed_heights = smooth(heights,0.05,'loess');
+end
+
+
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
 %keep in mind that the zmax is sorted by value, so the highest peak is
@@ -52,15 +69,25 @@ assert(length(min_index) == 1, 'Error: expected to only find one minimum index b
 threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 
 %%Mask Cleanup
-connected_areas = bwlabel(threshed_mask);%
+connected_areas = bwlabel(threshed_mask);
 region_sizes = regionprops(connected_areas, 'Area');
 
 %filter out connected regions smaller than 10 pixels
-threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10));
+threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 100));
 
 threshed_mask = imfill(threshed_mask,'holes');
 
+
+normalized_image = mask_image - puncta_min_max(1);
+normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+
+imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), fullfile(fileparts(out_file),'highlighted_mask.png'))
+
+% imshow(threshed_mask)
+
+
 imwrite(threshed_mask, out_file)
+
 
 if (nargout >= 1)
     varargout{1} = threshed_mask;
