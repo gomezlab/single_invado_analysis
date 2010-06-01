@@ -43,10 +43,7 @@ current_data.gel_image  = imread(fullfile(current_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(current_data.gel_image)));
 current_data.gel_image  = double(current_data.gel_image)/scale_factor;
 
-%read in the labeled adhesions
 current_data.adhesions = imread(fullfile(current_dir, filenames.adhesions_filename));
-
-%read in the labeled adhesions
 current_data.binary_shift = logical(imread(fullfile(current_dir, filenames.binary_shift_filename)));
 
 %read in the intensity correction coefficient
@@ -72,10 +69,7 @@ final_data.gel_image  = imread(fullfile(final_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(final_data.gel_image)));
 final_data.gel_image  = double(final_data.gel_image)/scale_factor;
 
-%read in the labeled adhesions
 final_data.adhesions = imread(fullfile(final_dir, filenames.adhesions_filename));
-
-%read in the labeled adhesions
 final_data.binary_shift = logical(imread(fullfile(final_dir, filenames.binary_shift_filename)));
 
 %read in the intensity correction coefficient
@@ -87,7 +81,7 @@ if(exist(fullfile(final_dir, filenames.cell_mask_filename), 'file'))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the final directory
+% Pull in data from the first directory
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 first_data = struct;
 
@@ -96,10 +90,7 @@ first_data.gel_image  = imread(fullfile(first_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(first_data.gel_image)));
 first_data.gel_image  = double(first_data.gel_image)/scale_factor;
 
-%read in the labeled adhesions
 first_data.adhesions = imread(fullfile(first_dir, filenames.adhesions_filename));
-
-%read in the labeled adhesions
 first_data.binary_shift = logical(imread(fullfile(first_dir, filenames.binary_shift_filename)));
 
 %read in the intensity correction coefficient
