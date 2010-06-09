@@ -22,13 +22,9 @@ $opt{debug} = 0;
 GetOptions(\%opt, "src=s", "target=s", "debug|d", "default_config=s") or die;
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
+die "Can't find default_config on command line." if (not $opt{default_config});
 
-my $default_config_file_location = "../../data/config/Invado_default.cfg";
-if (not exists $opt{default_config}) {
-	$default_config_file_location = "../../data/config/Invado_default.cfg";
-} else {
-	$default_config_file_location = $opt{default_config};
-}
+my $default_config_file_location = $opt{default_config};
 
 my $relative_config_file;
 if ($default_config_file_location =~ m#\.\./\.\./data/(.*)#) {

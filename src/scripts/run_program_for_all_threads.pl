@@ -63,35 +63,30 @@ while (@config_files) {
 		my $this_config = shift @config_files;
         print("./$program_base -cfg $this_config $debug_string $opt{extra}\n");
     } else {
-		if (scalar(@thread_list) > 0) {
-			for (1 .. scalar(@thread_list)) {
-				my $this_thread = shift @thread_list;
-				if ($this_thread->is_running()) {
-					push @thread_list, $this_thread;
-				}
-			}
-		}
-
-		if (scalar(@thread_list) >= $opt{thread_count}) {
+		my @running = threads->list(threads::running);
+		if (scalar(@running) >= $opt{thread_count}) {
 			next;
 		} else {
 			my $this_config = shift @config_files;
 			my $new_thread = threads->create('run_command',$program_base, $this_config, $debug_string, $opt{extra});
-			$new_thread->detach();
 			push @thread_list, $new_thread;
 		}
     }
 }
 
-while (@thread_list) {
-	for (1 .. scalar(@thread_list)) {
-		my $this_thread = shift @thread_list;
-		if ($this_thread->is_running()) {
-			push @thread_list, $this_thread;
-		}
-	}
+my @running = threads->list(threads::running);
+while (@running) {
+	@running = threads->list(threads::running);
+	print "Found running " . scalar(@running) . "\n"; sleep(1);
 }
-	
+
+my $join_count = 0;
+
+foreach (@thread_list) {
+	$_->detach();
+	$join_count++;
+}
+
 my $t_end = Benchmark->new;
 my $td = timediff($t_end, $t_start);
 print "Full processing time was " . timestr($td, 'noc') . "\n";
@@ -112,6 +107,8 @@ sub run_command {
 	my $t1 = Benchmark->new;
 	my  $td = timediff($t1, $t0);
 	print "Done with $this_config, took " . timestr($td, 'noc') . "\n";
+
+	return 0;
 }
 
 ###############################################################################
@@ -128,7 +125,11 @@ run_program_for_all_threads.pl -cfg config.cfg -p program
 
 =head1 Description
 
-This program provides the means to run a program for each of the experiments in a set. This is helpful when a single step of a processing pipeline needs to be executed again. Config files (those with the same suffix as the config file provided on the command line) are searched for in subdirectories of the $cfg{data_folder} directory.
+This program provides the means to run a program for each of the experiments in
+a set. This is helpful when a single step of a processing pipeline needs to be
+executed again. Config files (those with the same suffix as the config file
+provided on the command line) are searched for in subdirectories of the
+$cfg{data_folder} directory.
 
 Required parameter(s):
 
@@ -136,7 +137,8 @@ Required parameter(s):
 
 =item * cfg or c: the focal adhesion analysis config file
 
-=item * program or p: the path to a program that should be run using the standard "-cfg exp_config.cfg" parameter
+=item * program or p: the path to a program that should be run using the
+standard "-cfg exp_config.cfg" parameter
 
 =back
 
@@ -144,9 +146,11 @@ Optional parameter(s):
 
 =over 
 
-=item * debug or d: if present do not run the program specified in the program parameter, instead print the commands that would be run
+=item * debug or d: if present do not run the program specified in the program
+parameter, instead print the commands that would be run
 
-=item * thread_count: number of threads to use when for processing the jobs, defaults to one
+=item * thread_count: number of threads to use when for processing the jobs,
+defaults to one
 
 =back
 
@@ -156,7 +160,8 @@ run_program_for_all_threads.pl -cfg FA_config -p ../analyze_cell_features/gather
 
 OR
 
-run_program_for_all_threads.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl -e '-skip_pix_props'
+run_program_for_all_threads.pl -cfg FA_config -p
+../analyze_cell_features/gather_tracking_results.pl -e '-skip_pix_props'
 
 =head1 AUTHORS
 
