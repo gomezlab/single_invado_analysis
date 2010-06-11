@@ -96,10 +96,16 @@ for i = 1:size(tracking_seq,1)
     
     %read in the gel image and normalize to 0-1
     image_data.gel_image = double(imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.gel_filename)));
-    image_data.gel_image = image_data.gel_image - gel_limits(1);
-    image_data.gel_image = image_data.gel_image .* (1/gel_limits(2));
+    scale_factor = double(intmax(class(image_data.gel_image)));
+    
+%     image_data.gel_image = image_data.gel_image - gel_limits(1);
+%     image_data.gel_image = image_data.gel_image .* (1/gel_limits(2));
+    
+    image_data.gel_image  = double(image_data.gel_image)/scale_factor;
     image_data.gel_image(not(image_data.binary_shift)) = 0;
-    image_data.gel_image = cat(3,image_data.gel_image,image_data.gel_image,image_data.gel_image);
+%     image_data.gel_image =
+%     cat(3,image_data.gel_image,image_data.gel_image,image_data.gel_image)
+%     ;
     
     image_data.intensity_correction = csvread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.intensity_correction_file));
     image_data.adhesions = imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name, i_p.Results.adhesions_filename));
