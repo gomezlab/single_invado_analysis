@@ -60,21 +60,22 @@ addpath('matlab_scripts');
 [row_shifts,col_shifts] = meshgrid(-50:i_p.Results.search_grid_resolution:50);
 ms_diff = ones(size(row_shifts))*NaN;
 
+%first we build out 5 layers of registration tests, 98% of the image
+%registrations fall within this boundary
 reg_layer_count = 0;
 for temp = 1:5
     ms_diff = add_registration_layer(gel_image, reg_target, row_shifts, col_shifts, ms_diff);
-    if (i_p.Results.debug)
-        reg_layer_count = reg_layer_count + 1;
-        disp(reg_layer_count);
-    end
+    reg_layer_count = reg_layer_count + 1;
 end
 
+%if the best registration result is on the edge of the ms_diff matrix, we have
+%to continue the search for the local minima, we don't want this search to
+%continue forever though, so we cutoff the search when the ms_diff matrix is
+%full, an unlikely but necessary check
 while (best_reg_on_edge(ms_diff) && any(any(isnan(ms_diff))))
     ms_diff = add_registration_layer(gel_image, reg_target, row_shifts, col_shifts, ms_diff);
-    if (i_p.Results.debug)
-        reg_layer_count = reg_layer_count + 1;
-        disp(reg_layer_count);
-    end    
+    reg_layer_count = reg_layer_count + 1;
+    disp(reg_layer_count);
 end
 
 best_index = find(ms_diff == min(min(ms_diff)),1);

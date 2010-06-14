@@ -49,7 +49,7 @@ die "Found more than one config file:\n", join("\n\t",@config_files) if (scalar(
 my $invado_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'invado_data.csv');
 die "Unable to find: $invado_file" if (! -e $invado_file);
 
-my $non_invado_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'non_invado_data.csv');
+my $non_invado_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, 'not_invado_data.csv');
 die "Unable to find: $non_invado_file" if (! -e $non_invado_file);
 
 push @matlab_code, "build_dual_highlight_image('$config_files[0]','$invado_file','$non_invado_file')";
