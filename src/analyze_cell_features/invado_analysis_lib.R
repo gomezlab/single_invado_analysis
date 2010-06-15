@@ -43,7 +43,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
 
         overall_filt = longev_filter & no_split_birth_filt & death_filt;
-        
+
         all_props$overall_filt = c(all_props$overall_filt,which(overall_filt));
         all_props$experiment = c(all_props$experiment,rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
         props_to_include = c("longevity","largest_area","birth_i_num","mean_area");
@@ -145,6 +145,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             save(all_props,file = this_file);
         }
     }
+
+    return(all_props);
 }
 
 t.test.error <- function(e) {
@@ -203,15 +205,20 @@ if (length(args) != 0) {
         data_types_to_include = c('overall_filt','p_value','mean_vals', 'pre_p_value');
         
         filter_sets = build_filter_sets(exp_props);
-
+        
         invado_lineage_data = subset(exp_props, filter_sets$invado_filter, select = data_types_to_include);
-        local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, select = data_types_to_include);
+        local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, 
+            select = data_types_to_include);
         
-        not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, select = data_types_to_include);
+        not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, 
+            select = data_types_to_include);
         
-        write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), row.names=F, col.names=F, sep=',')
-        write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), row.names=F, col.names=F, sep=',')
+        write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), 
+            row.names=F, col.names=F, sep=',')
+        write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), 
+            row.names=F, col.names=F, sep=',')
         
-        write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), row.names=F, col.names=F, sep=',')
+        write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
+            row.names=F, col.names=F, sep=',')
     }
 }
