@@ -77,7 +77,8 @@ while (@config_files) {
 my @running = threads->list(threads::running);
 while (@running) {
 	@running = threads->list(threads::running);
-	print "Found running " . scalar(@running) . "\n"; sleep(1);
+	sleep(5);
+	# print "Found running " . scalar(@running) . "\n"; sleep(1);
 }
 
 my $join_count = 0;
