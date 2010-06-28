@@ -20,6 +20,9 @@ dirs_to_load$coro1B_kd = Sys.glob('../../results/Invadopodia/Coro1B/*/adhesion_p
 dirs_to_load$CotL_kd = Sys.glob('../../results/Invadopodia/CotL/*/adhesion_props/');
 dirs_to_load$Cort_kd = Sys.glob('../../results/Invadopodia/Cort/*/adhesion_props/');
 dirs_to_load$BB94 = Sys.glob('../../results/Invadopodia/BB94/*/adhesion_props/');
+# dirs_to_load$Exo70 = Sys.glob('../../results/Invadopodia/Exo70/*/adhesion_props/');
+dirs_to_load$FAK = Sys.glob('../../results/Invadopodia/FAK/*/adhesion_props/');
+dirs_to_load$LKB = Sys.glob('../../results/Invadopodia/LKB/*/adhesion_props/');
 
 raw_data = list();
 for (exp_type in names(dirs_to_load)) {
@@ -29,8 +32,8 @@ for (exp_type in names(dirs_to_load)) {
 
 data_sets = list();
 diff_conf = list();
+combined_data_sets = list()
 for (exp_name in names(raw_data)) {
-    
     this_data_set = raw_data[[exp_name]];
 
     #Filter set of 0.95
@@ -38,6 +41,12 @@ for (exp_name in names(raw_data)) {
     data_sets[[exp_name]]$invado = subset(this_data_set, filter_sets$invado_filter);
     data_sets[[exp_name]]$not_invado = subset(this_data_set, filter_sets$not_invado_filter);
     
+    combined_data_sets$longevity = c(combined_data_sets$longevity, data_sets[[exp_name]]$invado$longevity);
+    combined_data_sets$mean_area = c(combined_data_sets$mean_area, data_sets[[exp_name]]$invado$mean_area);
+    combined_data_sets$mean_vals = c(combined_data_sets$mean_vals, data_sets[[exp_name]]$invado$mean_vals);
+    combined_data_sets$exp_name = c(combined_data_sets$exp_name,
+        rep(exp_name,length(data_sets[[exp_name]]$invado$longevity)));
+
     for (this_conf in as.character(seq(0.95,0.05,by=-0.05))) {
         # dealing with a strange bug in the as.character sequence above where the "0.1"
         # entry becomes "0.0999999999999999"
@@ -52,6 +61,8 @@ for (exp_name in names(raw_data)) {
         diff_conf[[this_conf]][[exp_name]]$not_invado = subset(this_data_set, filter_sets$not_invado_filter);
     }
 }
+
+combined_data_sets = as.data.frame(combined_data_sets);
 
 # data_sets$day_1_control = subset(data_sets$invado_control, regexpr('11_16',data_sets$invado_control$experiment) == 1)
 # data_sets$day_2_control = subset(data_sets$invado_control, regexpr('11_22',data_sets$invado_control$experiment) == 1)
@@ -82,17 +93,16 @@ area_comparison_sets = list(
     not_invado = matrix_sets
 );
 
-longevity_comparison_sets = list(
-    invado = matrix_sets,
-    not_invado = matrix_sets
-);
+longevity_comparison_sets = area_comparison_sets;
+mean_diff_sets = area_comparison_sets;
 
 n_counts = list(
     invado = matrix_sets$mean,
     not_invado = matrix_sets$mean,
     percentage = matrix_sets$mean
-
 )
+
+exp_field_counts = list();
 
 cutoff_sequence = c();
 exp_name_sequence = c();
@@ -112,26 +122,45 @@ for (cutoff in names(diff_conf)) {
         }
 
         for (invado_class in c('invado','not_invado')) {
+            #Area comparisons
             temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$mean_area, 
                 bootstrap.rep = 100);
             area_comparison_sets[[invado_class]]$mean[cutoff_count, exp_count] = temp_props$mean;
-
             area_comparison_sets[[invado_class]]$yplus[cutoff_count, exp_count] = temp_props$yplus;
             area_comparison_sets[[invado_class]]$yminus[cutoff_count, exp_count] = temp_props$yminus;
             
+            #Longevity comparisons
             temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$longevity*5,
                 bootstrap.rep = 100);
             longevity_comparison_sets[[invado_class]]$mean[cutoff_count, exp_count] = temp_props$mean;
-
             longevity_comparison_sets[[invado_class]]$yplus[cutoff_count, exp_count] = temp_props$yplus;
             longevity_comparison_sets[[invado_class]]$yminus[cutoff_count, exp_count] = temp_props$yminus;
+            
+            #Mean Local Difference Comparisons
+            temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$mean_vals,
+                bootstrap.rep = 100);
+            mean_diff_sets[[invado_class]]$mean[cutoff_count, exp_count] = temp_props$mean;
+            mean_diff_sets[[invado_class]]$yplus[cutoff_count, exp_count] = temp_props$yplus;
+            mean_diff_sets[[invado_class]]$yminus[cutoff_count, exp_count] = temp_props$yminus;
 
             n_counts[[invado_class]][cutoff_count, exp_count] = 
                 length(diff_conf[[cutoff]][[exp_name]][[invado_class]]$mean_area);
+
+            exp_field_counts[[exp_name]] = length(dirs_to_load[[exp_name]]);
         }
         exp_count = exp_count + 1;
     }
     cutoff_count = cutoff_count + 1;
+}
+
+for (invado_class in c('invado','not_invado')) {
+    for (type in names(longevity_comparison_sets[[invado_class]])) {
+        colnames(longevity_comparison_sets[[invado_class]][[type]]) <- exp_name_sequence;
+        rownames(longevity_comparison_sets[[invado_class]][[type]]) <- cutoff_sequence;
+        
+        colnames(area_comparison_sets[[invado_class]][[type]]) <- exp_name_sequence;
+        rownames(area_comparison_sets[[invado_class]][[type]]) <- cutoff_sequence;
+    }
 }
 
 n_counts$percentage = n_counts$invado/(n_counts$not_invado+n_counts$invado);
@@ -141,44 +170,66 @@ stop('Done with Loading/Processing')
 # Plotting
 ################################################################################
 
-########################################
-# Exploritory
-########################################
-
 ####################
 # Area Comparisons
 ####################
 
 dir.create('area',recursive=TRUE, showWarnings=FALSE);
 
-area_sets_to_use = list(data_sets$invado_control$mean_area, 
-                        data_sets$invado_coro1B_kd$mean_area, 
-                        data_sets$invado_coro1C_kd$mean_area, 
-                        data_sets$invado_CotL_kd$mean_area,
-                        data_sets$invado_Cort_kd$mean_area,
-                        data_sets$invado_BB94$mean_area
-                        )
-
-data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD', 'Cortactin KD', 'BB94')
-
-for (i in 1:length(data_names)) {
-    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
+area_names = c()
+for (i in 1:length(colnames(area_comparison_sets$invado$mean))) {
+    area_names = c(area_names, paste(colnames(area_comparison_sets$invado$mean)[[i]], " (",n_counts$invado[1,i], ")", sep=''))
 }
 
-svg(file.path('area','area_boxplots.svg'), width=12)
-boxplot(area_sets_to_use, names=data_names,
-        ylab='Mean Puncta Area (\u03BCm\u00B2)')
-graphics.off()
-
-area_conf_ints = gather_barplot_properties(area_sets_to_use);
-
-svg(file.path('area','area_barplots.svg'), width=12)
+svg(file.path('area','area_barplots.svg'), width=14)
 par(mar=c(2,4,0.5,0))
-x_pos = barplot(area_conf_ints$mean, names=data_names,
-        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
-errbar(t(x_pos),area_conf_ints$mean,area_conf_ints$yplus, area_conf_ints$yminus,
+x_pos = barplot(area_comparison_sets$invado$mean[1,], names=area_names,
+        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_comparison_sets$invado$yplus[1,])))
+errbar(t(x_pos),area_comparison_sets$invado$mean[1,],
+       area_comparison_sets$invado$yplus[1,], area_comparison_sets$invado$yminus[1,],
        add=TRUE,cex=1E-10,lwd=1.5)
+# segments(-1,area_comparison_sets$invado$yminus[1,1],20,area_comparison_sets$invado$yminus[1,1])
+# segments(-1,area_comparison_sets$invado$yplus[1,1],20,area_comparison_sets$invado$yplus[1,1])
 graphics.off()
+
+####################
+# Longevity Comparisons
+####################
+dir.create('longevity',recursive=TRUE, showWarnings=FALSE);
+
+svg(file.path('longevity','longevity_barplots.svg'), width=14)
+par(mar=c(2,4,0.5,0))
+x_pos = barplot(longevity_comparison_sets$invado$mean[1,], names=area_names,
+        ylab='Puncta Longevity (min)', ylim=c(0,max(longevity_comparison_sets$invado$yplus[1,])))
+errbar(t(x_pos),longevity_comparison_sets$invado$mean[1,],
+       longevity_comparison_sets$invado$yplus[1,], longevity_comparison_sets$invado$yminus[1,],
+       add=TRUE,cex=1E-10,lwd=1.5)
+# segments(-1,longevity_comparison_sets$invado$yminus[1,1],20,longevity_comparison_sets$invado$yminus[1,1])
+# segments(-1,longevity_comparison_sets$invado$yplus[1,1],20,longevity_comparison_sets$invado$yplus[1,1])
+graphics.off()
+
+
+####################
+# Mean Local Diff Comparisons
+####################
+
+dir.create('mean_local',recursive=TRUE, showWarnings=FALSE);
+svg(file.path('mean_local','local_diff_means.svg'), width=14)
+par(mar=c(2,4,0.5,0))
+x_pos = barplot(mean_diff_sets$invado$mean[1,], names=area_names,
+       ylab='Mean Degradation Level', ylim=c(min(mean_diff_sets$invado$yminus[1,]), 0))
+errbar(t(x_pos),mean_diff_sets$invado$mean[1,],
+       mean_diff_sets$invado$yplus[1,], mean_diff_sets$invado$yminus[1,],
+       add=TRUE,cex=1E-10,lwd=1.5)
+# segments(-1,mean_diff_sets$invado$yminus[1,1],20,mean_diff_sets$invado$yminus[1,1])
+# segments(-1,mean_diff_sets$invado$yplus[1,1],20,mean_diff_sets$invado$yplus[1,1])
+graphics.off();
+
+all_mean_data = list();
+all_mean_data$area = area_comparison_sets$invado$mean[1,];
+all_mean_data$longevity = longevity_comparison_sets$invado$mean[1,];
+all_mean_data$mean_diff = mean_diff_sets$invado$mean[1,];
+splom(area * longevity * mean_diff, data=all_mean_data)
 
 ####################
 # Area p-value Comparisons - line plot
@@ -189,7 +240,6 @@ layout(matrix(1:6,nrow=3,ncol=2))
 par(mar=c(4.5,4,0,0), bty='n')
 
 for (i in 1:dim(area_comparison_sets$invado$mean)[2]) {
-
     invado_data = list();
     invado_data$mean = area_comparison_sets$invado$mean[,i];
     invado_data$yplus = area_comparison_sets$invado$yplus[,i];
@@ -239,7 +289,6 @@ layout(matrix(1:6,nrow=3,ncol=2))
 par(mar=c(4.5,4,0,0), bty='n')
 
 for (i in 1:dim(longevity_comparison_sets$invado$mean)[2]) {
-
     invado_data = list();
     invado_data$mean = longevity_comparison_sets$invado$mean[,i];
     invado_data$yplus = longevity_comparison_sets$invado$yplus[,i];
@@ -280,45 +329,10 @@ for (i in 1:dim(longevity_comparison_sets$invado$mean)[2]) {
 
 graphics.off()
 
-####################
-# Longevity Comparisons
-####################
-
-dir.create('longevity',recursive=TRUE, showWarnings=FALSE);
-
-longev_sets_to_use = list(data_sets$invado_control$longevity*5, 
-                          data_sets$invado_coro1B_kd$longevity*5, 
-                          data_sets$invado_coro1C_kd$longevity*5, 
-                          data_sets$invado_CotL_kd$longevity*5,
-                          data_sets$invado_Cort_kd$longevity*5,
-                          data_sets$invado_BB94$longevity*5
-                          )
-
-data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD', 'Cortactin KD', 'BB94')
-
-for (i in 1:length(longev_sets_to_use)) {
-    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(longev_sets_to_use[[i]])), ")", sep='');
-}
-
-svg(file.path('longevity','longevity_boxplots.svg'), width=12)
-boxplot(longev_sets_to_use, names=data_names,
-        ylab='Longevity (min)')
-graphics.off()
-
-longev_conf_ints = gather_barplot_properties(longev_sets_to_use);
-
-svg(file.path('longevity','longevity_barplots.svg'), width=12)
-par(mar=c(2,4,0.5,0))
-x_pos = barplot(longev_conf_ints$mean, names=data_names,
-        ylab='Longevity (min)', ylim=c(0,max(longev_conf_ints$yplus)))
-errbar(t(x_pos),longev_conf_ints$mean,longev_conf_ints$yplus, longev_conf_ints$yminus,
-       add=TRUE,cex=1E-10,lwd=1.5)
-graphics.off()
 
 ####################
 # Longevity/Area Comparisons
 ####################
-
 dir.create('longevity_size_comp',recursive=TRUE, showWarnings=FALSE);
 
 data_names = c('Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
@@ -339,113 +353,3 @@ for (i in 1:length(longev_sets_to_use)) {
         xlab='Longevity (min)', ylab='Mean Puncta Area (\u03BCm\u00B2)')
 }
 graphics.off()
-
-########################################
-# Day to Day Comparisons
-########################################
-
-####################
-# Area Comparisons
-####################
-
-dir.create('day_to_day',recursive=TRUE, showWarnings=FALSE);
-
-area_sets_to_use = list(
-        data_sets$day_1_control$mean_area,
-        data_sets$day_2_control$mean_area,
-        data_sets$day_3_control$mean_area,
-        data_sets$invado_control$mean_area, 
-        data_sets$invado_coro1B_kd$mean_area, 
-        data_sets$invado_coro1C_kd$mean_area, 
-        data_sets$invado_CotL_kd$mean_area)
-
-data_names = c('Ctrl Day 1','Ctrl Day 2','Ctrl Day 3', 'Control','Coro1B KD', 'Coro1C KD', 'Coactosin KD')
-
-for (i in 1:length(data_names)) {
-    data_names[[i]] = paste(data_names[[i]], " (n=", length(na.omit(area_sets_to_use[[i]])), ")", sep='');
-}
-
-svg(file.path('day_to_day','area_boxplots.svg'), width=15)
-boxplot(area_sets_to_use, names=data_names,
-        ylab='Mean Puncta Area (\u03BCm\u00B2)')
-graphics.off()
-
-area_conf_ints = gather_barplot_properties(area_sets_to_use);
-
-svg(file.path('day_to_day','area_barplots.svg'), width=15)
-par(mar=c(2,4,0.5,0))
-x_pos = barplot(area_conf_ints$mean, names=data_names,
-        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_conf_ints$yplus)))
-errbar(t(x_pos),area_conf_ints$mean,area_conf_ints$yplus, area_conf_ints$yminus,
-       add=TRUE,cex=1E-10,lwd=1.5)
-graphics.off()
-
-####################
-# Longevity Comparisons
-####################
-
-dir.create('day_to_day',recursive=TRUE, showWarnings=FALSE);
-
-longev_sets_to_use = list(
-        data_sets$day_1_control$longevity*5,
-        data_sets$day_2_control$longevity*5,
-        data_sets$day_3_control$longevity*5,
-        data_sets$invado_control$longevity*5, 
-        data_sets$invado_coro1B_kd$longevity*5, 
-        data_sets$invado_coro1C_kd$longevity*5, 
-        data_sets$invado_CotL_kd$longevity*5
-        )
-
-svg(file.path('day_to_day','longevity_boxplots.svg'), width=15)
-boxplot(longev_sets_to_use, names=data_names,
-        ylab='Longevity (min)')
-graphics.off()
-
-longev_conf_ints = gather_barplot_properties(longev_sets_to_use);
-
-svg(file.path('day_to_day','longevity_barplots.svg'), width=15)
-par(mar=c(2,4,0.5,0))
-x_pos = barplot(longev_conf_ints$mean, names=data_names,
-        ylab='Longevity (min)', ylim=c(0,max(longev_conf_ints$yplus)))
-errbar(t(x_pos),longev_conf_ints$mean,longev_conf_ints$yplus, longev_conf_ints$yminus,
-       add=TRUE,cex=1E-10,lwd=1.5)
-graphics.off()
-
-########################################
-# Bleaching Comparisons
-########################################
-
-bleach_curves_mat = matrix(NA, ncol = length(ts_props$coro1B_kd$bleaching_curve[[1]]), nrow = length(ts_props$coro1B_kd$bleaching_curve[[1]][[1]][,1]))
-
-percent_diffs = c();
-for (i in 1:length(ts_props$coro1B_kd$bleaching_curve[[1]])) {
-    
-    this_curve = ts_props$coro1B_kd$bleaching_curve[[1]][[i]][,1];
-
-    bleach_curves_mat[,i] = this_curve;
-    
-    percent_diffs = c(percent_diffs, min(this_curve)/max(this_curve));
-}
-
-
-# bleach_curves_mat = matrix(NA,ncol = length(ts_props$bleaching_curve[[1]]), nrow = 121);
-# percent_diffs = c();
-# for (i in 1:length(ts_props$bleaching_curve[[1]])) {
-#     d_s_length = length(ts_props$bleaching_curve[[1]][[i]][1,]);
-#     bleach_curves_mat[1:d_s_length,i] = as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]);
-# 
-#     this_percent = min(ts_props$bleaching_curve[[1]][[i]][1,])/max(ts_props$bleaching_curve[[1]][[i]][1,]);
-#     percent_diffs = c(percent_diffs, this_percent);
-# }
-
-# correlations = list();
-# for (i in 1:length(ts_props$bleaching_curve[[1]])) {
-#     correlations$overall_vs_notcell = c(correlations$overall_vs_notcell,
-#         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][2,])));
-#     
-#     correlations$overall_vs_puncta = c(correlations$overall_vs_puncta,
-#         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][1,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
-# 
-#     correlations$notcell_vs_puncta = c(correlations$notcell_vs_puncta,
-#         cor(as.numeric(ts_props$bleaching_curve[[1]][[i]][2,]),as.numeric(ts_props$bleaching_curve[[1]][[i]][3,])));
-# }
