@@ -55,6 +55,11 @@ end
 
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
+% plot(intensity, smoothed_heights)
+% hold on;
+% plot(intensity(imax), zmax,'gx')
+% plot(intensity(imin), zmin,'ro')
+
 %keep in mind that the zmax is sorted by value, so the highest peak is
 %first and the corresponding index is also first in imax, the same pattern
 %hold for zmin and imin
@@ -69,14 +74,13 @@ assert(length(min_index) == 1, 'Error: expected to only find one minimum index b
 threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 
 %%Mask Cleanup
+threshed_mask = imfill(threshed_mask,'holes');
+
 connected_areas = bwlabel(threshed_mask);
 region_sizes = regionprops(connected_areas, 'Area');
 
-%filter out connected regions smaller than 10 pixels
-threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 100));
-
-threshed_mask = imfill(threshed_mask,'holes');
-
+%filter out connected regions smaller than 100 pixels
+threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
 
 normalized_image = mask_image - puncta_min_max(1);
 normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
@@ -84,7 +88,6 @@ normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
 imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), fullfile(fileparts(out_file),'highlighted_mask.png'))
 
 % imshow(threshed_mask)
-
 
 imwrite(threshed_mask, out_file)
 
