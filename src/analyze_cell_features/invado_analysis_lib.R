@@ -28,6 +28,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             sep=",",header=F);
         area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
             sep=",",header=F);
+        edge_dist_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Centroid_dist_from_edge.csv'), 
+            sep=",",header=F);
         stopifnot(dim(lineage_data)[[1]] == dim(local_diff_data)[[1]])
         
         #Building the filter sets
@@ -110,6 +112,9 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$mean_pre_diff = c(all_props$mean_pre_diff, mean(only_data - only_pre_diff_data));
 
             only_area_data = na.omit(as.numeric(area_data[i,]));
+            only_edge_dist_data = na.omit(as.numeric(edge_dist_data[i,]));
+
+            all_props$mean_edge_dist = c(all_props$mean_edge_dist, mean(only_edge_dist_data));
 
             if (build_plots) {
                 #plotting the results of the tests
@@ -171,8 +176,8 @@ build_filter_sets <- function(raw_data_set, conf.level = 0.95) {
     filter_sets = list();
 
     # filter_sets$local_diff_filter = raw_data_set$high_conf_int < 0;
-    filter_sets$pre_diff_filter = raw_data_set$pre_diff_high_conf_int < 0;
-    filter_sets$local_diff_filter = raw_data_set$p_value < 1 - conf.level;
+    filter_sets$pre_diff_filter = raw_data_set$mean_pre_diff < 0 & raw_data_set$pre_diff_p_value < (1 - conf.level);
+    filter_sets$local_diff_filter = raw_data_set$p_value < (1 - conf.level);
     # filter_sets$pre_diff_filter = raw_data_set$pre_diff_p_value < 1 - conf.level;
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
