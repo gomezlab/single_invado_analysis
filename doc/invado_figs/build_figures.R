@@ -47,7 +47,7 @@ for (exp_name in names(raw_data)) {
     combined_data_sets$exp_name = c(combined_data_sets$exp_name,
         rep(exp_name,length(data_sets[[exp_name]]$invado$longevity)));
 
-    for (this_conf in as.character(seq(0.95,0.05,by=-0.05))) {
+    for (this_conf in as.character(c(0.999,0.99,seq(0.95,0.05,by=-0.05)))) {
         # dealing with a strange bug in the as.character sequence above where the "0.1"
         # entry becomes "0.0999999999999999"
         if (this_conf == "0.0999999999999999") {
@@ -124,21 +124,21 @@ for (cutoff in names(diff_conf)) {
         for (invado_class in c('invado','not_invado')) {
             #Area comparisons
             temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$mean_area, 
-                bootstrap.rep = 100);
+                bootstrap.rep = 1000);
             area_comparison_sets[[invado_class]]$mean[cutoff_count, exp_count] = temp_props$mean;
             area_comparison_sets[[invado_class]]$yplus[cutoff_count, exp_count] = temp_props$yplus;
             area_comparison_sets[[invado_class]]$yminus[cutoff_count, exp_count] = temp_props$yminus;
             
             #Longevity comparisons
             temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$longevity*5,
-                bootstrap.rep = 100);
+                bootstrap.rep = 1000);
             longevity_comparison_sets[[invado_class]]$mean[cutoff_count, exp_count] = temp_props$mean;
             longevity_comparison_sets[[invado_class]]$yplus[cutoff_count, exp_count] = temp_props$yplus;
             longevity_comparison_sets[[invado_class]]$yminus[cutoff_count, exp_count] = temp_props$yminus;
             
             #Mean Local Difference Comparisons
-            temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$mean_vals,
-                bootstrap.rep = 100);
+            temp_props = gather_barplot_properties(diff_conf[[cutoff]][[exp_name]][[invado_class]]$mean_pre_diff,
+                bootstrap.rep = 1000);
             mean_diff_sets[[invado_class]]$mean[cutoff_count, exp_count] = temp_props$mean;
             mean_diff_sets[[invado_class]]$yplus[cutoff_count, exp_count] = temp_props$yplus;
             mean_diff_sets[[invado_class]]$yminus[cutoff_count, exp_count] = temp_props$yminus;
@@ -160,6 +160,9 @@ for (invado_class in c('invado','not_invado')) {
         
         colnames(area_comparison_sets[[invado_class]][[type]]) <- exp_name_sequence;
         rownames(area_comparison_sets[[invado_class]][[type]]) <- cutoff_sequence;
+        
+        colnames(mean_diff_sets[[invado_class]][[type]]) <- exp_name_sequence;
+        rownames(mean_diff_sets[[invado_class]][[type]]) <- cutoff_sequence;
     }
 }
 
@@ -169,27 +172,30 @@ stop('Done with Loading/Processing')
 ################################################################################
 # Plotting
 ################################################################################
+barplot_row = 3;
+
+data_names = c()
+for (i in 1:length(colnames(area_comparison_sets$invado$mean))) {
+    data_names = c(data_names, 
+        paste(colnames(area_comparison_sets$invado$mean)[[i]], " (",n_counts$invado[barplot_row,i], ")", sep=''))
+}
 
 ####################
 # Area Comparisons
 ####################
-
 dir.create('area',recursive=TRUE, showWarnings=FALSE);
-
-area_names = c()
-for (i in 1:length(colnames(area_comparison_sets$invado$mean))) {
-    area_names = c(area_names, paste(colnames(area_comparison_sets$invado$mean)[[i]], " (",n_counts$invado[1,i], ")", sep=''))
-}
 
 svg(file.path('area','area_barplots.svg'), width=14)
 par(mar=c(2,4,0.5,0))
-x_pos = barplot(area_comparison_sets$invado$mean[1,], names=area_names,
-        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_comparison_sets$invado$yplus[1,])))
-errbar(t(x_pos),area_comparison_sets$invado$mean[1,],
-       area_comparison_sets$invado$yplus[1,], area_comparison_sets$invado$yminus[1,],
+x_pos = barplot(area_comparison_sets$invado$mean[barplot_row,], names=data_names,
+        ylab='Mean Puncta Area (\u03BCm\u00B2)', ylim=c(0,max(area_comparison_sets$invado$yplus[barplot_row,])))
+errbar(t(x_pos),area_comparison_sets$invado$mean[barplot_row,],
+       area_comparison_sets$invado$yplus[barplot_row,], area_comparison_sets$invado$yminus[barplot_row,],
        add=TRUE,cex=1E-10,lwd=1.5)
-# segments(-1,area_comparison_sets$invado$yminus[1,1],20,area_comparison_sets$invado$yminus[1,1])
-# segments(-1,area_comparison_sets$invado$yplus[1,1],20,area_comparison_sets$invado$yplus[1,1])
+segments(-1,area_comparison_sets$invado$yminus[barplot_row,1],
+    20,area_comparison_sets$invado$yminus[barplot_row,1])
+segments(-1,area_comparison_sets$invado$yplus[barplot_row,1],
+    20,area_comparison_sets$invado$yplus[barplot_row,1])
 graphics.off()
 
 ####################
@@ -199,30 +205,32 @@ dir.create('longevity',recursive=TRUE, showWarnings=FALSE);
 
 svg(file.path('longevity','longevity_barplots.svg'), width=14)
 par(mar=c(2,4,0.5,0))
-x_pos = barplot(longevity_comparison_sets$invado$mean[1,], names=area_names,
-        ylab='Puncta Longevity (min)', ylim=c(0,max(longevity_comparison_sets$invado$yplus[1,])))
-errbar(t(x_pos),longevity_comparison_sets$invado$mean[1,],
-       longevity_comparison_sets$invado$yplus[1,], longevity_comparison_sets$invado$yminus[1,],
+x_pos = barplot(longevity_comparison_sets$invado$mean[barplot_row,], names=data_names,
+        ylab='Puncta Longevity (min)', ylim=c(0,max(longevity_comparison_sets$invado$yplus[barplot_row,])))
+errbar(t(x_pos),longevity_comparison_sets$invado$mean[barplot_row,],
+       longevity_comparison_sets$invado$yplus[barplot_row,], 
+       longevity_comparison_sets$invado$yminus[barplot_row,],
        add=TRUE,cex=1E-10,lwd=1.5)
-# segments(-1,longevity_comparison_sets$invado$yminus[1,1],20,longevity_comparison_sets$invado$yminus[1,1])
-# segments(-1,longevity_comparison_sets$invado$yplus[1,1],20,longevity_comparison_sets$invado$yplus[1,1])
+segments(-1,longevity_comparison_sets$invado$yminus[barplot_row,1],
+    20,longevity_comparison_sets$invado$yminus[barplot_row,1])
+segments(-1,longevity_comparison_sets$invado$yplus[barplot_row,1],
+    20,longevity_comparison_sets$invado$yplus[barplot_row,1])
 graphics.off()
-
 
 ####################
 # Mean Local Diff Comparisons
 ####################
-
 dir.create('mean_local',recursive=TRUE, showWarnings=FALSE);
+
 svg(file.path('mean_local','local_diff_means.svg'), width=14)
-par(mar=c(2,4,0.5,0))
-x_pos = barplot(mean_diff_sets$invado$mean[1,], names=area_names,
-       ylab='Mean Degradation Level', ylim=c(min(mean_diff_sets$invado$yminus[1,]), 0))
-errbar(t(x_pos),mean_diff_sets$invado$mean[1,],
-       mean_diff_sets$invado$yplus[1,], mean_diff_sets$invado$yminus[1,],
+par(mar=c(2,4,1.1,0))
+x_pos = barplot(mean_diff_sets$invado$mean[barplot_row,], names=data_names,
+       ylab='Mean Degradation Level', ylim=c(min(mean_diff_sets$invado$yminus[barplot_row,]), 0))
+errbar(t(x_pos),mean_diff_sets$invado$mean[barplot_row,],
+       mean_diff_sets$invado$yplus[barplot_row,], mean_diff_sets$invado$yminus[barplot_row,],
        add=TRUE,cex=1E-10,lwd=1.5)
-# segments(-1,mean_diff_sets$invado$yminus[1,1],20,mean_diff_sets$invado$yminus[1,1])
-# segments(-1,mean_diff_sets$invado$yplus[1,1],20,mean_diff_sets$invado$yplus[1,1])
+segments(-1,mean_diff_sets$invado$yminus[barplot_row,1],20,mean_diff_sets$invado$yminus[barplot_row,1])
+segments(-1,mean_diff_sets$invado$yplus[barplot_row,1],20,mean_diff_sets$invado$yplus[barplot_row,1])
 graphics.off();
 
 all_mean_data = list();
