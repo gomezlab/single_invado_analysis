@@ -316,6 +316,7 @@ sub kill_long_running_jobs {
         #beyond the last other jobs in the queue, so we kill them
 
         for (@long_running_jobs) {
+            print "Killing job $_\n";
             system("bkill $_");
         }
     }
