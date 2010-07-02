@@ -77,6 +77,10 @@ if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
 
+#######################################
+# Program Running
+#######################################
+our @running_jobs;
 if ($opt{lsf}) {
     if (not($opt{debug})) {
         my $job_queue_thread = threads->create('shift_idle_jobs','');
@@ -129,6 +133,9 @@ if ($opt{lsf}) {
             print "The command took:",timestr($td),"\n";
             print "\n\n";
         }
+        
+        #clear the running jobs list
+        @running_jobs = ();
     }
     
     if (not($opt{debug})) {
@@ -246,13 +253,11 @@ sub execute_command_seq {
 sub wait_till_LSF_jobs_finish {
     #After each step of the pipeline, we want to wait till all the individual
     #jobs are completed, which will be checked three times
-    print "On check number";
     for (1 .. 3) {
-        print " $_";
-        my $sleep_time = 5;
+        print "On check number $_\n";
+        my $sleep_time = 10;
         do {
             sleep($sleep_time);
-            $sleep_time++;
         } while (&running_LSF_jobs);
     }
     print "\n";
@@ -265,10 +270,54 @@ sub running_LSF_jobs {
     }
 
     my @lines = `$bjobs_command`;
+    
+    #find and add the job ids onto the running job list
+    my @job_ids;
+    for (@lines) {
+        if (/^(\d+) /) {
+            push @job_ids,$1;
+        }
+    }
+    @job_ids = sort @job_ids;
+    
+    push @running_jobs, \@job_ids;
+    &kill_long_running_jobs();
+
     if (scalar(@lines) <= 1) {
         return 0;
     } else {
         return 1;
+    }
+}
+
+sub kill_long_running_jobs {
+    if (scalar(@running_jobs) > 60) {
+        my @long_running_jobs = @{$running_jobs[$#running_jobs}};
+        my @last_hour = @running_jobs[($#running_jobs - 59) .. $#running_jobs];
+        foreach my $jobs_ref (@long_running_jobs) {
+            #check to make sure the length of the jobs ref is the same as the
+            #long running jobs set, if it isn't, break out of the function
+            if (scalar(@$jobs_ref) != scalar(@long_running_jobs)) {
+                return 0;
+            }
+            
+            #scan through this entry in the jobs list, if an entry is present
+            #the current list of jobs, but not in the long_running_jobs list,
+            #break away from the function
+            for my $this_jobs (@$jobs_ref) {
+                if (not grep $this_job == $_, @long_running_jobs) {
+                    return 0;
+                }
+            }
+        }
+
+        #if we made is this far in the function, the entries in
+        #long_running_jobs should have each been running for at least an hour
+        #beyond the last other jobs in the queue, so we kill them
+
+        for (@long_running_jobs) {
+            system("bkill $_");
+        }
     }
 }
 
