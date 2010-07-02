@@ -324,7 +324,7 @@ sub check_file_sets {
         }
 
         $number_configs_run++;
-        if ($number_configs_run % ceil($number_configs_run/10) == 0) {
+        if ($number_configs_run % ceil(scalar(@config_files)/20) == 0) {
             print " $number_configs_run";
         }
     }
