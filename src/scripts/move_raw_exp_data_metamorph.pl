@@ -19,7 +19,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "src=s", "target=s", "debug|d", "default_config=s") or die;
+GetOptions(\%opt, "src=s", "target=s", "debug|d", "default_config|cfg|default_cfg=s") or die;
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
 die "Can't find default_config on command line." if (not $opt{default_config});
