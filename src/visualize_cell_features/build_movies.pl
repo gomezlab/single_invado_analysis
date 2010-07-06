@@ -46,9 +46,12 @@ my @commands = (
 	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/gel.png -sameq $cfg{exp_results_folder}/gel.mov 2>&1",
 	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/binary_shift.png -sameq $cfg{exp_results_folder}/binary_shift.mov 2>&1",
 	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_highlight.png -sameq $cfg{exp_results_folder}/puncta_highlight.mov 2>&1",
-	# "ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/degradation_highlight.png -sameq $cfg{exp_results_folder}/degradation_highlight.mov 2>&1",
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invado_and_not.png -sameq $cfg{exp_results_folder}/invado_and_not.mp4 2>&1",
-	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_binary.png -sameq $cfg{exp_results_folder}/puncta_binary.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invado_and_not.png -sameq $cfg{exp_results_folder}/visualizations/invado_and_not.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/puncta_binary.png -sameq $cfg{exp_results_folder}/visualizations/puncta_binary.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/cell_mask.png -sameq $cfg{exp_results_folder}/visualizations/cell_mask.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/highlighted_mask.png -sameq $cfg{exp_results_folder}/visualizations/highlighted_mask.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invader_and_not.png -sameq $cfg{exp_results_folder}/visualizations/invader_and_not.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/raw_images.png -sameq $cfg{exp_results_folder}/visualizations/raw_images.mp4 2>&1",
 );
 
 for (@commands) {
@@ -59,7 +62,7 @@ for (@commands) {
 		$t1 = new Benchmark;
 		system "$_ > /dev/null 2> /dev/null";
 		$t2 = new Benchmark;
-		print "Runtime: ",timestr(timediff($t2,$t1)), "\n";
+		# print "Runtime: ",timestr(timediff($t2,$t1)), "\n";
 	}
 }
 

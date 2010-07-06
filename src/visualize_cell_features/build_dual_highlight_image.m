@@ -138,6 +138,10 @@ for i = 1:length(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     images_to_highlight = {gel_image, puncta_image};
+    spacer = ones(size(images_to_highlight{1},1),1,3);
+
+    output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
+    imwrite(output_image, fullfile(I_folder,image_dirs(i).name,'raw_images.png'));
     
     for j=1:length(images_to_highlight)
         %cell edge highlighting
@@ -153,12 +157,10 @@ for i = 1:length(image_dirs)
         images_to_highlight{j} = create_highlighted_image(images_to_highlight{j},ad_label_perim_invado,'color_map',[0,1,0]);
     end
     
-    spacer = ones(size(images_to_highlight{1},1),1,3);
-    
     output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
     imwrite(output_image, fullfile(I_folder,image_dirs(i).name,'invado_and_not.png'));
     
-    if(i_p.Results.debug), disp(i); end
+    if(mod(i,10) == 0), disp(['Done with Image: ',num2str(i)]); end
 end
 
 profile off;

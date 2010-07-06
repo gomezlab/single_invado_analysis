@@ -175,11 +175,14 @@ bounding_matrix(bounding_matrix(:,4) > i_size(1),4) = i_size(1);
 %frames, which will show up as missing files in the following loop
 i_seen = 0;
 
-%all_images will hold all the highlighted frames produced for the movies,
+%all_puncta will hold all the highlighted frames produced for the movies,
 %each row will hold the images from each lineages, where the columns will
 %hold all the frames from each time point
-all_images = cell(size(tracking_seq,1), 1);
+all_puncta = cell(size(tracking_seq,1), 1);
 all_gel = cell(size(tracking_seq,1), 1);
+
+all_puncta_no_high = cell(size(tracking_seq,1), 1);
+all_gel_no_high = cell(size(tracking_seq,1), 1);
 
 for j = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],j);
@@ -248,7 +251,11 @@ for j = 1:max_image_num
             not_this_ad = xor(im2bw(bounded_ad_label_perim,0),this_ad);
             assert(sum(sum(not_this_ad)) + sum(sum(this_ad)) == sum(sum(im2bw(bounded_ad_label_perim,0))))
             
+            %build up the highlight image for the puncta
             highlighted_image = orig_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+            
+            all_puncta_no_high{row_num}{i_seen} = highlighted_image;
+            
             highlighted_image = create_highlighted_image(highlighted_image,this_ad,'color_map',[0,0.75,0],'mix_percent',1);
             highlighted_image = create_highlighted_image(highlighted_image,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.25);
             highlighted_image = create_highlighted_image(highlighted_image,not_this_ad,'color_map',[0,0,1],'mix_percent',0.25);
@@ -257,9 +264,12 @@ for j = 1:max_image_num
                 highlighted_image = create_highlighted_image(highlighted_image,bounded_edge,'color_map',[1,0,0],'mix_percent',0.25);
             end
             
-            all_images{row_num}{i_seen} = highlighted_image;
+            all_puncta{row_num}{i_seen} = highlighted_image;
             
             highlighted_gel = gel_i(bounding_matrix(row_num,2):bounding_matrix(row_num,4), bounding_matrix(row_num,1):bounding_matrix(row_num,3));
+            
+            all_gel_no_high{row_num}{i_seen} = highlighted_gel;
+            
             highlighted_gel = create_highlighted_image(highlighted_gel,this_ad,'color_map',[0,0.75,0],'mix_percent',1);
             highlighted_gel = create_highlighted_image(highlighted_gel,this_ad_search_border,'color_map',[1,0,1],'mix_percent',0.25);
             highlighted_gel = create_highlighted_image(highlighted_gel,not_this_ad,'color_map',[0,0,1],'mix_percent',0.25);
@@ -275,24 +285,44 @@ for j = 1:max_image_num
             
             %exit out of this loop through the tracking matrix if all the
             %current image set is empty, we have yet to hit the adhesions
-            if (size(all_images{row_num}, 2) == 0), continue; end
+            if (size(all_puncta{row_num}, 2) == 0), continue; end
             
             output_file = fullfile(out_path_single, 'overall', [padded_num, '.png']);
             if(not(exist(fullfile(out_path_single, 'overall'),'dir')))
                 mkdir(fullfile(out_path_single, 'overall'));
             end
             if (exist('pixel_size','var'))
-                puncta_montage = build_montage_image_set(all_images{row_num},'pixel_size',pixel_size,'bar_size',5);
-                gel_montage = build_montage_image_set(all_gel{row_num});
-                
-                total_montage = [puncta_montage; ones(1,size(puncta_montage,2),3); gel_montage];
-                
-                imwrite(total_montage, output_file);
-            else
-                write_montage_image_set(all_images{row_num},output_file);
-            end
+                puncta_montage = build_montage_image_set(all_puncta{row_num}, ... 
+                    'pixel_size',pixel_size,'bar_size',5);
+            else 
+                puncta_montage = build_montage_image_set(all_puncta{row_num})
+            end                
+
+            gel_montage = build_montage_image_set(all_gel{row_num});
             
-            all_images{row_num} = cell(0);
+            total_montage = [puncta_montage; ones(1,size(puncta_montage,2),3); gel_montage];
+            
+            imwrite(total_montage, output_file);
+            
+            %bit of code to output the raw images into a set of files for
+            %use in creating figures concentrating on a single puncta and
+            %gel set
+%             if (row_num == 515)
+%                 all_puncta_temp = all_puncta{row_num};
+%                 save('puncta_sm_set.mat','all_puncta_temp')
+%                 
+%                 all_gel_temp = all_gel{row_num};
+%                 save('gel_sm_set.mat','all_gel_temp')
+%                 
+%                 all_puncta_temp_no_high = all_puncta_no_high{row_num};
+%                 save('puncta_sm_set_no_high.mat','all_puncta_temp_no_high')
+%                 
+%                 all_gel_temp_no_high = all_gel_no_high{row_num};
+%                 save('gel_sm_set_no_high.mat','all_gel_temp_no_high')
+%             end
+            
+            all_puncta{row_num} = cell(0);
+            all_gel{row_num} = cell(0);
             continue;
         end
         
