@@ -36,7 +36,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         
         #exclude puncta that don't live for at least 5 time steps
         # longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
-        longev_filter = ! is.na(lineage_data$uncertain_longevity) & lineage_data$uncertain_longevity >= 5;
+        longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
         
         #exclude puncta that underwent split births
         no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
@@ -65,7 +65,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             
             last_five_filt = as.logical(c(rep(F, length(only_data) - 4), rep(T, 5)));
 
-            all_props$mean_vals = c(all_props$mean_vals, mean(only_data))
+            all_props$mean_local_diff = c(all_props$mean_local_diff, mean(only_data))
             all_props$max_local_diff = c(all_props$max_local_diff, max(only_data));
             all_props$min_local_diff = c(all_props$min_local_diff, min(only_data));
             
@@ -106,10 +106,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             #     t.test(only_data - only_pre_diff_data,alternative="less",conf.level=conf.level), 
             #     error = t.test.error);
             all_props$pre_diff_p_value = c(all_props$pre_diff_p_value, pre_test$p.value);
-            all_props$pre_diff_low_conf_int = c(all_props$pre_diff_low_conf_int, pre_test$conf.int[1]);
-            all_props$pre_diff_high_conf_int = c(all_props$pre_diff_high_conf_int, pre_test$conf.int[2]);
-            
-            all_props$mean_pre_diff = c(all_props$mean_pre_diff, mean(only_data - only_pre_diff_data));
+            all_props$mean_pre_diff = c(all_props$mean_pre_diff, as.numeric(pre_test$estimate));
 
             only_area_data = na.omit(as.numeric(area_data[i,]));
             only_edge_dist_data = na.omit(as.numeric(edge_dist_data[i,]));
@@ -123,21 +120,41 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 # }
                 time_points = seq(from=0,by=5,along.with=only_data);
                 
-                par(bty='n', mar=c(5,4,4,5))
+                par(bty='n', mar=c(4,4,2,0))
                 matplot(time_points, cbind(only_data, only_pre_diff_data, only_data - only_pre_diff_data), 
-                    typ='l', xlab='Time (min)', ylab='Difference Metric', main=i)
+                    typ='l', lty=c(1,2,4), xlab='Time (min)', ylab='Difference Metric', main=i, lwd=2, xlim=c(0,max(time_points)*1.05))
                 legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), 
                     fill=c('black','red', 'green'))
                 segments(0,0,max(time_points),0, col='purple', lty=4)
 
                 plot_limits = par("usr");
 
-                errbar(max(time_points), local_diff_results$estimate, 
+                errbar(max(time_points)*1.01, local_diff_results$estimate, 
                     local_diff_results$conf.int[2], local_diff_results$conf.int[1], add=T)
-                errbar(max(time_points)+(plot_limits[2]-max(time_points))*0.4, only_pre_diff_test$estimate, 
+                errbar(max(time_points)*1.03, only_pre_diff_test$estimate, 
                     only_pre_diff_test$conf.int[2], only_pre_diff_test$conf.int[1], add=T, col='red')
-                errbar(max(time_points)+(plot_limits[2]-max(time_points))*0.8, pre_test$estimate, 
+                errbar(max(time_points)*1.05, pre_test$estimate, 
                     pre_test$conf.int[2], pre_test$conf.int[1], add=T, col='green')
+                
+                # if (i == 515) {
+                #     svg('ctrl_02_23_pos03_0515.svg');
+                #     par(bty='n', mar=c(4,4,2,0))
+                #     matplot(time_points, cbind(only_data, only_pre_diff_data, only_data - only_pre_diff_data), 
+                #         typ='l', xlab='Time (min)', ylab='Difference Metric', main=i, lwd=4, xlim=c(0,max(time_points)*1.05))
+                #     legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), 
+                #         fill=c('black','red', 'green'))
+                #     segments(0,0,max(time_points),0, col='purple', lty=4)
+
+                #     plot_limits = par("usr");
+
+                #     errbar(max(time_points)*1.01, local_diff_results$estimate, 
+                #         local_diff_results$conf.int[2], local_diff_results$conf.int[1], add=T)
+                #     errbar(max(time_points)*1.03, only_pre_diff_test$estimate, 
+                #         only_pre_diff_test$conf.int[2], only_pre_diff_test$conf.int[1], add=T, col='red')
+                #     errbar(max(time_points)*1.05, pre_test$estimate, 
+                #         pre_test$conf.int[2], pre_test$conf.int[1], add=T, col='green')
+                #     graphics.off();
+                # }
 
                 #Adding the areas to the same plot
                 # plot_props = par('usr');
@@ -225,7 +242,7 @@ if (length(args) != 0) {
         hist(exp_props$p_value);
         graphics.off()
 
-        data_types_to_include = c('overall_filt','p_value','mean_vals', 'pre_diff_p_value');
+        data_types_to_include = c('overall_filt','p_value','mean_local_diff', 'pre_diff_p_value');
         
         filter_sets = build_filter_sets(exp_props);
         
