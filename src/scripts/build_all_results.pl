@@ -292,7 +292,7 @@ sub running_LSF_jobs {
 
 sub kill_long_running_jobs {
     if (scalar(@running_jobs) > 60) {
-        my @long_running_jobs = @{$running_jobs[$#running_jobs}};
+        my @long_running_jobs = @{$running_jobs[$#running_jobs]};
         my @last_hour = @running_jobs[($#running_jobs - 59) .. $#running_jobs];
         foreach my $jobs_ref (@long_running_jobs) {
             #check to make sure the length of the jobs ref is the same as the
@@ -304,7 +304,7 @@ sub kill_long_running_jobs {
             #scan through this entry in the jobs list, if an entry is present
             #the current list of jobs, but not in the long_running_jobs list,
             #break away from the function
-            for my $this_jobs (@$jobs_ref) {
+            for my $this_job (@$jobs_ref) {
                 if (not grep $this_job == $_, @long_running_jobs) {
                     return 0;
                 }
