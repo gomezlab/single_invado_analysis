@@ -83,7 +83,7 @@ connected_areas = bwlabel(threshed_mask,8);
 region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
 
 %filter out connected regions smaller than 100 pixels
-threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10));
+threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 100));
 connected_areas = bwlabel(threshed_mask,8);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
