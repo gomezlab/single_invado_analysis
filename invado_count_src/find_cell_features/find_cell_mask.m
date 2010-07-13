@@ -33,7 +33,9 @@ addpath(genpath('../visualize_cell_features'));
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Threshold identification
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorted_mask_pixels = sort(only_reg_pixels);
 % sorted_mask_pixels(1:0.05*round(length(sorted_mask_pixels))) = 0;
 
@@ -54,6 +56,7 @@ end
 
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
+%diagnostic plot for when things don't go quite right
 % plot(intensity, smoothed_heights)
 % hold on;
 % plot(intensity(imax), zmax,'gx')
@@ -62,7 +65,6 @@ end
 %keep in mind that the zmax is sorted by value, so the highest peak is
 %first and the corresponding index is also first in imax, the same pattern
 %hold for zmin and imin
-
 sorted_max_indexes = sort(imax);
 first_max_index = find(sorted_max_indexes == imax(1));
 
@@ -72,24 +74,36 @@ assert(length(min_index) == 1, 'Error: expected to only find one minimum index b
 
 threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Mask Cleanup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 threshed_mask = imfill(threshed_mask,'holes');
 
-connected_areas = bwlabel(threshed_mask);
-region_sizes = regionprops(connected_areas, 'Area');
+connected_areas = bwlabel(threshed_mask,8);
+region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
 
 %filter out connected regions smaller than 100 pixels
 threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10));
+connected_areas = bwlabel(threshed_mask,8);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Output Image Creation/Writing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%cell mask highlighting
 normalized_image = mask_image - puncta_min_max(1);
 normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
 
-imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), fullfile(fileparts(out_file),'highlighted_mask.png'))
+imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), ...
+    fullfile(fileparts(out_file),'highlighted_mask.png'))
 
-% imshow(threshed_mask)
-
+%binary cell mask
 imwrite(threshed_mask, out_file)
 
+%labeled cell mask
+imwrite(double(connected_areas)/2^16, ...
+    fullfile(fileparts(out_file),'cell_mask_labeled.png'), ...
+    'bitdepth',16)
 
 if (nargout >= 1)
     varargout{1} = threshed_mask;
