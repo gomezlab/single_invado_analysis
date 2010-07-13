@@ -52,7 +52,6 @@ else
     smoothed_heights = smooth(heights,0.05,'loess');
 end
 
-
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
 % plot(intensity, smoothed_heights)
@@ -80,7 +79,7 @@ connected_areas = bwlabel(threshed_mask);
 region_sizes = regionprops(connected_areas, 'Area');
 
 %filter out connected regions smaller than 100 pixels
-threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
+threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10));
 
 normalized_image = mask_image - puncta_min_max(1);
 normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
