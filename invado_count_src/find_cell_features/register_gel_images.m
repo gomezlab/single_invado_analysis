@@ -143,7 +143,7 @@ else
             this_row_shift = row_shifts(i,j);
             this_col_shift = col_shifts(i,j);
             
-            transform = maketform('affine',[cos(0) sin(0);-sin(0) cos(0); this_row_shift this_col_shift]);
+            transform = maketform('affine',[cos(0) sin(0);-sin(0) cos(0); this_col_shift this_row_shift]);
             
             binary_image = ones(size(gel_image));
             binary_shift = imtransform(binary_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
