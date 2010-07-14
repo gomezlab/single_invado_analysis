@@ -33,8 +33,12 @@ current_data = struct;
 
 %read in and normalize the input gel image
 current_data.gel_image  = imread(fullfile(current_dir, filenames.gel_filename));
+current_data.gel_no_norm = current_data.gel_image;
 scale_factor = double(intmax(class(current_data.gel_image)));
 current_data.gel_image  = double(current_data.gel_image)/scale_factor;
+
+%read in gel min/max
+current_data.gel_range = csvread(fullfile(current_dir, filenames.gel_range_file));
 
 %read in the intensity correction coefficient
 current_data.intensity_correction = csvread(fullfile(current_dir, filenames.intensity_correction_filename));
@@ -66,6 +70,8 @@ temp = double(current_data.cell_mask);
 temp(prev_data.cell_mask) = 2;
 temp(prev_data.cell_mask & current_data.cell_mask) = 3;
 imwrite(label2rgb(temp),fullfile(i_p.Results.output_dir,'cell_overlaps.png'));
+
+
 
 cell_properties = collect_cell_properties(current_data,prev_data,'debug',i_p.Results.debug);
 
