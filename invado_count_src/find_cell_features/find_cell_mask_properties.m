@@ -63,16 +63,28 @@ prev_data.intensity_correction = csvread(fullfile(prev_dir, filenames.intensity_
 prev_data.cell_mask = logical(imread(fullfile(prev_dir, filenames.cell_mask_filename)));
 prev_data.labeled_cells = imread(fullfile(prev_dir, filenames.labeled_cell_mask_filename));
 
+%add in the path to the visialization code for the highlighting
+addpath('../visualize_cell_features/');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%make a diagnostic figure showing where the cell masks overlap with the
+%next image
 temp = double(current_data.cell_mask);
 temp(prev_data.cell_mask) = 2;
 temp(prev_data.cell_mask & current_data.cell_mask) = 3;
 imwrite(label2rgb(temp),fullfile(i_p.Results.output_dir,'cell_overlaps.png'));
 
+%make an image showing where the cells are located overlayed on the gel
+%image
+gel_range_norm = double(current_data.gel_no_norm) - current_data.gel_range(1);
+gel_range_norm = gel_range_norm / (current_data.gel_range(2) - current_data.gel_range(1));
+gel_range_norm = create_highlighted_image(gel_range_norm,bwperim(current_data.cell_mask));
+imwrite(gel_range_norm,fullfile(i_p.Results.output_dir,'gel_highlights.png'));
 
-
+%collect the properties of each cell
 cell_properties = collect_cell_properties(current_data,prev_data,'debug',i_p.Results.debug);
 
 if (i_p.Results.debug), disp('Done with gathering properties'); end
