@@ -1,4 +1,4 @@
-function find_cell_mask_properties(current_dir,first_dir,final_dir,varargin)
+function find_cell_mask_properties(current_dir,prev_dir,varargin)
 % FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
 %                             properties associated with the adhesions
 %                             located in prior steps
@@ -11,16 +11,15 @@ profile off; profile on;
 i_p = inputParser;
 
 i_p.addRequired('current_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('first_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('final_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('prev_dir',@(x)exist(x,'dir') == 7);
 
-i_p.parse(current_dir,first_dir, final_dir);
+i_p.parse(current_dir,prev_dir);
 
 i_p.addParamValue('output_dir',current_dir,@ischar);
 
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
-i_p.parse(current_dir, first_dir, final_dir,varargin{:});
+i_p.parse(current_dir,prev_dir,varargin{:});
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
@@ -32,7 +31,7 @@ filenames = add_filenames_to_struct(struct());
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 current_data = struct;
 
-%read in and normalize the input focal adhesion image
+%read in and normalize the input gel image
 current_data.gel_image  = imread(fullfile(current_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(current_data.gel_image)));
 current_data.gel_image  = double(current_data.gel_image)/scale_factor;
@@ -43,53 +42,37 @@ current_data.intensity_correction = csvread(fullfile(current_dir, filenames.inte
 %read in the cell mask file
 current_data.cell_mask = logical(imread(fullfile(current_dir, filenames.cell_mask_filename)));
 
+%read in the labeled cells
+current_data.labeled_cells = imread(fullfile(current_dir, filenames.labeled_cell_mask_filename));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the final directory
+% Pull in data from the previous directory
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-final_data = struct;
+prev_data = struct;
 
-%read in and normalize the input focal adhesion image
-final_data.gel_image  = imread(fullfile(final_dir, filenames.gel_filename));
-scale_factor = double(intmax(class(final_data.gel_image)));
-final_data.gel_image  = double(final_data.gel_image)/scale_factor;
+prev_data.gel_image  = imread(fullfile(prev_dir, filenames.gel_filename));
+scale_factor = double(intmax(class(prev_data.gel_image)));
+prev_data.gel_image  = double(prev_data.gel_image)/scale_factor;
 
-%read in the labeled adhesions
-final_data.binary_shift = logical(imread(fullfile(final_dir, filenames.binary_shift_filename)));
-
-%read in the intensity correction coefficient
-final_data.intensity_correction = csvread(fullfile(final_dir, filenames.intensity_correction_filename));
-
-%read in the cell mask file
-final_data.cell_mask = logical(imread(fullfile(final_dir, filenames.cell_mask_filename)));
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the first directory
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-first_data = struct;
-
-%read in and normalize the input focal adhesion image
-first_data.gel_image  = imread(fullfile(first_dir, filenames.gel_filename));
-scale_factor = double(intmax(class(first_data.gel_image)));
-first_data.gel_image  = double(first_data.gel_image)/scale_factor;
-
-first_data.binary_shift = logical(imread(fullfile(first_dir, filenames.binary_shift_filename)));
-first_data.intensity_correction = csvread(fullfile(first_dir, filenames.intensity_correction_filename));
+prev_data.binary_shift = logical(imread(fullfile(prev_dir, filenames.binary_shift_filename)));
+prev_data.intensity_correction = csvread(fullfile(prev_dir, filenames.intensity_correction_filename));
+prev_data.cell_mask = logical(imread(fullfile(prev_dir, filenames.cell_mask_filename)));
+prev_data.labeled_cells = imread(fullfile(prev_dir, filenames.labeled_cell_mask_filename));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+temp = double(current_data.cell_mask);
+temp(prev_data.cell_mask) = 2;
+temp(prev_data.cell_mask & current_data.cell_mask) = 3;
+imwrite(label2rgb(temp),fullfile(i_p.Results.output_dir,'cell_overlaps.png'));
 
-current_data.adhesions = bwlabel(current_data.cell_mask,8);
-final_data.adhesions = bwlabel(final_data.cell_mask,8);
-
-adhesion_properties = collect_adhesion_properties(current_data, first_data, final_data,'debug',i_p.Results.debug);
+cell_properties = collect_cell_properties(current_data,prev_data,'debug',i_p.Results.debug);
 
 if (i_p.Results.debug), disp('Done with gathering properties'); end
 
 %write the results to files
-write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
+write_adhesion_data(cell_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
 
 profile off;
 if (i_p.Results.debug), profile viewer; end
@@ -98,28 +81,26 @@ if (i_p.Results.debug), profile viewer; end
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function adhesion_props = collect_adhesion_properties(c_d,first_d,f_d,varargin)
-% COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
+function cell_props = collect_cell_properties(current_data,prev_data,varargin)
+% COLLECT_cell_PROPERTIES    using the identified cells, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
-%                                adhesions
+%                                cells
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 i_p = inputParser;
-i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
+i_p.FunctionName = 'COLLECT_CELL_PROPERTIES';
 
-i_p.addRequired('c_d',@isstruct);
-i_p.addRequired('first_d',@isstruct);
-i_p.addRequired('f_d',@isstruct);
+i_p.addRequired('current_data',@isstruct);
+i_p.addRequired('prev_data',@isstruct);
 
-i_p.addParamValue('background_border_size',5,@(x)isnumeric(x));
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(c_d,first_d,f_d,varargin{:});
+i_p.parse(current_data,prev_data,varargin{:});
 
-adhesion_props = regionprops(c_d.adhesions,'all');
+cell_props = regionprops(current_data.labeled_cells,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -129,20 +110,22 @@ adhesion_props = regionprops(c_d.adhesions,'all');
 %%Properites Always Extracted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i=1:max(c_d.adhesions(:))    
+for i=1:max(current_data.labeled_cells(:))
     %this bit of code isolates a single object as a logical image and
     %then builds another logical image of the region around the object,
     %excluding certain areas
-    this_ad = c_d.adhesions;
-    this_ad(c_d.adhesions ~= i) = 0;
-    this_ad = logical(this_ad);
+    this_cell = current_data.labeled_cells;
+    this_cell(current_data.labeled_cells ~= i) = 0;
+    this_cell = logical(this_cell);
     
-%     differences = c_d.gel_image(this_ad)*c_d.intensity_correction - first_d.gel_image(this_ad)*first_d.intensity_correction;
-    differences = c_d.gel_image(this_ad) - first_d.gel_image(this_ad);
+    prev_cells = prev_data.cell_mask;
+    
+    overlap_region = this_cell & prev_cells;
+        
+    differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - prev_data.gel_image(overlap_region)*prev_data.intensity_correction;
+%     differences = current_data.gel_image(this_cell) - prev_data.gel_image(this_cell);
     [h,p] = ttest(differences);
     
-    adhesion_props(i).Cell_gel_diff_p_val = p;
-    adhesion_props(i).Cell_gel_diff = mean(differences);
-    
-    if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.adhesions(:)))]); end
+    cell_props(i).Cell_gel_diff_p_val = p;
+    cell_props(i).Cell_gel_diff = mean(differences);
 end

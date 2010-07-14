@@ -53,7 +53,7 @@ if ($opt{debug}) {
 my @matlab_code = &create_all_matlab_commands(@image_folders);
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'cell_mask_props');
-$opt{error_file} = catfile($opt{error_folder}, 'cell_mask_props', 'error.txt');
+$opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
@@ -68,8 +68,12 @@ sub create_all_matlab_commands {
 	my @image_folders = @_;
     my @matlab_code;
 
-    foreach (@image_folders) {
-		$matlab_code[0] .= "find_cell_mask_properties('$_','$image_folders[0]','$image_folders[$#image_folders]')\n";
+    foreach (0..$#image_folders) {
+		if ($_ == 0) {
+			$matlab_code[0] .= "find_cell_mask_properties('$image_folders[0]','$image_folders[0]')\n";
+		} else {
+			$matlab_code[0] .= "find_cell_mask_properties('$image_folders[$_]','$image_folders[$_ - 1]')\n";
+		}
     }
 
     return @matlab_code;
