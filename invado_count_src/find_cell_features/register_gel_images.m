@@ -50,6 +50,8 @@ reg_target  = imread(reg_target);
 scale_factor = double(intmax(class(reg_target)));
 reg_target  = double(reg_target)/scale_factor;
 
+reg_target = reg_target .* (mean(gel_image(:))/mean(reg_target(:)));
+
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
 
@@ -66,6 +68,7 @@ reg_layer_count = 0;
 for temp = 1:5
     ms_diff = add_registration_layer(gel_image, reg_target, row_shifts, col_shifts, ms_diff);
     reg_layer_count = reg_layer_count + 1;
+    if (i_p.Results.debug), disp(reg_layer_count); end
 end
 
 %if the best registration result is on the edge of the ms_diff matrix, we have
