@@ -161,7 +161,11 @@ sub make_tracking_mat {
 
         #STEP 4
         &detect_new_adhesions($i_num, $next_i_num);
-        print "# New: $tracking_facts{$i_num}{new_count}" if $opt{debug};
+		#whenever there aren't any new cells born, we see an error from this
+		#debugging message, so I added a check for the presence of the variable 
+		if (exists $tracking_facts{$i_num}{new_count}) {
+			print "# New: $tracking_facts{$i_num}{new_count}" if $opt{debug};
+		}
 
         &check_tracking_mat_integrity;
 

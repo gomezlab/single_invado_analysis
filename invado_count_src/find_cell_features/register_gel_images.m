@@ -45,14 +45,14 @@ gel_image  = imread(I_file);
 scale_factor = double(intmax(class(gel_image)));
 gel_image  = double(gel_image)/scale_factor;
 
-gel_image = gel_image .* (mean(gel_image(:))/0.1);
+gel_image = gel_image .* (0.1/mean(gel_image(:)));
 
 %read in and normalize the first image
 reg_target  = imread(reg_target);
 scale_factor = double(intmax(class(reg_target)));
 reg_target  = double(reg_target)/scale_factor;
 
-reg_target = reg_target .* (mean(reg_target(:))/0.1);
+reg_target = reg_target .* (0.1/mean(reg_target(:)));
 
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');

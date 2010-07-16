@@ -104,7 +104,7 @@ sub convert_data_to_units {
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
 	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr 
-	  First_local_gel_diff Pre_birth_diff_corr);
+	  First_local_gel_diff Pre_birth_diff_corr Cell_gel_diff Cell_gel_diff_p_val);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -245,27 +245,8 @@ sub gather_and_output_lineage_properties {
 
     my %props;
     
-    if (grep $_ eq "Edge_speed", @available_data_types) {
-        my %edge_data = &gather_edge_velo_data("Edge_speed");
-        my $base_dir = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Edge_speed");
-        &output_mat_csv($edge_data{pre_birth}, catfile($base_dir, "pre_birth.csv"));
-        &output_mat_csv($edge_data{post_birth}, catfile($base_dir, "post_birth.csv"));
-        &output_mat_csv($edge_data{pre_death}, catfile($base_dir, "pre_death.csv"));
-        &output_mat_csv($edge_data{post_death}, catfile($base_dir, "post_death.csv"));
-        &output_mat_csv($edge_data{null_data}, catfile($base_dir, "null.csv"));
-    }
-    if (grep $_ eq "Edge_projection", @available_data_types) {
-        my %edge_data = &gather_edge_velo_data("Edge_projection");
-        my $base_dir = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, "Edge_projection");
-        &output_mat_csv($edge_data{pre_birth}, catfile($base_dir, "pre_birth.csv"));
-        &output_mat_csv($edge_data{post_birth}, catfile($base_dir, "post_birth.csv"));
-        &output_mat_csv($edge_data{pre_death}, catfile($base_dir, "pre_death.csv"));
-        &output_mat_csv($edge_data{post_death}, catfile($base_dir, "post_death.csv"));
-        &output_mat_csv($edge_data{null_data}, catfile($base_dir, "null.csv"));
-    }
-
     #Pure Time Series Props
-	my @ts_props = qw(Area Local_gel_diff_corr Pre_birth_diff_corr Centroid_dist_from_edge);
+	my @ts_props = qw(Cell_gel_diff Cell_gel_diff_p_val);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
@@ -279,10 +260,6 @@ sub gather_and_output_lineage_properties {
     $props{death_status}            = &gather_death_status;
     $props{split_birth_status}      = &gather_split_birth_status;
     $props{average_eccentricity}    = &gather_average_eccentricity;
-    $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
-    &output_prop_time_series($props{Average_adhesion_signal}, "Average_adhesion_signal");
-    $props{ad_sig} = &gather_average_value($props{Average_adhesion_signal});
-    undef $props{Average_adhesion_signal};
     	
     $props{Centroid_x} = &gather_prop_seq("Centroid_x");
     $props{start_x} = &gather_first_entry($props{Centroid_x});
@@ -308,125 +285,12 @@ sub gather_and_output_lineage_properties {
         undef $props{Area};
     }
 	
-	$props{End_local_gel_diff} = &gather_prop_seq("End_local_gel_diff");
-	$props{last_local_gel_diff} = &gather_entry_by_inum($props{End_local_gel_diff}, $props{largest_area_inum});
-	undef $props{End_local_gel_diff};
-
-    if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
-        $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
-        $props{starting_center_dist} = &gather_first_entry($props{Centroid_dist_from_center});
-        $props{ending_center_dist}   = &gather_last_entry($props{Centroid_dist_from_center});
-        undef $props{Centroid_dist_from_center};
-    }
-
-    if (grep "Centroid_dist_from_edge" eq $_, @available_data_types) {
-        $props{Centroid_dist_from_edge} = &gather_prop_seq("Centroid_dist_from_edge");
-        $props{starting_edge_dist} = &gather_first_entry($props{Centroid_dist_from_edge});
-        $props{ending_edge_dist}   = &gather_last_entry($props{Centroid_dist_from_edge});
-        undef $props{Centroid_dist_from_edge};
-    }
-
     my @lin_summary_data = &gather_lineage_summary_data(\%props);
     my $output_file = catfile($cfg{exp_results_folder}, $cfg{adhesion_props_folder}, $cfg{lineage_summary_props_file});
     &output_mat_csv(\@lin_summary_data, $output_file);
     %props = ();
 
 	print "\n\n" if $opt{debug};
-}
-
-sub gather_edge_velo_data {
-    print "\r", " " x 80, "\rGathering Edge Velocities Summaries" if $opt{debug};
-    
-    my $edge_type = "Edge_speed";
-    if (scalar(@_) > 0) {
-        $edge_type = $_[0];
-    }
-
-    my $default_val = "NA";
-    my $min_living_time = 10;
-
-    my @pre_birth_data;
-    my @post_birth_data;
-    my @pre_death_data;
-    my @post_death_data;
-    my @null_data;
-    my @data_keys = sort keys %data_sets;
-    
-    #Cycle through each row of the tracking matrix, extracting all the relavent
-    #edge speed data points
-    for my $i (0 .. $#tracking_mat) {
-        my $first_data_index = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[0];
-        my $last_data_index  = (grep $tracking_mat[$i][$_] >= 0, (0 .. $#{ $tracking_mat[$i] }))[-1];
-        
-        #Data structure notes:
-        #   -the $edge_type variables hold scalar projections between the
-        #   current position of the adhesion in any given time points and the
-        #   closest edge tracking point in EVERY image, so to get all the points
-        #   prior to birth we need only analyze the $edge_type data from the
-        #   birth image
-        
-        #Collect the null data from this row
-        for my $this_index ($first_data_index .. $last_data_index) {
-            my $this_i_num = $data_keys[$this_index];
-            my $this_i_num_index = grep $data_keys[$_] == $this_i_num, (0 .. $#data_keys);
-            my $this_ad_num = $tracking_mat[$i][$this_index];
-            my @velo_data = @{ $data_sets{$this_i_num}{$edge_type} };
-            die if not exists $velo_data[$this_ad_num][$this_i_num_index];
-            push @{$null_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
-        }
-
-        #Determine upto birth data points
-        my $birth_ad_num = $tracking_mat[$i][$first_data_index];
-        die "First pre-birth adhesion number is not valid ($birth_ad_num)." if $birth_ad_num < 0;
-        my $birth_i_num     = $data_keys[$first_data_index];
-        my @birth_velo_data = @{ $data_sets{$birth_i_num}{$edge_type} };
-        my @this_pre_birth  = @{ $birth_velo_data[$birth_ad_num] }[ 0 .. ($first_data_index - 1) ];
-        push @pre_birth_data, \@this_pre_birth;
-        
-        #Determine post birth and pre death data points
-        if ($last_data_index - $first_data_index >= $min_living_time) {
-            my @tracking_mat_indexes = ($first_data_index .. $last_data_index);
-            die if scalar(@tracking_mat_indexes) < $min_living_time;
-            
-            for my $this_index (0 .. $#tracking_mat_indexes) {
-                my $this_data_index = $tracking_mat_indexes[$this_index];
-                my $this_i_num = $data_keys[$this_data_index];
-                my $this_i_num_index = grep $data_keys[$_] == $this_i_num, (0 .. $#data_keys);
-                my $this_ad_num = $tracking_mat[$i][$this_data_index];
-                my @velo_data = @{ $data_sets{$this_i_num}{$edge_type} };
-
-                if ($this_index <= floor($#tracking_mat_indexes/2)) {
-                    push @{$post_birth_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
-                } else {
-                    push @{$pre_death_data[$i]}, $velo_data[$this_ad_num][$this_i_num_index];
-                }
-            }
-        } else {
-            push @post_birth_data, [];
-            push @pre_death_data, [];
-        }
-
-        #Determine post death data points
-        my $death_ad_num = $tracking_mat[$i][$last_data_index];
-        die "Death adhesion number is not valid ($death_ad_num)." if $death_ad_num < 0;
-        my $death_i_num     = $data_keys[$last_data_index];
-        my @death_velo_data = @{ $data_sets{$death_i_num}{$edge_type} };
-        my @this_post_death = @{ $death_velo_data[$death_ad_num] }[ $last_data_index + 1 .. $#{ $death_velo_data[$death_ad_num] } ];
-        push @post_death_data, \@this_post_death;
-    }
-
-    @null_data = &pad_arrays_to_longest(\@null_data, "push");
-    @pre_birth_data = &pad_arrays_to_longest(\@pre_birth_data, "unshift");
-    @post_birth_data = &pad_arrays_to_longest(\@post_birth_data, "push");
-    @pre_death_data = &pad_arrays_to_longest(\@pre_death_data, "unshift");
-    @post_death_data = &pad_arrays_to_longest(\@post_death_data, "push");
-    
-    return ( pre_birth => \@pre_birth_data, 
-             post_birth => \@post_birth_data,
-             pre_death => \@pre_death_data,
-             post_death => \@post_death_data,
-             null_data => \@null_data,
-           );
 }
 
 sub find_longest_row {

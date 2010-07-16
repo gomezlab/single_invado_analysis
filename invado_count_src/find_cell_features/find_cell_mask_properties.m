@@ -84,7 +84,6 @@ gel_range_norm = gel_range_norm / (current_data.gel_range(2) - current_data.gel_
 gel_range_norm = create_highlighted_image(gel_range_norm,bwperim(current_data.cell_mask));
 imwrite(gel_range_norm,fullfile(i_p.Results.output_dir,'gel_highlights.png'));
 
-%collect the properties of each cell
 cell_properties = collect_cell_properties(current_data,prev_data,'debug',i_p.Results.debug);
 
 if (i_p.Results.debug), disp('Done with gathering properties'); end
@@ -139,11 +138,21 @@ for i=1:max(current_data.labeled_cells(:))
     prev_cells = prev_data.cell_mask;
     
     overlap_region = this_cell & prev_cells;
-        
+    
+    temp = double(this_cell);
+    temp(prev_cells) = 2;
+    temp(overlap_region) = 3;
+%     subplot(1,2,1); imshow(label2rgb(temp));
+    
     differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - prev_data.gel_image(overlap_region)*prev_data.intensity_correction;
+    
+    subplot(1,2,2); hist(differences);
+    
 %     differences = current_data.gel_image(this_cell) - prev_data.gel_image(this_cell);
     [h,p] = ttest(differences);
-    
+    p
+    mean(differences)
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff = mean(differences);
+    1;
 end
