@@ -1,7 +1,4 @@
 function create_invader_visualization(current_dir,first_dir,varargin)
-% FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
-%                             properties associated with the adhesions
-%                             located in prior steps
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -53,6 +50,9 @@ current_data.intensity_correction = csvread(fullfile(current_dir, filenames.inte
 %read in the cell mask file
 current_data.cell_mask = logical(imread(fullfile(current_dir, filenames.cell_mask_filename)));
 
+%read in the labeled cells
+current_data.labeled_cell_mask = imread(fullfile(current_dir, filenames.labeled_cell_mask_filename));
+
 current_data.Cell_diff = csvread(fullfile(current_dir, 'raw_data','Cell_gel_diff.csv'));
 current_data.Cell_diff_p_val = csvread(fullfile(current_dir, 'raw_data','Cell_gel_diff_p_val.csv'));
 
@@ -70,11 +70,13 @@ first_data.gel_image = first_data.gel_image ./ (current_data.gel_range(2) - curr
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-labeled_cells = bwlabel(current_data.cell_mask,8);
+invader_thresh = 0.001;
 
-non_invaders = ismember(labeled_cells, find(isnan(current_data.Cell_diff_p_val) | current_data.Cell_diff_p_val > 0.05 | current_data.Cell_diff > 0));
+non_invaders = ismember(current_data.labeled_cell_mask, find(not(isnan(current_data.Cell_diff_p_val)) & (current_data.Cell_diff_p_val > invader_thresh | current_data.Cell_diff > 0)));
 
-invaders = ismember(labeled_cells, find(current_data.Cell_diff < 0 & current_data.Cell_diff_p_val < 0.001));
+invaders = ismember(current_data.labeled_cell_mask, find(current_data.Cell_diff < 0 & current_data.Cell_diff_p_val < invader_thresh));
+
+no_class = ismember(current_data.labeled_cell_mask, find(isnan(current_data.Cell_diff_p_val)));
 
 %we only need to clear out the area outside the binary shift of the current
 %data image because the first directory binary shift should also include
@@ -82,7 +84,6 @@ invaders = ismember(labeled_cells, find(current_data.Cell_diff < 0 & current_dat
 diff_image = (current_data.gel_image - first_data.gel_image).*current_data.binary_shift;
 diff_image = diff_image - min(diff_image(:));
 diff_image = diff_image ./ (max(diff_image(:)) - min(diff_image(:)));
-
 
 diff_image = create_highlighted_image(diff_image,bwperim(current_data.cell_mask),'color_map',[0,0,1]);
 diff_image = create_highlighted_image(diff_image,bwperim(non_invaders),'color_map',[1,0,0]);
