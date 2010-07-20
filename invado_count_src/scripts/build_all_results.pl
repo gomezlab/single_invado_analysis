@@ -22,7 +22,7 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s", "no_email") or die;
 
 if (-e '/opt/lsf/bin/bjobs' && not $opt{lsf}) {
 	die "LSF appears to be installed on this machine, don't you want to use it?" 
@@ -46,15 +46,23 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ [ "../find_cell_features",      "./setup_results_folder_PIL.pl" ], ],
+	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_unreg_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
 	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
-	# [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
 	[ [ "../find_cell_features",      "./determine_bleaching_correction.pl" ], ],
-	# [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],
+	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
+	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
+	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
+	
+    #old Programs
+	# [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
+    # [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
 	# [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
 	# [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	# [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
@@ -148,8 +156,10 @@ if ($opt{lsf}) {
         my $time_diff_str = "\"Took:" . timestr($td) . "\"";
 
         my $command = "bsub -J \"Job Finished: $opt{cfg}\" echo $time_diff_str";
-
-        system($command);
+		
+		if (not $opt{no_email}) {
+        	system($command);
+		}
     }
 } else {
     my $starting_dir = getcwd;
@@ -294,7 +304,7 @@ sub kill_long_running_jobs {
     if (scalar(@running_jobs) > 60) {
         my @long_running_jobs = @{$running_jobs[$#running_jobs]};
         my @last_hour = @running_jobs[($#running_jobs - 59) .. $#running_jobs];
-        foreach my $jobs_ref (@long_running_jobs) {
+        foreach my $jobs_ref (@last_hour) {
             #check to make sure the length of the jobs ref is the same as the
             #long running jobs set, if it isn't, break out of the function
             if (scalar(@$jobs_ref) != scalar(@long_running_jobs)) {
