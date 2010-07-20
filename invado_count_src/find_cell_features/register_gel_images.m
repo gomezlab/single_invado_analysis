@@ -103,7 +103,7 @@ transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shi
 % col_end = find(sum(trimmed_ms_diff_binary,2) > 0,1,'last');
 
 trimmed_ms_diff = trim_nans(ms_diff);
-assert(sum(sum(trimmed_ms_diff_binary)) == size(trimmed_ms_diff,1)*size(trimmed_ms_diff,2))
+assert(sum(sum(not(isnan(trimmed_ms_diff)))) == size(trimmed_ms_diff,1)*size(trimmed_ms_diff,2))
 assert(all(all(isnumeric(trimmed_ms_diff))))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
