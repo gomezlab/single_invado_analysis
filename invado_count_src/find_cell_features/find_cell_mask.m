@@ -26,10 +26,11 @@ else
     binary_shift = logical(imread(i_p.Results.binary_shift_file));
     pixel_values = mask_image(binary_shift);
     assert(length(pixel_values) == sum(sum(binary_shift)));
+    
+    puncta_min_max = csvread(fullfile(fileparts(I_file),'puncta_image_range.csv'));
+    puncta_min_max = puncta_min_max/scale_factor;
 end
 
-puncta_min_max = csvread(fullfile(fileparts(I_file),'puncta_image_range.csv'));
-puncta_min_max = puncta_min_max/scale_factor;
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
