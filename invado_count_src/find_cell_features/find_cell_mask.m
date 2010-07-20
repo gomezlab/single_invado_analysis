@@ -19,7 +19,7 @@ mask_image = imread(I_file);
 scale_factor = double(intmax(class(mask_image)));
 mask_image   = double(mask_image)/scale_factor;
 
-pixel_values = [];
+pixel_values = []; %#ok<NASGU>
 if (not(isempty(strmatch('binary_shift_file',i_p.UsingDefaults))))
     pixel_values = mask_image(:);
 else
@@ -98,7 +98,7 @@ connected_areas = bwlabel(threshed_mask,8);
 
 %cell mask highlighting and labeled cell mask output, if we are working
 %with the registered image
-if (isempty(strmatch('binary_shift_file',i_p.UsingDefaults))))
+if (isempty(strmatch('binary_shift_file',i_p.UsingDefaults)))
     normalized_image = mask_image - puncta_min_max(1);
     normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
     
