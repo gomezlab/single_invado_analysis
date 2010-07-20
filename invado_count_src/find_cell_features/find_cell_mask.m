@@ -28,7 +28,6 @@ else
     assert(length(pixel_values) == sum(sum(binary_shift)));
 end
 
-
 puncta_min_max = csvread(fullfile(fileparts(I_file),'puncta_image_range.csv'));
 puncta_min_max = puncta_min_max/scale_factor;
 
@@ -97,20 +96,23 @@ connected_areas = bwlabel(threshed_mask,8);
 %%Output Image Creation/Writing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%cell mask highlighting
-normalized_image = mask_image - puncta_min_max(1);
-normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
-
-imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), ...
-    fullfile(fileparts(out_file),'highlighted_mask.png'))
+%cell mask highlighting and labeled cell mask output, if we are working
+%with the registered image
+if (isempty(strmatch('binary_shift_file',i_p.UsingDefaults))))
+    normalized_image = mask_image - puncta_min_max(1);
+    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+    
+    imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), ...
+        fullfile(fileparts(out_file),'highlighted_mask.png'))
+    
+    imwrite(double(connected_areas)/2^16, ...
+        fullfile(fileparts(out_file),'cell_mask_labeled.png'), ...
+        'bitdepth',16)
+end
 
 %binary cell mask
 imwrite(threshed_mask, out_file)
 
-%labeled cell mask
-imwrite(double(connected_areas)/2^16, ...
-    fullfile(fileparts(out_file),'cell_mask_labeled.png'), ...
-    'bitdepth',16)
 
 if (nargout >= 1)
     varargout{1} = threshed_mask;
