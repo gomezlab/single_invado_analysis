@@ -1,4 +1,4 @@
-function register_gel_images(I_file,reg_target,varargin)
+function register_gel_images(I_file,reg_target_file,varargin)
 % REGISTER_GEL_IMAGES    Performs a simple x-y translation registration on
 %                        the two images provided, finding the optimum x-y
 %                        shift by searching for the minimum in the mean
@@ -26,13 +26,13 @@ i_p = inputParser;
 i_p.FunctionName = 'REGISTER_GEL_IMAGES';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('reg_target',@(x)exist(x,'file') == 2);
+i_p.addRequired('reg_target_File',@(x)exist(x,'file') == 2);
 i_p.addParamValue('search_grid_resolution',1, @(x)isnumeric(x) & x >= 1);
 i_p.addParamValue('do_registration',1, @(x)isnumeric(x) && x == 1 || x == 0);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_file,reg_target,varargin{:});
+i_p.parse(I_file,reg_target_file,varargin{:});
 
 if (not(i_p.Results.do_registration))
     csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), ...
@@ -45,14 +45,24 @@ gel_image  = imread(I_file);
 scale_factor = double(intmax(class(gel_image)));
 gel_image  = double(gel_image)/scale_factor;
 
-gel_image = gel_image .* (0.1/mean(gel_image(:)));
+unreg_cell_mask = imread(fullfile(fileparts(I_file),'unreg_cell_mask.png'));
 
 %read in and normalize the first image
-reg_target  = imread(reg_target);
+reg_target  = imread(reg_target_file);
 scale_factor = double(intmax(class(reg_target)));
 reg_target  = double(reg_target)/scale_factor;
 
-reg_target = reg_target .* (0.1/mean(reg_target(:)));
+unreg_target_cell_mask = imread(fullfile(fileparts(reg_target_file),'unreg_cell_mask.png'));
+
+%block out the regions around each of the cell masks
+both_masks = unreg_cell_mask | unreg_target_cell_mask;
+both_masks = imdilate(both_masks,strel('disk',40,0));
+
+gel_image(both_masks) = NaN;
+reg_target(both_masks) = NaN;
+
+reg_target = reg_target .* (0.1/mean(reg_target(not(isnan(reg_target)))));
+gel_image = gel_image .* (0.1/mean(gel_image(not(isnan(gel_image)))));
 
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
@@ -86,13 +96,13 @@ end
 best_index = find(ms_diff == min(min(ms_diff)),1);
 transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shifts(best_index)];
 
-trimmed_ms_diff_binary = not(isnan(ms_diff));
-row_start = find(sum(trimmed_ms_diff_binary,1) > 0,1,'first');
-row_end = find(sum(trimmed_ms_diff_binary,1) > 0,1,'last');
-col_start = find(sum(trimmed_ms_diff_binary,2) > 0,1,'first');
-col_end = find(sum(trimmed_ms_diff_binary,2) > 0,1,'last');
+% trimmed_ms_diff_binary = not(isnan(ms_diff));
+% row_start = find(sum(trimmed_ms_diff_binary,1) > 0,1,'first');
+% row_end = find(sum(trimmed_ms_diff_binary,1) > 0,1,'last');
+% col_start = find(sum(trimmed_ms_diff_binary,2) > 0,1,'first');
+% col_end = find(sum(trimmed_ms_diff_binary,2) > 0,1,'last');
 
-trimmed_ms_diff = ms_diff(row_start:row_end, col_start:col_end);
+trimmed_ms_diff = trim_nans(ms_diff);
 assert(sum(sum(trimmed_ms_diff_binary)) == size(trimmed_ms_diff,1)*size(trimmed_ms_diff,2))
 assert(all(all(isnumeric(trimmed_ms_diff))))
 
@@ -128,7 +138,10 @@ if (all(all(isnan(ms_diff))))
     binary_shift = imtransform(binary_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
     gel_shift = imtransform(gel_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
     
-    ms_diff(middle_points_row(1),middle_points_row(2)) = sum(sum((reg_target.*binary_shift - gel_shift.*binary_shift).^2))/sum(sum(binary_shift));
+    differences = reg_target.*binary_shift - gel_shift.*binary_shift;
+    differences(~binary_shift) = NaN;
+    differences = differences(not(isnan(differences)));
+    ms_diff(middle_points_row(1),middle_points_row(2)) = mean(differences.*differences);
 else
     %binary image showing which positions have been found
     ms_diff_calced = not(isnan(ms_diff));
@@ -154,7 +167,10 @@ else
             binary_shift = imtransform(binary_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
             gel_shift = imtransform(gel_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
             
-            ms_diff(i,j) = sum(sum((reg_target.*binary_shift - gel_shift.*binary_shift).^2))/sum(sum(binary_shift));
+            differences = reg_target - gel_shift;
+            differences(~binary_shift) = NaN;
+            differences = differences(not(isnan(differences)));
+            ms_diff(i,j) = mean(differences.*differences);
         end
     end
 end
@@ -165,3 +181,13 @@ ms_diff_calced_border = bwperim(not(isnan(ms_diff)));
 best_index = find(ms_diff == min(min(ms_diff)),1);
 
 on_edge = ms_diff_calced_border(best_index);
+
+function trimmed_ms_diff = trim_nans(ms_diff)
+
+trimmed_ms_diff_binary = not(isnan(ms_diff));
+row_start = find(sum(trimmed_ms_diff_binary,1) > 0,1,'first');
+row_end = find(sum(trimmed_ms_diff_binary,1) > 0,1,'last');
+col_start = find(sum(trimmed_ms_diff_binary,2) > 0,1,'first');
+col_end = find(sum(trimmed_ms_diff_binary,2) > 0,1,'last');
+
+trimmed_ms_diff = ms_diff(row_start:row_end, col_start:col_end);
