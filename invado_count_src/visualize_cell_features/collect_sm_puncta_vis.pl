@@ -40,45 +40,21 @@ my %cfg = ParseConfig(\%opt);
 ###############################################################################
 #Main Program
 ###############################################################################
-our @files;
-find(\&include_in_vis, catdir($cfg{exp_results_folder}, $cfg{tracking_folder}));
 
-my @movie_params = map {
-    my $file_name_no_csv = $_;
-    $file_name_no_csv =~ s/(.*)\.csv/$1/;
-    {
-        tracking_file => $_,
-        movie_path    => $file_name_no_csv,
-    }
-} @files;
+my $config_file = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder},'vis_config.m');
+mkpath(dirname($config_file));
 
-my @image_folders = <$cfg{individual_results_folder}/*>;
+&write_matlab_config($config_file);
 
-my @matlab_code;
-my %single_ad_params;
-foreach (@movie_params) {
-    my %params = %{$_};
+my @matlab_code = "make_movie_frames('$config_file')";
 
-    if (not exists $params{'config_file'}) {
-        $params{'config_file'} = catfile($cfg{exp_results_folder}, $cfg{movie_output_folder}, $params{movie_path}, $cfg{vis_config_file});
-    }
+# push @matlab_code, &build_single_ad_commands(%single_ad_params);
+# if ($opt{single_ad_folders}) {
+#     push @matlab_code, &build_single_ad_folder_command(%single_ad_params);
+# }
 
-    mkpath(dirname($params{'config_file'}));
-    
-    &write_matlab_config(%params);
-    
-    if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
-        %single_ad_params = %params;
-    }
-}
-
-push @matlab_code, &build_single_ad_commands(%single_ad_params);
-if ($opt{single_ad_folders}) {
-    push @matlab_code, &build_single_ad_folder_command(%single_ad_params);
-}
-
-$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'sm_vis');
-$opt{error_file} = catfile($opt{errors_folder}, 'visualization', 'error.txt');
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
+$opt{error_file} = catfile($opt{errors_folder}, 'error.txt');
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
@@ -90,22 +66,12 @@ if (not($opt{config_only})) {
 ###############################################################################
 #Functions
 ###############################################################################
-sub include_in_vis {
-    if (   $File::Find::name =~ /.csv/
-        && not($File::Find::name =~ /no_movie/)) {
-        my $folder = catdir($cfg{exp_results_folder}, $cfg{tracking_folder});
-        if ($File::Find::name =~ /$folder\/(.*)/) {
-            push @files, $1;
-        }
-    }
-}
-
 sub write_matlab_config {
-    my %params = @_;
+	my $config_file = shift;
 
     my @config = &build_matlab_visualization_config(@_);
-    open VIS_CFG_OUT, ">" . $params{'config_file'}
-      or die "Unsuccessfully tried to open visualization config file: $params{config_file}";
+    open VIS_CFG_OUT, ">" . $config_file
+      or die "Unsuccessfully tried to open visualization config file: $config_file";
     print VIS_CFG_OUT join("\n",@config);
     close VIS_CFG_OUT;
 }
@@ -136,30 +102,20 @@ sub build_matlab_visualization_config {
         "edge_filename = 'cell_mask.png';",
         "gel_image_filename = 'registered_gel.png';",
 
-        "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$params{tracking_file}');\n",
+        "tracking_seq_file = fullfile(base_results_folder, '$cfg{tracking_folder}', '$cfg{tracking_output_file}');\n",
 
-        "out_path = fullfile(vis_folder,'$params{movie_path}');",
+        "out_path = fullfile(vis_folder,'tracking');",
         "out_prefix = {'" . join("\',\'", @{ $cfg{movie_output_prefix} }) . "'};\n",
         
         "out_path_single = fullfile(vis_folder,'single_ad');",
     
         "excluded_image_nums = $excluded_image_nums;",
-        "bounding_box_file = fullfile(vis_folder,'$params{movie_path}','$cfg{bounding_box_file}');",
         "path_folders = '$cfg{path_folders}';\n",
 
         "image_padding_min = $cfg{padding_min};",
         "single_image_padding_min = $cfg{single_ad_padding_min};\n",
     );
     
-    #Add the config file flag for outputing the original images, trimmed with
-    #the bounding box, when the tracking file used in this config file is the
-    #default tracking file
-    if ($params{'tracking_file'} =~ /$cfg{tracking_output_file}/) {
-        push @config_lines, "output_original_image = 1;";
-    } else {
-        push @config_lines, "output_original_image = 0;";
-    }
-
     if (exists($cfg{pixel_size})) {
         push @config_lines, "pixel_size = $cfg{pixel_size};\n";
     }

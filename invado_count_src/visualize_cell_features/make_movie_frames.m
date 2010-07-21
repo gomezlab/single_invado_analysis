@@ -89,12 +89,15 @@ for i = 1:max_image_num
     %Image Creation
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     live_rows = tracking_seq(:,i) > 0;
-    
+    ad_nums = tracking_seq(live_rows,i);
     
     %Build the unique lineage highlighted image
-    this_cmap = lineage_cmap(live_rows,:);
-    disp(i);
+    this_cmap(ad_nums,:) = lineage_cmap(live_rows,:);
     highlighted_all = create_highlighted_image(puncta_image,cell_mask_label_perim,'color_map',this_cmap);
+    if (not(exist(out_path,'dir')))
+        mkdir(out_path);
+    end
+    
     imwrite(highlighted_all,fullfile(out_path,[padded_i_num,'.png']));
 %
 %     %Build the birth time highlighted image
