@@ -71,7 +71,7 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[row_shifts,col_shifts] = meshgrid(-50:i_p.Results.search_grid_resolution:50);
+[col_shifts,row_shifts] = meshgrid(-50:i_p.Results.search_grid_resolution:50);
 ms_diff = ones(size(row_shifts))*NaN;
 
 %first we build out 5 layers of registration tests, 98% of the image
@@ -94,13 +94,7 @@ while (best_reg_on_edge(ms_diff) && any(any(isnan(ms_diff))))
 end
 
 best_index = find(ms_diff == min(min(ms_diff)),1);
-transform_matrix = [cos(0) sin(0);-sin(0) cos(0); row_shifts(best_index) col_shifts(best_index)];
-
-% trimmed_ms_diff_binary = not(isnan(ms_diff));
-% row_start = find(sum(trimmed_ms_diff_binary,1) > 0,1,'first');
-% row_end = find(sum(trimmed_ms_diff_binary,1) > 0,1,'last');
-% col_start = find(sum(trimmed_ms_diff_binary,2) > 0,1,'first');
-% col_end = find(sum(trimmed_ms_diff_binary,2) > 0,1,'last');
+transform_matrix = [cos(0) sin(0);-sin(0) cos(0); col_shifts(best_index) row_shifts(best_index)];
 
 trimmed_ms_diff = trim_nans(ms_diff);
 assert(sum(sum(not(isnan(trimmed_ms_diff)))) == size(trimmed_ms_diff,1)*size(trimmed_ms_diff,2))
@@ -132,7 +126,7 @@ if (all(all(isnan(ms_diff))))
     this_row_shift = row_shifts(middle_points_row(1),middle_points_row(2));
     this_col_shift = col_shifts(middle_points_col(1),middle_points_col(2));
     
-    transform = maketform('affine',[cos(0) sin(0);-sin(0) cos(0); this_row_shift this_col_shift]);
+    transform = maketform('affine',[cos(0) sin(0);-sin(0) cos(0); this_col_shift this_row_shift]);
     
     binary_image = ones(size(gel_image));
     binary_shift = imtransform(binary_image, transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
