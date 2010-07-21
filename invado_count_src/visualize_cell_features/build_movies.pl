@@ -50,6 +50,7 @@ my @commands = (
 	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/invader_and_not.png -sameq $cfg{exp_results_folder}/invader_and_not.mp4 2>&1",
 	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/raw_images.png -sameq $cfg{exp_results_folder}/raw_images.mp4 2>&1",
 	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{individual_results_folder}/%0" . $image_num_length . "d/cell_overlaps.png -sameq $cfg{exp_results_folder}/cell_overlaps.mp4 2>&1",
+	"ffmpeg -v 0 -y -r $cfg{movie_frame_rate} -i $cfg{exp_results_folder}/visualizations/tracking/%0" . $image_num_length . "d.png -sameq $cfg{exp_results_folder}/tracking.mp4 2>&1",
 );
 
 for (@commands) {
