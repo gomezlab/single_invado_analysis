@@ -103,8 +103,9 @@ sub convert_data_to_units {
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
-	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr 
-	  First_local_gel_diff Pre_birth_diff_corr Cell_gel_diff Cell_gel_diff_p_val);
+	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr
+	  First_local_gel_diff Pre_birth_diff_corr Cell_gel_diff Cell_gel_diff_p_val
+	  Overlap_region_size);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -246,7 +247,7 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     #Pure Time Series Props
-	my @ts_props = qw(Cell_gel_diff Cell_gel_diff_p_val);
+	my @ts_props = qw(Cell_gel_diff Cell_gel_diff_p_val Overlap_region_size);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
