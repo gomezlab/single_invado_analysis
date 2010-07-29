@@ -12,6 +12,8 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('binary_shift_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
 
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+
 i_p.parse(I_file,binary_shift_file,out_file);
 
 mask_image = imread(I_file);
@@ -55,10 +57,12 @@ end
 
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
-% plot(intensity, smoothed_heights)
-% hold on;
-% plot(intensity(imax), zmax,'gx')
-% plot(intensity(imin), zmin,'ro')
+if(i_p.Results.debug)
+    plot(intensity, smoothed_heights)
+    hold on;
+    plot(intensity(imax), zmax,'gx')
+    plot(intensity(imin), zmin,'ro')
+end
 
 %keep in mind that the zmax is sorted by value, so the highest peak is
 %first and the corresponding index is also first in imax, the same pattern

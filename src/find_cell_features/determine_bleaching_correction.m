@@ -16,11 +16,6 @@ i_p.parse(image_dir);
 
 i_p.addParamValue('output_dir',fullfile(image_dir,'..','adhesion_props'),@ischar);
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
-% i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
-% i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
-% i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
-% i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
-% i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
 i_p.parse(image_dir,varargin{:});
 
 if (not(exist(i_p.Results.output_dir,'dir')))
@@ -95,18 +90,20 @@ for i=1:length(single_image_folders)
 end
 
 %diagnostic plot
-% time_points = (0:(length(gel_levels) - 1))*5;
-% plot(time_points,gel_levels)
-% xlabel('Time (min)', 'Fontsize',16)
-% ylabel('Average Intensity', 'Fontsize',16);
-% hold on;
-% plot(time_points,gel_levels_puncta,'g');
-% plot(time_points,gel_levels_outside_cell,'r');
-% 
-% y_limits = ylim();
-% ylim([0 y_limits(2)]);
-% 
-% legend('Overall','Puncta','Outside Cell', 'location','SouthEast')
+time_points = (0:(length(gel_levels) - 1))*5;
+diag_fig_hnd = plot(time_points,gel_levels)
+xlabel('Time (min)', 'Fontsize',16)
+ylabel('Average Intensity', 'Fontsize',16);
+hold on;
+plot(time_points,gel_levels_puncta,'g');
+plot(time_points,gel_levels_outside_cell,'r');
+
+y_limits = ylim();
+ylim([0 y_limits(2)]);
+
+legend('Overall','Puncta','Outside Cell', 'location','SouthEast')
+saveas(diag_fig_hnd,fullfile(i_p.Results.output_dir,'bleaching_curves.png'))
+close all;
 
 dlmwrite(fullfile(i_p.Results.output_dir,'bleaching_curves.csv'), ...
     [gel_levels_outside_cell,gel_levels, gel_levels_puncta]);

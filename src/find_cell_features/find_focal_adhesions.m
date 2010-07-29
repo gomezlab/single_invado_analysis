@@ -29,7 +29,6 @@ min_col = find(sum(binary_shift),1,'first');
 max_col = find(sum(binary_shift),1,'last');
 
 cell_mask = logical(imread(fullfile(fileparts(I_file),'cell_mask.png')));
-only_reg_cell_mask = cell_mask(min_row:max_row, min_col:max_col);
 
 %read in and normalize the input focal adhesion image
 focal_image  = imread(I_file);
@@ -118,3 +117,8 @@ scaled_image(not(binary_shift)) = 0;
 
 imwrite(create_highlighted_image(scaled_image, im2bw(puncta),'color_map',[1 0 0], 'mix_percent',0.5), ...
     fullfile(i_p.Results.output_dir, 'puncta_highlight.png'));
+
+if (i_p.Results.debug)
+   scaled_high_pass = (high_passed_image - min(high_passed_image(:)))/(max(high_passed_image(:)) - min(high_passed_image(:)));
+   imwrite(scaled_high_pass, fullfile(i_p.Results.output_dir, 'high_passed.png'));
+end
