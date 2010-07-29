@@ -1,4 +1,4 @@
-function [varargout] = find_cell_mask(I_file,binary_shift_file,out_file)
+function [varargout] = find_cell_mask(I_file,binary_shift_file,out_file,varargin)
 %CREATE_CELL_MASK_IMAGE   Gather and write the cell mask from a
 %                         fluorescence image
 
@@ -14,7 +14,7 @@ i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_file,binary_shift_file,out_file);
+i_p.parse(I_file,binary_shift_file,out_file,varargin{:});
 
 mask_image = imread(I_file);
 scale_factor = double(intmax(class(mask_image)));
@@ -42,18 +42,22 @@ sorted_mask_pixels = sort(only_reg_pixels);
 %when there are very few unique pixel values, having a large number of bins
 %causes the extrema values found to be fairly random, fixing with a simple
 %check for the number of uniques
-if (length(unique(sorted_mask_pixels)) < 1000)
-    [heights, intensity] = hist(sorted_mask_pixels,100);
-else
-    [heights, intensity] = hist(sorted_mask_pixels,1000);
-end
+% if (length(unique(sorted_mask_pixels)) < 1000)
+%     [heights, intensity] = hist(sorted_mask_pixels,100);
+% else
+%     [heights, intensity] = hist(sorted_mask_pixels,1000);
+% end
 
-if (length(unique(sorted_mask_pixels)) < 1000)
-    smoothed_heights = smooth(heights,0.15,'loess');
-else
-    smoothed_heights = smooth(heights,0.05,'loess');
-end
+[heights, intensity] = hist(sorted_mask_pixels,length(unique(sorted_mask_pixels))/5);
 
+% similar problem with few pixel values
+% if (length(unique(sorted_mask_pixels)) < 1000)
+%     smoothed_heights = smooth(heights,0.15,'loess');
+% else
+%     smoothed_heights = smooth(heights,0.05,'loess');
+% end
+
+smoothed_heights = smooth(heights,0.10,'loess');
 
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
@@ -83,7 +87,7 @@ threshed_mask = imfill(threshed_mask,'holes');
 connected_areas = bwlabel(threshed_mask);
 region_sizes = regionprops(connected_areas, 'Area');
 
-%filter out connected regions smaller than 100 pixels
+%filter out connected regions smaller than 10000 pixels
 threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
 
 normalized_image = mask_image - puncta_min_max(1);
