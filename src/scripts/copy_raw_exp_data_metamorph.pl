@@ -56,19 +56,31 @@ for (@src_files) {
 		next;
 	}
 	if ($_ =~ /_w\d+(.*)_s(\d+)_t(\d+).TIF/) {
-		$stage_position_sets{$2}{$1}[$3] = $_;
+		#which kind of image is this? texas red/GFP/etc?
+		my $image_type = $1;
+
+		#which stage position was this image taken at?
+		my $stage_position = $2;
+	
+		#when was the image taken
+		my $image_time = $3;
+			
+		$stage_position_sets{$stage_position}{$image_type}[$image_time] = $_;
 	} else {
-		die "Unrecoginable filename ($_), can't find position code.";
+		warn "Unrecoginable filename ($_), can't find position code.";
 	}
 }
 
+print "Done with bundling the source files into sets\n\n";
+
 &confirm_stage_hash(%stage_position_sets);
 
+#now we sort through each stage position to move the files into place and create the config files
+my $current_max_exp_num = &determine_max_exp_num($opt{target});
 my $data_folder = &determine_data_folder_name($opt{default_config});
 foreach my $position (sort {$a<=>$b} keys %stage_position_sets) {
-	my $image_num;
-	
-	my $position_directory = catdir($opt{target}, "time_series_" . sprintf('%02d',$position));
+	my $position_directory = catdir($opt{target}, "time_series_" . 
+		sprintf('%02d',$position + $current_max_exp_num));
 	
 	my $exp_name;
 	if ($position_directory =~ /$data_folder(.*)/) {
@@ -80,7 +92,7 @@ foreach my $position (sort {$a<=>$b} keys %stage_position_sets) {
 	if ($opt{debug}) {
 		print "mkpath($position_directory);\n";
 		print "copy($log_file, catfile($position_directory, 'log.txt'));\n";
-		print "&write_standard_config_file(catfile($position_directory,'analysis.cfg'),$exp_name)";
+		print "&write_standard_config_file(catfile($position_directory,'analysis.cfg'),$exp_name)\n";
 	} else {
 		mkpath($position_directory);
 		copy($log_file, catfile($position_directory, 'log.txt'));
@@ -116,11 +128,17 @@ foreach my $position (sort {$a<=>$b} keys %stage_position_sets) {
 			
 			my $target_file = catfile($image_directory, $image_filename);
 			
+			if ($image_num == 1) {
+				if ($opt{debug}) {
+					print "mkpath(dirname($target_file));\n";
+				} else {
+					mkpath(dirname($target_file));
+				}
+			}
+
 			if ($opt{debug}) {
-				print "mkpath(dirname($target_file));\n";
 				print "copy($source_file, $target_file);\n\n";
 			} else {
-				mkpath(dirname($target_file));
 				copy($source_file, $target_file);
 			}
 		}
@@ -167,7 +185,7 @@ sub confirm_stage_hash {
 		foreach my $field (keys %{$stage_hash{$position}}) {
 			if (defined $image_num) {
 				die "Different number of images in each field in stage position $position." 
-					if $image_num != scalar(@{$stage_hash{$position}{$field}});
+				if $image_num != scalar(@{$stage_hash{$position}{$field}});
 			} else {
 				$image_num = scalar(@{$stage_hash{$position}{$field}});
 			}
@@ -215,6 +233,23 @@ sub determine_data_folder_name {
 	);
 	
 	return $cfg{data_folder};
+}
+
+sub determine_max_exp_num {
+	my $target_dir = shift;
+
+	my @files = <$target_dir/*>;
+
+	my $max_num = 0;
+	foreach (@files) {
+		if ($_ =~ /(\d+)$/) {
+			if ($1 > $max_num) {
+				$max_num = $1;
+			}
+		}
+	}
+	
+	return $max_num;
 }
 
 sub find_main_config_depth {
