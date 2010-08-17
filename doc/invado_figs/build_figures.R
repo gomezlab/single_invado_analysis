@@ -20,7 +20,6 @@ dirs_to_load$coro1B_kd = Sys.glob('../../results/Invadopodia/Coro1B/*/adhesion_p
 dirs_to_load$CotL_kd = Sys.glob('../../results/Invadopodia/CotL/*/adhesion_props/');
 dirs_to_load$Cort_kd = Sys.glob('../../results/Invadopodia/Cort/*/adhesion_props/');
 dirs_to_load$BB94 = Sys.glob('../../results/Invadopodia/BB94/*/adhesion_props/');
-# dirs_to_load$Exo70 = Sys.glob('../../results/Invadopodia/Exo70/*/adhesion_props/');
 dirs_to_load$FAK = Sys.glob('../../results/Invadopodia/FAK/*/adhesion_props/');
 dirs_to_load$LKB = Sys.glob('../../results/Invadopodia/LKB/*/adhesion_props/');
 
@@ -72,11 +71,6 @@ combined_data_sets = as.data.frame(combined_data_sets);
 # data_sets$day_2_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_15',data_sets$invado_coro1C_kd$experiment) == 1)
 # data_sets$day_3_coro1C = subset(data_sets$invado_coro1C_kd, regexpr('11_22',data_sets$invado_coro1C_kd$experiment) == 1)
 # 
-ts_props = list()
-
-for (exp_type in names(dirs_to_load)) {
-    ts_props[[exp_type]]$bleaching_curve = load_data_files(dirs_to_load[[exp_type]], c('bleaching_curves.csv'), debug=F, inc_exp_names=T);
-}
 
 ################################################################################
 # Processing
