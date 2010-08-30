@@ -61,18 +61,30 @@ lineage_cmap = jet(size(tracking_seq,1));
 for i = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
 
+    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,'binary_shift.png')));
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input puncta image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,'binary_shift.png')));
     puncta_image = double(imread(fullfile(I_folder,padded_i_num,puncta_image_filename)));
     puncta_limits = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
     
     puncta_image = puncta_image - puncta_limits(1);
     puncta_image = puncta_image .* (1/puncta_limits(2));
     puncta_image(not(binary_shift)) = 0;
-    1;
 
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %Gather and scale the gel image
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    gel_image = double(imread(fullfile(I_folder,padded_i_num,'registered_gel.png')));
+    gel_limits = csvread(fullfile(I_folder,padded_i_num,'gel_image_range.csv'));
+    
+    gel_image = gel_image - gel_limits(1);
+    gel_image = gel_image .* (1/gel_limits(2));
+    gel_image(not(binary_shift)) = 0;
+
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,13 +104,16 @@ for i = 1:max_image_num
     ad_nums = tracking_seq(live_rows,i);
     
     %Build the unique lineage highlighted image
-    this_cmap(ad_nums,:) = lineage_cmap(live_rows,:);
-    highlighted_all = create_highlighted_image(puncta_image,cell_mask_label_perim,'color_map',this_cmap);
+    this_cmap(ad_nums,:) = lineage_cmap(live_rows,:); %#ok<AGROW>
+    highlighted_puncta = create_highlighted_image(puncta_image,cell_mask_label_perim,'color_map',this_cmap);
+    
+%     highlighted_gel = create_highlighted_image(gel_image,cell_mask_label_perim,'color_map',this_cmap);
+    
     if (not(exist(out_path,'dir')))
         mkdir(out_path);
     end
     
-    imwrite(highlighted_all,fullfile(out_path,[padded_i_num,'.png']));
+    imwrite(highlighted_puncta,fullfile(out_path,[padded_i_num,'.png']));
 %
 %     %Build the birth time highlighted image
 %     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
@@ -122,26 +137,6 @@ for i = 1:max_image_num
 %             frame{j} = draw_scale_bar(frame{j},pixel_size);
 %         end
 %     end
-%
-%     %Output the original unaltered image if requested
-%     if (output_original_image)
-%         if (not(exist(fullfile(out_path,'orig_image'),'dir'))), mkdir(fullfile(out_path,'orig_i')); end
-%         imwrite(puncta_image,fullfile(out_path,'orig_i',[padded_i_seen,'.png']));
-%     end
-%
-%     %Output all the other images
-%     if (exist('out_path','var'))
-%         for j = 1:length(out_prefix) %#ok<USENS>
-%             output_filename = fullfile(out_path,out_prefix{1,j},[padded_i_seen,'.png']);
-%             fullpath = fileparts(output_filename);
-%             if (not(exist(fullpath,'dir')))
-%                 mkdir(fullpath);
-%             end
-%             imwrite(frame{j},output_filename);
-%         end
-%     end
-%
-%     if(i_p.Results.debug), disp(i_seen); end
 end
 
 profile off;
@@ -155,13 +150,9 @@ lineage_cmap = zeros(size(tracking_seq,1),1);
 for time = 1:size(tracking_seq,2)
     living_lineage_rows = find(tracking_seq(:,time) > 0);
     
-    
-    for j = 1:length(living_lineage_rows)
-        
+    for j = 1:length(living_lineage_rows)        
         this_row = living_lineage_rows(j);
-%         if(this_row == 11)
-%             1;
-%         end
+        
         %if a color number is already assigned, skip to the next row with a
         %living cell
         if (lineage_cmap(this_row) > 0)

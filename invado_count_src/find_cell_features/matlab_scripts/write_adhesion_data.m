@@ -43,7 +43,7 @@ field_names = fieldnames(S);
 ad_props_cell = struct2cell(S);
 
 print_strings = struct('PixelIdxList','%0.f','Cell_gel_diff','%0.10f', ... 
-    'Cell_gel_diff_p_val','%0.10f');
+    'Cell_gel_diff_p_val','%0.10f','Overlap_region_size','%d');
 
 for i = 1:size(field_names,1)
     

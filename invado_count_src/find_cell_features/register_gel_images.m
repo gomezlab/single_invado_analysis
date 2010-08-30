@@ -26,7 +26,7 @@ i_p = inputParser;
 i_p.FunctionName = 'REGISTER_GEL_IMAGES';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('reg_target_File',@(x)exist(x,'file') == 2);
+i_p.addRequired('reg_target_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('search_grid_resolution',1, @(x)isnumeric(x) & x >= 1);
 i_p.addParamValue('do_registration',1, @(x)isnumeric(x) && x == 1 || x == 0);
 i_p.addParamValue('output_dir', fileparts(I_file), @(x)exist(x,'dir')==7);
@@ -45,24 +45,10 @@ gel_image  = imread(I_file);
 scale_factor = double(intmax(class(gel_image)));
 gel_image  = double(gel_image)/scale_factor;
 
-unreg_cell_mask = imread(fullfile(fileparts(I_file),'unreg_cell_mask.png'));
-
 %read in and normalize the first image
 reg_target  = imread(reg_target_file);
 scale_factor = double(intmax(class(reg_target)));
 reg_target  = double(reg_target)/scale_factor;
-
-unreg_target_cell_mask = imread(fullfile(fileparts(reg_target_file),'unreg_cell_mask.png'));
-
-%block out the regions around each of the cell masks
-both_masks = unreg_cell_mask | unreg_target_cell_mask;
-both_masks = imdilate(both_masks,strel('disk',40,0));
-
-gel_image(both_masks) = NaN;
-reg_target(both_masks) = NaN;
-
-reg_target = reg_target .* (0.1/mean(reg_target(not(isnan(reg_target)))));
-gel_image = gel_image .* (0.1/mean(gel_image(not(isnan(gel_image)))));
 
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');

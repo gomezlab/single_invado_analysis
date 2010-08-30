@@ -139,6 +139,8 @@ for i=1:max(current_data.labeled_cells(:))
     
     overlap_region = this_cell & prev_cells;
     
+    cell_props(i).Overlap_region_size = sum(sum(overlap_region));
+    
     temp = double(this_cell);
     temp(prev_cells) = 2;
     temp(overlap_region) = 3;
@@ -150,8 +152,6 @@ for i=1:max(current_data.labeled_cells(:))
     
 %     differences = current_data.gel_image(this_cell) - prev_data.gel_image(this_cell);
     [h,p] = ttest(differences);
-    p
-    mean(differences)
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff = mean(differences);
     1;

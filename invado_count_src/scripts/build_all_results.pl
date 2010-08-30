@@ -47,7 +47,6 @@ $|  = 1;
 #commands in.
 my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-	[ [ "../find_cell_features",      "./collect_unreg_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
 	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
@@ -59,20 +58,6 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
-	
-    #old Programs
-	# [ [ "../find_cell_features",      "./find_image_thresholds.pl" ], ],
-    # [ [ "../find_cell_features",      "./collect_fa_image_set.pl" ], ],
-	# [ [ "../find_cell_features",      "./collect_fa_properties.pl" ], ],
-	# [ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
-	# [ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-	# [ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl -only_config" ], ],
-	# [ [ "../analyze_cell_features",   "./collect_pre_birth_diffs.pl" ], ],
-	# [ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-	# [ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
-	# [ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl" ], ],
-	# [ [ "../visualize_cell_features", "./collect_final_image_highlights.pl" ], ],
-	# [ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
 );
 
 my $cfg_suffix = basename($opt{cfg});
