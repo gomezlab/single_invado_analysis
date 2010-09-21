@@ -127,7 +127,8 @@ for i=1:length(single_exp_dirs)
     data_file = fullfile(experiment_dir,single_exp_dirs(i).name, ...
         'adhesion_props','lin_time_series','Cell_gel_diff_p_val.csv');
     if (not(exist(data_file,'file')))
-        warn(['Can''t find: ',data_file])
+        warning(['Can''t find: ',data_file])
+        continue;
     end
     
     load(data_file);
