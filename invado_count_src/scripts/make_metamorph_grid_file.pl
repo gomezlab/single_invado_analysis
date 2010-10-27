@@ -40,7 +40,7 @@ for my $this_dish (1..$dish_count) {
 		for my $y_increment (0..($y_grid_size-1)) {
 			my $this_y = $y_increment*$move_increment+$start_y;
 			$position_count++;
-			push @stage_lines, "\"$standard_label$position_count\", $this_x, $this_y, $standard_z,0,$standard_z, FALSE, $this_dish, TRUE, TRUE, 0";
+			push @stage_lines, "\"$standard_label$position_count\", $this_x, $this_y, $standard_z, 0, $standard_z, FALSE, $this_dish, TRUE, TRUE, 0";
 		}
 	}
 }
