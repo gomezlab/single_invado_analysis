@@ -8,31 +8,19 @@ use Data::Dumper;
 use Getopt::Long;
 
 my %opt;
+$opt{dish_count} = 8;
 $opt{debug} = 0;
-GetOptions(\%opt, "corners=s") or die;
+GetOptions(\%opt, "corners=s", "dish_count=s") or die;
 
-# "Stage Memory List", Version 5.0
-# 0, 0, 0, 0, 0, 0, 0, "um", "um"
-# 0
-# 7
-# "POSITION_LABLE", 32.7, -38.2, 2500, 0, 2500, FALSE, 1, TRUE, TRUE, 0
-# "POSITION_LABEL", 32.7, 29.9, 2500, 0, 2500, FALSE, 1, TRUE, TRUE, 0
-# "POSITION_LABEL_1", -10, 29.9, 2500, 0, 2500, FALSE, 1, TRUE, TRUE, 0
-# "POSITION_LABEL_2", 10, -0.2, 2500, 0, 2500, FALSE, 2, TRUE, TRUE, 0
-# "POSITION_LABEL_3", 10, -20.3, 2500, 0, 2500, FALSE, 2, TRUE, TRUE, 0
-# "POSITION_LABEL_4", 10, -0.2, 2500, 0, 2500, FALSE, 3, TRUE, TRUE, 0
-# "POSITION_LABEL_5", -0, -0.2, 2500, 0, 2500, FALSE, 4, TRUE, TRUE, 0
-
-my $start_x = -400;
-my $start_y = -400;
+my $start_x = -1600;
+my $start_y = -1600;
 my $grid_size = 5;
-my $move_increment = 200;
+my $move_increment = 800;
 
 my $standard_z = 3000;
 
 my $standard_label = "POS_";
 
-my $dish_count = 8;
 
 my @stage_header;
 push @stage_header, "\"Stage Memory List\", Version 5.0";
@@ -59,8 +47,6 @@ if (not defined $opt{corners}) {
 	&output_stage_lines("final_stage_positions.STG");
 }
 
-
-
 ################################################################################
 # Functions
 ################################################################################
@@ -78,10 +64,17 @@ sub build_corners_input_positions {
 	my $position_count = 0;
 	my @lines;
 
-	for my $this_dish (1..$dish_count) {
+	for my $this_dish (1..$opt{dish_count}) {
 		for my $x_increment (0..($grid_size-1)) {
 			my $this_x = $x_increment*$move_increment+$start_x;
-			for my $y_increment (0..($grid_size-1)) {
+			
+			#to build a grid that goes in a zig zag, reverse the y increment sequence every other time
+			my @y_increment_seq = (0..($grid_size-1));
+			if ($x_increment % 2 == 0) {
+				@y_increment_seq = reverse(@y_increment_seq);
+			}
+
+			for my $y_increment (@y_increment_seq) {
 				my $this_y = $y_increment*$move_increment+$start_y;
 				$position_count++;
 				
@@ -106,59 +99,3 @@ sub build_corners_input_positions {
 	
 	return @lines;
 }
-
-# sub build_complete_stage_list {
-# 	my $position_count = 0;
-# 	my @lines;
-# 
-# 	for my $this_dish (1..$dish_count) {
-# 		for my $x_increment (0..($grid_size-1)) {
-# 			my $this_x = $x_increment*$move_increment+$start_x;
-# 			for my $y_increment (0..($grid_size-1)) {
-# 				my $this_y = $y_increment*$move_increment+$start_y;
-# 				$position_count++;
-# 				push @lines, "\"$standard_label$position_count\", $this_x, $this_y, $standard_z, 0, $standard_z, FALSE, $this_dish, TRUE, TRUE, 0";
-# 			}
-# 		}
-# 	}
-# 	
-# 	return @lines;
-# }
-# 
-# sub read_in_corner_values {
-# 	my %corner_focus;
-# 	
-# 	open INPUT, "$opt{corners}";
-# 	#the first four lines contain header data, skip it
-# 	for (1..4) {
-# 		my $temp = <INPUT>;
-# 	}
-# 	my @all_lines = <INPUT>;
-# 	close INPUT;
-# 	
-# 	my @xyz_dish;
-# 	
-# 	# my $current_line = 0;
-# 	# my @corner;
-# 	# for (1..$dish_count) {
-# 	# 	@corner = split(",", $all_lines[$current_line]);
-# 	# 	$current_line += ($grid_size - 2);
-# 	# 	@corner = split(",", $all_lines[$current_line]);
-# 	# 	$current_line += $grid_size*($grid_size - 2);
-# 	# 	@corner = split(",", $all_lines[$current_line]);
-# 	# 	$current_line += ($grid_size - 2);
-# 	# 	@corner_3 = split(",", $all_lines[$current_line]);
-# 	# }
-# 
-# 	# while (<INPUT>) {
-# 	# 	my @split_line = split(",",$_);
-# 	# 	#have to round the x and y because the scope sometimes decides to land
-# 	# 	#on a slightly +-0.1 micron different spot that specified, shouldn't
-# 	# 	#make a very big difference in the calculations
-# 	# 	my $x = round($split_line[1]);
-# 	# 	my $y = round($split_line[2]);
-# 	# 	push @xyz_dish, ([$x,$y,$split_line[3],$split_line[7]]);
-# 	# }
-# 
-# 	return @xyz_dish;
-# }
