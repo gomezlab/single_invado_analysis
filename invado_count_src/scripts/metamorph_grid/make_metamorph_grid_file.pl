@@ -10,7 +10,7 @@ use Getopt::Long;
 my %opt;
 $opt{dish_count} = 8;
 $opt{debug} = 0;
-GetOptions(\%opt, "corners=s", "dish_count=s") or die;
+GetOptions(\%opt,"corners=s","dish_count=s","debug|d") or die;
 
 my $start_x = -1600;
 my $start_y = -1600;
@@ -20,7 +20,6 @@ my $move_increment = 800;
 my $standard_z = 3000;
 
 my $standard_label = "POS_";
-
 
 my @stage_header;
 push @stage_header, "\"Stage Memory List\", Version 5.0";
@@ -37,7 +36,7 @@ if (not defined $opt{corners}) {
 	@stage_lines = &build_corners_input_positions;
 	&output_stage_lines("stage_corners.STG");
 } else {
-	system("R CMD BATCH --vanilla extrapolate_focus.R /dev/null");
+	system("R CMD BATCH --vanilla \'--args corner_file=$opt{corners}\' extrapolate_focus.R");
 	open INPUT, "stage_pos_predicted.csv";
 	while (<INPUT>) {
 		chomp($_);
