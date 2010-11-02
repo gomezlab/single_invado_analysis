@@ -48,4 +48,4 @@ for (i in stage_positions) {
 	output_data = rbind(output_data, this_stage_data);
 }
 
-write.table(output_data,'stage_pos_predicted.csv',row.names=F,col.names=F,sep=',')
+write.table(output_data,'stage_pos_predicted.csv',row.names=F,col.names=F,sep=',',quote=F)
