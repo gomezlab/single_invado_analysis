@@ -1,4 +1,4 @@
-function build_raw_montage_file_set(base_dir,output_dir,total_images)
+function build_raw_montage_file_set(base_dir,target_file)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -6,35 +6,35 @@ function build_raw_montage_file_set(base_dir,output_dir,total_images)
 i_p = inputParser;
 
 i_p.addRequired('base_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('output_dir',@(x)ischar(x));
+i_p.addRequired('target_file',@(x)ischar(x));
 
-i_p.parse(base_dir,output_dir);
+i_p.parse(base_dir,target_file);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-series = dir(base_dir);
+field = dir(base_dir);
 %toss out first two entries they are '.' and '..', do same in below
 %searches
-series = series(3:end);
+field = field(3:end);
 
 cell_composite = cell(0);
 gel_composite = cell(0);
 
-total_images = length(dir(fullfile(base_dir,series(1).name,'Images/puncta'))) - 2;
+total_images = length(dir(fullfile(base_dir,field(1).name,'individual_pictures'))) - 2;
 
 for i = 1:total_images    
     cell_images = cell(0);
     gel_images = cell(0);
     
-    for j=1:length(series)
-        cell_base = fullfile(base_dir,series(j).name,'Images/puncta');
+    for j=1:length(field)
+        cell_base = fullfile(base_dir,field(j).name,'Images/puncta');
         cell_files = dir(cell_base);
         cell_files = cell_files(3:end);
         cell_images{j} = double(imread(fullfile(cell_base,cell_files(i).name)));
         
-        gel_base = fullfile(base_dir,series(j).name,'Images/gel');
+        gel_base = fullfile(base_dir,field(j).name,'Images/gel');
         gel_files = dir(gel_base);
         gel_files = gel_files(3:end);
         gel_images{j} = double(imread(fullfile(gel_base,gel_files(i).name)));
