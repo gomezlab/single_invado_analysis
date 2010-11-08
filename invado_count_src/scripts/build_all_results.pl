@@ -51,6 +51,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
 	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
+	[ [ "../find_cell_features",      "./find_global_min_max.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./determine_bleaching_correction.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],

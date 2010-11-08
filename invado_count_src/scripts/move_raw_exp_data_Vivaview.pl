@@ -39,9 +39,9 @@ my %field_translation = (
 );
 
 my %sample_translation = (
-	1 => 'Reg_1', 2 => 'BB94_20ul', 
-	3 => 'Reg_2', 4 => 'BB94_10ul', 
-	5 => 'Reg_3', 6 => 'BB94_5ul', 
+	1 => 'BB94_1', 2 => 'Reg_1', 
+	3 => 'BB94_2', 4 => 'BB94_10ul', 
+	# 5 => 'Reg_3', 6 => 'BB94_5ul', 
 );
 
 ###############################################################################
@@ -138,11 +138,17 @@ foreach my $sample_num (sort keys %sample_sets) {
 				
 				my $target_file = catfile($image_directory, $image_filename);
 				
+				if ($image_num == 1) {
+					if ($opt{debug}) {
+						print "mkpath(dirname($target_file));\n";
+					} else {
+						mkpath(dirname($target_file));
+					}
+				}
+
 				if ($opt{debug}) {
-					print "mkpath(dirname($target_file));\n";
 					print "copy($source_file, $target_file);\n\n";
 				} else {
-					mkpath(dirname($target_file));
 					copy($source_file, $target_file);
 				}
 			}
