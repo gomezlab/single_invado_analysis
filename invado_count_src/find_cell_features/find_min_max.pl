@@ -26,7 +26,7 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "grid_res|search_grid_resolution=s", "debug|d", "lsf|l") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l") or die;
 
 die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 

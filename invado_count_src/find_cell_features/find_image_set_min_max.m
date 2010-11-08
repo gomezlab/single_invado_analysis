@@ -1,4 +1,4 @@
-function find_image_set_min_max(I_folder, varargin)
+function find_image_set_min_max(base_dir, varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -7,10 +7,10 @@ function find_image_set_min_max(I_folder, varargin)
 i_p = inputParser;
 i_p.FunctionName = 'FIND_IMAGE_SET_MIN_MAX';
 
-i_p.addRequired('I_folder',@(x)exist(x,'dir') == 7);
+i_p.addRequired('base_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_folder,varargin{:});
+i_p.parse(base_dir,varargin{:});
 
 addpath('matlab_scripts');
 
@@ -18,7 +18,6 @@ addpath('matlab_scripts');
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-base_dir = i_p.Results.I_folder;
 image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')

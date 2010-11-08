@@ -43,7 +43,7 @@ my %cfg = ParseConfig(\%opt);
 # Main Program
 ################################################################################
 
-mkpath($cfg{individual_results_folder});
+mkpath($cfg{individual_results_folder}) if not $opt{debug};
 
 my @image_sets = ([qw(raw_mask_folder raw_mask_file)], [qw(adhesion_image_folder adhesion_image_file)],
 				  [qw(gel_image_folder gel_image_file)]);
@@ -160,7 +160,7 @@ sub build_python_commands {
 		my $target_name = catfile($base_target, $image_num, $output_file_name);
 
 		if ($opt{debug}) {
-			# print "mkpath(dirname($target_name))\n";
+			print "mkpath(dirname($target_name))\n";
 		} else {
 			mkpath(dirname($target_name));
 		}
