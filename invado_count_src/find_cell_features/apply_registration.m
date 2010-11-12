@@ -36,7 +36,7 @@ orig_image  = imread(I_file);
 scale_factor = double(intmax(class(orig_image)));
 orig_image  = double(orig_image)/scale_factor;
 
-if (isempty(strmatch('transform_file',i_p. UsingDefaults)))
+if (isempty(strmatch('transform_file',i_p.UsingDefaults)))
     transform_matrix = csvread(i_p.Results.transform_file);
 else
     transform_matrix = [1 0; 0 1; 0 0];
