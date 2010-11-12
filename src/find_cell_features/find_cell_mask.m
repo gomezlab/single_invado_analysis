@@ -90,14 +90,14 @@ region_sizes = regionprops(connected_areas, 'Area');
 %filter out connected regions smaller than 10000 pixels
 threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
 
+imwrite(threshed_mask, out_file)
+
+%scale the input image and write out a highlighted image showing the
+%detected cell edge
 normalized_image = mask_image - puncta_min_max(1);
 normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
 
 imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), fullfile(fileparts(out_file),'highlighted_mask.png'))
-
-% imshow(threshed_mask)
-
-imwrite(threshed_mask, out_file)
 
 
 if (nargout >= 1)
