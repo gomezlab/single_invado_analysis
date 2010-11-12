@@ -1,0 +1,18 @@
+52c52
+<                seq.int(length.out=n1), lwd=lwd, lty=lty, ...)
+---
+>                seq.int(length.out=n1), lwd=lwd, lty=lty)
+65c65
+<                    lwd=lwd, lty=lty, ...)
+---
+>                    lwd=lwd, lty=lty)
+82c82
+<   segments(x, yminus, x, yplus , lty=lty, lwd=lwd, ...)
+---
+>   segments(x, yminus, x, yplus , lty=lty, lwd=lwd)
+94,95c94,95
+<   segments( xstart, yminus, xend, yminus, lwd=lwd, lty=lty, ...)
+<   segments( xstart, yplus, xend, yplus, lwd=lwd, lty=lty, ...)
+---
+>   segments( xstart, yminus, xend, yminus, lwd=lwd, lty=lty)
+>   segments( xstart, yplus, xend, yplus, lwd=lwd, lty=lty)
