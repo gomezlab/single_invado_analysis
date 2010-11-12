@@ -1,5 +1,5 @@
-function build_raw_montage_file_set(base_dir,target_file)
-
+function build_raw_montage_file_set(base_dir,target_file,varargin)
+tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,8 +7,9 @@ i_p = inputParser;
 
 i_p.addRequired('base_dir',@(x)exist(x,'dir') == 7);
 i_p.addRequired('target_file',@(x)ischar(x)||isarray(x));
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(base_dir,target_file);
+i_p.parse(base_dir,target_file,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -19,6 +20,9 @@ fields = dir(base_dir);
 %searches
 fields = fields(3:end);
 if (strmatch(fields(1).name,'montage'))
+    fields = fields(2:end);
+end
+if (strmatch(fields(1).name,'overall_results'))
     fields = fields(2:end);
 end
 
@@ -36,7 +40,7 @@ for i = 1:total_images
         image_nums = image_nums(3:end);
         image_file = fullfile(image_base,image_nums(i).name, target_file);
         
-        %deal with the case where the image does not exist
+         %deal with the case where the image does not exist
         if(not(exist(image_file,'file')))
             images{j} = NaN*ones(base_image_size);
             continue;
@@ -65,7 +69,7 @@ for i = 1:total_images
     end
     
     images_composite{i} = imresize(images_composite{i},[800,NaN]);
-
+        
     if (mod(i,10) == 0)
         disp(['Done processing: ',num2str(i)])
     end
@@ -74,11 +78,11 @@ end
 %we only need to do image normalization if the images are not already in
 %color (i.e. have more than 2 dimensions)
 if (length(size(images_composite{1})) < 3)
-    images_min_max = [min(min([images_composite{1:end}])),max(max([images_composite{1:end}]))];
+    images_min_max = double([min(min([images_composite{1:end}])),max(max([images_composite{1:end}]))]);
     
     for i=1:length(images_composite)
         images_composite{i} = (double(images_composite{i}) - images_min_max(1))/range(images_min_max);
-    end 
+    end
 end
 
 
@@ -92,12 +96,16 @@ end
 for i=1:length(images_composite)
     padding_length = num2str(length(num2str(total_images)));
     padded_i_num = sprintf(['%0',padding_length,'d'],i);
-
+    
     imwrite(images_composite{i}, fullfile(output_dir,[padded_i_num,'.png']));
-%     imwrite(gel_composite{i}, fullfile(output_dir,'gel',[padded_i_num,'.png']));
-%     imwrite(cat(3,gel_composite{i},images_composite{i},zeros(size(images_composite{i}))), fullfile(output_dir,'both',[padded_i_num,'.png']));
-
+    %     imwrite(gel_composite{i}, fullfile(output_dir,'gel',[padded_i_num,'.png']));
+    %     imwrite(cat(3,gel_composite{i},images_composite{i},zeros(size(images_composite{i}))), fullfile(output_dir,'both',[padded_i_num,'.png']));
+    
     if (mod(i,10) == 0)
         disp(['Done writing: ',num2str(i)])
     end
+end
+
+if (i_p.Results.debug)
+    toc;
 end
