@@ -28,6 +28,9 @@ assert(strcmp(exp_dirs(1).name,'.'))
 assert(strcmp(exp_dirs(2).name,'..'))
 
 exp_dirs = exp_dirs(3:end);
+if (strmatch(exp_dirs(1).name,'montage'))
+    exp_dirs = exp_dirs(2:end);
+end
 
 raw_data = struct();
 for i=1:length(exp_dirs)
@@ -106,17 +109,22 @@ longev_filtered_data = process_raw_data(raw_data,'filter_set',longev_filt);
 % Image Building
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+output_dir = fullfile(results_dir,'overall_results');
+
+mkdir(output_dir)
+
 hist(process_data.longevities)
 ylabel('Number of Objects')
 xlabel('Lifetime of Objects')
 title('NS Test 20X Tiling Longevities')
-exportfig(gcf,'longevities.pdf')
+exportfig(gcf,fullfile(output_dir,'longevities.pdf'))
 close gcf;
 
 subplot(1,2,1);
-plot(linspace(0.5,41*0.5,40),process_data.degrade_percentage);
+time_points = linspace(0.5,length(process_data.degrade_percentage)*0.5,length(process_data.degrade_percentage));
+plot(time_points,process_data.degrade_percentage);
 hold on;
-plot(linspace(0.5,41*0.5,40),longev_filtered_data.degrade_percentage,'r');
+plot(time_points,longev_filtered_data.degrade_percentage,'r');
 legend('No Filtering',['>=', num2str(min_hours), ' Hr Lifetime'],'Location','SouthEast')
 xlabel('Time (hours)');
 ylabel('Percentage of Cells that Have Degraded');
@@ -124,14 +132,16 @@ ylabel('Percentage of Cells that Have Degraded');
 hold off;
 
 subplot(1,2,2);
-plot(log(linspace(0.5,41*0.5,40)),process_data.degrade_percentage);
+plot(log(time_points),process_data.degrade_percentage);
 hold on;
-plot(log(linspace(0.5,41*0.5,40)),longev_filtered_data.degrade_percentage,'r');
+plot(log(time_points),longev_filtered_data.degrade_percentage,'r');
 xlabel('Time (Log Hours)');
 ylabel('Percentage of Cells that Have Degraded');
 
-exportfig(gcf,'test.pdf','Color','rgb','width',6,'height',3)
+exportfig(gcf,fullfile(output_dir,'test.pdf'),'Color','rgb','width',6,'height',3)
 close gcf;
+
+csvwrite(fullfile(output_dir,'degrade_percentage.csv'),longev_filtered_data.degrade_percentage);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Functions
