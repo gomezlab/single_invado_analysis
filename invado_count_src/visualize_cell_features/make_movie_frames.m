@@ -45,29 +45,29 @@ addpath(genpath(path_folders));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect General Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+filenames = add_filenames_to_struct(struct());
+
 max_image_num = find_max_image_num(I_folder);
 folder_char_length = length(num2str(max_image_num));
-i_size = size(imread(fullfile(I_folder,num2str(max_image_num),puncta_image_filename)));
+i_size = size(imread(fullfile(I_folder,num2str(max_image_num),filenames.puncta_filename)));
 
 tracking_seq = load(tracking_seq_file) + 1;
 
-edge_cmap = jet(size(tracking_seq,2));
-%define the edge image here because the edge image will be added to each
-%image loop, so the image should be global
-edge_image_ad = ones(i_size(1),i_size(2),3);
+max_live_adhesions = find_max_live_adhesions(tracking_seq);
+lineage_cmap = jet(max_live_adhesions);
 
-lineage_cmap = jet(size(tracking_seq,1));
+lineage_to_cmap_row = assign_unique_colors_to_lineages(tracking_seq);
 
 for i = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
 
-    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,'binary_shift.png')));
+    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,filenames.binary_shift_filename)));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input puncta image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    puncta_image = double(imread(fullfile(I_folder,padded_i_num,puncta_image_filename)));
-    puncta_limits = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
+    puncta_image = double(imread(fullfile(I_folder,padded_i_num,filenames.puncta_filename)));
+    puncta_limits = csvread(fullfile(I_folder,padded_i_num,filenames.puncta_range_file));
     
     puncta_image = puncta_image - puncta_limits(1);
     puncta_image = puncta_image .* (1/puncta_limits(2));
@@ -77,8 +77,8 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the gel image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    gel_image = double(imread(fullfile(I_folder,padded_i_num,'registered_gel.png')));
-    gel_limits = csvread(fullfile(I_folder,padded_i_num,'gel_image_range.csv'));
+    gel_image = double(imread(fullfile(I_folder,padded_i_num,filenames.gel_filename)));
+    gel_limits = csvread(fullfile(I_folder,padded_i_num,filenames.gel_range_file));
     
     gel_image = gel_image - gel_limits(1);
     gel_image = gel_image .* (1/gel_limits(2));
@@ -88,7 +88,7 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    cell_mask_label = imread(fullfile(I_folder,padded_i_num,'cell_mask_labeled.png'));
+    cell_mask_label = imread(fullfile(I_folder,padded_i_num,filenames.labeled_cell_mask_filename));
     cell_mask_label_perim = zeros(size(cell_mask_label));
     for j=1:max(cell_mask_label(:))
         this_cell = zeros(size(cell_mask_label));
@@ -104,7 +104,7 @@ for i = 1:max_image_num
     ad_nums = tracking_seq(live_rows,i);
     
     %Build the unique lineage highlighted image
-    this_cmap(ad_nums,:) = lineage_cmap(live_rows,:); %#ok<AGROW>
+    this_cmap(ad_nums,:) = lineage_cmap(lineage_to_cmap_row(live_rows),:); %#ok<AGROW>
     highlighted_puncta = create_highlighted_image(puncta_image,cell_mask_label_perim,'color_map',this_cmap);
     
 %     highlighted_gel = create_highlighted_image(gel_image,cell_mask_label_perim,'color_map',this_cmap);
@@ -113,7 +113,8 @@ for i = 1:max_image_num
         mkdir(out_path);
     end
     
-    imwrite(highlighted_puncta,fullfile(out_path,[padded_i_num,'.png']));
+%     imwrite(highlighted_puncta,fullfile(out_path,[padded_i_num,'.png']));
+    imwrite(highlighted_puncta,fullfile(I_folder,padded_i_num,'tracking.png'));
 %
 %     %Build the birth time highlighted image
 %     cmap_nums = birth_time_to_cmap(tracking_seq(:,i_seen) > 0);
