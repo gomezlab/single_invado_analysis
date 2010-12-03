@@ -12,6 +12,7 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
 
 i_p.addParamValue('binary_shift_file','',@(x)exist(x,'file') == 2);
+i_p.addParamValue('min_cell_area',500,@isnumeric);
 
 i_p.parse(I_file,out_file,varargin{:});
 
@@ -89,8 +90,8 @@ threshed_mask = imfill(threshed_mask,'holes');
 connected_areas = bwlabel(threshed_mask,8);
 region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
 
-%filter out connected regions smaller than 100 pixels
-threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 100));
+%filter out connected regions smaller than the min cell area
+threshed_mask = ismember(connected_areas, find([region_sizes.Area] > i_p.Results.min_cell_area));
 connected_areas = bwlabel(threshed_mask,8);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

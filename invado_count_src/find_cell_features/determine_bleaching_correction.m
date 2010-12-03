@@ -69,9 +69,9 @@ if (percent_outside < 0.02)
     imwrite(no_cell_regions, fullfile(i_p.Results.output_dir,'inside_registered.png'));
 end
 
-gel_levels_outside_cell = zeros(length(single_image_folders),1);
-gel_levels_puncta = zeros(length(single_image_folders),1);
 gel_levels = zeros(length(single_image_folders),1);
+gel_levels_outside_cell = zeros(size(gel_levels));
+gel_levels_puncta = zeros(size(gel_levels));
 
 for i=1:length(single_image_folders)
     gel = imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel_filename));

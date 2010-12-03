@@ -141,18 +141,18 @@ for i=1:max(current_data.labeled_cells(:))
     
     cell_props(i).Overlap_region_size = sum(sum(overlap_region));
     
-    temp = double(this_cell);
-    temp(prev_cells) = 2;
-    temp(overlap_region) = 3;
-%     subplot(1,2,1); imshow(label2rgb(temp));
-    
     differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - prev_data.gel_image(overlap_region)*prev_data.intensity_correction;
     
-    subplot(1,2,2); hist(differences);
-    
-%     differences = current_data.gel_image(this_cell) - prev_data.gel_image(this_cell);
     [h,p] = ttest(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff = mean(differences);
+    
+    %single cell diagnostics
+    temp = double(this_cell);
+    temp(prev_cells) = 2;
+    temp(overlap_region) = 3;
+    subplot(1,2,1); imshow(label2rgb(temp));
+    subplot(1,2,2); hist(differences);    
+    
     1;
 end
