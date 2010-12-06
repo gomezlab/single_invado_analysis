@@ -148,11 +148,11 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff = mean(differences);
     
     %single cell diagnostics
-    temp = double(this_cell);
-    temp(prev_cells) = 2;
-    temp(overlap_region) = 3;
-    subplot(1,2,1); imshow(label2rgb(temp));
-    subplot(1,2,2); hist(differences);    
-    
-    1;
+    if (i_p.Results.debug)
+        temp = double(this_cell);
+        temp(prev_cells) = 2;
+        temp(overlap_region) = 3;
+        subplot(1,2,1); imshow(label2rgb(temp));
+        subplot(1,2,2); hist(differences);
+    end
 end
