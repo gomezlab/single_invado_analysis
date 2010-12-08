@@ -37,7 +37,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 # Main Program
 ################################################################################
 
-my $exp_type_folder = dirname($cfg{exp_results_folder});
+my $exp_type_folder = "'".dirname($cfg{exp_results_folder}) ."'";
 
 my @matlab_code;
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'gel.png')";
