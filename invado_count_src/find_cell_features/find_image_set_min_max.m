@@ -28,9 +28,9 @@ image_dirs = image_dirs(3:end);
 
 gel_image_range = [Inf -Inf];
 puncta_image_range = [Inf -Inf];
-ranges = zeros(size(image_dirs), 1);
-maxes = zeros(size(image_dirs), 1);
-mins = zeros(size(image_dirs), 1);
+ranges = zeros(length(image_dirs), 1);
+maxes = zeros(length(image_dirs), 1);
+mins = zeros(length(image_dirs), 1);
 
 for i = 1:size(image_dirs)
     binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,'binary_shift.png')));

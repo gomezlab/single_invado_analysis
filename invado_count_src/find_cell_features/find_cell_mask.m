@@ -16,9 +16,18 @@ i_p.addParamValue('min_cell_area',500,@isnumeric);
 
 i_p.parse(I_file,out_file,varargin{:});
 
+%Add the folder with all the scripts used in this master program
+addpath(genpath('matlab_scripts'));
+addpath(genpath('../visualize_cell_features'));
+
+filenames = add_filenames_to_struct(struct());
+
 mask_image = imread(I_file);
 scale_factor = double(intmax(class(mask_image)));
 mask_image   = double(mask_image)/scale_factor;
+
+puncta_min_max = csvread(fullfile(fileparts(I_file),filenames.puncta_range_file));
+puncta_min_max = puncta_min_max/scale_factor;
 
 pixel_values = []; %#ok<NASGU>
 if (not(isempty(strmatch('binary_shift_file',i_p.UsingDefaults))))
@@ -27,15 +36,9 @@ else
     binary_shift = logical(imread(i_p.Results.binary_shift_file));
     pixel_values = mask_image(binary_shift);
     assert(length(pixel_values) == sum(sum(binary_shift)));
-    
-    puncta_min_max = csvread(fullfile(fileparts(I_file),'puncta_image_range.csv'));
-    puncta_min_max = puncta_min_max/scale_factor;
 end
 
 
-%Add the folder with all the scripts used in this master program
-addpath(genpath('matlab_scripts'));
-addpath(genpath('../visualize_cell_features'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -100,21 +103,18 @@ connected_areas = bwlabel(threshed_mask,8);
 
 %cell mask highlighting and labeled cell mask output, if we are working
 %with the registered image
-if (isempty(strmatch('binary_shift_file',i_p.UsingDefaults)))
-    normalized_image = mask_image - puncta_min_max(1);
-    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
-    
-    imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), ...
-        fullfile(fileparts(out_file),'highlighted_mask.png'))
-    
-    imwrite(double(connected_areas)/2^16, ...
-        fullfile(fileparts(out_file),'cell_mask_labeled.png'), ...
-        'bitdepth',16)
-end
+normalized_image = mask_image - puncta_min_max(1);
+normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+
+imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), ...
+    fullfile(fileparts(out_file),filenames.highlighted_cell_mask_filename))
+
+imwrite(double(connected_areas)/2^16, ...
+    fullfile(fileparts(out_file),filenames.labeled_cell_mask_filename), ...
+    'bitdepth',16)
 
 %binary cell mask
 imwrite(threshed_mask, out_file)
-
 
 if (nargout >= 1)
     varargout{1} = threshed_mask;

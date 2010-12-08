@@ -55,7 +55,13 @@ our @gel_min_max = (99999999,-99999999);
 our @puncta_min_max = (99999999,-99999999);
 
 find(\&find_min_maxes,(dirname($cfg{exp_results_folder})));
-find(\&output_min_maxes,(dirname($cfg{exp_results_folder})));
+
+if (not $opt{debug}) {
+	find(\&output_min_maxes,(dirname($cfg{exp_results_folder})));
+} else {
+	print join(" ", @gel_min_max), "\n";
+	print join(" ", @puncta_min_max), "\n";
+}
 
 ################################################################################
 # Functions
@@ -75,7 +81,11 @@ sub find_min_maxes {
 		my @min_max = split(",",<INPUT>);
 		close INPUT;
 		
-		$puncta_min_max[0] = $min_max[0] if ($min_max[0] < $puncta_min_max[0]);
+		if ($min_max[0] < $puncta_min_max[0]) {
+			$puncta_min_max[0] = $min_max[0];
+			print "Found new min: $min_max[0]\n" if $opt{debug};
+		}
+
 		$puncta_min_max[1] = $min_max[1] if ($min_max[1] > $puncta_min_max[1]);
 	}
 }
