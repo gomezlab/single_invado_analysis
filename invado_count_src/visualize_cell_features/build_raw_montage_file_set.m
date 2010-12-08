@@ -40,14 +40,20 @@ for i = 1:total_images
         image_nums = image_nums(3:end);
         image_file = fullfile(image_base,image_nums(i).name, target_file);
         
-         %deal with the case where the image does not exist
+        %deal with the case where the image does not exist
         if(not(exist(image_file,'file')))
-            images{j} = NaN*ones(base_image_size);
             continue;
-        end
-        
+        end  
         images{j} = imread(image_file);
         base_image_size = size(images{j});
+    end
+    
+    %scan back through the images collected filling in missing files with
+    %Nan blanks
+    for j=1:length(fields)
+        if(isempty(images{j}))
+            images{j} = NaN*ones(base_image_size);
+        end
     end
     
     %reverse every other column of images, to deal with the zig zag pattern

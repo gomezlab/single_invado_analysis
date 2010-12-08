@@ -13,6 +13,7 @@ i_p.addRequired('current_dir',@(x)exist(x,'dir') == 7);
 i_p.parse(current_dir, first_dir);
 
 i_p.addParamValue('output_dir',current_dir,@ischar);
+i_p.addParamValue('invader_thresh',0.05,@isnumeric);
 
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
@@ -66,7 +67,10 @@ first_data.gel_image  = imread(fullfile(first_dir, filenames.gel_filename));
 first_data.gel_image = double(first_data.gel_image) - current_data.gel_range(1);
 first_data.gel_image = first_data.gel_image ./ (current_data.gel_range(2) - current_data.gel_range(1));
 
-invader_thresh = 0.05;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Program Config Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+invader_thresh = i_p.Results.invader_thresh;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
@@ -77,9 +81,24 @@ invader_thresh = 0.05;
 comparison_number = determine_comparison_number(fullfile(current_dir,'..','..','..'));
 invader_thresh = invader_thresh/comparison_number;
 
-non_invaders = ismember(current_data.labeled_cell_mask, find(not(isnan(current_data.Cell_diff_p_val)) & (current_data.Cell_diff_p_val > invader_thresh | current_data.Cell_diff > 0)));
-invaders = ismember(current_data.labeled_cell_mask, find(current_data.Cell_diff < 0 & current_data.Cell_diff_p_val < invader_thresh));
-no_class = ismember(current_data.labeled_cell_mask, find(isnan(current_data.Cell_diff_p_val)));
+%There are three categories that cells can fall into, invaders,
+%non-invaders and no-classification. We will use the pixel value
+%differences calculated from the overlaps between cells in adjacent frames
+%to make the decisions. There are two relavent properties: the p-value of
+%the distribution of difference values as compared to zero and the average
+%value of the differences. If the average value of the differences is above
+%zero (remember current image minus previous for diff calculation), there
+%wasn't degradation, so that cell is a non-invader. If the average value of
+%the differences is below zero, then we check the p-value, if it is below
+%the cutoff we classify as an invader. There are also cells that don't have
+%either of these properties calculated, they are in the last no
+%classification set.
+non_invaders = ismember(current_data.labeled_cell_mask, ... 
+    find(not(isnan(current_data.Cell_diff_p_val)) & (current_data.Cell_diff > 0 | current_data.Cell_diff_p_val > invader_thresh)));
+invaders = ismember(current_data.labeled_cell_mask, ... 
+    find(current_data.Cell_diff < 0 & current_data.Cell_diff_p_val < invader_thresh));
+no_class = ismember(current_data.labeled_cell_mask, ... 
+    find(isnan(current_data.Cell_diff_p_val)));
 
 assert(sum(sum(non_invaders & invaders)) == 0)
 assert(sum(sum(non_invaders & no_class)) == 0)
@@ -110,8 +129,9 @@ puncta_highlight = create_highlighted_image(puncta_highlight,bwperim(invaders),'
 
 spacer = ones(size(puncta_highlight,1),1,3);
 
-% imwrite([gel_highlight,spacer,puncta_highlight, spacer, diff_image], fullfile(current_dir, 'invader_and_not.png'))
-imwrite([gel_highlight,spacer,puncta_highlight], fullfile(current_dir, 'invader_and_not.png'))
+imwrite([gel_highlight,spacer,puncta_highlight], fullfile(current_dir, 'invader_and_not.png'));
+imwrite(gel_highlight, fullfile(current_dir, 'gel_invader.png'));
+imwrite(puncta_highlight, fullfile(current_dir, 'puncta_invader.png'));
 
 function comp_number = determine_comparison_number(experiment_dir)
 
