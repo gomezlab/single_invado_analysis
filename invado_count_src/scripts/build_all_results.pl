@@ -59,7 +59,12 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
 );
+
+#some of the scripts only need to be run once for each experiment, this will
+#rely on being able to find an experiment with "time_series_01" in its filename
+my @run_only_once = ("find_global_min_max.pl", "collect_montage_visualizations");
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
@@ -70,6 +75,8 @@ my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
+
+my @run_once_configs = grep $_ =~ /time_series_01/, @config_files;
 
 #######################################
 # Program Running
@@ -87,7 +94,11 @@ if ($opt{lsf}) {
         my @command_seq = @{$_};
         my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
         print "Starting on $command_seq[0][1]\n";
-        &execute_command_seq(\@command_seq, $starting_dir);
+		if (grep $command_seq[0][1] =~ /$_/, @run_only_once) {
+        	&execute_command_seq(\@command_seq, $starting_dir,\@run_once_configs);
+		} else {
+        	&execute_command_seq(\@command_seq, $starting_dir);
+		}
 
         #If debugging is not on, we want to wait till the current jobs finish
         #and then check the file complements of the experiments for completeness
@@ -128,13 +139,11 @@ if ($opt{lsf}) {
             print "\n\n";
         }
         
-        #clear the running jobs list
+		#we expect the running jobs listed to be emptied after every command
         @running_jobs = ();
     }
     
     if (not($opt{debug})) {
-        #with all the jobs finished, lets kill the job queue changing thread
-        # my $job_queue_thread->exit;
 
         my $t_bsub = new Benchmark;
         my $td = timediff($t_bsub, $t1);
@@ -148,6 +157,7 @@ if ($opt{lsf}) {
 		}
     }
 } else {
+	#if LSF isn't set then we will run all the programs locally
     my $starting_dir = getcwd;
     for (@overall_command_seq) {
 		my @command_seq = @{$_};
