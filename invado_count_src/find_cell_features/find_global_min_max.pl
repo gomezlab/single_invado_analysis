@@ -45,6 +45,7 @@ if ($opt{lsf}) {
     if (defined $cfg{job_group}) {
         $opt{job_group} = $cfg{job_group};
     }
+	$opt{queue} = "week";
 
     &FA_job::send_general_program(\@command,\%opt);
     
