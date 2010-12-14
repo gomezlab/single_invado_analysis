@@ -39,8 +39,8 @@ my %field_translation = (
 );
 
 my %sample_translation = (
-	1 => 'BB94_1', 2 => 'Reg_1', 
-	3 => 'BB94_2', 4 => 'BB94_10ul', 
+	1 => 'WM2664', 2 => 'skmel_103', 
+	3 => 'skmel_173', 4 => 'skmel_147', 
 	# 5 => 'Reg_3', 6 => 'BB94_5ul', 
 );
 

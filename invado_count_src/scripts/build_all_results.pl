@@ -47,13 +47,10 @@ $|  = 1;
 #commands in.
 my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
-	[ [ "../find_cell_features",      "./find_cascaded_registrations.pl" ], ],
-	[ [ "../find_cell_features",      "./apply_registration_set.pl" ], ],
 	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
 	[ [ "../find_cell_features",      "./find_global_min_max.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
-	[ [ "../find_cell_features",      "./determine_bleaching_correction.pl" ], ],
+	[ [ "../find_cell_features",      "./find_bleaching_correction.pl" ], ],
 	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
@@ -82,127 +79,83 @@ my @run_once_configs = grep $_ =~ /time_series_01/, @config_files;
 # Program Running
 #######################################
 our @running_jobs;
-if ($opt{lsf}) {
-    if (not($opt{debug})) {
-        my $job_queue_thread = threads->create('shift_idle_jobs','');
-        $job_queue_thread->detach;
-    }
-    
-    my $starting_dir = getcwd;
-    for (@overall_command_seq) {
-		my $command_start_bench = new Benchmark;
-        my @command_seq = @{$_};
-        my @command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq;
-        print "Starting on $command_seq[0][1]\n";
-		if (grep $command_seq[0][1] =~ /$_/, @run_only_once) {
-        	&execute_command_seq(\@command_seq, $starting_dir,\@run_once_configs);
+
+if (not($opt{debug}) && $opt{lsf}) {
+	my $job_queue_thread = threads->create('shift_idle_jobs','');
+	$job_queue_thread->detach;
+}
+
+my $starting_dir = getcwd;
+for (@overall_command_seq) {
+	my $command_start_bench = new Benchmark;
+	my @command_seq = @{$_};
+	@command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq if $opt{lsf};
+	print "Starting on $command_seq[0][1]\n";
+	if (grep $command_seq[0][1] =~ /$_/, @run_only_once) {
+		&execute_command_seq(\@command_seq, $starting_dir,\@run_once_configs);
+	} else {
+		&execute_command_seq(\@command_seq, $starting_dir);
+	}
+
+	#If debugging is not on, we want to wait till the current jobs finish
+	#and then check the file complements of the experiments for completeness
+	if (not($opt{debug}) && $opt{lsf}) {
+		&wait_till_LSF_jobs_finish if $opt{lsf};
+		print "Checking for all output files on command $command_seq[0][1]\n";
+		my %exp_sets = &check_file_sets(\@config_files);
+
+		for (1..2) {
+			#if no experiments are left to retry, we break out and continue
+			#to the next command set
+			if (not(@{$exp_sets{retry}})) {
+				last;
+				next;
+			}
+			print "Retrying these experiments:\n".
+				  join("\n", @{$exp_sets{retry}}) . "\n";
+			&execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
+			&wait_till_LSF_jobs_finish if ($opt{lsf});
+			my %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
+
+			push @{$exp_sets{good}}, @{$these_exp_sets{good}};
+			@{$exp_sets{retry}} = @{$these_exp_sets{retry}};
+		}
+
+		#check if there are any files left in the retry set, if so, clear
+		#out the failed experiments from the next round
+		if (@{$exp_sets{retry}}) {
+			print "\nProblem with collecting full file complement on experiments after three tries:\n\t" .
+				join("\n\t", @{$exp_sets{retry}}) . "\nRemoving them from the next run.\n\n";
+			@config_files = @{$exp_sets{good}};  
 		} else {
-        	&execute_command_seq(\@command_seq, $starting_dir);
+			print "Output file set complete, moving on.\n";
 		}
+	}
 
-        #If debugging is not on, we want to wait till the current jobs finish
-        #and then check the file complements of the experiments for completeness
-        if (not($opt{debug})) {
-            &wait_till_LSF_jobs_finish;
-            print "Checking for all output files on command $command_seq[0][1]\n";
-            my %exp_sets = &check_file_sets(\@config_files);
-
-            for (1..2) {
-                #if no experiments are left to retry, we break out and continue
-                #to the next command set
-                if (not(@{$exp_sets{retry}})) {
-                    last;
-                    next;
-                }
-                print "Retrying these experiments:\n".
-                      join("\n", @{$exp_sets{retry}}) . "\n";
-                &execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
-                &wait_till_LSF_jobs_finish;
-                my %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
-
-                push @{$exp_sets{good}}, @{$these_exp_sets{good}};
-                @{$exp_sets{retry}} = @{$these_exp_sets{retry}};
-            }
-
-            #check if there are any files left in the retry set, if so, clear
-            #out the failed experiments from the next round
-            if (@{$exp_sets{retry}}) {
-                print "\nProblem with collecting full file complement on experiments after three tries:\n\t" .
-                    join("\n\t", @{$exp_sets{retry}}) . "\nRemoving them from the next run.\n\n";
-                @config_files = @{$exp_sets{good}};  
-            } else {
-                print "Output file set complete, moving on.\n";
-            }
-            my $command_end_bench = new Benchmark;
-            my $td = timediff($command_end_bench, $command_start_bench);
-            print "The command took:",timestr($td),"\n";
-            print "\n\n";
-        }
-        
-		#we expect the running jobs listed to be emptied after every command
-        @running_jobs = ();
-    }
-    
-    if (not($opt{debug})) {
-
-        my $t_bsub = new Benchmark;
-        my $td = timediff($t_bsub, $t1);
-		
-        my $time_diff_str = "\"Took:" . timestr($td) . "\"";
-
-        my $command = "bsub -J \"Job Finished: $opt{cfg}\" echo $time_diff_str";
-		
-		if (not $opt{no_email}) {
-        	system($command);
-		}
-    }
-} else {
-	#if LSF isn't set then we will run all the programs locally
-    my $starting_dir = getcwd;
-    for (@overall_command_seq) {
-		my @command_seq = @{$_};
-		$command_seq[0][1] =~ m#/(.*)\.pl#;
-		
-		print "Starting on $1\n";
-        
-		my $command_start_bench = new Benchmark;
-        
-        &execute_command_seq(\@command_seq, $starting_dir);
-		
-		if (not($opt{debug})) {
-			#check for all the results from the last set of experiments
-			my %exp_sets = &check_file_sets(\@config_files);
-
-			for (1..2) {
-				#if no experiments are left to retry, we break out and continue
-				#to the next command set
-				if (not(@{$exp_sets{retry}})) {
-					last;
-					next;
-				}
-				print "Retrying these experiments:\n".
-					  join("\n", @{$exp_sets{retry}}) . "\n";
-				&execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
-				my %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
-
-				push @{$exp_sets{good}}, @{$these_exp_sets{good}};
-				@{$exp_sets{retry}} = @{$these_exp_sets{retry}};
-			}
-
-			#check if there are any files left in the retry set, if so, clear
-			#out the failed experiments from the next round
-			if (@{$exp_sets{retry}}) {
-				print "\nProblem with collecting full file complement on experiments after three tries:\n\t" .
-					join("\n\t", @{$exp_sets{retry}}) . "\nRemoving them from the next run.\n\n";
-				@config_files = @{$exp_sets{good}};  
-			} else {
-				print "Output file set complete, moving on.\n";
-			}
-		}
-		
+	if (not $opt{debug}) {
 		my $command_end_bench = new Benchmark;
 		my $td = timediff($command_end_bench, $command_start_bench);
-		print "The command took:",timestr($td),"\n\n";
+		print "The command took:",timestr($td),"\n";
+	}
+	
+	#we are done with the current command, so we print a few spacer lines to
+	#indicate we have moved onto a new command
+	print "\n\n";
+	
+	#we expect the running jobs listed to be emptied after every command
+	@running_jobs = ();
+}
+
+if (not($opt{debug})) {
+	my $t_bsub = new Benchmark;
+	my $td = timediff($t_bsub, $t1);
+	
+	my $time_diff_str = "\"Took:" . timestr($td) . "\"";
+
+	my $command = "bsub -J \"Job Finished: $opt{cfg}\" echo $time_diff_str";
+	
+	if (not $opt{no_email}) {
+		system($command) if $opt{lsf};
 	}
 }
 
