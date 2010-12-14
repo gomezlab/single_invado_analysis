@@ -14,6 +14,8 @@ i_p.parse(base_dir,varargin{:});
 
 addpath('matlab_scripts');
 
+filenames = add_filenames_to_struct(struct());
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,35 +30,28 @@ image_dirs = image_dirs(3:end);
 
 gel_image_range = [Inf -Inf];
 puncta_image_range = [Inf -Inf];
-ranges = zeros(length(image_dirs), 1);
-maxes = zeros(length(image_dirs), 1);
-mins = zeros(length(image_dirs), 1);
 
 for i = 1:size(image_dirs)
-    binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,'binary_shift.png')));
-    
-    gel_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_gel.png'));
-    if (min(gel_image(binary_shift)) < gel_image_range(1))
-        gel_image_range(1) = min(gel_image(binary_shift));
+    gel_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel_filename));
+    this_gel_min_max = [min(gel_image(:)), max(gel_image(:))];
+    if (this_gel_min_max(1) < gel_image_range(1))
+        gel_image_range(1) = this_gel_min_max(1);
     end
-    if (max(gel_image(binary_shift)) > gel_image_range(2))
-        gel_image_range(2) = max(gel_image(binary_shift));
+    if (this_gel_min_max(2) > gel_image_range(2))
+        gel_image_range(2) = this_gel_min_max(2);
     end
-    
-    ranges(i) = max(gel_image(binary_shift)) - min(gel_image(binary_shift));
-    maxes(i) = max(gel_image(binary_shift));
-    mins(i) = min(gel_image(binary_shift));
-    
-    puncta_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_focal_image.png'));
-    if (min(puncta_image(binary_shift)) < puncta_image_range(1))
-        puncta_image_range(1) = min(puncta_image(binary_shift));
+        
+    puncta_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta_filename));
+    this_puncta_min_max = [min(puncta_image(:)), max(puncta_image(:))];
+    if (this_puncta_min_max(1) < puncta_image_range(1))
+        puncta_image_range(1) = this_puncta_min_max(1);
     end
-    if (max(puncta_image(binary_shift)) > puncta_image_range(2))
-        puncta_image_range(2) = max(puncta_image(binary_shift));
+    if (this_puncta_min_max(2) > puncta_image_range(2))
+        puncta_image_range(2) = this_puncta_min_max(2);
     end
 end
 
 for i = 1:size(image_dirs)
-    csvwrite(fullfile(base_dir,image_dirs(i).name,'gel_image_range.csv'),gel_image_range)
-    csvwrite(fullfile(base_dir,image_dirs(i).name,'puncta_image_range.csv'),puncta_image_range)
+    csvwrite(fullfile(base_dir,image_dirs(i).name,filenames.gel_range_file),gel_image_range)
+    csvwrite(fullfile(base_dir,image_dirs(i).name,filenames.puncta_range_file),puncta_image_range)
 end
