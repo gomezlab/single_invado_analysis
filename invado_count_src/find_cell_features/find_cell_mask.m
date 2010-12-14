@@ -11,7 +11,6 @@ i_p.FunctionName = 'FIND_CELL_MASK';
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
 
-i_p.addParamValue('binary_shift_file','',@(x)exist(x,'file') == 2);
 i_p.addParamValue('min_cell_area',500,@isnumeric);
 
 i_p.parse(I_file,out_file,varargin{:});
@@ -29,16 +28,7 @@ mask_image   = double(mask_image)/scale_factor;
 puncta_min_max = csvread(fullfile(fileparts(I_file),filenames.puncta_range_file));
 puncta_min_max = puncta_min_max/scale_factor;
 
-pixel_values = []; %#ok<NASGU>
-if (not(isempty(strmatch('binary_shift_file',i_p.UsingDefaults))))
-    pixel_values = mask_image(:);
-else
-    binary_shift = logical(imread(i_p.Results.binary_shift_file));
-    pixel_values = mask_image(binary_shift);
-    assert(length(pixel_values) == sum(sum(binary_shift)));
-end
-
-
+pixel_values = mask_image(:);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
