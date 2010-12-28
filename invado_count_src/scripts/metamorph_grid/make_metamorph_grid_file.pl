@@ -6,6 +6,7 @@
 use strict;
 use Data::Dumper;
 use Getopt::Long;
+use Statistics::Regression;
 
 my %opt;
 $opt{dish_count} = 8;
@@ -36,13 +37,11 @@ if (not defined $opt{corners}) {
 	@stage_lines = &build_corners_input_positions;
 	&output_stage_lines("stage_corners.STG");
 } else {
-	system("R CMD BATCH --vanilla \'--args corner_file=$opt{corners}\' extrapolate_focus.R");
-	open INPUT, "stage_pos_predicted.csv";
-	while (<INPUT>) {
-		chomp($_);
-		push @stage_lines, $_;
-	}
-	close INPUT;
+	my %corner_positions = &read_in_corner_positions($opt{corners});
+	my %corner_models = &build_field_models(%corner_positions);
+	
+	@stage_lines = &extrapolate_stage_positions(\$opt{corners}, \%corner_models);
+	
 	&output_stage_lines("final_stage_positions.STG");
 }
 
@@ -97,4 +96,85 @@ sub build_corners_input_positions {
 	}
 	
 	return @lines;
+}
+
+sub read_in_corner_positions {
+	my $file = shift;
+	
+	my %corner_hash;
+	
+	open INPUT, "$file";
+	#burn the first four lines, they are headers
+	for (1..4) {
+		my $temp = <INPUT>;
+	}
+	while (<INPUT>) {
+		my @line_split = split(",", $_);
+		if ($line_split[3] != 1111) {
+			push @{$corner_hash{$line_split[7]}{z}}, $line_split[3]; 
+			push @{$corner_hash{$line_split[7]}{x}}, $line_split[1]; 
+			push @{$corner_hash{$line_split[7]}{y}}, $line_split[2]; 
+		}
+	}
+	close INPUT;
+	
+	return %corner_hash;
+}
+
+sub build_field_models {
+	my %corner_positions = @_;
+
+	my %field_models;
+
+	foreach (keys %corner_positions) {
+		my %corner_set = %{$corner_positions{$_}};
+		
+		my @z = @{$corner_set{z}};
+		my @x = @{$corner_set{x}};
+		my @y = @{$corner_set{y}};
+		
+		my $reg = Statistics::Regression->new( "corner regression", ["const", "X_POS", "Y_POS" ] );
+		
+		for my $i (0..$#z) {
+			$reg->include($z[$i], [1.0, $x[$i], $y[$i]]);
+		}
+	
+		$field_models{$_} = $reg;
+	}
+	
+	return %field_models;
+}
+
+sub extrapolate_stage_positions {
+	my $corner_file = ${$_[0]};
+	my %corner_models = %{$_[1]};
+
+	my @final_positions;
+	
+	open INPUT, "$corner_file";
+	#burn the first four lines, they are headers
+	for (1..4) {
+		my $temp = <INPUT>;
+	}
+	while (<INPUT>) {
+		chomp($_);
+		my @line_split = split(",", $_);
+		if ($line_split[3] != 1111) {
+			push @final_positions, $_; 
+		} else {
+			my $stage_pos = $line_split[7];
+
+			my @theta = $corner_models{$stage_pos}->theta();
+
+			my $new_z = $theta[0] + $theta[1]*$line_split[1] + $theta[2]*$line_split[2];
+			
+			$line_split[3] = $new_z;
+			$line_split[5] = $new_z;
+			
+			push @final_positions, join(",", @line_split);
+		}
+	}
+	close INPUT;
+	
+	return @final_positions;
 }
