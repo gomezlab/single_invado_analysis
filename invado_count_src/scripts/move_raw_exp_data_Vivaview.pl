@@ -19,7 +19,8 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "src=s", "target=s", "debug|d", "default_config|cfg|default_cfg=s") or die;
+GetOptions(\%opt, "src=s", "target=s", "debug|d", "default_config|cfg|default_cfg=s", 
+	"sample_names|sn=s") or die;
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
 die "Can't find default_config on command line." if (not $opt{default_config});
@@ -38,11 +39,15 @@ my %field_translation = (
 	'RFP' => 'gel',
 );
 
-my %sample_translation = (
-	1 => 'WM2664', 2 => 'skmel_103', 
-	3 => 'skmel_173', 4 => 'skmel_147', 
-	# 5 => 'Reg_3', 6 => 'BB94_5ul', 
-);
+my %sample_translation; 
+
+my $count = 1;
+foreach (split(",", $opt{sample_names})) {
+	$sample_translation{$count} = $_;
+	$count++;
+}
+
+die Dumper(\%sample_translation);
 
 ###############################################################################
 # Main Program

@@ -99,7 +99,7 @@ for (@overall_command_seq) {
 
 	#If debugging is not on, we want to wait till the current jobs finish
 	#and then check the file complements of the experiments for completeness
-	if (not($opt{debug}) && $opt{lsf}) {
+	if (not($opt{debug})) {
 		&wait_till_LSF_jobs_finish if $opt{lsf};
 		print "Checking for all output files on command $command_seq[0][1]\n";
 		my %exp_sets = &check_file_sets(\@config_files);
