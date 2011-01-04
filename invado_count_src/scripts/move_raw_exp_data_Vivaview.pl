@@ -24,6 +24,7 @@ GetOptions(\%opt, "src=s", "target=s", "debug|d", "default_config|cfg|default_cf
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
 die "Can't find default_config on command line." if (not $opt{default_config});
+die "Can't find sample_names on command line." if (not $opt{sample_names});
 
 my $default_config_file_location = $opt{default_config};
 
