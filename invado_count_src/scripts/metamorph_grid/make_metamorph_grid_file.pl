@@ -119,7 +119,7 @@ sub read_in_corner_positions {
 		my $temp = <INPUT>;
 	}
 	while (<INPUT>) {
-		my @line_split = split(",", $_);
+		my @line_split = split(/\s*,\s*/, $_);
 		if ($line_split[3] != 1111) {
 			push @{$corner_hash{$line_split[7]}{z}}, $line_split[3]; 
 			push @{$corner_hash{$line_split[7]}{x}}, $line_split[1]; 
