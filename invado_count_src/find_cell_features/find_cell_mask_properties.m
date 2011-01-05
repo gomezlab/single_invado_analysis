@@ -58,7 +58,6 @@ prev_data.gel_image  = imread(fullfile(prev_dir, filenames.gel_filename));
 scale_factor = double(intmax(class(prev_data.gel_image)));
 prev_data.gel_image  = double(prev_data.gel_image)/scale_factor;
 
-prev_data.binary_shift = logical(imread(fullfile(prev_dir, filenames.binary_shift_filename)));
 prev_data.intensity_correction = csvread(fullfile(prev_dir, filenames.intensity_correction_filename));
 prev_data.cell_mask = logical(imread(fullfile(prev_dir, filenames.cell_mask_filename)));
 prev_data.labeled_cells = imread(fullfile(prev_dir, filenames.labeled_cell_mask_filename));
