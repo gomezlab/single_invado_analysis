@@ -51,7 +51,7 @@ for i = 1:total_images
     %scan back through the images collected filling in missing files with
     %Nan blanks
     for j=1:length(fields)
-        if(isempty(images{j}))
+        if(length(images) < j || isempty(images{j}))
             images{j} = NaN*ones(base_image_size);
         end
     end
