@@ -31,6 +31,8 @@ image_dirs = image_dirs(3:end);
 gel_image_range = [Inf -Inf];
 puncta_image_range = [Inf -Inf];
 
+overall_puncta = zeros(size(imread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_filename))));
+
 for i = 1:size(image_dirs)
     gel_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel_filename));
     this_gel_min_max = [min(gel_image(:)), max(gel_image(:))];
@@ -42,6 +44,7 @@ for i = 1:size(image_dirs)
     end
         
     puncta_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta_filename));
+    overall_puncta = overall_puncta + double(puncta_image);
     this_puncta_min_max = [min(puncta_image(:)), max(puncta_image(:))];
     if (this_puncta_min_max(1) < puncta_image_range(1))
         puncta_image_range(1) = this_puncta_min_max(1);
