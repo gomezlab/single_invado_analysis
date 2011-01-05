@@ -12,6 +12,7 @@ i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
 
 i_p.addParamValue('min_cell_area',500,@isnumeric);
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,out_file,varargin{:});
 
@@ -38,6 +39,7 @@ pixel_values = mask_image(:);
 %%Threshold identification
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorted_mask_pixels = sort(pixel_values);
+sorted_mask_pixels = sorted_mask_pixels(0.05*round(length(sorted_mask_pixels)):end);
 % sorted_mask_pixels(1:0.05*round(length(sorted_mask_pixels))) = 0;
 
 %when there are very few unique pixel values, having a large number of bins
@@ -57,12 +59,6 @@ end
 
 [zmax,imax,zmin,imin]= extrema(smoothed_heights);
 
-%diagnostic plot for when things don't go quite right
-% plot(intensity, smoothed_heights)
-% hold on;
-% plot(intensity(imax), zmax,'gx')
-% plot(intensity(imin), zmin,'ro')
-
 %keep in mind that the zmax is sorted by value, so the highest peak is
 %first and the corresponding index is also first in imax, the same pattern
 %hold for zmin and imin
@@ -72,6 +68,15 @@ first_max_index = find(sorted_max_indexes == imax(1));
 %locate the index between the first two maximums
 min_index = find(imin > sorted_max_indexes(first_max_index) & imin < sorted_max_indexes(first_max_index + 1));
 assert(length(min_index) == 1, 'Error: expected to only find one minimum index between the first two max indexes, instead found %d', length(min_index));
+
+%diagnostic plot for when things don't go quite right
+if (i_p.Results.debug)
+    plot(intensity, smoothed_heights)
+    hold on;
+    plot(intensity(imax), zmax,'gx')
+    plot(intensity(imin), zmin,'ro')
+    plot(intensity(imin(min_index)), zmin(min_index),'k*','MarkerSize',16);
+end
 
 threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 
