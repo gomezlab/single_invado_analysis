@@ -86,10 +86,18 @@ threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
 threshed_mask = imfill(threshed_mask,'holes');
 
 connected_areas = bwlabel(threshed_mask,8);
-region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
+region_props = regionprops(connected_areas,mask_image, 'Area','MeanIntensity'); %#ok<MRPBW>
 
 %filter out connected regions smaller than the min cell area
-threshed_mask = ismember(connected_areas, find([region_sizes.Area] > i_p.Results.min_cell_area));
+% size_filter = [region_props.Area] > i_p.Results.min_cell_area &  ... 
+%     [region_props.Area] < 10000;
+
+size_filter = [region_props.Area] > i_p.Results.min_cell_area;
+
+intensity_filter = [region_props.MeanIntensity] > 0.002;
+
+threshed_mask = ismember(connected_areas, find(size_filter & intensity_filter));
+
 connected_areas = bwlabel(threshed_mask,8);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
