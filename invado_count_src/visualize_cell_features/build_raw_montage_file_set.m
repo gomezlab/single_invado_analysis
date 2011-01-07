@@ -11,20 +11,14 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(base_dir,target_file,varargin{:});
 
+addpath(genpath('..'));
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fields = dir(base_dir);
-%toss out first two entries they are '.' and '..', do same in below
-%searches
-fields = fields(3:end);
-if (strmatch(fields(1).name,'montage'))
-    fields = fields(2:end);
-end
-if (strmatch(fields(1).name,'overall_results'))
-    fields = fields(2:end);
-end
+fields = filter_to_time_series(fields);
 
 images_composite = cell(0);
 base_image_size = [NaN, NaN];
