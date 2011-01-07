@@ -44,6 +44,9 @@ sub create_LSF_Matlab_commands {
             $bsub_command .= " -R $_";
         }
     }
+    if (defined $opt{memsize}) {
+		$bsub_command .= " -memsize $opt{memsize}";
+    }
     my $matlab_command = "matlab -nodisplay -nojvm -nosplash -logfile $opt{output_file} -r";
 
     @commands = map { split(/\n/, $_) } @commands;
@@ -69,6 +72,9 @@ sub create_general_LSF_commands {
         foreach (split(/\s/, $opt{resource})) {
             $bsub_command .= " -R $_";
         }
+    }
+    if (defined $opt{memsize}) {
+		$bsub_command .= " -memsize $opt{memsize}";
     }
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command \"$_\""} @commands;
