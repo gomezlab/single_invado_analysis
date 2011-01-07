@@ -47,10 +47,11 @@ $|  = 1;
 #commands in.
 my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-	[ [ "../find_cell_features",      "./find_min_max.pl" ], ],
-	[ [ "../find_cell_features",      "./find_global_min_max.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script flat_field_correct_puncta" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
-	[ [ "../find_cell_features",      "./find_bleaching_correction.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction" ], ],
 	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
@@ -61,7 +62,7 @@ my @overall_command_seq = (
 
 #some of the scripts only need to be run once for each experiment, this will
 #rely on being able to find an experiment with "time_series_01" in its filename
-my @run_only_once = ("find_global_min_max.pl", "collect_montage_visualizations");
+my @run_only_once = qw(find_median_images find_exp_min_max collect_montage_visualizations);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
