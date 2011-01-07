@@ -6,13 +6,15 @@ tic;
 i_p = inputParser;
 
 i_p.addRequired('base_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('target_file',@(x)ischar(x)||isarray(x));
+i_p.addParamValue('target_file','focal_image.png',@(x)ischar(x)||isarray(x));
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(base_dir,target_file,varargin{:});
+i_p.parse(base_dir,varargin{:});
 
-filenames = add_filenames_to_struct(struct());
+target_file = i_p.Results.target_file;
+
 addpath('matlab_scripts');
+filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
