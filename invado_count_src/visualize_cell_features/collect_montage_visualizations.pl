@@ -44,6 +44,7 @@ push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'gel.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'focal_image.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'highlighted_mask.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'cell_overlaps.png')";
+push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'uncorrected_focal_image.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'gel_invader.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'tracking.png')";
 
