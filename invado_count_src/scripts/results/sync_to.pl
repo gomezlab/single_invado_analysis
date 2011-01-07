@@ -8,11 +8,11 @@ $opt{server} = "NOSERVER";
 $opt{no_time} = 0;
 $opt{repeat} = 1;
 $opt{delay} = 0;
-GetOptions(\%opt,"server=s", "debug|d", "no_progress|np", "no_time|nt", "repeat=s", "delay=s") or die;
+GetOptions(\%opt,"server=s", "debug|d", "progress", "no_time|nt", "repeat=s", "delay=s") or die;
 
-my $progress_str = "--progress ";
-if ($opt{no_progress}) {
-    $progress_str = '';
+my $progress_str = "";
+if ($opt{progress}) {
+    $progress_str = '--progress ';
 }
 
 my $time_str = "time ";
