@@ -46,10 +46,10 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -queue week -memsize 12G" ], ],
+	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -queue week -R mem96" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script flat_field_correct_puncta" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -queue week -memsize 12G" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -queue week -R mem96" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction -queue week" ], ],
 	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],
@@ -57,7 +57,7 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
-	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl -R mem96 -queue week" ], ],
 );
 
 #some of the scripts only need to be run once for each experiment, this will
