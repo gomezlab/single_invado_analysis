@@ -14,6 +14,8 @@ i_p.parse(results_dir,varargin{:});
 
 if (i_p.Results.debug == 1), profile off; profile on; end
 
+addpath(genpath('..'));
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,14 +25,7 @@ if (i_p.Results.debug == 1), profile off; profile on; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 exp_dirs = dir(fullfile(results_dir,'*'));
-
-assert(strcmp(exp_dirs(1).name,'.'))
-assert(strcmp(exp_dirs(2).name,'..'))
-
-exp_dirs = exp_dirs(3:end);
-if (strmatch(exp_dirs(1).name,'montage'))
-    exp_dirs = exp_dirs(2:end);
-end
+exp_dirs = filter_to_time_series(exp_dirs);
 
 raw_data = struct();
 for i=1:length(exp_dirs)
@@ -98,11 +93,8 @@ end
 process_data = process_raw_data(raw_data);
 
 %filtering based on longevity
-
-min_hours = 5;
-
-longev_filt = process_data.longevities >= min_hours*2;
-
+min_hours = 10;
+longev_filt = process_data.longevities >= min_hours;
 longev_filtered_data = process_raw_data(raw_data,'filter_set',longev_filt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +103,9 @@ longev_filtered_data = process_raw_data(raw_data,'filter_set',longev_filt);
 
 output_dir = fullfile(results_dir,'overall_results');
 
-mkdir(output_dir)
+if (not(exist(output_dir,'dir')))
+    mkdir(output_dir)
+end
 
 hist(process_data.longevities)
 ylabel('Number of Objects')
@@ -186,7 +180,7 @@ process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.
     & not(isnan(raw_data.cell_diffs)) & raw_data.cell_diffs < 0;
 
 process_data.live_cells = raw_data.tracking > -1;
-process_data.longevities = sum(process_data.live_cells,2);
+process_data.longevities = sum(process_data.live_cells,2)/2;
 
 process_data.ever_degrade = [];
 for i=1:size(raw_data.tracking,1)
