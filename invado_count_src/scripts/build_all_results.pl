@@ -57,6 +57,7 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
+	[ [ "../visualize_cell_features", "./collect_tracking_visualization.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl -R mem96 -queue week" ], ],
 );
 
