@@ -54,7 +54,7 @@ my @matlab_code = "make_movie_frames('$config_file')";
 # }
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'visualization');
-$opt{error_file} = catfile($opt{errors_folder}, 'error.txt');
+$opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }

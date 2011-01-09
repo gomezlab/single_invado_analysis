@@ -71,7 +71,7 @@ for i = 1:total_images
     images_composite{i} = imresize(images_composite{i},[800,NaN]);
         
     if (mod(i,10) == 0)
-        disp(['Done processing: ',num2str(i)])
+        disp(['Done processing: ',num2str(i), ' of ', target_file])
     end
 end
 
@@ -102,7 +102,7 @@ for i=1:length(images_composite)
     %     imwrite(cat(3,gel_composite{i},images_composite{i},zeros(size(images_composite{i}))), fullfile(output_dir,'both',[padded_i_num,'.png']));
     
     if (mod(i,10) == 0)
-        disp(['Done writing: ',num2str(i)])
+        disp(['Done writing: ',num2str(i),' of ', target_file])
     end
 end
 

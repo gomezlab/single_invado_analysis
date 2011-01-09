@@ -60,8 +60,6 @@ lineage_to_cmap_row = assign_unique_colors_to_lineages(tracking_seq);
 
 for i = 1:max_image_num
     padded_i_num = sprintf(['%0',num2str(folder_char_length),'d'],i);
-
-    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,filenames.binary_shift_filename)));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input puncta image
@@ -71,8 +69,6 @@ for i = 1:max_image_num
     
     puncta_image = puncta_image - puncta_limits(1);
     puncta_image = puncta_image .* (1/puncta_limits(2));
-    puncta_image(not(binary_shift)) = 0;
-
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the gel image
@@ -82,8 +78,6 @@ for i = 1:max_image_num
     
     gel_image = gel_image - gel_limits(1);
     gel_image = gel_image .* (1/gel_limits(2));
-    gel_image(not(binary_shift)) = 0;
-
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
