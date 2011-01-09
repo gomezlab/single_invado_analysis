@@ -1,16 +1,15 @@
-function flat_field_correct_puncta(base_dir, varargin)
+function flat_field_correct_puncta(exp_dir, varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 i_p = inputParser;
-i_p.FunctionName = 'FIND_IMAGE_SET_MIN_MAX';
 
-i_p.addRequired('base_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(base_dir,varargin{:});
+i_p.parse(exp_dir,varargin{:});
 
 addpath('matlab_scripts');
 
@@ -19,6 +18,8 @@ filenames = add_filenames_to_struct(struct());
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+base_dir = fullfile(exp_dir,'individual_pictures');
 
 image_dirs = dir(base_dir);
 

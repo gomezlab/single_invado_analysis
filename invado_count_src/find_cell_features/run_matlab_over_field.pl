@@ -10,6 +10,7 @@ use lib "../lib/perl";
 use strict;
 use File::Path;
 use File::Spec::Functions;
+use File::Spec;
 use File::Basename;
 use Image::ExifTool;
 use Getopt::Long;
@@ -38,10 +39,17 @@ if ($opt{script} =~ /(.*)\.m/) {
 	$opt{script} = $1;
 }
 
+$opt{script_dir} = dirname($opt{script});
+chdir $opt{script_dir};
+if ($opt{script} =~ /$opt{script_dir}\/(.*)/) {
+	$opt{script} = $1;
+}
+$opt{abs_script_dir} = File::Spec->rel2abs($opt{script_dir});
+
 ################################################################################
 # Main Program
 ################################################################################
-my @matlab_code = ("$opt{script}('$cfg{individual_results_folder}')\n");
+my @matlab_code = ("$opt{script}('$cfg{exp_results_folder}')\n");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, $opt{script});
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');

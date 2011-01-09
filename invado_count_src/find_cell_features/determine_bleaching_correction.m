@@ -1,4 +1,4 @@
-function determine_bleaching_correction(image_dir,varargin)
+function determine_bleaching_correction(exp_dir,varargin)
 % DETERMINE_BLEACHING_CORRECTION    searches through the gel images to
 %                                   determine the photobleaching correction
 
@@ -10,13 +10,13 @@ profile off; profile on;
 i_p = inputParser;
 i_p.FunctionName = 'DETERMINE_BLEACHING_CORRECTION';
 
-i_p.addRequired('image_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
-i_p.parse(image_dir);
+i_p.parse(exp_dir);
 
-i_p.addParamValue('output_dir',fullfile(image_dir,'..','adhesion_props'),@ischar);
+i_p.addParamValue('output_dir',fullfile(exp_dir,'adhesion_props'),@ischar);
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
-i_p.parse(image_dir,varargin{:});
+i_p.parse(exp_dir,varargin{:});
 
 if (not(exist(i_p.Results.output_dir,'dir')))
     mkdir(i_p.Results.output_dir);
@@ -30,6 +30,8 @@ filenames = add_filenames_to_struct(struct());
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pull in data from the current directory
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+image_dir = fullfile(exp_dir, 'individual_pictures');
 
 single_image_folders = dir(image_dir);
 

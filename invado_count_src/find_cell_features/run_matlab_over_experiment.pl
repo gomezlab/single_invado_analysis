@@ -38,6 +38,12 @@ if ($opt{script} =~ /(.*)\.m/) {
 	$opt{script} = $1;
 }
 
+$opt{script_dir} = dirname($opt{script});
+chdir $opt{script_dir};
+if ($opt{script} =~ /$opt{script_dir}\/(.*)/) {
+	$opt{script} = $1;
+}
+
 ################################################################################
 # Main Program
 ################################################################################
