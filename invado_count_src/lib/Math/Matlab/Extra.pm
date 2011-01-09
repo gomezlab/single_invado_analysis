@@ -11,6 +11,7 @@ use File::Path;
 use File::Basename;
 use Math::Matlab::Local;
 use File::Temp;
+use Cwd;
 
 ###############################################################################
 # Functions
@@ -25,23 +26,23 @@ sub execute_commands {
     } else {
         die "Expected first argument to execute_commands to be an ref, specifically a scalar or an array ref";
     }
-
-    my $error_file = $_[1];
+	
+	my %opt = %{$_[1]};
 
     my $matlab_object = Math::Matlab::Local->new();
-    
-    unlink($error_file) if (-e $error_file);
+ 	$matlab_object->root_mwd($opt{abs_script_dir});
+
+    unlink($opt{error_file}) if (-e $opt{error_file});
 
     foreach my $command (@matlab_code) {
         if (not($matlab_object->execute($command))) {
-            &File::Path::mkpath(&File::Basename::dirname($error_file));
-            open ERR_OUT, ">>$error_file" or die "Error in opening Matlab Error file: $error_file.";
+            &File::Path::mkpath(&File::Basename::dirname($opt{error_file}));
+            open ERR_OUT, ">>$opt{error_file}" or die "Error in opening Matlab Error file: $opt{error_file}.";
             print ERR_OUT $matlab_object->err_msg;
             print ERR_OUT "\n\nMATLAB COMMANDS\n\n$command";
             close ERR_OUT;
-
-            #$matlab_object->remove_files;
         }
+		$matlab_object->remove_files;
     }
 }
 
