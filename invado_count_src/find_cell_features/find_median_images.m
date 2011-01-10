@@ -1,4 +1,4 @@
-function find_median_images(base_dir,target_file,varargin)
+function find_median_images(base_dir,varargin)
 tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -46,7 +46,7 @@ images = zeros([size(images_cell{1}),length(images_cell)]);
 
 for i_num = 1:length(images)
     images(:,:,i_num) = images_cell{i_num};
-    if (mod(i,10) == 0)
+    if (mod(i_num,10) == 0)
         disp(['Done re-ordering: ',num2str(i)])
     end
 end
