@@ -33,7 +33,7 @@ current_data = struct;
 
 %read in and normalize the input gel image
 current_data.gel_image  = imread(fullfile(current_dir, filenames.gel_filename));
-current_data.gel_no_norm = current_data.gel_image;
+current_data.gel_no_norm = double(current_data.gel_image);
 scale_factor = double(intmax(class(current_data.gel_image)));
 current_data.gel_image  = double(current_data.gel_image)/scale_factor;
 
@@ -54,7 +54,8 @@ current_data.labeled_cells = imread(fullfile(current_dir, filenames.labeled_cell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 prev_data = struct;
 
-prev_data.gel_image  = imread(fullfile(prev_dir, filenames.gel_filename));
+prev_data.gel_image = imread(fullfile(prev_dir, filenames.gel_filename));
+prev_data.gel_no_norm = double(prev_data.gel_image);
 scale_factor = double(intmax(class(prev_data.gel_image)));
 prev_data.gel_image  = double(prev_data.gel_image)/scale_factor;
 
@@ -140,11 +141,12 @@ for i=1:max(current_data.labeled_cells(:))
     
     cell_props(i).Overlap_region_size = sum(sum(overlap_region));
     
-    differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - prev_data.gel_image(overlap_region)*prev_data.intensity_correction;
+    differences = current_data.gel_no_norm(overlap_region)*current_data.intensity_correction - prev_data.gel_no_norm(overlap_region)*prev_data.intensity_correction;
     
     [h,p] = ttest(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff = mean(differences);
+    cell_props(i).Cell_gel_diff_percent = mean(differences)/max(current_data.gel_range);
     
     %single cell diagnostics
     if (i_p.Results.debug)
@@ -153,5 +155,6 @@ for i=1:max(current_data.labeled_cells(:))
         temp(overlap_region) = 3;
         subplot(1,2,1); imshow(label2rgb(temp));
         subplot(1,2,2); hist(differences);
+        1;
     end
 end
