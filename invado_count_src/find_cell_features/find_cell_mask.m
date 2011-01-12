@@ -1,20 +1,18 @@
-function [varargout] = find_cell_mask(I_file,out_file,varargin)
+function find_cell_mask(exp_dir,varargin)
 %CREATE_CELL_MASK_IMAGE   Gather and write the cell mask from a
 %                         fluorescence image
-
+tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 i_p = inputParser;
-i_p.FunctionName = 'FIND_CELL_MASK';
 
-i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
+i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
-i_p.addParamValue('min_cell_area',500,@isnumeric);
+i_p.addParamValue('min_cell_area',1500,@isnumeric);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_file,out_file,varargin{:});
+i_p.parse(exp_dir,varargin{:});
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
@@ -22,24 +20,85 @@ addpath(genpath('../visualize_cell_features'));
 
 filenames = add_filenames_to_struct(struct());
 
-mask_image = imread(I_file);
-scale_factor = double(intmax(class(mask_image)));
-mask_image   = double(mask_image)/scale_factor;
-
-puncta_min_max = csvread(fullfile(fileparts(I_file),filenames.puncta_range_file));
-puncta_min_max = puncta_min_max/scale_factor;
-
-pixel_values = mask_image(:);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Threshold identification
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+base_dir = fullfile(exp_dir,'individual_pictures');
+
+image_dirs = dir(base_dir);
+
+assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
+assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
+assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be image set one') %#ok<ST2NM>
+
+image_dirs = image_dirs(3:end);
+
+for i_num = 49:size(image_dirs)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % reading in current image
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_filename)));
+    puncta_min_max = csvread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range_file));
+    pixel_values = puncta_image(:);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % reading in prior connected areas
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if (i_num == 1)
+        prior_connected_areas = [];
+    else
+        prior_connected_areas = double(imread(fullfile(base_dir,image_dirs(i_num-1).name,filenames.labeled_cell_mask_filename)));
+        1;
+    end
+    
+    thresh = find_mask_threshold(pixel_values,i_p);    
+    threshed_mask = puncta_image > thresh;
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%Mask Cleanup
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
+    threshed_mask = connected_areas > 0;
+    
+    if (not(isempty(prior_connected_areas)))
+        connected_areas = filter_on_overlap(puncta_image,connected_areas,prior_connected_areas);
+        threshed_mask = connected_areas > 0;
+        connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
+        threshed_mask = connected_areas > 0;
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%Output Image Creation/Writing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %cell mask highlighting and labeled cell mask output, if we are working
+    %with the registered image
+    normalized_image = puncta_image - puncta_min_max(1);
+    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+    
+    imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[0,1,0]), ...
+        fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask_filename))
+    
+    imwrite(double(connected_areas)/2^16, ...
+        fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_filename), ...
+        'bitdepth',16)
+
+    %binary cell mask
+    
+    imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask_filename))
+    if (mod(i_num,10)==0)
+        disp(['Done processing image number: ',num2str(i_num)])
+    end
+    disp(['Done processing image number: ',num2str(i_num)])
+end
+toc;
+
+function thresh = find_mask_threshold(pixel_values,i_p)
+
 sorted_mask_pixels = sort(pixel_values);
-sorted_mask_pixels = sorted_mask_pixels(0.05*round(length(sorted_mask_pixels)):end);
+sorted_mask_pixels = sorted_mask_pixels(round(0.05*length(sorted_mask_pixels)):end);
 % sorted_mask_pixels(1:0.05*round(length(sorted_mask_pixels))) = 0;
 
 %when there are very few unique pixel values, having a large number of bins
@@ -78,18 +137,17 @@ if (i_p.Results.debug)
     plot(intensity(imin(min_index)), zmin(min_index),'k*','MarkerSize',16);
 end
 
-threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
+thresh = intensity(imin(min_index));
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Mask Cleanup
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function connected_areas = filter_mask(threshed_mask, puncta_image, i_p)
+
 threshed_mask = imfill(threshed_mask,'holes');
 
 connected_areas = bwlabel(threshed_mask,8);
-region_props = regionprops(connected_areas,mask_image, 'Area','MeanIntensity'); %#ok<MRPBW>
+region_props = regionprops(connected_areas,puncta_image, 'Area','MeanIntensity'); %#ok<MRPBW>
 
 %filter out connected regions smaller than the min cell area
-% size_filter = [region_props.Area] > i_p.Results.min_cell_area &  ... 
+% size_filter = [region_props.Area] > i_p.Results.min_cell_area &  ...
 %     [region_props.Area] < 10000;
 
 size_filter = [region_props.Area] > i_p.Results.min_cell_area;
@@ -100,25 +158,38 @@ threshed_mask = ismember(connected_areas, find(size_filter & intensity_filter));
 
 connected_areas = bwlabel(threshed_mask,8);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Output Image Creation/Writing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function final_connected_areas = filter_on_overlap(puncta_image,connected_areas,prior_connected_areas)
 
-%cell mask highlighting and labeled cell mask output, if we are working
-%with the registered image
-normalized_image = mask_image - puncta_min_max(1);
-normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+final_connected_areas = zeros(size(puncta_image));
 
-imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), ...
-    fullfile(fileparts(out_file),filenames.highlighted_cell_mask_filename))
-
-imwrite(double(connected_areas)/2^16, ...
-    fullfile(fileparts(out_file),filenames.labeled_cell_mask_filename), ...
-    'bitdepth',16)
-
-%binary cell mask
-imwrite(threshed_mask, out_file)
-
-if (nargout >= 1)
-    varargout{1} = threshed_mask;
+for (i=1:max(connected_areas(:)))
+    this_connected_area = connected_areas == i;
+    
+    seeds = prior_connected_areas > 0 & this_connected_area;
+    seeds_labeled = bwlabel(seeds,8);
+    if (max(seeds_labeled(:)) <= 1)
+        final_connected_areas(this_connected_area) = max(final_connected_areas(:)) + 1;
+    else
+        puncta_image_invert = puncta_image*-1+max(puncta_image(:));
+        
+        no_cells = not(this_connected_area);
+        
+        minned_image = imimposemin(puncta_image_invert,seeds,8);
+        
+        water_out = watershed(minned_image);
+        water_out(no_cells) = 0;
+        
+        for (i=1:max(water_out(:)))
+            final_connected_areas(water_out == i) = max(final_connected_areas(:)) + 1;
+        end    
+    end
+    
 end
+
+cell_nums = unique(final_connected_areas);
+assert(cell_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
+for i = 2:length(cell_nums)
+    final_connected_areas(final_connected_areas == cell_nums(i)) = i - 1;
+end
+
+
