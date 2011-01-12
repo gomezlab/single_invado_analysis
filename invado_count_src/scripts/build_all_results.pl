@@ -50,7 +50,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -queue week -R mem96" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script flat_field_correct_puncta" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -queue week -R mem96" ], ],
-	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction -queue week" ], ],
 	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
