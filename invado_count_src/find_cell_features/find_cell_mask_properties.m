@@ -117,7 +117,7 @@ i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(current_data,prev_data,varargin{:});
 
-cell_props = regionprops(current_data.labeled_cells,'all');
+cell_props = regionprops(current_data.labeled_cells,'PixelIdxList','Area','Centroid');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
