@@ -34,7 +34,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-for i_num = 49:size(image_dirs)
+for i_num = 1:size(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in current image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,10 +164,13 @@ final_connected_areas = zeros(size(puncta_image));
 
 for (i=1:max(connected_areas(:)))
     this_connected_area = connected_areas == i;
+    con_props = regionprops(this_connected_area,'Area');
     
     seeds = prior_connected_areas > 0 & this_connected_area;
     seeds_labeled = bwlabel(seeds,8);
-    if (max(seeds_labeled(:)) <= 1)
+    seeds_props = regionprops(seeds_labeled,'Area');
+%     if (max(seeds_labeled(:)) <= 1 || (sum([seeds_props.Area]) > 0.9*sum([con_props.Area])))
+     if (max(seeds_labeled(:)) <= 1)
         final_connected_areas(this_connected_area) = max(final_connected_areas(:)) + 1;
     else
         puncta_image_invert = puncta_image*-1+max(puncta_image(:));
