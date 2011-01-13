@@ -52,7 +52,7 @@ for i_num = 1:size(image_dirs)
         1;
     end
     
-    thresh = find_mask_threshold(pixel_values,i_p);    
+    thresh = find_mask_threshold(pixel_values,i_p);
     threshed_mask = puncta_image > thresh;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,14 +84,13 @@ for i_num = 1:size(image_dirs)
     imwrite(double(connected_areas)/2^16, ...
         fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_filename), ...
         'bitdepth',16)
-
+    
     %binary cell mask
     
     imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask_filename))
     if (mod(i_num,10)==0)
         disp(['Done processing image number: ',num2str(i_num)])
     end
-    disp(['Done processing image number: ',num2str(i_num)])
 end
 toc;
 
@@ -163,19 +162,20 @@ function final_connected_areas = filter_on_overlap(puncta_image,connected_areas,
 final_connected_areas = zeros(size(puncta_image));
 
 for (i=1:max(connected_areas(:)))
-    this_connected_area = connected_areas == i;
-    con_props = regionprops(this_connected_area,'Area');
+    this_cell = connected_areas == i;
     
-    seeds = prior_connected_areas > 0 & this_connected_area;
+    seeds = prior_connected_areas > 0 & this_cell;
     seeds_labeled = bwlabel(seeds,8);
     seeds_props = regionprops(seeds_labeled,'Area');
-%     if (max(seeds_labeled(:)) <= 1 || (sum([seeds_props.Area]) > 0.9*sum([con_props.Area])))
-     if (max(seeds_labeled(:)) <= 1)
-        final_connected_areas(this_connected_area) = max(final_connected_areas(:)) + 1;
+    seeds_labeled = bwlabel(ismember(seeds_labeled, find([seeds_props.Area] > 10)),8);
+    seeds = seeds_labeled > 0;
+    
+    if (max(seeds_labeled(:)) <= 1)
+        final_connected_areas(this_cell) = max(final_connected_areas(:)) + 1;
     else
         puncta_image_invert = puncta_image*-1+max(puncta_image(:));
         
-        no_cells = not(this_connected_area);
+        no_cells = not(this_cell);
         
         minned_image = imimposemin(puncta_image_invert,seeds,8);
         
@@ -184,7 +184,7 @@ for (i=1:max(connected_areas(:)))
         
         for (i=1:max(water_out(:)))
             final_connected_areas(water_out == i) = max(final_connected_areas(:)) + 1;
-        end    
+        end
     end
     
 end
