@@ -38,7 +38,7 @@ for i = 1:total_images
     end
         
     if (mod(i,10) == 0)
-        disp(['Done reading: ',num2str(i)])
+        disp(['Done reading: ',num2str(i), '/', total_images])
     end
 end
 
@@ -46,9 +46,6 @@ images = zeros([size(images_cell{1}),length(images_cell)]);
 
 for i_num = 1:length(images)
     images(:,:,i_num) = images_cell{i_num};
-    if (mod(i_num,10) == 0)
-        disp(['Done re-ordering: ',num2str(i)])
-    end
 end
 
 median_image = median(images,3);
