@@ -1,158 +1,86 @@
-function create_invader_visualization(current_dir,first_dir,varargin)
+function create_invader_visualization(field_dir,varargin)
 
+tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Setup variables and parse command line
+%%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-profile off; profile on;
-
 i_p = inputParser;
 
-i_p.addRequired('first_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('current_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('field_dir',@(x)exist(x,'dir') == 7);
 
-i_p.parse(current_dir, first_dir);
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.addParamValue('output_dir',current_dir,@ischar);
-i_p.addParamValue('invader_thresh',0.05,@isnumeric);
-
-i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
-
-i_p.parse(current_dir, first_dir,varargin{:});
+i_p.parse(field_dir,varargin{:});
 
 %Add the folder with all the scripts used in this master program
-addpath(genpath('../find_cell_features/matlab_scripts'));
+addpath(genpath('..'));
 
 filenames = add_filenames_to_struct(struct());
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the current directory
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-current_data = struct;
-
-current_data.binary_shift  = logical(imread(fullfile(current_dir, filenames.binary_shift_filename)));
-
-%read in and normalize the input focal adhesion image
-current_data.puncta_image  = imread(fullfile(current_dir, filenames.puncta_filename));
-current_data.puncta_range  = csvread(fullfile(current_dir, filenames.puncta_range_file));
-current_data.puncta_image = double(current_data.puncta_image) - current_data.puncta_range(1);
-current_data.puncta_image = current_data.puncta_image ./ (current_data.puncta_range(2) - current_data.puncta_range(1));
-current_data.puncta_image = current_data.puncta_image .* current_data.binary_shift;
-
-%read in and normalize the input focal adhesion image
-current_data.gel_image  = imread(fullfile(current_dir, filenames.gel_filename));
-current_data.gel_range  = csvread(fullfile(current_dir, filenames.gel_range_file));
-current_data.gel_image = double(current_data.gel_image) - current_data.gel_range(1);
-current_data.gel_image = current_data.gel_image ./ (current_data.gel_range(2) - current_data.gel_range(1));
-current_data.gel_image = current_data.gel_image .* current_data.binary_shift;
-
-%read in the intensity correction coefficient
-current_data.intensity_correction = csvread(fullfile(current_dir, filenames.intensity_correction_filename));
-
-%read in the cell mask file
-current_data.cell_mask = logical(imread(fullfile(current_dir, filenames.cell_mask_filename)));
-
-%read in the labeled cells
-current_data.labeled_cell_mask = imread(fullfile(current_dir, filenames.labeled_cell_mask_filename));
-
-current_data.Cell_diff = csvread(fullfile(current_dir, 'raw_data','Cell_gel_diff.csv'));
-current_data.Cell_diff_p_val = csvread(fullfile(current_dir, 'raw_data','Cell_gel_diff_p_val.csv'));
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the first directory
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-first_data = struct;
-
-%read in and normalize the input focal adhesion image
-first_data.gel_image  = imread(fullfile(first_dir, filenames.gel_filename));
-first_data.gel_image = double(first_data.gel_image) - current_data.gel_range(1);
-first_data.gel_image = first_data.gel_image ./ (current_data.gel_range(2) - current_data.gel_range(1));
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Program Config Options
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-invader_thresh = i_p.Results.invader_thresh;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Main Program
+%%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%determine the number of comparisons made in this experimental set and
-%correct the invader threshold by the Bonferroni correction
-comparison_number = determine_comparison_number(fullfile(current_dir,'..','..','..'));
-invader_thresh = invader_thresh/comparison_number;
+active_degrade = csvread(fullfile(field_dir,'adhesion_props','active_degrade.csv'));
 
-%There are three categories that cells can fall into, invaders,
-%non-invaders and no-classification. We will use the pixel value
-%differences calculated from the overlaps between cells in adjacent frames
-%to make the decisions. There are two relavent properties: the p-value of
-%the distribution of difference values as compared to zero and the average
-%value of the differences. If the average value of the differences is above
-%zero (remember current image minus previous for diff calculation), there
-%wasn't degradation, so that cell is a non-invader. If the average value of
-%the differences is below zero, then we check the p-value, if it is below
-%the cutoff we classify as an invader. There are also cells that don't have
-%either of these properties calculated, they are in the last no
-%classification set.
-non_invaders = ismember(current_data.labeled_cell_mask, ... 
-    find(not(isnan(current_data.Cell_diff_p_val)) & (current_data.Cell_diff > 0 | current_data.Cell_diff_p_val > invader_thresh)));
-invaders = ismember(current_data.labeled_cell_mask, ... 
-    find(current_data.Cell_diff < 0 & current_data.Cell_diff_p_val < invader_thresh));
-no_class = ismember(current_data.labeled_cell_mask, ... 
-    find(isnan(current_data.Cell_diff_p_val)));
+%add one because perl indexes from 0
+tracking_matrix = csvread(fullfile(field_dir,'tracking_matrices','tracking_seq.csv')) + 1;
 
-assert(sum(sum(non_invaders & invaders)) == 0)
-assert(sum(sum(non_invaders & no_class)) == 0)
-assert(sum(sum(invaders & no_class)) == 0)
+base_dir = fullfile(field_dir,'individual_pictures');
 
-assert(sum(sum(non_invaders | no_class | invaders)) == sum(sum(current_data.cell_mask)))
+image_dirs = dir(base_dir);
 
-%we only need to clear out the area outside the binary shift of the current
-%data image because the first directory binary shift should also include
-%the entire image
-diff_image = (current_data.gel_image - first_data.gel_image).*current_data.binary_shift;
-diff_image = diff_image - min(diff_image(:));
-diff_image = diff_image ./ (max(diff_image(:)) - min(diff_image(:)));
+assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
+assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
+assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be image set one') %#ok<ST2NM>
 
-diff_image = create_highlighted_image(diff_image,bwperim(no_class),'color_map',[0,0,1]);
-diff_image = create_highlighted_image(diff_image,bwperim(non_invaders),'color_map',[1,0,0]);
-diff_image = create_highlighted_image(diff_image,bwperim(invaders),'color_map',[0,1,0]);
+image_dirs = image_dirs(3:end);
 
-imwrite(diff_image, fullfile(current_dir, 'diff_invader.png'))
-
-gel_highlight = create_highlighted_image(current_data.gel_image,bwperim(no_class),'color_map',[0,0,1]);
-gel_highlight = create_highlighted_image(gel_highlight,bwperim(non_invaders),'color_map',[1,0,0]);
-gel_highlight = create_highlighted_image(gel_highlight,bwperim(invaders),'color_map',[0,1,0]);
-
-puncta_highlight = create_highlighted_image(current_data.puncta_image,bwperim(no_class),'color_map',[0,0,1]);
-puncta_highlight = create_highlighted_image(puncta_highlight,bwperim(non_invaders),'color_map',[1,0,0]);
-puncta_highlight = create_highlighted_image(puncta_highlight,bwperim(invaders),'color_map',[0,1,0]);
-
-spacer = ones(size(puncta_highlight,1),1,3);
-
-imwrite([gel_highlight,spacer,puncta_highlight], fullfile(current_dir, 'invader_and_not.png'));
-imwrite(gel_highlight, fullfile(current_dir, 'gel_invader.png'));
-imwrite(puncta_highlight, fullfile(current_dir, 'puncta_invader.png'));
-
-function comp_number = determine_comparison_number(experiment_dir)
-
-single_exp_dirs = dir(experiment_dir);
-
-assert(single_exp_dirs(1).name == '.')
-assert(all(single_exp_dirs(2).name=='..'))
-single_exp_dirs = single_exp_dirs(3:end);
-
-p_vals = [];
-
-for i=1:length(single_exp_dirs)
-    data_file = fullfile(experiment_dir,single_exp_dirs(i).name, ...
-        'adhesion_props','lin_time_series','Cell_gel_diff_p_val.csv');
-    if (not(exist(data_file,'file')))
-        warning(['Can''t find: ',data_file])
-        continue;
+for i_num = 1:size(image_dirs)
+    current_dir = fullfile(base_dir,image_dirs(i_num).name);
+    current_data = read_in_file_set(current_dir,filenames);
+    
+    labeled_cells_perim = zeros(size(current_data.labeled_cells));
+    for cell_num=1:max(current_data.labeled_cells(:))
+        temp = zeros(size(current_data.labeled_cells));
+        temp(current_data.labeled_cells == cell_num) = 1;
+        temp = bwperim(temp);
+        labeled_cells_perim(temp) = cell_num;
     end
     
-    load(data_file);
-    p_vals = [p_vals; Cell_gel_diff_p_val];
+    degrade_marked = zeros(size(current_data.labeled_cells));
+    for cell_num=1:max(labeled_cells_perim(:))
+        this_tracking_row = tracking_matrix(:,i_num) == cell_num;
+        assert(sum(this_tracking_row) == 1);
+        
+        degrade_status = active_degrade(this_tracking_row,i_num);
+        
+        %use 1 for non-degraders, 2 for degraders
+        if (degrade_status == 0)
+            degrade_marked(labeled_cells_perim == cell_num) = 1;
+        elseif (degrade_status == 1)
+            degrade_marked(labeled_cells_perim == cell_num) = 2;
+        else
+            disp('Found unexpected degrade status');
+        end
+    end
+    
+    centroid = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Centroid.csv'));
+    gel_diff = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff.csv'));
+    gel_diff_percent = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff_percent.csv'));
+    
+    norm_gel = (current_data.gel_no_norm - current_data.gel_range(1))/range(current_data.gel_range);
+    
+    c_map = [[1,0,0];[0,1,0]];
+    
+    degrade_highlights = create_highlighted_image(norm_gel,degrade_marked,'color_map',c_map);
+    
+    imshow(degrade_highlights);
+    for cell_num = 1:length(gel_diff)
+        text(centroid(cell_num,1), centroid(cell_num,2), ... 
+            fprintf('%d\n%d',gel_diff(cell_num),gel_diff_percent(cell_num)));
+    end
+    
+    1;
 end
-
-comp_number = sum(sum(not(isnan(p_vals))));
+toc;
