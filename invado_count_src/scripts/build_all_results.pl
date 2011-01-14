@@ -50,20 +50,22 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -queue week -R mem96" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script flat_field_correct_puncta" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -queue week -R mem96" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask -queue week" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction -queue week" ], ],
-	[ [ "../find_cell_features",      "./collect_cell_mask_properties.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties -queue week" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_tracking_visualization.pl" ], ],
-	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl -R mem96 -queue week" ], ],
+	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl -queue week" ], ],
 );
 
 #some of the scripts only need to be run once for each experiment, this will
 #rely on being able to find an experiment with "time_series_01" in its filename
-my @run_only_once = qw(find_median_images find_exp_min_max collect_montage_visualizations);
+my @run_only_once = qw(find_median_images find_exp_min_max collect_montage_visualizations build_all_montage_file_sets);
+
+my @skip_check = qw(find_median_images find_exp_min_max collect_montage_visualizations gather_tracking_results);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
@@ -74,6 +76,7 @@ my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
+die "No config files left after filtering." if (scalar(@config_files) == 0);
 
 my @run_once_configs = grep $_ =~ /time_series_01/, @config_files;
 
@@ -101,8 +104,8 @@ for (@overall_command_seq) {
 
 	#If debugging is not on, we want to wait till the current jobs finish
 	#and then check the file complements of the experiments for completeness
-	if (not($opt{debug})) {
-		&wait_till_LSF_jobs_finish if $opt{lsf};
+	&wait_till_LSF_jobs_finish if ($opt{lsf} && not($opt{debug}));
+	if (not($opt{debug}) && not(grep $command_seq[0][1] =~ /$_/, @skip_check)) {
 		print "Checking for all output files on command $command_seq[0][1]\n";
 		my %exp_sets = &check_file_sets(\@config_files);
 
@@ -214,8 +217,9 @@ sub execute_command_seq {
 sub wait_till_LSF_jobs_finish {
     #After each step of the pipeline, we want to wait till all the individual
     #jobs are completed, which will be checked three times
-    for (1 .. 3) {
-        print "On check number $_\n";
+	my $total_checks = 3;
+    for (1 .. $total_checks) {
+        print "LSF finished check number $_/$total_checks\n";
         my $sleep_time = 10;
         do {
             sleep($sleep_time);
@@ -252,7 +256,9 @@ sub running_LSF_jobs {
 }
 
 sub kill_long_running_jobs {
-    if (scalar(@running_jobs) > 60) {
+	#we only need to worry about killing jobs that have run for at least 6
+	#hours, we check for running jobs every 10 seconds, so...
+    if (scalar(@running_jobs) > (6*60*10)) {
         my @long_running_jobs = @{$running_jobs[$#running_jobs]};
         my @last_hour = @running_jobs[($#running_jobs - 59) .. $#running_jobs];
         foreach my $jobs_ref (@last_hour) {
