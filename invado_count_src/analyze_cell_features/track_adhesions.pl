@@ -199,7 +199,6 @@ sub track_live_adhesions {
 
     my @dists        = @{ $data_sets{$i_num}{Cent_dist} };
     my @p_sims       = @{ $data_sets{$i_num}{Pix_sim} };
-    my @recip_p_sims = @{ $data_sets{$i_num}{Recip_pix_sim} };
     my @areas        = @{ $data_sets{$i_num}{Area} };
     
     my $prop_indeter_percent = 0.8;
@@ -245,7 +244,6 @@ sub track_live_adhesions {
         my $adhesion_num      = ${ $tracking_mat[$i] }[$cur_step];
         my @dist_to_next_ads  = @{ $dists[$adhesion_num] };
         my @p_sim_to_next_ads = @{ $p_sims[$adhesion_num] };
-        my @recip_p_sims      = map $recip_p_sims[$_][$adhesion_num], (0 .. $#dist_to_next_ads);
 
         my @sorted_dist_indexes =
           sort { $dist_to_next_ads[$a] <=> $dist_to_next_ads[$b] } (0 .. $#dist_to_next_ads);
