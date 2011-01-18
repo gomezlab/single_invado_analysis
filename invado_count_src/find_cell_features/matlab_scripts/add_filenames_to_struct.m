@@ -19,3 +19,5 @@ cfg_struct.gel_filename = 'gel.png';
 cfg_struct.gel_range_file = '../../../all_field_resources/gel_image_range.csv';
 
 cfg_struct.intensity_correction_filename = 'intensity_correction.csv';
+
+cfg_struct.no_cells = '../../adhesion_props/no_cell_regions.png';

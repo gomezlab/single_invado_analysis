@@ -27,10 +27,13 @@ addpath(genpath('matlab_scripts'));
 
 filenames = add_filenames_to_struct(struct());
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the current directory
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Determine single image folders
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_dir = fullfile(exp_dir, 'individual_pictures');
 
 single_image_folders = dir(image_dir);
@@ -41,51 +44,43 @@ assert(str2num(single_image_folders(3).name) == 1, 'Error: expected the third st
 
 single_image_folders = single_image_folders(3:end);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Build the no cell region image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %read in an image to get the size of the images to preallocate the size of
 %the image that will keep track of which pixels have been in a cell or
 %outside the registered range
 test_image = imread(fullfile(image_dir,single_image_folders(1).name,filenames.cell_mask_filename));
 
 no_cell_regions = ones(size(test_image));
-inside_registered = ones(size(test_image));
 
 for i=1:length(single_image_folders)
-    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask_filename));
-    
+    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask_filename));    
     no_cell_regions = no_cell_regions & not(cell_mask);
 end
 
 imwrite(no_cell_regions, fullfile(i_p.Results.output_dir,'no_cell_regions.png'));
 
-%check for the situation where there were less than 2% of pixels included
-%in the no_cell_regions image, in that case, switch over to the entire
-%image
-percent_outside = sum(sum(no_cell_regions))/(size(no_cell_regions,1)*size(no_cell_regions,2));
-
-if (percent_outside < 0.02)
-    no_cell_regions = ones(size(test_image));
-    imwrite(no_cell_regions, fullfile(i_p.Results.output_dir,'inside_registered.png'));
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Collect the intensity correction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 gel_levels = zeros(length(single_image_folders),1);
 gel_levels_outside_cell = zeros(size(gel_levels));
-gel_levels_puncta = zeros(size(gel_levels));
 
 for i=1:length(single_image_folders)
     gel = imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel_filename));
-    scale_factor = double(intmax(class(gel)));
-    gel  = double(gel)/scale_factor;
-    
-    puncta = imread(fullfile(image_dir,single_image_folders(i).name,filenames.puncta_filename));
-    puncta = im2bw(puncta,0);
-    
+        
     gel_levels(i) = mean(gel(:));
-    gel_levels_puncta(i) = mean(gel(puncta));
-    gel_levels_outside_cell(i) = mean(gel(no_cell_regions));
-    
-    dlmwrite(fullfile(image_dir, single_image_folders(i).name, filenames.intensity_correction_filename), ...
-        0.1/mean(gel(no_cell_regions)));
+    gel_levels_outside_cell(i) = mean(gel(no_cell_regions));    
 end
+
+for i=1:length(single_image_folders)
+    dlmwrite(fullfile(image_dir, single_image_folders(i).name, filenames.intensity_correction_filename), ...
+        1000/gel_levels_outside_cell(i));
+end
+
 
 %diagnostic plot
 time_points = (0:(length(gel_levels) - 1))*5;
@@ -93,18 +88,17 @@ diag_fig_hnd = plot(time_points,gel_levels);
 xlabel('Time (min)', 'Fontsize',16)
 ylabel('Average Intensity', 'Fontsize',16);
 hold on;
-plot(time_points,gel_levels_puncta,'g');
 plot(time_points,gel_levels_outside_cell,'r');
 
 y_limits = ylim();
 ylim([0 y_limits(2)]);
 
-legend('Overall','Puncta','Outside Cell', 'location','SouthEast')
+legend('Overall','Outside Cell', 'location','SouthEast')
 saveas(diag_fig_hnd,fullfile(i_p.Results.output_dir,'bleaching_curves.png'))
 close all;
 
 dlmwrite(fullfile(i_p.Results.output_dir,'bleaching_curves.csv'), ...
-    [gel_levels_outside_cell,gel_levels, gel_levels_puncta]);
+    [gel_levels_outside_cell,gel_levels]);
 
 profile off;
 if (i_p.Results.debug), profile viewer; end

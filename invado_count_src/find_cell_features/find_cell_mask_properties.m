@@ -32,6 +32,12 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
+no_cell_diffs = [];
+data_points = 0;
+overlap_sizes = [];
+cell_diffs = [];
+p_vals = [];
+
 for i_num = 1:size(image_dirs,1)
     if (i_num > 1)
         prior_dir = fullfile(base_dir,image_dirs(i_num-1).name);
@@ -47,8 +53,16 @@ for i_num = 1:size(image_dirs,1)
     current_dir = fullfile(base_dir,image_dirs(i_num).name);
     current_data = read_in_file_set(current_dir,filenames);
     
-    cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);    
+    cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);
+    data_points = data_points + length(cell_props);
     tracking_props = collect_tracking_properties(current_data,prior_data,'debug',i_p.Results.debug);
+    if (i_num ~= 1)
+        overlap_sizes = [overlap_sizes, [cell_props.Overlap_region_size]];
+        cell_diffs = [cell_diffs, [cell_props.Cell_gel_diff]];
+        no_cell_diffs = [no_cell_diffs, [cell_props(1).no_cells_diff]'];
+        p_vals = [p_vals, [cell_props.Cell_gel_diff_p_val]];
+        cell_props = rmfield(cell_props,'no_cells_diff');
+    end
 
     write_adhesion_data(cell_props,'out_dir',fullfile(current_dir,'raw_data'));
     write_adhesion_data(tracking_props,'out_dir',fullfile(prior_dir,'raw_data'));
@@ -67,15 +81,20 @@ for i_num = 1:size(image_dirs,1)
 
     %make an image showing where the cells are located overlayed on the gel
     %image
-    gel_range_norm = double(current_data.gel_no_norm) - current_data.gel_range(1);
-    gel_range_norm = gel_range_norm / (current_data.gel_range(2) - current_data.gel_range(1));
-    gel_range_norm = create_highlighted_image(gel_range_norm,bwperim(current_data.cell_mask));
+    gel_range_norm = create_highlighted_image(current_data.gel_image_norm,bwperim(current_data.cell_mask));
     imwrite(gel_range_norm,fullfile(current_dir,'gel_highlights.png'));
 
     if (mod(i_num,10)==0)
         disp(['Done processing image number: ',num2str(i_num)])
     end    
 end
+
+% sample_sizes = 1000:1000:20000;
+% min_maxes = NaN(2,length(sample_sizes));
+% for i=1:length(sample_sizes)
+%     min_maxes(:,i) = bootstrap_mean_small(no_cell_diffs,'samp_size',sample_sizes(i))';
+%     disp(sample_sizes(i));
+% end
 
 toc;
 profile off;
@@ -95,7 +114,6 @@ function cell_props = collect_cell_properties(current_data,prior_data,varargin)
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 i_p = inputParser;
-i_p.FunctionName = 'COLLECT_CELL_PROPERTIES';
 
 i_p.addRequired('current_data',@isstruct);
 i_p.addRequired('prior_data',@isstruct);
@@ -104,11 +122,32 @@ i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(current_data,prior_data,varargin{:});
 
-cell_props = regionprops(current_data.labeled_cells,'Area','Centroid');
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cell_props = regionprops(current_data.labeled_cells,'Area','Centroid');
+
+% empty_data_set = NaN(1,max(current_data.labeled_cells(:)));
+
+[cell_props.Overlap_region_size] = deal(NaN);
+[cell_props.Cell_gel_diff_p_val] = deal(NaN);
+[cell_props.Cell_gel_diff] = deal(NaN);
+[cell_props.Cell_gel_diff_percent] = deal(NaN);
+
+%when the first image is both the prior and current data, we only want the
+%area and centroid variables to contain any data, the other properties are
+%not relavent for the first image
+if (all(current_data.gel_image(:) == prior_data.gel_image(:)) == 1)
+    return;
+end
+
+cell_props(1).no_cells_diff = current_data.gel_image(current_data.no_cells)*current_data.intensity_correction - ...
+    prior_data.gel_image(prior_data.no_cells)*prior_data.intensity_correction;
+% cell_props(1).no_cells_diff = current_data.gel_image(current_data.no_cells) - ...
+%     prior_data.gel_image(prior_data.no_cells);
+% [h,p,ci] = ttest(cell_props(1).no_cells_diff);
+% ci
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Properites Always Extracted
@@ -128,9 +167,9 @@ for i=1:max(current_data.labeled_cells(:))
     
     cell_props(i).Overlap_region_size = sum(sum(overlap_region));
     
-    differences = current_data.gel_no_norm(overlap_region)*current_data.intensity_correction - ... 
-        prior_data.gel_no_norm(overlap_region)*prior_data.intensity_correction;
-    
+    differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - ... 
+        prior_data.gel_image(overlap_region)*prior_data.intensity_correction;
+        
     [h,p] = ttest(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff = mean(differences);
