@@ -57,13 +57,17 @@ if ($opt{lsf}) {
     exit;
 }
 
-my %data_sets;
+my @data_files;
+push @data_files, @{$cfg{general_data_files}};
+push @data_files, @{$cfg{tracking_files}};
+my %data_sets = &Image::Data::Collection::gather_data_sets(\%cfg, \%opt, \@data_files);
 
 print "\n\nDetermining Tracking Matrix\n" if $opt{debug};
 my @tracking_mat;
 my @birth_mat;
 my %tracking_probs;
 my %tracking_facts;
+
 &make_tracking_mat;
 
 #&output_mat_csv(\@{$tracking_facts{"no_pix_sim_dist"}}, "no_sim_dist.csv");

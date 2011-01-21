@@ -53,7 +53,6 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask -queue week" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction -queue week" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties -queue week" ], ],
-	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_invader_visualization.pl" ], ],
