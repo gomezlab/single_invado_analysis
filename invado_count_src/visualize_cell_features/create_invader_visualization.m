@@ -67,20 +67,24 @@ for i_num = 1:size(image_dirs)
     
     centroid = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Centroid.csv'));
     gel_diff = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff.csv'));
-    gel_diff_percent = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff_percent.csv'));
-    
-    norm_gel = (current_data.gel_no_norm - current_data.gel_range(1))/range(current_data.gel_range);
+    gel_diff_median = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff_median.csv'));
+    gel_diff_total = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff_total.csv'));
     
     c_map = [[1,0,0];[0,1,0]];
     
-    degrade_highlights = create_highlighted_image(norm_gel,degrade_marked,'color_map',c_map);
+    degrade_highlights = create_highlighted_image(current_data.gel_image_norm,degrade_marked,'color_map',c_map);
     
-    imshow(degrade_highlights);
+    image_handle = imshow(degrade_highlights,'Border','tight');
+%     print test.png
     for cell_num = 1:length(gel_diff)
         text(centroid(cell_num,1), centroid(cell_num,2), ... 
-            fprintf('%d\n%d',gel_diff(cell_num),gel_diff_percent(cell_num)));
+            {num2str(gel_diff(cell_num)), ... 
+             num2str(gel_diff_total(cell_num)), ... 
+             num2str(gel_diff_median(cell_num))},'color','white');
     end
-    
+    saveas(image_handle,fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis));
+    close;
+%     exportfig(gcf,'test.png','color','rgb')
     1;
 end
 toc;

@@ -23,4 +23,3 @@ build_raw_montage_file_set(exp_dir,'cell_overlaps.png')
 build_raw_montage_file_set(exp_dir,'uncorrected_focal_image.png')
 build_raw_montage_file_set(exp_dir,'gel_invader.png')
 build_raw_montage_file_set(exp_dir,'tracking.png')
-toc;
