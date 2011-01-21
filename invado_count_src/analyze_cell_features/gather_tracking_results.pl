@@ -99,18 +99,12 @@ sub convert_data_to_units {
     my $lin_conv_factor = $cfg{pixel_size};
     my $sq_conv_factor  = $lin_conv_factor**2;
     my @no_conversion =
-	  qw(Class Centroid_x Centroid_y Eccentricity Solidity
-	  Background_corrected_signal Angle_to_center Orientation
-	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
-	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
-	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr
-	  First_local_gel_diff Pre_birth_diff_corr Cell_gel_diff Cell_gel_diff_p_val
-	  Overlap_region_size);
+	  qw(Cell_gel_diff Cell_gel_diff_median Cell_gel_diff_p_val Overlap_region_size);
+	
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
-            if (grep $data_type eq $_, qw(Centroid_dist_from_edge Centroid_dist_from_center MajorAxisLength 
-                                          MinorAxisLength)) {
+            if ($data_type =~ /Centroid/i) {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
                 @{ $data_sets{$time}{$data_type} } = map $sq_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
@@ -247,7 +241,7 @@ sub gather_and_output_lineage_properties {
     my %props;
     
     #Pure Time Series Props
-	my @ts_props = qw(Cell_gel_diff Cell_gel_diff_p_val Overlap_region_size);
+	my @ts_props = qw(Cell_gel_diff Cell_gel_diff_median Cell_gel_diff_p_val Overlap_region_size);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
@@ -260,7 +254,6 @@ sub gather_and_output_lineage_properties {
     $props{merge_count}             = &gather_merge_count;
     $props{death_status}            = &gather_death_status;
     $props{split_birth_status}      = &gather_split_birth_status;
-    $props{average_eccentricity}    = &gather_average_eccentricity;
     	
     $props{Centroid_x} = &gather_prop_seq("Centroid_x");
     $props{start_x} = &gather_first_entry($props{Centroid_x});

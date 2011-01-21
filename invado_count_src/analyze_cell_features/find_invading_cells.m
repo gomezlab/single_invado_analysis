@@ -1,4 +1,4 @@
-function find_invading_cells(exp_dir,varargin)
+function find_invading_cells(field_dir,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -6,11 +6,11 @@ function find_invading_cells(exp_dir,varargin)
 
 i_p = inputParser;
 
-i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('field_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(exp_dir,varargin{:});
+i_p.parse(field_dir,varargin{:});
 
 if (i_p.Results.debug == 1), profile off; profile on; end
 
@@ -24,14 +24,16 @@ addpath(genpath('..'));
 % Read in the data files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 raw_data = struct();
 files = struct();
 
-files.p_vals = fullfile(exp_dir,'adhesion_props','lin_time_series','Cell_gel_diff_p_val.csv');
-files.cell_diffs = fullfile(exp_dir,'adhesion_props','lin_time_series','Cell_gel_diff.csv');
-files.overlap_area = fullfile(exp_dir,'adhesion_props','lin_time_series','Overlap_region_size.csv');
-files.tracking = fullfile(exp_dir,'tracking_matrices','tracking_seq.csv');
+data_series_folder = fullfile(field_dir,'adhesion_props','lin_time_series');
+
+files.p_vals = fullfile(data_series_folder,'Cell_gel_diff_p_val.csv');
+files.cell_diffs = fullfile(data_series_folder,'Cell_gel_diff.csv');
+files.cell_diff_medians = fullfile(data_series_folder,'Cell_gel_diff_median.csv');
+files.overlap_area = fullfile(data_series_folder,'Overlap_region_size.csv');
+files.tracking = fullfile(field_dir,'tracking_matrices','tracking_seq.csv');
 
 these_types = fieldnames(files);
 for j = 1:length(these_types)
@@ -64,12 +66,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 processed_data = process_raw_data(raw_data);
 
-output_dir = fullfile(exp_dir,'adhesion_props');
+output_dir = fullfile(field_dir,'adhesion_props');
 
 csvwrite(fullfile(output_dir,'active_degrade.csv'),processed_data.active_degrade);
 csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
-% csvwrite(fullfile(output_dir,'degrade_percentage.csv'),longev_filtered_data.degrade_percentage);
-1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Functions
@@ -105,7 +105,10 @@ bonferroni_correction = sum(sum(not(isnan(raw_data.p_vals))));
 process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05/bonferroni_correction ...
-    & not(isnan(raw_data.cell_diffs)) & raw_data.cell_diffs < 0;
+    & not(isnan(raw_data.cell_diff_medians)) & raw_data.cell_diff_medians < -15;
+
+disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
+disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
 
 process_data.live_cells = raw_data.tracking > -1;
 process_data.longevities = sum(process_data.live_cells,2)/2;
@@ -118,7 +121,7 @@ end
 process_data.has_degraded = zeros(size(raw_data.tracking));
 for i=1:size(raw_data.tracking,1)
     for j = 1:size(raw_data.tracking,2)
-        process_data.has_degraded(i,j) = process_data.active_degrade(i,j) | any(process_data.has_degraded(i,1:j));
+        process_data.has_degraded(i,j) = any(process_data.has_degraded(i,1:j));
     end
 end
 
