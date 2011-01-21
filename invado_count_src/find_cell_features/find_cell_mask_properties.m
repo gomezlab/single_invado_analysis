@@ -1,6 +1,6 @@
 function find_cell_mask_properties(exp_dir,varargin)
 
-tic; profile off; profile on;
+tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,6 +33,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 no_cell_diffs = [];
+overlap_diffs = [];
 data_points = 0;
 overlap_sizes = [];
 cell_diffs = [];
@@ -54,6 +55,13 @@ for i_num = 1:size(image_dirs,1)
     current_data = read_in_file_set(current_dir,filenames);
     
     cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);
+    
+    %convert cell props data into movieInfo data suitable for u-track
+%     [xCoord, yCoord, amp] = convert_props_to_movieInfo(cell_props);
+%     movieInfo(i_num).xCoord = xCoord;
+%     movieInfo(i_num).yCoord = yCoord;
+%     movieInfo(i_num).amp = amp;
+
     data_points = data_points + length(cell_props);
     tracking_props = collect_tracking_properties(current_data,prior_data,'debug',i_p.Results.debug);
     if (i_num ~= 1)
@@ -61,6 +69,7 @@ for i_num = 1:size(image_dirs,1)
         cell_diffs = [cell_diffs, [cell_props.Cell_gel_diff]];
         no_cell_diffs = [no_cell_diffs, [cell_props(1).no_cells_diff]'];
         p_vals = [p_vals, [cell_props.Cell_gel_diff_p_val]];
+        
         cell_props = rmfield(cell_props,'no_cells_diff');
     end
 
@@ -94,15 +103,28 @@ end
 % for i=1:length(sample_sizes)
 %     min_maxes(:,i) = bootstrap_mean_small(no_cell_diffs,'samp_size',sample_sizes(i))';
 %     disp(sample_sizes(i));
+%     plot(sample_sizes, min_maxes);
 % end
 
 toc;
-profile off;
-if (i_p.Results.debug), profile viewer; end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [xCoord,yCoord,amp] = convert_props_to_movieInfo(cell_props)
+
+xCoord = zeros(length(cell_props),2);
+yCoord = zeros(length(cell_props),2);
+amp = zeros(length(cell_props),2);
+
+for i=1:length(cell_props)
+    xCoord(i,1) = cell_props(i).Centroid(1);
+    yCoord(i,1) = cell_props(i).Centroid(2);
+    
+    amp(i,1) = cell_props(i).MeanIntensity;
+    amp(i,2) = cell_props(i).StdIntensity;
+end
 
 function cell_props = collect_cell_properties(current_data,prior_data,varargin)
 % COLLECT_cell_PROPERTIES    using the identified cells, various
@@ -126,14 +148,19 @@ i_p.parse(current_data,prior_data,varargin{:});
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cell_props = regionprops(current_data.labeled_cells,'Area','Centroid');
+cell_props = regionprops(current_data.labeled_cells,current_data.gel_image, ...
+    'Area','Centroid','MeanIntensity','PixelValues');
 
-% empty_data_set = NaN(1,max(current_data.labeled_cells(:)));
+for i=1:max(current_data.labeled_cells(:))
+        cell_props(i).StdIntensity = std([cell_props(i).PixelValues]);
+end
+cell_props = rmfield(cell_props,'PixelValues');
 
 [cell_props.Overlap_region_size] = deal(NaN);
 [cell_props.Cell_gel_diff_p_val] = deal(NaN);
 [cell_props.Cell_gel_diff] = deal(NaN);
-[cell_props.Cell_gel_diff_percent] = deal(NaN);
+[cell_props.Cell_gel_diff_median] = deal(NaN);
+[cell_props.Cell_gel_diff_total] = deal(NaN);
 
 %when the first image is both the prior and current data, we only want the
 %area and centroid variables to contain any data, the other properties are
@@ -165,15 +192,14 @@ for i=1:max(current_data.labeled_cells(:))
     
     overlap_region = this_cell & prev_cells;
     
-    cell_props(i).Overlap_region_size = sum(sum(overlap_region));
-    
     differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - ... 
-        prior_data.gel_image(overlap_region)*prior_data.intensity_correction;
-        
+        prior_data.gel_image(overlap_region)*prior_data.intensity_correction;    
+    
     [h,p] = ttest(differences);
-    cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff = mean(differences);
-    cell_props(i).Cell_gel_diff_percent = mean(differences)/max(current_data.gel_range);
+    cell_props(i).Cell_gel_diff_p_val = p;
+    cell_props(i).Cell_gel_diff_median = median(differences);
+    cell_props(i).Cell_gel_diff_total = sum(differences);
     
     %single cell diagnostics
     if (i_p.Results.debug)
@@ -183,6 +209,7 @@ for i=1:max(current_data.labeled_cells(:))
         subplot(1,2,1); imshow(label2rgb(temp));
         subplot(1,2,2); hist(differences);
         1;
+%         imshow(current_data.gel_image.*overlap_region - prior_data.gel_image.*overlap_region,[]);
     end
 end
 
