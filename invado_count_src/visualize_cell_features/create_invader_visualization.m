@@ -73,16 +73,25 @@ for i_num = 1:size(image_dirs)
     c_map = [[1,0,0];[0,1,0]];
     
     degrade_highlights = create_highlighted_image(current_data.gel_image_norm,degrade_marked,'color_map',c_map);
-    imwrite(degrade_highlights,fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis));
     
-%     image_handle = imshow(degrade_highlights,'Border','tight');
-% %     print test.png
-%     for cell_num = 1:length(gel_diff)
-%         text(centroid(cell_num,1), centroid(cell_num,2), ... 
-%             {num2str(gel_diff(cell_num)), ... 
-%              num2str(gel_diff_total(cell_num)), ... 
-%              num2str(gel_diff_median(cell_num))},'color','white');
-%     end
+    output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);
+    imwrite(degrade_highlights,output_file);
+
+    centroid(centroid(:,1) < size(degrade_highlights,2)*0.05,1) = size(degrade_highlights,2)*0.1;
+    centroid(centroid(:,1) > size(degrade_highlights,2)*0.95,1) = size(degrade_highlights,2)*0.9;
+    centroid(centroid(:,2) < size(degrade_highlights,1)*0.05,2) = size(degrade_highlights,1)*0.1;
+    centroid(centroid(:,2) > size(degrade_highlights,1)*0.95,2) = size(degrade_highlights,1)*0.9;
+    
+    for cell_num = 1:length(gel_diff)
+        pos_str = [' +',num2str(centroid(cell_num,1)),'+',num2str(centroid(cell_num,2))];
+        label_str = [' "',num2str(gel_diff(cell_num)), '\n', ...
+             num2str(gel_diff_total(cell_num)), '\n', ... 
+             num2str(gel_diff_median(cell_num)),'" '];
+        command_str = ['convert ', output_file, ' -fill white -annotate', ...  
+            pos_str, label_str, ' ', output_file];
+        system(command_str);
+%         disp(command_str);
+    end
 %     saveas(image_handle,fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis));
 %     close;
 %     exportfig(gcf,'test.png','color','rgb')
