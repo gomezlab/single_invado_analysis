@@ -1,4 +1,4 @@
-function cfg_struct = add_filenames_to_struct(cfg_struct)
+function filenames = add_filenames_to_struct(filenames)
 %ADD_FILENAMES_TO_STRUCT    Takes in a struct, to which the filenames for
 %                          various files made in the pipeline are added
 
@@ -6,20 +6,28 @@ function cfg_struct = add_filenames_to_struct(cfg_struct)
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cfg_struct.puncta_labeled_filename = 'puncta_labeled.png';
-cfg_struct.puncta_filename = 'focal_image.png';
-cfg_struct.puncta_median = '../../../all_field_resources/puncta_median.png';
-cfg_struct.puncta_range_file = '../../../all_field_resources/puncta_image_range.csv';
+filenames.puncta_labeled_filename = 'puncta_labeled.png';
+filenames.puncta_filename = 'focal_image.png';
+filenames.puncta_median = '../../../all_field_resources/puncta_median.png';
+filenames.puncta_range_file = '../../../all_field_resources/puncta_image_range.csv';
 
-cfg_struct.cell_mask_filename = 'cell_mask.png';
-cfg_struct.highlighted_cell_mask_filename = 'highlighted_mask.png';
-cfg_struct.labeled_cell_mask_filename = 'cell_mask_labeled.png';
+filenames.cell_mask_filename = 'cell_mask.png';
+filenames.highlighted_cell_mask_filename = 'highlighted_mask.png';
+filenames.labeled_cell_mask_filename = 'cell_mask_labeled.png';
+filenames.labeled_cell_mask_perim = 'cell_mask_perim_labeled.png';
 
-cfg_struct.gel_filename = 'gel.png';
-cfg_struct.gel_range_file = '../../../all_field_resources/gel_image_range.csv';
+filenames.gel_filename = 'gel.png';
+filenames.gel_range_file = '../../../all_field_resources/gel_image_range.csv';
 
-cfg_struct.intensity_correction_filename = 'intensity_correction.csv';
+filenames.intensity_correction_filename = 'intensity_correction.csv';
 
-cfg_struct.no_cells = '../../adhesion_props/no_cell_regions.png';
+filenames.no_cells = '../../adhesion_props/no_cell_regions.png';
 
-cfg_struct.invader_vis = 'invader_vis.png';
+filenames.invader_vis = 'invader_vis.png';
+
+filenames.tracking_raw = '../../adhesion_props/raw_tracking_data.mat';
+filenames.tracking = '../../tracking_matrices/tracking_seq.csv';
+
+filenames.cell_props = '../../adhesion_props/cell_props.mat';
+
+filenames.lineage_dir = '../../adhesion_props/lin_time_series/';
