@@ -41,6 +41,10 @@ for i_num = 1:size(image_dirs)
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_filename)));
     puncta_min_max = csvread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range_file));
     pixel_values = puncta_image(:);
+
+    normalized_image = puncta_image - puncta_min_max(1);
+    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in prior connected areas
@@ -69,30 +73,42 @@ for i_num = 1:size(image_dirs)
         threshed_mask = connected_areas > 0;
     end
     
+    connected_perims = zeros(size(connected_areas));
+    for i=1:max(connected_areas(:))
+        temp = zeros(size(connected_areas));
+        temp(connected_areas == i) = 1;
+        temp = bwperim(temp);
+        
+        connected_perims(temp) = i;
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%Output Image Creation/Writing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    %cell mask highlighting and labeled cell mask output, if we are working
-    %with the registered image
-    normalized_image = puncta_image - puncta_min_max(1);
-    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
-    
-    imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[0,1,0]), ...
+        
+    imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[1,0,0]), ...
         fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask_filename))
     
     imwrite(double(connected_areas)/2^16, ...
         fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_filename), ...
         'bitdepth',16)
-    
-    %binary cell mask
-    
+
+    imwrite(double(connected_perims)/2^16, ...
+        fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_perim), ...
+        'bitdepth',16)
+
+    %binary cell mask    
     imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask_filename))
+    
     if (mod(i_num,10)==0)
         disp(['Done processing image number: ',num2str(i_num)])
     end
 end
 toc;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function thresh = find_mask_threshold(pixel_values,i_p)
 
@@ -134,6 +150,7 @@ if (i_p.Results.debug)
     plot(intensity(imax), zmax,'gx')
     plot(intensity(imin), zmin,'ro')
     plot(intensity(imin(min_index)), zmin(min_index),'k*','MarkerSize',16);
+    1;
 end
 
 thresh = intensity(imin(min_index));
@@ -161,7 +178,7 @@ function final_connected_areas = filter_on_overlap(puncta_image,connected_areas,
 
 final_connected_areas = zeros(size(puncta_image));
 
-for (i=1:max(connected_areas(:)))
+for i=1:max(connected_areas(:))
     this_cell = connected_areas == i;
     
     seeds = prior_connected_areas > 0 & this_cell;
@@ -182,11 +199,10 @@ for (i=1:max(connected_areas(:)))
         water_out = watershed(minned_image);
         water_out(no_cells) = 0;
         
-        for (i=1:max(water_out(:)))
-            final_connected_areas(water_out == i) = max(final_connected_areas(:)) + 1;
+        for j=1:max(water_out(:))
+            final_connected_areas(water_out == j) = max(final_connected_areas(:)) + 1;
         end
     end
-    
 end
 
 cell_nums = unique(final_connected_areas);
