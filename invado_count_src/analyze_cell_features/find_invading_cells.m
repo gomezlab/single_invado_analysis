@@ -7,7 +7,7 @@ function find_invading_cells(field_dir,varargin)
 i_p = inputParser;
 
 i_p.addRequired('field_dir',@(x)exist(x,'dir') == 7);
-
+i_p.addParamValue('median_filter',-1.5,@isnumeric);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(field_dir,varargin{:});
@@ -32,7 +32,6 @@ data_series_folder = fullfile(field_dir,'adhesion_props','lin_time_series');
 files.p_vals = fullfile(data_series_folder,'Cell_gel_diff_p_val.csv');
 files.cell_diffs = fullfile(data_series_folder,'Cell_gel_diff.csv');
 files.cell_diff_medians = fullfile(data_series_folder,'Cell_gel_diff_median.csv');
-files.overlap_area = fullfile(data_series_folder,'Overlap_region_size.csv');
 files.tracking = fullfile(field_dir,'tracking_matrices','tracking_seq.csv');
 
 these_types = fieldnames(files);
@@ -64,7 +63,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process and Output data files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-processed_data = process_raw_data(raw_data);
+processed_data = process_raw_data(raw_data,i_p.Results.median_filter);
 
 output_dir = fullfile(field_dir,'adhesion_props');
 
@@ -75,7 +74,7 @@ csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
 %% Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function process_data = process_raw_data(raw_data,varargin)
+function process_data = process_raw_data(raw_data,median_filt,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -84,10 +83,10 @@ function process_data = process_raw_data(raw_data,varargin)
 i_p = inputParser;
 
 i_p.addRequired('raw_data',@isstruct);
-
+i_p.addRequired('median_filt',@isnumeric);
 i_p.addParamValue('filter_set',NaN,@islogical);
 
-i_p.parse(raw_data,varargin{:});
+i_p.parse(raw_data,median_filt,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -105,7 +104,7 @@ bonferroni_correction = sum(sum(not(isnan(raw_data.p_vals))));
 process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05/bonferroni_correction ...
-    & not(isnan(raw_data.cell_diff_medians)) & raw_data.cell_diff_medians < -15;
+    & not(isnan(raw_data.cell_diff_medians)) & raw_data.cell_diff_medians < median_filt;
 
 disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
 disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
