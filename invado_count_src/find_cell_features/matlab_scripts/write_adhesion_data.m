@@ -59,6 +59,9 @@ for i = 1:size(field_names,1)
     file_out = fullfile(out_dir,[cell2mat(field_names(i)),'.csv']);
     
     data = ad_props_cell(i,:);
+    if (any(size(data) == 0))
+        continue;
+    end
     output_CSV_from_cell(data, file_out, 'format', format_string);
 end
 
