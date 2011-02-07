@@ -91,7 +91,6 @@ sub gather_data_sets {
     die "No $cfg{raw_data_folder} folders found in $cfg{individual_results_folder}" if (scalar(keys %data_sets) == 0);
 
     &check_data_set_lengths(\%data_sets);
-    &check_PixelIdxList_lengths(\%data_sets);
 
     return %data_sets;
 }
@@ -112,17 +111,9 @@ sub process_centroid_positions {
 
 sub gather_data_from_matlab_file {
     my ($file) = @_;
-
+	
     my $parser = Text::CSV::Simple->new;
     my @data   = $parser->read_file($file);
-    
-    #PixelIdxList is supposed to be an array of arrayes containing the pixel id
-    #numbers, when only a single adhesion is present in the image, then the
-    #parser returns just an array, not an array of arrays, this checks for that
-    #problem and fixes it
-    if ($file =~ /PixelIdxList/ && !(ref($data[0]) eq "ARRAY")) {
-        @data = [@data];
-    }
     
 	#For most of the files matlab produces, we will see a property with a single
     #value for each adhesion. In this case, we want to collapse the array of
@@ -132,7 +123,7 @@ sub gather_data_from_matlab_file {
 	#into problem when the PixelIdxList is an array of arrays with single
 	#entries, which we want to stay in that format, so we make sure not the
 	#process the PixelIdxList with this statement.
-    if (scalar(grep scalar(@{$_}) == 1, @data) == scalar(@data) && !($file =~ /PixelIdxList/)) {
+    if (scalar(grep scalar(@{$_}) == 1, @data) == scalar(@data)) {
         @data = map ${$_}[0], @data;
     }
 
@@ -167,58 +158,6 @@ sub check_data_set_lengths {
         if (not $all_same) {
             warn "Data set lengths do not match in image number $key:\n",
               map { "    $_ - $data_sets_length{$key}{$_}\n" } keys %{ $data_sets_length{$key} };
-        }
-    }
-}
-
-sub check_PixelIdxList_lengths {
-    my %data_sets = %{ $_[0] };
-
-    my $first_key = (sort { $a <=> $b } keys %data_sets)[0];
-
-    if (   not(exists $data_sets{$first_key}{"Area"})
-        || not(exists $data_sets{$first_key}{"PixelIdxList"})) {
-        return 1;
-    }
-
-    for my $key (sort { $a <=> $b } keys %data_sets) {
-        my $areas          = new Math::Matrix($data_sets{$key}{Area});
-        my $pix_id_lengths = new Math::Matrix(
-            [ map scalar(@{ $data_sets{$key}{PixelIdxList}[$_] }), (0 .. $#{ $data_sets{$key}{PixelIdxList} }) ]);
-
-        my @areas_size = $areas->size;
-        my @pix_size   = $pix_id_lengths->size;
-
-        if ($areas_size[0] != $pix_size[0] && $areas_size[1] != $pix_size[1]) {
-            warn "Problem with the length of Area and PixelIdxList matrices in image $key:\n",
-              "    Area: ", $areas_size[1], " PixelIdxList: ", $pix_size[1], "\n";
-        }
-
-        if (not $pix_id_lengths->equal($areas)) {
-            warn "Problem with the Area and PixelIdxList in image $key:\n", "    The number of pixels don't match.\n";
-        }
-    }
-}
-
-sub check_PixelIdxList_uniqueness {
-    my %data_sets = %{ $_[0] };
-    for my $key (sort keys %data_sets) {
-        print "Woring on checking PixelIdxList for $key\n";
-        my @overall_list;
-        my @origins;
-        my $count = 0;
-        for (@{ $data_sets{$key}{PixelIdxList} }) {
-            push @overall_list, @{$_};
-            for (@{$_}) {
-                push @origins, $count;
-            }
-            $count++;
-        }
-
-        for my $i (0 .. $#overall_list) {
-            if (grep $overall_list[$_] == $overall_list[$i], (0 .. $i - 1, $i + 1 .. $#overall_list)) {
-                print "$key - $origins[$i] - $overall_list[$i]\n";
-            }
         }
     }
 }
