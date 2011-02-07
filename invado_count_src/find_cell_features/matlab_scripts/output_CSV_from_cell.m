@@ -30,11 +30,16 @@ file_handle = fopen(i_p.Results.out_file,'wt');
 for i = 1:max(size(data))
     for j = 1:max(size(data{i}))
         assert(any(size(data{i}) == 1))
+        
+        if (size(data{i},1) == 0)
+            continue;
+        end
+        
         if (j < max(size(data{i})))
             fprintf(file_handle,[i_p.Results.format,','],data{i}(j));
         else
             fprintf(file_handle,[i_p.Results.format,'\n'],data{i}(j));
-        end        
+        end
     end
 end
 fclose(file_handle);
