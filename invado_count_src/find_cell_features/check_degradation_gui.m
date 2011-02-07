@@ -57,6 +57,14 @@ uicontrol('Style','pushbutton','String','Next Field', ...
     'Units','normalized','Position',[0.85,0.8,0.14,0.15], ...
     'Callback',@jump_to_next_field);
 
+ax(1) = subplot(1,2,1);
+ui_controls.high_hnd = image(images.gel_high,'ButtonDownFcn',@get_clicks);
+
+ax(2) = subplot(122);
+ui_controls.no_high_hnd = image(images.gel);
+
+linkaxes(ax,'xy')
+axis(ax,'image')
 
 uicontrol('Style','pushbutton','String','Image 1', ... 
     'Units','normalized','Position',[0.01,0.01,0.10,0.15], ...
@@ -74,14 +82,6 @@ uicontrol('Style','pushbutton','String','Play Movie', ...
     'Callback',@play_movie);
 
 
-ax(1) = subplot(1,2,1);
-ui_controls.high_hnd = image(images.gel_high,'ButtonDownFcn',@get_clicks);
-
-ax(2) = subplot(122);
-ui_controls.no_high_hnd = image(images.gel);
-
-linkaxes(ax,'xy')
-axis(ax,'image')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
