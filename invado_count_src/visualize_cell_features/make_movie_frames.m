@@ -142,6 +142,8 @@ function lineage_cmap = assign_unique_colors_to_lineages(tracking_seq)
 max_live_adhesions = find_max_live_adhesions(tracking_seq);
 lineage_cmap = zeros(size(tracking_seq,1),1);
 
+use_beginning = 0;
+
 for time = 1:size(tracking_seq,2)
     living_lineage_rows = find(tracking_seq(:,time) > 0);
     
@@ -164,7 +166,13 @@ for time = 1:size(tracking_seq,2)
         
         assert(not(isempty(unused_c_nums)), 'Couldn''t find an unused color number')
         
-        lineage_cmap(this_row) = unused_c_nums(1);
+        if (use_beginning == 0)
+            lineage_cmap(this_row) = unused_c_nums(1);
+            use_beginning = 1;
+        else
+            lineage_cmap(this_row) = unused_c_nums(end);
+            use_beginning = 0;
+        end
         1;
     end
 end
