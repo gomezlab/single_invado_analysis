@@ -33,11 +33,10 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 no_cell_diffs = [];
-overlap_diffs = [];
+overlap_areas = [];
 data_points = 0;
-overlap_sizes = [];
-cell_diffs = [];
-p_vals = [];
+all_tracking_props = cell(size(image_dirs,1),1);
+all_cell_props = cell(size(image_dirs,1),1);
 
 for i_num = 1:size(image_dirs,1)
     if (i_num > 1)
@@ -49,7 +48,7 @@ for i_num = 1:size(image_dirs,1)
         end
     else
         prior_dir = fullfile(base_dir,image_dirs(i_num).name);
-        prior_data = read_in_file_set(prior_dir,filenames);        
+        prior_data = read_in_file_set(prior_dir,filenames);
     end
     current_dir = fullfile(base_dir,image_dirs(i_num).name);
     current_data = read_in_file_set(current_dir,filenames);
@@ -57,29 +56,29 @@ for i_num = 1:size(image_dirs,1)
     cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);
     
     %convert cell props data into movieInfo data suitable for u-track
-%     [xCoord, yCoord, amp] = convert_props_to_movieInfo(cell_props);
-%     movieInfo(i_num).xCoord = xCoord;
-%     movieInfo(i_num).yCoord = yCoord;
-%     movieInfo(i_num).amp = amp;
-
+    %     [xCoord, yCoord, amp] = convert_props_to_movieInfo(cell_props);
+    %     movieInfo(i_num).xCoord = xCoord;
+    %     movieInfo(i_num).yCoord = yCoord;
+    %     movieInfo(i_num).amp = amp;
+    
     data_points = data_points + length(cell_props);
-    tracking_props = collect_tracking_properties(current_data,prior_data,'debug',i_p.Results.debug);
+    
     if (i_num ~= 1)
-        overlap_sizes = [overlap_sizes, [cell_props.Overlap_region_size]];
-        cell_diffs = [cell_diffs, [cell_props.Cell_gel_diff]];
+        tracking_props = collect_tracking_properties(current_data,prior_data,'debug',i_p.Results.debug);
         no_cell_diffs = [no_cell_diffs, [cell_props(1).no_cells_diff]'];
-        p_vals = [p_vals, [cell_props.Cell_gel_diff_p_val]];
-        
+        overlap_areas = [overlap_areas, [cell_props(1).Overlap_area]'];
         cell_props = rmfield(cell_props,'no_cells_diff');
+        
+        all_tracking_props{i_num-1} = tracking_props;
     end
-
-    write_adhesion_data(cell_props,'out_dir',fullfile(current_dir,'raw_data'));
-    write_adhesion_data(tracking_props,'out_dir',fullfile(prior_dir,'raw_data'));
+    all_cell_props{i_num} = cell_props;
     
     if (i_num == size(image_dirs,1))
         tracking_props = collect_tracking_properties(current_data,current_data,'debug',i_p.Results.debug);
-        write_adhesion_data(tracking_props,'out_dir',fullfile(current_dir,'raw_data'));
+        all_tracking_props{i_num} = tracking_props;
     end
+    
+%     write_adhesion_data(cell_props,'out_dir',fullfile(current_dir,'raw_data'));
     
     %make a diagnostic figure showing where the cell masks overlap with the
     %next image
@@ -87,30 +86,45 @@ for i_num = 1:size(image_dirs,1)
     temp(prior_data.cell_mask) = 2;
     temp(prior_data.cell_mask & current_data.cell_mask) = 3;
     imwrite(label2rgb(temp),fullfile(current_dir,'cell_overlaps.png'));
-
+    
     %make an image showing where the cells are located overlayed on the gel
     %image
     gel_range_norm = create_highlighted_image(current_data.gel_image_norm,bwperim(current_data.cell_mask));
     imwrite(gel_range_norm,fullfile(current_dir,'gel_highlights.png'));
-
+    
     if (mod(i_num,10)==0)
         disp(['Done processing image number: ',num2str(i_num)])
-    end    
+    end
 end
 
-% sample_sizes = 1000:1000:20000;
+save(fullfile(base_dir,image_dirs(1).name,filenames.tracking_raw),'all_tracking_props');
+save(fullfile(base_dir,image_dirs(1).name,filenames.cell_props),'all_cell_props');
+save(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/no_cell_diffs.mat'),'no_cell_diffs');
+
+% measurement_num = count_measurement_nums(all_cell_props);
+% 
+% sample_sizes = 1000:1000:10000;
 % min_maxes = NaN(2,length(sample_sizes));
 % for i=1:length(sample_sizes)
-%     min_maxes(:,i) = bootstrap_mean_small(no_cell_diffs,'samp_size',sample_sizes(i))';
+%     min_maxes(:,i) = bootstrap_median_small(no_cell_diffs,'samp_size',sample_sizes(i), ...
+%         'bonfer_correction',measurement_num)';
 %     disp(sample_sizes(i));
-%     plot(sample_sizes, min_maxes);
 % end
-
+% % plot(sample_sizes, min_maxes);
+% save(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/min_maxes.mat'),'min_maxes');
+% csvwrite(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/min_maxes.csv'),cat(1,sample_sizes,min_maxes));
 toc;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function count = count_measurement_nums(props)
+
+count = 0;
+for i=1:length(props)
+    count = count + sum(not(isnan([props{i}.Cell_gel_diff_median])));
+end
 
 function [xCoord,yCoord,amp] = convert_props_to_movieInfo(cell_props)
 
@@ -152,15 +166,21 @@ cell_props = regionprops(current_data.labeled_cells,current_data.gel_image, ...
     'Area','Centroid','MeanIntensity','PixelValues');
 
 for i=1:max(current_data.labeled_cells(:))
-        cell_props(i).StdIntensity = std([cell_props(i).PixelValues]);
+    cell_props(i).StdIntensity = std([cell_props(i).PixelValues]);
 end
 cell_props = rmfield(cell_props,'PixelValues');
 
-[cell_props.Overlap_region_size] = deal(NaN);
-[cell_props.Cell_gel_diff_p_val] = deal(NaN);
-[cell_props.Cell_gel_diff] = deal(NaN);
-[cell_props.Cell_gel_diff_median] = deal(NaN);
-[cell_props.Cell_gel_diff_total] = deal(NaN);
+if (isempty(cell_props))
+    cell_props(1).Cell_gel_diff = [];
+    cell_props(1).Cell_gel_diff_p_val = [];
+    cell_props(1).Cell_gel_diff_median = [];
+    cell_props(1).Cell_gel_diff_total = [];
+else
+    [cell_props.Cell_gel_diff] = deal(NaN);
+    [cell_props.Cell_gel_diff_p_val] = deal(NaN);
+    [cell_props.Cell_gel_diff_median] = deal(NaN);
+    [cell_props.Cell_gel_diff_total] = deal(NaN);
+end
 
 %when the first image is both the prior and current data, we only want the
 %area and centroid variables to contain any data, the other properties are
@@ -171,10 +191,6 @@ end
 
 cell_props(1).no_cells_diff = current_data.gel_image(current_data.no_cells)*current_data.intensity_correction - ...
     prior_data.gel_image(prior_data.no_cells)*prior_data.intensity_correction;
-% cell_props(1).no_cells_diff = current_data.gel_image(current_data.no_cells) - ...
-%     prior_data.gel_image(prior_data.no_cells);
-% [h,p,ci] = ttest(cell_props(1).no_cells_diff);
-% ci
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Properites Always Extracted
@@ -191,9 +207,10 @@ for i=1:max(current_data.labeled_cells(:))
     prev_cells = prior_data.cell_mask;
     
     overlap_region = this_cell & prev_cells;
+    cell_props(i).Overlap_area = sum(overlap_region(:));
     
-    differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - ... 
-        prior_data.gel_image(overlap_region)*prior_data.intensity_correction;    
+    differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - ...
+        prior_data.gel_image(overlap_region)*prior_data.intensity_correction;
     
     [h,p] = ttest(differences);
     cell_props(i).Cell_gel_diff = mean(differences);
@@ -202,14 +219,39 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_total = sum(differences);
     
     %single cell diagnostics
-    if (i_p.Results.debug)
+    if (i_p.Results.debug && not(isempty(regexp(current_data.this_dir,'ind.*05', 'once'))))
+        c_extent = [find(sum(this_cell,2), 1 ),find(sum(this_cell,2), 1, 'last' ), ...
+            find(sum(this_cell), 1 ),find(sum(this_cell), 1, 'last' )];
+        c_extent(1:2:3) = c_extent(1:2:3) - 10;
+        c_extent(2:2:4) = c_extent(2:2:4) + 10;
+        c_extent(c_extent <= 0) = 1;
+        if (c_extent(2) > size(this_cell,1)), c_extent(2) = size(this_cell,1); end
+        if (c_extent(4) > size(this_cell,2)), c_extent(4) = size(this_cell,2); end
+        c_extent = struct('row',[c_extent(1):c_extent(2)],'col',[c_extent(3):c_extent(4)]);
+                
+        prior_puncta = normalize_image(prior_data.puncta_image(c_extent.row,c_extent.col));
+        prior_gel = prior_data.gel_image(c_extent.row,c_extent.col)*prior_data.intensity_correction;
+        
+        current_puncta = normalize_image(current_data.puncta_image(c_extent.row,c_extent.col));
+        current_puncta = (current_puncta - min(current_puncta(:)))/range(current_puncta(:));
+        current_gel = current_data.gel_image(c_extent.row,c_extent.col)*current_data.intensity_correction;
+        
+        gel_min = min([prior_gel(:);current_gel(:)]);
+        gel_max = max([prior_gel(:);current_gel(:)]);
+        prior_gel = normalize_image(prior_gel,[gel_min,gel_max]);
+        current_gel = normalize_image(current_gel,[gel_min,gel_max]);
+        
+        prior_both = cat(1,prior_puncta,prior_gel);
+        current_both = cat(1,current_puncta,current_gel);
+        
+        diff_gel = normalize_image(current_gel - prior_gel);        
+        
         temp = double(this_cell);
         temp(prev_cells) = 2;
         temp(overlap_region) = 3;
         subplot(1,2,1); imshow(label2rgb(temp));
         subplot(1,2,2); hist(differences);
-        1;
-%         imshow(current_data.gel_image.*overlap_region - prior_data.gel_image.*overlap_region,[]);
+        1;       
     end
 end
 
@@ -228,11 +270,15 @@ i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 i_p.parse(current_data,prior_data,varargin{:});
 
 current_props = regionprops(current_data.labeled_cells,'Centroid');
-prior_props = regionprops(prior_data.labeled_cells,'Centroid');
+prior_props = regionprops(prior_data.labeled_cells,'Centroid','Area');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if (all(current_data.gel_image(:) == prior_data.gel_image(:)) == 1)    
+    return;
+end
 
 for i=1:max(prior_data.labeled_cells(:))
     for j=1:max(current_data.labeled_cells(:))
@@ -249,24 +295,22 @@ for i=1:max(prior_data.labeled_cells(:))
     this_cell(prior_data.labeled_cells ~= i) = 0;
     this_cell = logical(this_cell);
     
-    prior_props(i).Pix_sim = zeros(max(current_data.labeled_cells(:)),1);
     this_cell_area = sum(sum(this_cell));
-    
     next_overlaping_cells = current_data.labeled_cells(this_cell);
+    if (max(current_data.labeled_cells(:)) == 0)
+        continue;
+    end
     
+    prior_props(i).Pix_sim = zeros(1,max(current_data.labeled_cells(:)));    
     overlap_nums = unique(next_overlaping_cells);
     if (overlap_nums(1) == 0)
         overlap_nums = overlap_nums(2:end);
     end
     for j=1:length(overlap_nums)
-       this_overlap_num = overlap_nums(j);
-       
-       overlap_area = sum(next_overlaping_cells == this_overlap_num);
-       prior_props(i).Pix_sim(this_overlap_num) = overlap_area/this_cell_area;
+        this_overlap_num = overlap_nums(j);
+        
+        overlap_area = sum(next_overlaping_cells == this_overlap_num);
+        prior_props(i).Pix_sim(this_overlap_num) = overlap_area/this_cell_area;
     end
 end
-
-%we don't want to write the centroid field back out, so remove it from the
-%structure
-prior_props = rmfield(prior_props,'Centroid');
 
