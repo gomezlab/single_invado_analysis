@@ -36,6 +36,17 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
+data_sets_to_read = {'Cell_gel_diff','Cell_gel_diff_median','Cell_gel_diff_p_val','Area' ... 
+    'Cell_gel_diff_total','Centroid_x','Centroid_y'};
+raw_data = struct();
+
+for i = 1:length(data_sets_to_read)
+    data_dir = fullfile(base_dir, image_dirs(1).name,filenames.lineage_dir);
+    raw_data.(data_sets_to_read{i}) = csvread(fullfile(data_dir,[data_sets_to_read{i}, '.csv']));
+end
+
+tracking_mat = csvread(fullfile(base_dir, image_dirs(1).name,filenames.tracking))+1;
+
 for i_num = 1:size(image_dirs)
     current_dir = fullfile(base_dir,image_dirs(i_num).name);
     current_data = read_in_file_set(current_dir,filenames);
@@ -65,10 +76,20 @@ for i_num = 1:size(image_dirs)
         end
     end
     
-    centroid = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Centroid.csv'));
-    gel_diff = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff.csv'));
-    gel_diff_median = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff_median.csv'));
-    gel_diff_total = csvread(fullfile(base_dir,image_dirs(i_num).name,'raw_data','Cell_gel_diff_total.csv'));
+    tracking_col = tracking_mat(:,i_num);
+    
+    filtered_data = struct();
+    for i = 1:length(data_sets_to_read) 
+        temp = NaN(sum(tracking_col > 0),1);
+        for j=1:length(tracking_col)
+            if (tracking_col(j) < 1)
+                continue;
+            end
+            temp(tracking_col(j)) = raw_data.(data_sets_to_read{i})(j, i_num);
+        end
+        filtered_data.(data_sets_to_read{i}) = temp;
+        
+    end
     
     c_map = [[1,0,0];[0,1,0]];
     
@@ -76,25 +97,28 @@ for i_num = 1:size(image_dirs)
     
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);
     imwrite(degrade_highlights,output_file);
-
-    centroid(centroid(:,1) < size(degrade_highlights,2)*0.05,1) = size(degrade_highlights,2)*0.1;
-    centroid(centroid(:,1) > size(degrade_highlights,2)*0.95,1) = size(degrade_highlights,2)*0.9;
-    centroid(centroid(:,2) < size(degrade_highlights,1)*0.05,2) = size(degrade_highlights,1)*0.1;
-    centroid(centroid(:,2) > size(degrade_highlights,1)*0.95,2) = size(degrade_highlights,1)*0.9;
+    
+    img_size = size(degrade_highlights);
+        
+    filtered_data.Centroid_x(filtered_data.Centroid_x > 0.9*img_size(2)) = 0.9*img_size(2);
+    filtered_data.Centroid_y(filtered_data.Centroid_y > 0.9*img_size(1)) = 0.9*img_size(1);
+    filtered_data.Centroid_y(filtered_data.Centroid_y < 0.1*img_size(1)) = 0.1*img_size(1);
+    centroid = [filtered_data.Centroid_x,filtered_data.Centroid_y];
+    
+    gel_diff = filtered_data.Cell_gel_diff;
+    area = filtered_data.Area;
+    gel_diff_total = filtered_data.Cell_gel_diff_total;
+    gel_diff_median = filtered_data.Cell_gel_diff_median;
     
     for cell_num = 1:length(gel_diff)
         pos_str = [' +',num2str(centroid(cell_num,1)),'+',num2str(centroid(cell_num,2))];
-        label_str = [' "',num2str(gel_diff(cell_num)), '\n', ...
-             num2str(gel_diff_total(cell_num)), '\n', ... 
-             num2str(gel_diff_median(cell_num)),'" '];
-        command_str = ['convert ', output_file, ' -fill white -annotate', ...  
+        label_str = [' "',sprintf('%.0f',area(cell_num)), '\n', ...
+             sprintf('%.2f',gel_diff(cell_num)), '\n', ...
+             sprintf('%.0f',gel_diff_total(cell_num)), '\n', ... 
+             sprintf('%.2f',gel_diff_median(cell_num)),'" '];
+        command_str = ['convert ', output_file, ' -font VeraSe.ttf -fill ''rgba(255,255,255, 0.5)'' -annotate', ...  
             pos_str, label_str, ' ', output_file];
         system(command_str);
-%         disp(command_str);
     end
-%     saveas(image_handle,fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis));
-%     close;
-%     exportfig(gcf,'test.png','color','rgb')
-    1;
 end
 toc;
