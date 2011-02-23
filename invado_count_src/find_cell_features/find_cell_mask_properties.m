@@ -33,7 +33,6 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 no_cell_diffs = [];
-overlap_areas = [];
 data_points = 0;
 all_tracking_props = cell(size(image_dirs,1),1);
 all_cell_props = cell(size(image_dirs,1),1);
@@ -66,7 +65,6 @@ for i_num = 1:size(image_dirs,1)
     if (i_num ~= 1)
         tracking_props = collect_tracking_properties(current_data,prior_data,'debug',i_p.Results.debug);
         no_cell_diffs = [no_cell_diffs, [cell_props(1).no_cells_diff]'];
-        overlap_areas = [overlap_areas, [cell_props(1).Overlap_area]'];
         cell_props = rmfield(cell_props,'no_cells_diff');
         
         all_tracking_props{i_num-1} = tracking_props;
@@ -118,27 +116,6 @@ toc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function count = count_measurement_nums(props)
-
-count = 0;
-for i=1:length(props)
-    count = count + sum(not(isnan([props{i}.Cell_gel_diff_median])));
-end
-
-function [xCoord,yCoord,amp] = convert_props_to_movieInfo(cell_props)
-
-xCoord = zeros(length(cell_props),2);
-yCoord = zeros(length(cell_props),2);
-amp = zeros(length(cell_props),2);
-
-for i=1:length(cell_props)
-    xCoord(i,1) = cell_props(i).Centroid(1);
-    yCoord(i,1) = cell_props(i).Centroid(2);
-    
-    amp(i,1) = cell_props(i).MeanIntensity;
-    amp(i,2) = cell_props(i).StdIntensity;
-end
 
 function cell_props = collect_cell_properties(current_data,prior_data,varargin)
 % COLLECT_cell_PROPERTIES    using the identified cells, various
@@ -241,10 +218,10 @@ for i=1:max(current_data.labeled_cells(:))
         prior_gel = normalize_image(prior_gel,[gel_min,gel_max]);
         current_gel = normalize_image(current_gel,[gel_min,gel_max]);
         
-        prior_both = cat(1,prior_puncta,prior_gel);
-        current_both = cat(1,current_puncta,current_gel);
-        
-        diff_gel = normalize_image(current_gel - prior_gel);        
+%         prior_both = cat(1,prior_puncta,prior_gel);
+%         current_both = cat(1,current_puncta,current_gel);
+%         
+%         diff_gel = normalize_image(current_gel - prior_gel);        
         
         temp = double(this_cell);
         temp(prev_cells) = 2;
