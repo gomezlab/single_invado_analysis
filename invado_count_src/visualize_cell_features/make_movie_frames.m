@@ -14,7 +14,7 @@ function make_movie_frames(cfg_file,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+tic;
 i_p = inputParser;
 i_p.FunctionName = 'MAKE_MOVIE_FRAMES';
 
@@ -23,8 +23,6 @@ i_p.addParamValue('no_scale_bar',0,@(x) islogical(x) || x == 0 || x == 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(cfg_file,varargin{:});
-
-if (i_p.Results.debug == 1), profile off; profile on; end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -52,6 +50,12 @@ folder_char_length = length(num2str(max_image_num));
 i_size = size(imread(fullfile(I_folder,num2str(max_image_num),filenames.puncta_filename)));
 
 tracking_seq = load(tracking_seq_file) + 1;
+%occastionally, there will be fields were no cells were detected, in that
+%case, the tracking matrix is an empty file, but we still need a matrix to
+%index into, so make an empty tracking matrix with a line of zeros
+if (isempty(tracking_seq))
+    tracking_seq = zeros(1,max_image_num);
+end
 
 max_live_adhesions = find_max_live_adhesions(tracking_seq);
 lineage_cmap = jet(max_live_adhesions);
@@ -134,8 +138,7 @@ for i = 1:max_image_num
 %     end
 end
 
-profile off;
-if (i_p.Results.debug), profile viewer; end
+toc;
 
 function lineage_cmap = assign_unique_colors_to_lineages(tracking_seq)
 

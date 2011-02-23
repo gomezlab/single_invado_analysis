@@ -46,8 +46,14 @@ for i = 1:length(data_sets_to_read)
 end
 
 tracking_mat = csvread(fullfile(base_dir, image_dirs(1).name,filenames.tracking))+1;
+%occastionally, there will be fields were no cells were detected, in that
+%case, the tracking matrix is an empty file, but we still need a matrix to
+%index into, so make an empty tracking matrix with a line of zeros
+if (isempty(tracking_mat))
+    tracking_mat = zeros(1,size(image_dirs,1));
+end
 
-for i_num = 1:size(image_dirs)
+for i_num = 1:size(image_dirs,1)
     current_dir = fullfile(base_dir,image_dirs(i_num).name);
     current_data = read_in_file_set(current_dir,filenames);
     
