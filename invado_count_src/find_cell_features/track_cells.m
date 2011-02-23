@@ -141,7 +141,7 @@ for col_num = 1:size(tracking_matrix,2)
     
     this_col = sort(unique(this_col))';
     
-    assert(all(this_col == 1:max(this_col)))
+    assert(isempty(this_col) || all(this_col == 1:max(this_col)))
     
     assert((isempty(all_tracking_props{col_num}) && isempty(this_col)) || ...
         (length(all_tracking_props{col_num}) == max(this_col)));
