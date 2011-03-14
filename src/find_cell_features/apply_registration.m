@@ -17,9 +17,7 @@ function apply_registration(I_folder,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-maxNumCompThreads(2);
-
+tic;
 i_p = inputParser;
 i_p.FunctionName = 'APPLY_REGISTRATION';
 
@@ -46,20 +44,29 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 for i = 1:size(image_dirs,1)
-    orig_image  = imread(fullfile(I_folder,image_dirs(i).name,filenames.puncta));
+    puncta_image  = imread(fullfile(I_folder,image_dirs(i).name,filenames.puncta));
+    gel_image  = imread(fullfile(I_folder,image_dirs(i).name,filenames.gel));
     transform_matrix = csvread(fullfile(I_folder,image_dirs(i).name,filenames.affine_matrix_cascade));
     transform = maketform('affine', transform_matrix);
     
-    binary_image = ones(size(orig_image));
-    binary_shift = imtransform(binary_image, transform, 'XData',[1 size(orig_image,2)], 'YData', [1 size(orig_image,1)]);
-    image_shift = imtransform(orig_image, transform, 'XData',[1 size(orig_image,2)], 'YData', [1 size(orig_image,1)]);
+    binary_image = ones(size(puncta_image));
+    
+    binary_shift = imtransform(binary_image, transform, 'XData',[1 size(puncta_image,2)], 'YData', [1 size(puncta_image,1)]);
+    puncta_shift = imtransform(puncta_image, transform, 'XData',[1 size(puncta_image,2)], 'YData', [1 size(puncta_image,1)]);
+    gel_shift = imtransform(gel_image, transform, 'XData',[1 size(puncta_image,2)], 'YData', [1 size(puncta_image,1)]);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Write the output files
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     imwrite(binary_shift,fullfile(I_folder,image_dirs(i).name,filenames.binary_shift));
-    imwrite(orig_image,fullfile(I_folder,image_dirs(i).name,filenames.puncta_unreg));
-    imwrite(image_shift,fullfile(I_folder,image_dirs(i).name,filenames.puncta));
+
+    imwrite(gel_image,fullfile(I_folder,image_dirs(i).name,filenames.gel_unreg));
+    imwrite(gel_shift,fullfile(I_folder,image_dirs(i).name,filenames.gel));
+    
+    imwrite(puncta_image,fullfile(I_folder,image_dirs(i).name,filenames.puncta_unreg));
+    imwrite(puncta_shift,fullfile(I_folder,image_dirs(i).name,filenames.puncta));
     
     disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))])
 end
+
+toc;

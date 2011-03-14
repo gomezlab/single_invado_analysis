@@ -14,10 +14,11 @@ cfg_struct.adhesions_filename = 'puncta_labeled.png';
 
 cfg_struct.puncta = 'focal_image.png';
 cfg_struct.puncta_unreg = 'unregistered_focal_image.png';
-cfg_struct.puncta_range_file = '../../adhesion_props/puncta_image_range.csv';
+cfg_struct.puncta_range = '../../adhesion_props/puncta_image_range.csv';
 
-cfg_struct.gel_filename = 'registered_gel.png';
-cfg_struct.gel_range_file = '../../adhesion_props/gel_image_range.csv';
+cfg_struct.gel = 'gel.png';
+cfg_struct.gel_unreg = 'unregistered_gel.png';
+cfg_struct.gel_range = '../../adhesion_props/gel_image_range.csv';
 
 cfg_struct.binary_shift = 'binary_shift.png';
 
