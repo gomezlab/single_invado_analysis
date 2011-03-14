@@ -38,7 +38,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
-my @image_files   = <$cfg{individual_results_folder}/*/registered_focal_image.png>;
+my @image_files   = <$cfg{individual_results_folder}/*/focal_image.png>;
 die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
   if (scalar(@image_files) != scalar(@image_folders));
 
@@ -73,15 +73,7 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $file_name (@image_files) {
-        my $extra_opt = "";
-		my $registration_binary_file = catfile(dirname($file_name), 'binary_shift.png');
-		if (-e $registration_binary_file) {
-			$extra_opt .= ",'registration_binary','$registration_binary_file'";
-		} else {
-			die "Unable to find binary shift file in same folder as: $file_name";
-		}
-
-		$matlab_code[0] .= "find_focal_adhesions('$file_name'$extra_opt)\n";
+		$matlab_code[0] .= "find_focal_adhesions('$file_name')\n";
     }
 
     return @matlab_code;

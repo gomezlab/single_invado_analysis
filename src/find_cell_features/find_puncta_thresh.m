@@ -8,7 +8,7 @@ i_p = inputParser;
 i_p.FunctionName = 'find_puncta_thresh';
 
 i_p.addRequired('I_folder',@(x)exist(x,'dir') == 7);
-i_p.addParamValue('std_coeff',5,@(x)isnumeric(x))
+i_p.addParamValue('std_coeff',3,@(x)isnumeric(x))
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_folder,varargin{:});
