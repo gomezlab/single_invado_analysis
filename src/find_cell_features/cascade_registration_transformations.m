@@ -26,6 +26,9 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_folder,varargin{:});
 
+addpath('matlab_scripts');
+filenames = add_filenames_to_struct(struct());
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +46,7 @@ x_transform = 0;
 y_transform = 0;
 
 for i = 1:size(image_dirs)
-    transform_file = fullfile(base_dir,image_dirs(i).name,'affine_matrix.csv');
+    transform_file = fullfile(base_dir,image_dirs(i).name,filenames.affine_matrix);
     
     assert(exist(transform_file,'file') == 2)
     transform_mat = csvread(transform_file);
@@ -58,7 +61,7 @@ for i = 1:size(image_dirs)
     new_transform_mat(3,1) = x_transform;
     new_transform_mat(3,2) = y_transform;
     
-    new_transform_file = fullfile(base_dir,image_dirs(i).name,'affine_matrix_cascade.csv');
+    new_transform_file = fullfile(base_dir,image_dirs(i).name,filenames.affine_matrix_cascade);
     
     csvwrite(new_transform_file, new_transform_mat);
 end

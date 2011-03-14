@@ -19,9 +19,7 @@ function register_gel_images(I_file,reg_target,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-profile off; profile on;
-
-
+tic;
 i_p = inputParser;
 i_p.FunctionName = 'REGISTER_GEL_IMAGES';
 
@@ -34,24 +32,24 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(I_file,reg_target,varargin{:});
 
+%occassionally, we want to run the pipeline without registration, but the
+%downstream commands expect to registration files, so we put in a reg file
+%without any movement
 if (not(i_p.Results.do_registration))
-    csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), ...
+    csvwrite(fullfile(i_p.Results.output_dir, filenames.affine_matrix), ...
         [cos(0) sin(0);-sin(0) cos(0); 0 0])
     return
 end
 
 %read in and normalize the input focal adhesion image
-gel_image  = imread(I_file);
-scale_factor = double(intmax(class(gel_image)));
-gel_image  = double(gel_image)/scale_factor;
+gel_image  = double(imread(I_file));
 
 %read in and normalize the first image
-reg_target  = imread(reg_target);
-scale_factor = double(intmax(class(reg_target)));
-reg_target  = double(reg_target)/scale_factor;
+reg_target  = double(imread(reg_target));
 
 %Add the folder with all the scripts used in this master program
 addpath('matlab_scripts');
+filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
@@ -66,6 +64,7 @@ reg_layer_count = 0;
 for temp = 1:5
     ms_diff = add_registration_layer(gel_image, reg_target, row_shifts, col_shifts, ms_diff);
     reg_layer_count = reg_layer_count + 1;
+    disp(reg_layer_count);
 end
 
 %if the best registration result is on the edge of the ms_diff matrix, we have
@@ -94,13 +93,10 @@ assert(all(all(isnumeric(trimmed_ms_diff))))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-csvwrite(fullfile(i_p.Results.output_dir, 'affine_matrix.csv'), transform_matrix)
-csvwrite(fullfile(i_p.Results.output_dir, 'registration_diffs.csv'), trimmed_ms_diff)
+csvwrite(fullfile(i_p.Results.output_dir, filenames.affine_matrix), transform_matrix)
+csvwrite(fullfile(i_p.Results.output_dir, filenames.registration_diff), trimmed_ms_diff)
 
-if (i_p.Results.debug)
-    profile viewer;
-end
-profile off;
+toc;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
