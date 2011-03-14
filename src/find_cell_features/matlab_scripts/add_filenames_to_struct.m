@@ -15,6 +15,7 @@ cfg_struct.adhesions_filename = 'puncta_labeled.png';
 cfg_struct.puncta = 'focal_image.png';
 cfg_struct.puncta_unreg = 'unregistered_focal_image.png';
 cfg_struct.puncta_range = '../../adhesion_props/puncta_image_range.csv';
+cfg_struct.puncta_threshold = '../../adhesion_props/puncta_threshold.csv';
 
 cfg_struct.gel = 'gel.png';
 cfg_struct.gel_unreg = 'unregistered_gel.png';

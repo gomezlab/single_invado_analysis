@@ -34,7 +34,7 @@ filenames = add_filenames_to_struct(struct());
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-base_dir = i_p.Results.I_folder;
+base_dir = fullfile(i_p.Results.I_folder,'individual_pictures');
 image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
@@ -44,9 +44,9 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 for i = 1:size(image_dirs,1)
-    puncta_image  = imread(fullfile(I_folder,image_dirs(i).name,filenames.puncta));
-    gel_image  = imread(fullfile(I_folder,image_dirs(i).name,filenames.gel));
-    transform_matrix = csvread(fullfile(I_folder,image_dirs(i).name,filenames.affine_matrix_cascade));
+    puncta_image  = imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta));
+    gel_image  = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
+    transform_matrix = csvread(fullfile(base_dir,image_dirs(i).name,filenames.affine_matrix_cascade));
     transform = maketform('affine', transform_matrix);
     
     binary_image = ones(size(puncta_image));
@@ -58,13 +58,13 @@ for i = 1:size(image_dirs,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Write the output files
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    imwrite(binary_shift,fullfile(I_folder,image_dirs(i).name,filenames.binary_shift));
+    imwrite(binary_shift,fullfile(base_dir,image_dirs(i).name,filenames.binary_shift));
 
-    imwrite(gel_image,fullfile(I_folder,image_dirs(i).name,filenames.gel_unreg));
-    imwrite(gel_shift,fullfile(I_folder,image_dirs(i).name,filenames.gel));
+    imwrite(gel_image,fullfile(base_dir,image_dirs(i).name,filenames.gel_unreg));
+    imwrite(gel_shift,fullfile(base_dir,image_dirs(i).name,filenames.gel));
     
-    imwrite(puncta_image,fullfile(I_folder,image_dirs(i).name,filenames.puncta_unreg));
-    imwrite(puncta_shift,fullfile(I_folder,image_dirs(i).name,filenames.puncta));
+    imwrite(puncta_image,fullfile(base_dir,image_dirs(i).name,filenames.puncta_unreg));
+    imwrite(puncta_shift,fullfile(base_dir,image_dirs(i).name,filenames.puncta));
     
     disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))])
 end
