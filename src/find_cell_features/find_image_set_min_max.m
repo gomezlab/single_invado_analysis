@@ -18,7 +18,7 @@ filenames = add_filenames_to_struct(struct());
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-base_dir = i_p.Results.I_folder;
+base_dir = fullfile(i_p.Results.I_folder,'individual_pictures');
 image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
