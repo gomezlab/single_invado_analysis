@@ -22,5 +22,7 @@ cfg_struct.gel_range = '../../adhesion_props/gel_image_range.csv';
 
 cfg_struct.binary_shift = 'binary_shift.png';
 
-cfg_struct.cell_mask_filename = 'cell_mask.png';
+cfg_struct.cell_mask = 'cell_mask.png';
+cfg_struct.cell_mask_highlight = 'highlighted_mask.png';
+
 cfg_struct.intensity_correction_filename = 'intensity_correction.csv';

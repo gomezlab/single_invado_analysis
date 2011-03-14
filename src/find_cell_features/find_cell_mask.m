@@ -1,4 +1,4 @@
-function [varargout] = find_cell_mask(I_file,binary_shift_file,out_file,varargin)
+function [varargout] = find_cell_mask(I_file,varargin)
 %CREATE_CELL_MASK_IMAGE   Gather and write the cell mask from a
 %                         fluorescence image
 
@@ -9,31 +9,34 @@ i_p = inputParser;
 i_p.FunctionName = 'FIND_CELL_MASK';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('binary_shift_file',@(x)exist(x,'file') == 2);
-i_p.addRequired('out_file',@(x)isempty(fileparts(x)) == 1 || exist(fileparts(x),'dir') == 7);
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_file,binary_shift_file,out_file,varargin{:});
-
-mask_image = imread(I_file);
-scale_factor = double(intmax(class(mask_image)));
-mask_image   = double(mask_image)/scale_factor;
-
-binary_shift = logical(imread(binary_shift_file));
-only_reg_pixels = mask_image(binary_shift);
-assert(length(only_reg_pixels) == sum(sum(binary_shift)));
-
-puncta_min_max = csvread(fullfile(fileparts(I_file),'puncta_image_range.csv'));
-puncta_min_max = puncta_min_max/scale_factor;
+i_p.parse(I_file,varargin{:});
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
 addpath(genpath('../visualize_cell_features'));
 
+filenames = add_filenames_to_struct(struct());
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Reading in images and properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+I_folder = fileparts(I_file);
+
+mask_image = double(imread(I_file));
+
+binary_shift = logical(imread(fullfile(I_folder,filenames.binary_shift)));
+only_reg_pixels = mask_image(binary_shift);
+assert(length(only_reg_pixels) == sum(sum(binary_shift)));
+
+puncta_min_max = csvread(fullfile(I_folder,filenames.puncta_range));
+
 
 %%Threshold identification
 sorted_mask_pixels = sort(only_reg_pixels);
@@ -79,26 +82,28 @@ first_max_index = find(sorted_max_indexes == imax(1));
 min_index = find(imin > sorted_max_indexes(first_max_index) & imin < sorted_max_indexes(first_max_index + 1));
 assert(length(min_index) == 1, 'Error: expected to only find one minimum index between the first two max indexes, instead found %d', length(min_index));
 
-threshed_mask = im2bw(mask_image, intensity(imin(min_index)));
+threshed_mask = mask_image > intensity(imin(min_index));
 
 %%Mask Cleanup
 threshed_mask = imfill(threshed_mask,'holes');
 
 connected_areas = bwlabel(threshed_mask);
-region_sizes = regionprops(connected_areas, 'Area');
+region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
 
 %filter out connected regions smaller than 10000 pixels
 threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
 
-imwrite(threshed_mask, out_file)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Image writing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+imwrite(threshed_mask, fullfile(I_folder,filenames.cell_mask));
 
 %scale the input image and write out a highlighted image showing the
 %detected cell edge
-normalized_image = mask_image - puncta_min_max(1);
-normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
+normalized_image = (mask_image - puncta_min_max(1))/range(puncta_min_max);
 
-imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)), fullfile(fileparts(out_file),'highlighted_mask.png'))
-
+imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)),fullfile(I_folder,filenames.cell_mask_highlight))
 
 if (nargout >= 1)
     varargout{1} = threshed_mask;

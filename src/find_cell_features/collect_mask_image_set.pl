@@ -62,15 +62,10 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $folder_name (@image_folders) {
-		my $puncta_image = catfile($folder_name, "registered_focal_image.png");
+		my $puncta_image = catfile($folder_name, "focal_image.png");
 		die "Unable to find: $puncta_image" if (not -e $puncta_image);
 		
-		my $binary_shift_file = catfile($folder_name, "binary_shift.png");
-		die "Unable to find: $binary_shift_file" if (not -e $binary_shift_file);
-		
-		my $out_file = catfile($folder_name, "cell_mask.png");
-
-        $matlab_code[0] .= "find_cell_mask('$puncta_image','$binary_shift_file','$out_file')\n";
+        $matlab_code[0] .= "find_cell_mask('$puncta_image')\n";
     }
 
     return @matlab_code;
