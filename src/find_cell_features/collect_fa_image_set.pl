@@ -73,7 +73,7 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $file_name (@image_files) {
-		$matlab_code[0] .= "find_focal_adhesions('$file_name')\n";
+		$matlab_code[0] .= "find_puncta('$file_name')\n";
     }
 
     return @matlab_code;
@@ -86,7 +86,7 @@ sub create_all_matlab_commands {
 =head1 NAME
 
 collect_fa_image_set.pl - Executes the MATLAB programs designed collect the
-masks which define the focal adhesions
+masks which define the objects
 
 =head1 SYNOPSIS
 
@@ -95,9 +95,9 @@ collect_fa_image_set.pl -cfg FA_config
 =head1 Description
 
 This program is used to create all the binary mask files which define the
-location of the focal adhesions, which will be used in subsequent steps. The
+location of the focal objects, which will be used in subsequent steps. The
 primary logic of the program is in a set of MATLAB scripts which do all the
-image analysis/writing and also collects properties of the focal adhesions and
+image analysis/writing and also collects properties of the objects and
 writes those to file.
 
 Required parameter(s):

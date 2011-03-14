@@ -1,11 +1,10 @@
-function find_focal_adhesions(I_file,varargin)
+function find_focal_objects(I_file,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic;
 i_p = inputParser;
-i_p.FunctionName = 'FIND_FOCAL_ADHESIONS';
 
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 
@@ -42,8 +41,8 @@ blurred_image = imfilter(only_reg_focal_image,I_filt,'same',mean(only_reg_focal_
 high_passed_image = only_reg_focal_image - blurred_image;
 threshed_image = high_passed_image > filter_thresh;
 
-%identify and remove adhesions on the immediate edge of the image
-threshed_image = remove_edge_adhesions(threshed_image);
+%identify and remove objects on the immediate edge of the image
+threshed_image = remove_edge_objects(threshed_image);
 
 %place the thresholded image back in place
 threshed_temp = zeros(size(focal_image));
@@ -53,7 +52,7 @@ threshed_image = threshed_temp;
 puncta = bwlabel(threshed_image,4);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Remove adhesions outside mask
+% Remove objects outside mask
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:max(puncta(:))
     assert(any(any(puncta == i)), 'Error: can''t find ad number %d', i);
@@ -65,7 +64,7 @@ for i = 1:max(puncta(:))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Renumber adhesions to be sequential
+% Renumber objects to be sequential
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ad_nums = unique(puncta);
 assert(ad_nums(1) == 0, 'Background pixels not found after building adhesion label matrix')
@@ -87,13 +86,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Write the output files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-imwrite(double(puncta)/2^16,fullfile(I_folder, filenames.adhesions),'bitdepth',16);
-imwrite(double(puncta_perim)/2^16,fullfile(I_folder, filenames.adhesions_perim),'bitdepth',16);
-imwrite(im2bw(puncta),fullfile(I_folder, filenames.adhesions_binary));
+imwrite(double(puncta)/2^16,fullfile(I_folder, filenames.objects),'bitdepth',16);
+imwrite(double(puncta_perim)/2^16,fullfile(I_folder, filenames.objects_perim),'bitdepth',16);
+imwrite(im2bw(puncta),fullfile(I_folder, filenames.objects_binary));
 
 scaled_image = (focal_image - min_max(1))/(range(min_max));
 scaled_image(not(binary_shift)) = 0;
 
 imwrite(create_highlighted_image(scaled_image, im2bw(puncta),'color_map',[1 0 0]), ...
-    fullfile(I_folder, filenames.adhesions_highlight));
+    fullfile(I_folder, filenames.objects_highlight));
 toc;

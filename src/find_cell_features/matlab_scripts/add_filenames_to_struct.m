@@ -10,10 +10,10 @@ cfg_struct.affine_matrix = 'affine_matrix.csv';
 cfg_struct.registration_diff = 'registration_diffs.csv';
 cfg_struct.affine_matrix_cascade = 'affine_matrix_cascade.csv';
 
-cfg_struct.adhesions = 'puncta_labeled.png';
-cfg_struct.adhesions_perim = 'puncta_labeled_perim.png';
-cfg_struct.adhesions_binary = 'puncta_binary.png';
-cfg_struct.adhesions_highlight = 'puncta_highlight.png';
+cfg_struct.objects = 'puncta_labeled.png';
+cfg_struct.objects_perim = 'puncta_labeled_perim.png';
+cfg_struct.objects_binary = 'puncta_binary.png';
+cfg_struct.objects_highlight = 'puncta_highlight.png';
 
 cfg_struct.puncta = 'focal_image.png';
 cfg_struct.puncta_unreg = 'unregistered_focal_image.png';
