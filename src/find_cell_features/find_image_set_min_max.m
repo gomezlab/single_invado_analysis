@@ -13,7 +13,7 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.parse(I_folder,varargin{:});
 
 addpath('matlab_scripts');
-
+filenames = add_filenames_to_struct(struct());
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,10 +33,10 @@ ranges = zeros(size(image_dirs), 1);
 maxes = zeros(size(image_dirs), 1);
 mins = zeros(size(image_dirs), 1);
 
-for i = 1:size(image_dirs)
-    binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,'binary_shift.png')));
+for i = 1:size(image_dirs,1)
+    binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,filenames.binary_shift)));
     
-    gel_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_gel.png'));
+    gel_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
     if (min(gel_image(binary_shift)) < gel_image_range(1))
         gel_image_range(1) = min(gel_image(binary_shift));
     end
@@ -48,16 +48,21 @@ for i = 1:size(image_dirs)
     maxes(i) = max(gel_image(binary_shift));
     mins(i) = min(gel_image(binary_shift));
     
-    puncta_image = imread(fullfile(base_dir,image_dirs(i).name,'registered_focal_image.png'));
+    puncta_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta));
     if (min(puncta_image(binary_shift)) < puncta_image_range(1))
         puncta_image_range(1) = min(puncta_image(binary_shift));
     end
     if (max(puncta_image(binary_shift)) > puncta_image_range(2))
         puncta_image_range(2) = max(puncta_image(binary_shift));
     end
+    
+    disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))])
 end
 
-for i = 1:size(image_dirs)
-    csvwrite(fullfile(base_dir,image_dirs(i).name,'gel_image_range.csv'),gel_image_range)
-    csvwrite(fullfile(base_dir,image_dirs(i).name,'puncta_image_range.csv'),puncta_image_range)
+output_file = fullfile(base_dir,image_dirs(i).name,filenames.gel_range);
+if(not(exist(fileparts(output_file),'dir')))
+    mkdir(fileparts(output_file))
 end
+csvwrite(output_file,gel_image_range)
+
+csvwrite(fullfile(base_dir,image_dirs(i).name,filenames.puncta_range),gel_image_range)
