@@ -95,7 +95,7 @@ end
 
 save(fullfile(base_dir,image_dirs(1).name,filenames.tracking_raw),'all_tracking_props');
 save(fullfile(base_dir,image_dirs(1).name,filenames.cell_props),'all_cell_props');
-save(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/no_cell_diffs.mat'),'no_cell_diffs');
+% save(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/no_cell_diffs.mat'),'no_cell_diffs');
 
 % measurement_num = count_measurement_nums(all_cell_props);
 % 
