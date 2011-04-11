@@ -141,6 +141,9 @@ for col_num = 1:size(tracking_matrix,2)
     
     this_col = sort(unique(this_col))';
     
+    %empty columns mean there weren't any adhesions in that time step, so
+    %check for that in the following assert first, then if there were
+    %cells, make sure all were accounted for
     assert(isempty(this_col) || all(this_col == 1:max(this_col)))
     
     assert((isempty(all_tracking_props{col_num}) && isempty(this_col)) || ...
