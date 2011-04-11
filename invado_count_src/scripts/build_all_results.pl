@@ -46,19 +46,18 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -queue week -R mem96" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -R mem96" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script flat_field_correct_puncta" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -queue week -R mem96" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask -queue week" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction -queue week" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties -queue week" ], ],
-	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_invading_cells -queue week" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/create_invader_visualization -queue week" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -R mem96" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script track_cells" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_invading_cells" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/create_invader_visualization" ], ],
 	[ [ "../visualize_cell_features", "./collect_tracking_visualization.pl" ], ],
-	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl -queue week" ], ],
+	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
 );
 
 #some of the scripts only need to be run once for each experiment, this will
