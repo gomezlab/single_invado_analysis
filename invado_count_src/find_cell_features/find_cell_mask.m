@@ -1,6 +1,5 @@
 function find_cell_mask(exp_dir,varargin)
-%CREATE_CELL_MASK_IMAGE   Gather and write the cell mask from a
-%                         fluorescence image
+%FIND_CELL_MASK   Gather and write the cell mask from a fluorescence image
 tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -10,6 +9,8 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('min_cell_area',1500,@isnumeric);
+i_p.addParamValue('max_cell_area',Inf,@isnumeric);
+i_p.addParamValue('min_cell_intensity',500,@isnumeric);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(exp_dir,varargin{:});
@@ -34,17 +35,17 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
+puncta_min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range_file));
+
 for i_num = 1:size(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in current image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_filename)));
-    puncta_min_max = csvread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range_file));
     pixel_values = puncta_image(:);
 
     normalized_image = puncta_image - puncta_min_max(1);
-    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
-    
+    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in prior connected areas
@@ -162,13 +163,9 @@ threshed_mask = imfill(threshed_mask,'holes');
 connected_areas = bwlabel(threshed_mask,8);
 region_props = regionprops(connected_areas,puncta_image, 'Area','MeanIntensity'); %#ok<MRPBW>
 
-%filter out connected regions smaller than the min cell area
-% size_filter = [region_props.Area] > i_p.Results.min_cell_area &  ...
-%     [region_props.Area] < 10000;
+size_filter = [region_props.Area] > i_p.Results.min_cell_area & [region_props.Area] < i_p.Results.max_cell_area;
 
-size_filter = [region_props.Area] > i_p.Results.min_cell_area;
-
-intensity_filter = [region_props.MeanIntensity] > 0.002;
+intensity_filter = [region_props.MeanIntensity] > i_p.Results.min_cell_intensity;
 
 threshed_mask = ismember(connected_areas, find(size_filter & intensity_filter));
 
