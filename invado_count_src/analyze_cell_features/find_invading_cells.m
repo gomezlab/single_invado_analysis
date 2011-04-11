@@ -61,7 +61,7 @@ for j=1:size(poss_name_combinations,1)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Process and Output data files
+% Process and Output 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 processed_data = process_raw_data(raw_data,i_p.Results.median_filter);
 
@@ -92,6 +92,7 @@ i_p.parse(raw_data,median_filt,varargin{:});
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%use the filter_set variable to filter all the data sets before continuing
 if (isempty(strmatch('filter_set',i_p.UsingDefaults)))
     these_names = fieldnames(raw_data);
     for j=1:size(these_names,1)
