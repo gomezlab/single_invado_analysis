@@ -76,8 +76,6 @@ for i_num = 1:size(image_dirs,1)
         all_tracking_props{i_num} = tracking_props;
     end
     
-%     write_adhesion_data(cell_props,'out_dir',fullfile(current_dir,'raw_data'));
-    
     %make a diagnostic figure showing where the cell masks overlap with the
     %next image
     temp = double(current_data.cell_mask);
@@ -186,8 +184,10 @@ for i=1:max(current_data.labeled_cells(:))
     overlap_region = this_cell & prev_cells;
     cell_props(i).Overlap_area = sum(overlap_region(:));
     
-    differences = current_data.gel_image(overlap_region)*current_data.intensity_correction - ...
-        prior_data.gel_image(overlap_region)*prior_data.intensity_correction;
+    differences = current_data.gel_image_corr(overlap_region) - ...
+        prior_data.gel_image_corr(overlap_region);
+    differences_no_corr = current_data.gel_image(overlap_region) - ...
+        prior_data.gel_image(overlap_region);
     
     [h,p] = ttest(differences);
     cell_props(i).Cell_gel_diff = mean(differences);
@@ -196,7 +196,8 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_total = sum(differences);
     
     %single cell diagnostics
-    if (i_p.Results.debug && not(isempty(regexp(current_data.this_dir,'ind.*05', 'once'))))
+%     if (i_p.Results.debug && not(isempty(regexp(current_data.this_dir,'ind.*03', 'once'))))
+    if (i_p.Results.debug)
         c_extent = [find(sum(this_cell,2), 1 ),find(sum(this_cell,2), 1, 'last' ), ...
             find(sum(this_cell), 1 ),find(sum(this_cell), 1, 'last' )];
         c_extent(1:2:3) = c_extent(1:2:3) - 10;
@@ -218,16 +219,17 @@ for i=1:max(current_data.labeled_cells(:))
         prior_gel = normalize_image(prior_gel,[gel_min,gel_max]);
         current_gel = normalize_image(current_gel,[gel_min,gel_max]);
         
-%         prior_both = cat(1,prior_puncta,prior_gel);
-%         current_both = cat(1,current_puncta,current_gel);
-%         
-%         diff_gel = normalize_image(current_gel - prior_gel);        
+        prior_both = cat(1,prior_puncta,prior_gel);
+        current_both = cat(1,current_puncta,current_gel);
+        
+        diff_gel = normalize_image(current_gel - prior_gel);      
         
         temp = double(this_cell);
         temp(prev_cells) = 2;
         temp(overlap_region) = 3;
-        subplot(1,2,1); imshow(label2rgb(temp));
-        subplot(1,2,2); hist(differences);
+        subplot(2,2,1); imshow(label2rgb(temp));
+        subplot(2,2,2); hist(differences);
+        subplot(2,2,3); imshow(diff_gel);
         1;       
     end
 end
