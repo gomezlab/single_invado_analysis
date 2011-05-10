@@ -1,17 +1,15 @@
-function gather_tracking_results(exp_dir,varargin)
-%CREATE_CELL_MASK_IMAGE   Gather and write the cell mask from a
-%                         fluorescence image
+function gather_tracking_results(field_dir,varargin)
 tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 i_p = inputParser;
 
-i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
+i_p.addRequired('field_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(exp_dir,varargin{:});
+i_p.parse(field_dir,varargin{:});
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('..'));
@@ -23,7 +21,7 @@ filenames = add_filenames_to_struct(struct());
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-base_dir = fullfile(exp_dir,'individual_pictures');
+base_dir = fullfile(field_dir,'individual_pictures');
 
 image_dirs = dir(base_dir);
 
@@ -37,7 +35,7 @@ tracking_mat = csvread(fullfile(base_dir, image_dirs(1).name,filenames.tracking)
 load(fullfile(base_dir, image_dirs(1).name,filenames.cell_props));
 
 data_to_gather = {'Cell_gel_diff','Cell_gel_diff_median','Cell_gel_diff_p_val','Area' ... 
-    'Cell_gel_diff_total'};
+    'Cell_gel_diff_total','MeanIntensity'};
 
 for i = 1:length(data_to_gather)
     output_dir = fullfile(base_dir, image_dirs(1).name,filenames.lineage_dir);
