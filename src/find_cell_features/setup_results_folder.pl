@@ -43,8 +43,9 @@ my %cfg = ParseConfig(\%opt);
 
 mkpath($cfg{individual_results_folder});
 
-my @image_sets = ([qw(raw_mask_folder raw_mask_file)], [qw(adhesion_image_folder adhesion_image_file)],
+my @image_sets = ([qw(puncta_image_folder puncta_image_file)],
 				  [qw(gel_image_folder gel_image_file)]);
+
 my @matlab_code;
 my $all_images_empty = 1;
 
