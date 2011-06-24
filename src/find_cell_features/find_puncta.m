@@ -1,4 +1,4 @@
-function find_focal_objects(I_file,varargin)
+function find_puncta(I_file,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line

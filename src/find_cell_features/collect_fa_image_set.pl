@@ -38,7 +38,7 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 
 my @image_folders = <$cfg{individual_results_folder}/*>;
-my @image_files   = <$cfg{individual_results_folder}/*/focal_image.png>;
+my @image_files   = <$cfg{individual_results_folder}/*/$cfg{puncta_image_file}>;
 die "Expected to find the same number of image files as folders in the results directory ($cfg{individual_results_folder})."
   if (scalar(@image_files) != scalar(@image_folders));
 
@@ -47,7 +47,7 @@ if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
         print "Focal image files found: $image_files[0] - $image_files[$#image_files]\n";
     } elsif (scalar(@image_files) == 0) {
-        warn "Couldn't find any focal image files in $cfg{individual_results_folder} subfolders\n\n";
+        warn "Couldn't find any puncta image files in $cfg{individual_results_folder} subfolders\n\n";
     } else {
         print "Focal image file found: $image_folders[0]\n";
     }
@@ -95,7 +95,7 @@ collect_fa_image_set.pl -cfg FA_config
 =head1 Description
 
 This program is used to create all the binary mask files which define the
-location of the focal objects, which will be used in subsequent steps. The
+location of the puncta objects, which will be used in subsequent steps. The
 primary logic of the program is in a set of MATLAB scripts which do all the
 image analysis/writing and also collects properties of the objects and
 writes those to file.
@@ -104,7 +104,7 @@ Required parameter(s):
 
 =over 
 
-=item * cfg or c: the focal adhesion analysis config file
+=item * cfg or c: the puncta analysis config file
 
 =back
 
