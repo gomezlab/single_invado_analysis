@@ -62,7 +62,7 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $folder_name (@image_folders) {
-		my $puncta_image = catfile($folder_name, "focal_image.png");
+		my $puncta_image = catfile($folder_name, $cfg{puncta_image_file});
 		die "Unable to find: $puncta_image" if (not -e $puncta_image);
 		
         $matlab_code[0] .= "find_cell_mask('$puncta_image')\n";
