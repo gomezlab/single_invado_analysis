@@ -51,4 +51,15 @@ threshold = mean(all_filt(:)) + i_p.Results.std_coeff*std(all_filt(:));
 
 csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold),threshold)
 
+hist(all_filt(:),100);
+xlabel('High Pass Filtered Intensity','FontSize',16,'FontName','Helvetica');
+ylabel('Pixel Count','FontSize',16,'FontName','Helvetica');
+y_limits = ylim();
+line([threshold,threshold],[0,y_limits(2)],'Color','red', ... 
+    'LineStyle','--','LineWidth',3);
+set(gca, 'FontName','Helvetica','FontSize',16,'Box','off');
+set(gcf, 'PaperPositionMode', 'auto');
+print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold_plot));
+close;
+
 toc;
