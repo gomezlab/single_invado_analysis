@@ -16,8 +16,6 @@ function cascade_registration_transformations(I_folder, varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
 i_p.FunctionName = 'CASCADE_REGISTRATION_TRANSFORMATIONS';
 
@@ -32,8 +30,7 @@ filenames = add_filenames_to_struct(struct());
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-base_dir = i_p.Results.I_folder;
+base_dir = fullfile(I_folder,'individual_pictures');
 image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
