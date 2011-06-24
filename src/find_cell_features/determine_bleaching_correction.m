@@ -31,7 +31,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 %read in a cell mask to get the size of the images to preallocate the size of
-%the image that will keep track of which pixels have been in a cell or
+%the matrix that will keep track of which pixels have been in a cell or
 %outside the registered range
 test_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.cell_mask));
 
@@ -49,17 +49,21 @@ for i=1:length(image_dirs)
 end
 imwrite(no_cell_regions, fullfile(base_dir,image_dirs(1).name,filenames.no_cell_regions));
 
+%with the region of the image without cells found, we can then find the
+%mean intensity outside the cells to determine an unbiased by degradation
+%photobleaching correction
 gel_levels_outside_cell = zeros(length(image_dirs),1);
 gel_levels = zeros(length(image_dirs),1);
 
-for i=1:length(image_dirs)
+for i=1:length(image_dirs)    
     gel = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.gel)));
-        
+    
     gel_levels(i) = mean(gel(:));
     gel_levels_outside_cell(i) = mean(gel(no_cell_regions));
     
-    dlmwrite(fullfile(base_dir, image_dirs(i).name, filenames.intensity_correction), ...
-        1000/mean(gel(no_cell_regions)));
+    gel_corrected = gel * (gel_levels_outside_cell(1)/gel_levels_outside_cell(i));
+    
+    imwrite(gel_corrected,fullfile(base_dir,image_dirs(i).name,filenames.gel));
 end
 
 %diagnostic plot
@@ -74,10 +78,7 @@ y_limits = ylim();
 ylim([0 y_limits(2)]);
 
 legend('Overall','Outside Cell', 'location','SouthEast')
-saveas(diag_fig_hnd,fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/bleaching_curves.png'))
+print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.bleaching_plot));
 close all;
-
-dlmwrite(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/bleaching_curves.csv'), ...
-    [gel_levels_outside_cell,gel_levels]);
 
 toc;
