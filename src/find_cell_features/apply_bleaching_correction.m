@@ -56,12 +56,12 @@ gel_levels_outside_cell = zeros(length(image_dirs),1);
 gel_levels = zeros(length(image_dirs),1);
 
 for i=1:length(image_dirs)    
-    gel = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.gel)));
+    gel = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
     
     gel_levels(i) = mean(gel(:));
     gel_levels_outside_cell(i) = mean(gel(no_cell_regions));
     
-    gel_corrected = gel * (gel_levels_outside_cell(1)/gel_levels_outside_cell(i));
+    gel_corrected = gel .* (gel_levels_outside_cell(1)/gel_levels_outside_cell(i));
     
     imwrite(gel_corrected,fullfile(base_dir,image_dirs(i).name,filenames.gel),'Bitdepth',16);
 end
