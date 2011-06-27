@@ -32,7 +32,9 @@ if (not(exist(out_dir,'dir')))
 end
 
 to_exclude = {'ConvexHull','ConvexImage','Image','FilledImage', ...
-    'PixelList', 'SubarrayIdx', 'Border_pix', 'Extrema'};
+    'PixelList', 'SubarrayIdx', 'Border_pix', 'Extrema','ConvexArea', ... 
+    'BoundingBox','EquivDiameter','EulerNumber','Extent','FilledArea', ... 
+    'Perimeter'};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
