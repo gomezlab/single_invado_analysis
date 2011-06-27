@@ -92,7 +92,8 @@ imwrite(im2bw(puncta),fullfile(I_folder, filenames.objects_binary));
 
 scaled_image = (focal_image - min_max(1))/(range(min_max));
 scaled_image(not(binary_shift)) = 0;
+highlighted_image = create_highlighted_image(scaled_image, im2bw(puncta),'color_map',[1 0 0]);
+highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask),'color_map',[0 1 0]);
 
-imwrite(create_highlighted_image(scaled_image, im2bw(puncta),'color_map',[1 0 0]), ...
-    fullfile(I_folder, filenames.objects_highlight));
+imwrite(highlighted_image, fullfile(I_folder, filenames.objects_highlight));
 toc;
