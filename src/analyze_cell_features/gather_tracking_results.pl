@@ -102,9 +102,9 @@ sub convert_data_to_units {
 	  qw(Class Centroid_x Centroid_y Eccentricity Solidity
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
-	  Cell_not_ad_mean_intensity Adhesion_mean_intensity CB_corrected_signal
+	  Cell_not_ad_mean_intensity Average_puncta_signal CB_corrected_signal
 	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr 
-	  First_local_gel_diff Pre_birth_diff_corr);
+	  First_local_gel_diff Pre_birth_diff);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -143,7 +143,7 @@ sub gather_single_ad_props {
     my @data;
 
     my @possible_data_types =
-      qw(Area Average_adhesion_signal Eccentricity Solidity MajorAxisLength 
+      qw(Area Average_puncta_signal Eccentricity Solidity MajorAxisLength 
          MinorAxisLength Centroid_dist_from_edge Centroid_dist_from_center 
          Variance_adhesion_signal);
 
@@ -265,7 +265,7 @@ sub gather_and_output_lineage_properties {
     }
 
     #Pure Time Series Props
-	my @ts_props = qw(Area Local_gel_diff_corr Pre_birth_diff_corr Centroid_dist_from_edge);
+	my @ts_props = qw(Area Local_gel_diff Pre_birth_diff Centroid_dist_from_edge);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
@@ -279,10 +279,10 @@ sub gather_and_output_lineage_properties {
     $props{death_status}            = &gather_death_status;
     $props{split_birth_status}      = &gather_split_birth_status;
     $props{average_eccentricity}    = &gather_average_eccentricity;
-    $props{Average_adhesion_signal} = &gather_prop_seq("Average_adhesion_signal");
-    &output_prop_time_series($props{Average_adhesion_signal}, "Average_adhesion_signal");
-    $props{ad_sig} = &gather_average_value($props{Average_adhesion_signal});
-    undef $props{Average_adhesion_signal};
+    $props{Average_puncta_signal} = &gather_prop_seq("Average_puncta_signal");
+    &output_prop_time_series($props{Average_puncta_signal}, "Average_puncta_signal");
+    $props{ad_sig} = &gather_average_value($props{Average_puncta_signal});
+    undef $props{Average_puncta_signal};
     	
     $props{Centroid_x} = &gather_prop_seq("Centroid_x");
     $props{start_x} = &gather_first_entry($props{Centroid_x});
