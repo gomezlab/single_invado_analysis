@@ -59,11 +59,7 @@ for i = 1:size(image_dirs,1)
     %Write the output files
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     imwrite(binary_shift,fullfile(base_dir,image_dirs(i).name,filenames.binary_shift));
-
-    imwrite(gel_image,fullfile(base_dir,image_dirs(i).name,filenames.gel_unreg));
     imwrite(gel_shift,fullfile(base_dir,image_dirs(i).name,filenames.gel));
-    
-    imwrite(puncta_image,fullfile(base_dir,image_dirs(i).name,filenames.puncta_unreg));
     imwrite(puncta_shift,fullfile(base_dir,image_dirs(i).name,filenames.puncta));
     
     disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))])
