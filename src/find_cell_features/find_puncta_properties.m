@@ -1,7 +1,4 @@
-function find_adhesion_properties(current_dir,first_dir,final_dir,varargin)
-% FIND_ADHESION_PROPERTIES    deteremines and outputs the quantitative
-%                             properties associated with the adhesions
-%                             located in prior steps
+function find_puncta_properties(current_dir,first_dir,final_dir,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -83,7 +80,7 @@ adhesion_props = regionprops(c_d.puncta,'all');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i=1:max(c_d.puncta(:))
-    adhesion_props(i).Average_adhesion_signal = mean(c_d.puncta_image(c_d.puncta == i));
+    adhesion_props(i).Average_puncta_signal = mean(c_d.puncta_image(c_d.puncta == i));
     
     %this bit of code isolates a single object as a logical image and
     %then builds another logical image of the region around the object,
