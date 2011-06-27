@@ -63,7 +63,7 @@ for i=1:length(image_dirs)
     
     gel_corrected = gel * (gel_levels_outside_cell(1)/gel_levels_outside_cell(i));
     
-    imwrite(gel_corrected,fullfile(base_dir,image_dirs(i).name,filenames.gel));
+    imwrite(gel_corrected,fullfile(base_dir,image_dirs(i).name,filenames.gel),'Bitdepth',16);
 end
 
 %diagnostic plot
