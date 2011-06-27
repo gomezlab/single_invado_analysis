@@ -32,4 +32,4 @@ cfg_struct.bleaching_plot = '../../puncta_props/bleaching_curves.eps';
 
 cfg_struct.binary_shift = 'binary_shift.png';
 
-
+cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
