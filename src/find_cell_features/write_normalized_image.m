@@ -46,7 +46,7 @@ if (intmax(class(input_image)) > 255)
     output_bits = 16;
 end
 
-%This is an ugly hack, but for some reason there is a consistantly a region
+%This is an ugly hack, but for some reason there is consistantly a region
 %where the gel image is ragged on the lower right hand corner of the
 %images, so I'll throw away the bottom 50 rows on each image 
 %   - MEB 12/3/2009
