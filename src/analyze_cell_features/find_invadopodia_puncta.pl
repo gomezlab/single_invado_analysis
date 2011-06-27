@@ -47,7 +47,7 @@ if ($opt{lsf}) {
 	#future file name changes
 	push @commands, "$0 -cfg $opt{cfg}";
     
-    $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
+    $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'find_invadopodia');
     if (defined $cfg{job_group}) {
         $opt{job_group} = $cfg{job_group};
     }
@@ -59,7 +59,7 @@ if ($opt{lsf}) {
 
 my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder});
 
-my $output_base = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
+my $output_base = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'find_invadopodia');
 if (! -e $output_base) {
 	mkpath($output_base);
 }
@@ -69,7 +69,7 @@ my @R_cmds;
 my $output_file = catfile($output_base, 'R_out.txt');
 push @R_cmds, "R CMD BATCH --vanilla \'--args data_dir=$data_dir\' invado_analysis_lib.R $output_file";
 
-$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'R_models');
+$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'find_invadopodia');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 
 for (@R_cmds) {
@@ -83,57 +83,3 @@ for (@R_cmds) {
 ################################################################################
 #Functions
 ################################################################################
-
-
-################################################################################
-#Documentation
-################################################################################
-
-=head1 NAME
-
-build_R_models.pl - Run the R commands needed to produce the assembly and
-disasembly rate models
-
-=head1 SYNOPSIS
-
-build_R_models.pl -cfg FA_config
-
-=head1 Description
-
-The code needed to build and output the R model files is contained in FA_analysis_lib.R. The R program takes three command line options:
-
-=over
-
-=item * data_dir - the location of the lineage time series files
-=item * model_type - the type of model that will be built
-=item * debug - turns on debuging mode (optional)
-
-=back
-
-All of these parameters can be set by changing the perl program
-
-=head1 Required parameter(s):
-
-=over 
-
-=item * cfg or c: the focal adhesion analysis config file
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: print debuging information during program execution
-
-=item * lsf: submit jobs through the emerald queuing system
-
-=back
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 7/7/2009
-
-=cut

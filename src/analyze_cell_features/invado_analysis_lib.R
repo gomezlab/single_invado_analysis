@@ -245,7 +245,7 @@ if (length(args) != 0) {
         hist(exp_props$p_value);
         graphics.off()
 
-        data_types_to_include = c('overall_filt','p_value','mean_local_diff', 'pre_diff_p_value');
+        data_types_to_include = c('lineage_nums','p_value','mean_local_diff', 'pre_diff_p_value');
         
         filter_sets = build_filter_sets(exp_props);
         
@@ -257,11 +257,11 @@ if (length(args) != 0) {
             select = data_types_to_include);
         
         write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), 
-            row.names=F, col.names=F, sep=',')
+            row.names=F, col.names=T, sep=',')
         write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), 
-            row.names=F, col.names=F, sep=',')
+            row.names=F, col.names=T, sep=',')
         
         write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
-            row.names=F, col.names=F, sep=',')
+            row.names=F, col.names=T, sep=',')
     }
 }
