@@ -1,4 +1,4 @@
-function find_pre_birth_diffs(cfg_file,image_num,varargin)
+function find_pre_birth_diffs(exp_folder,image_num,varargin)
 %FIND_PRE_BIRTH_DIFFS    Searches through a given tracking matrix and a
 %                        data set to produce local diff values for each
 %                        puncta immediately before the puncta's birth, if
@@ -7,56 +7,28 @@ function find_pre_birth_diffs(cfg_file,image_num,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+tic;
 i_p = inputParser;
 i_p.FunctionName = 'FIND_PRE_BIRTH_DIFFS';
 
-i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
+i_p.addRequired('exp_folder',@(x)exist(x,'dir') == 7);
 i_p.addRequired('image_num',@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.addParamValue('adhesions_filename','puncta_labeled.png',@ischar);
-i_p.addParamValue('puncta_filename','registered_focal_image.png',@ischar);
-i_p.addParamValue('gel_filename','registered_gel.png',@ischar);
-i_p.addParamValue('binary_shift_filename','binary_shift.png',@ischar);
-i_p.addParamValue('cell_mask_filename','cell_mask.png',@ischar);
-i_p.addParamValue('intensity_correction_file','intensity_correction.csv',@ischar);
+i_p.parse(exp_folder,image_num,varargin{:});
 
-i_p.parse(cfg_file,image_num,varargin{:});
+%Add the folder with all the scripts used in this master program
+addpath(genpath('..'));
 
-if (i_p.Results.debug == 1), profile off; profile on; end
+filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+base_folder = fullfile(exp_folder,'individual_pictures');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Process config file
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fid = fopen(cfg_file);
-while 1
-    line = fgetl(fid);
-    if ~ischar(line), break; end
-    eval(line);
-end
-
-addpath(genpath(path_folders));
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Tracking matrix reading/filtering
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%after loading the tracking sequence filter to only include those puncta
-%included in the invadopodia list, remember the list formated so the first
-%column contains the lineage number, with the first lineage as 1, so no
-%need to translate
-tracking_seq = load(tracking_seq_file) + 1;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Global Variables
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%final all the image directories
-image_dirs = dir(I_folder);
+%find all the image directories
+image_dirs = dir(base_folder);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
 assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
@@ -65,12 +37,21 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 assert(image_num <= length(image_dirs));
 
-ad_label = imread(fullfile(I_folder,image_dirs(image_num).name,adhesions_filename));
+tracking_seq = load(fullfile(base_folder,image_dirs(1).name,filenames.tracking_matrix))+1;
 
-pre_birth_diffs = ones(1,max(ad_label(:)))*NaN;
-gel_limits = csvread(fullfile(I_folder,image_dirs(end).name,'gel_image_range.csv'));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Tracking matrix reading/filtering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for j = 1:size(tracking_seq,2)
+    data_set{j} = read_in_file_set(fullfile(base_folder,image_dirs(j).name),filenames); %#ok<AGROW>
+    pre_birth_diffs{j} = ones(1,max(data_set{j}.puncta(:)))*NaN; %#ok<NASGU>
+end
 
-for i = 1:size(tracking_seq,1)
+current_data = data_set{image_num};
+
+pre_birth_diffs = ones(1,max(current_data.puncta(:)))*NaN;
+
+for row = 1:size(tracking_seq,1)
     %there won't ever be pre birth data when the image number is 1, as the
     %puncta detected in image 1 don't have a birth event
     if (image_num == 1)
@@ -78,62 +59,41 @@ for i = 1:size(tracking_seq,1)
     end
     
     %skip over any rows that don't have any puncta
-    if (tracking_seq(i,image_num) <= 0)
+    if (tracking_seq(row,image_num) <= 0)
         continue;
     end
     
     %now we have a real puncta number, lets find the pre-birth image number
-    pre_birth_i_num = find_birth_i_num(tracking_seq(i,:) < 1) - 1;
+    pre_birth_i_num = find_birth_i_num(tracking_seq(row,:) < 1) - 1;
     %the above function returns NaN if there isn't a pre-birth image
     %number, catch that situation and exit out of the loop in that case
     if (isnan(pre_birth_i_num))
         continue;
     end
     
-    image_data = struct();
+    pre_birth_image_data = data_set{j};
     
-    image_data.binary_shift = logical(imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.binary_shift_filename)));
-    
-    %read in the gel image and normalize to 0-1
-    image_data.gel_image = imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.gel_filename));
-    scale_factor = double(intmax(class(image_data.gel_image)));
-    
-%     image_data.gel_image = image_data.gel_image - gel_limits(1);
-%     image_data.gel_image = image_data.gel_image .* (1/gel_limits(2));
-    
-    image_data.gel_image  = double(image_data.gel_image)/scale_factor;
-    image_data.gel_image(not(image_data.binary_shift)) = 0;
-%     image_data.gel_image =
-%     cat(3,image_data.gel_image,image_data.gel_image,image_data.gel_image)
-%     ;
-    
-    image_data.intensity_correction = csvread(fullfile(I_folder,image_dirs(pre_birth_i_num).name,i_p.Results.intensity_correction_file));
-    image_data.adhesions = imread(fullfile(I_folder,image_dirs(pre_birth_i_num).name, i_p.Results.adhesions_filename));
-    
-    puncta_num = tracking_seq(i,image_num);
+    read_in_file_set(fullfile(base_folder,image_dirs(pre_birth_i_num).name),filenames);
+        
+    puncta_num = tracking_seq(row,image_num);
     
     %this bit of code isolates a single object as a logical image and
     %then builds another logical image of the region around the object,
     %excluding certain areas
-    this_ad = ad_label;
-    this_ad(ad_label ~= puncta_num) = 0;
+    this_ad = current_data.puncta;
+    this_ad(current_data.puncta ~= puncta_num) = 0;
     this_ad = logical(this_ad);
+        
+    this_pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_ad);
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather the adhesion label perimeters
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    this_pre_birth_diff = collect_local_diff_properties(image_data,this_ad);
-    
-    pre_birth_diffs(puncta_num) = this_pre_birth_diff.Local_gel_diff_corr;
+    pre_birth_diffs(puncta_num) = this_pre_birth_diff.Local_gel_diff;
     
     if(i_p.Results.debug), disp([puncta_num,pre_birth_i_num]); end
 end
 
-dlmwrite(fullfile(I_folder,image_dirs(image_num).name,'raw_data','Pre_birth_diff_corr.csv'), pre_birth_diffs');
+dlmwrite(fullfile(base_folder,image_dirs(image_num).name,'raw_data','Pre_birth_diff.csv'), pre_birth_diffs');
 
-profile off;
-if (i_p.Results.debug), profile viewer; end
+toc;
 end
 
 function birth_i_num = find_birth_i_num(puncta_present_logical)

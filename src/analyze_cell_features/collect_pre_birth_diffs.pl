@@ -38,11 +38,10 @@ my %cfg     = $ad_conf->get_cfg_hash;
 ################################################################################
 my @image_folders = <$cfg{individual_results_folder}/*>;
 
-#search for needed files
-my @config_files = File::Find::Rule->file()->name( "*.m" )->in( catdir($cfg{exp_results_folder}, $cfg{movie_output_folder}) );
-die "Found more than one config file:\n", join("\n\t",@config_files) if (scalar(@config_files) > 1);
-
-my @matlab_code = &create_all_matlab_commands(@image_folders);
+my @matlab_code;
+for (1..scalar(@image_folders)) {
+	push @matlab_code, "find_pre_birth_diffs('$cfg{exp_results_folder}',$_)";
+}
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'pre_birth_diffs');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
@@ -55,21 +54,4 @@ if (defined $cfg{job_group}) {
 
 ################################################################################
 #Functions
-################################################################################
-
-sub create_all_matlab_commands {
-	my @image_folders = @_;
-    my @matlab_code;
-
-    foreach my $image_number (1..scalar(@image_folders)) {
-        my $extra_opt = "";
-
-		$matlab_code[0] .= "find_pre_birth_diffs('$config_files[0]',$image_number)\n";
-    }
-
-    return @matlab_code;
-}
-
-################################################################################
-#Documentation
 ################################################################################
