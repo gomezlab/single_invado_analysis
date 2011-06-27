@@ -59,7 +59,7 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
 	[ [ "../analyze_cell_features",   "./collect_pre_birth_diffs.pl" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
-	[ [ "../analyze_cell_features",   "./build_R_models.pl" ], ],
+	[ [ "../analyze_cell_features",   "./find_invadopodia_puncta.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_final_image_highlights.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_dual_highlight_set.pl" ], ],
