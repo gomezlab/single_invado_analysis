@@ -96,14 +96,7 @@ threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Image writing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 imwrite(threshed_mask, fullfile(I_folder,filenames.cell_mask));
-
-%scale the input image and write out a highlighted image showing the
-%detected cell edge
-normalized_image = (mask_image - puncta_min_max(1))/range(puncta_min_max);
-
-imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask)),fullfile(I_folder,filenames.cell_mask_highlight))
 
 if (nargout >= 1)
     varargout{1} = threshed_mask;
