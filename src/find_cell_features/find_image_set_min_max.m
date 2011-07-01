@@ -65,4 +65,4 @@ if(not(exist(fileparts(output_file),'dir')))
 end
 csvwrite(output_file,gel_image_range)
 
-csvwrite(fullfile(base_dir,image_dirs(i).name,filenames.puncta_range),gel_image_range)
+csvwrite(fullfile(base_dir,image_dirs(i).name,filenames.puncta_range),puncta_image_range)
