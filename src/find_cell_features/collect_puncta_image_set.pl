@@ -45,11 +45,11 @@ die "Expected to find the same number of image files as folders in the results d
 
 if ($opt{debug}) {
     if (scalar(@image_files) > 1) {
-        print "Focal image files found: $image_files[0] - $image_files[$#image_files]\n";
+        print "Puncta image files found: $image_files[0] - $image_files[$#image_files]\n";
     } elsif (scalar(@image_files) == 0) {
         warn "Couldn't find any puncta image files in $cfg{individual_results_folder} subfolders\n\n";
     } else {
-        print "Focal image file found: $image_folders[0]\n";
+        print "Puncta image file found: $image_folders[0]\n";
     }
 }
 
@@ -73,68 +73,14 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $file_name (@image_files) {
-		$matlab_code[0] .= "find_puncta('$file_name')\n";
+		
+		my $extra_opt = '';
+        if (defined $cfg{min_puncta_size}) {
+	    	$extra_opt .= ",'min_puncta_size',$cfg{min_puncta_size}";
+	    }
+
+		$matlab_code[0] .= "find_puncta('$file_name'$extra_opt)\n";
     }
 
     return @matlab_code;
 }
-
-################################################################################
-#Documentation
-################################################################################
-
-=head1 NAME
-
-collect_fa_image_set.pl - Executes the MATLAB programs designed collect the
-masks which define the objects
-
-=head1 SYNOPSIS
-
-collect_fa_image_set.pl -cfg FA_config
-
-=head1 Description
-
-This program is used to create all the binary mask files which define the
-location of the puncta objects, which will be used in subsequent steps. The
-primary logic of the program is in a set of MATLAB scripts which do all the
-image analysis/writing and also collects properties of the objects and
-writes those to file.
-
-Required parameter(s):
-
-=over 
-
-=item * cfg or c: the puncta analysis config file
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: print debuging information during program execution
-
-=item * emerald: submit jobs through the emerald queuing system
-
-=back
-
-=head1 EXAMPLES
-
-collect_fa_image_set.pl -cfg FA_config
-
-OR
-
-collect_fa_image_set.pl -cfg FA_config -d
-
-=head1 SEE ALSO
-
-collect_mask_set.pl: similar program designed to collect the binary mask that
-locates the intracellular area
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 7/3/2008 
-
-=cut

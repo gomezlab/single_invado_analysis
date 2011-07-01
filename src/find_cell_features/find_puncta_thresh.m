@@ -32,7 +32,7 @@ image_dirs = image_dirs(3:end);
 all_filt = [];
 
 for i = 1:size(image_dirs)
-    image = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
+    image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.gel)));
 
     binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,filenames.binary_shift)));
     
