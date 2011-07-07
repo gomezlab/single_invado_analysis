@@ -15,8 +15,6 @@ function [I] = normalize_grayscale_image(I,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
 i_p.FunctionName = 'NORMALIZE_GRAYSCALE_IMAGE';
 

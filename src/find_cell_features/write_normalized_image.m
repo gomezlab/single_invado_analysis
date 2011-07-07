@@ -14,8 +14,6 @@ function write_normalized_image(I_file,out_file,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
 i_p.FunctionName = 'WRITE_NORMALIZED_IMAGE';
 

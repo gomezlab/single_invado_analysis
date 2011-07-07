@@ -4,8 +4,10 @@ function write_montage_image_set(image_set,output_file,varargin)
 %                           the given output file
 %
 %   write_montage_image_set(i_set, out_f) 
-maxNumCompThreads(2);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 i_p = inputParser;
 i_p.FunctionName = 'WRITE_MONTAGE_IMAGE_SET';
 
@@ -19,6 +21,10 @@ i_p.addOptional('bar_size',10,@(x)isnumeric(x) & x > 0);
 i_p.addOptional('bar_position',1,@(x)isnumeric(x) & x > 0);
 
 i_p.parse(image_set,output_file,varargin{:});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Main Program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %The image set may start when many empty cells, first we clear all those
 %out

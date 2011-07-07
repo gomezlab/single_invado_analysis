@@ -60,6 +60,10 @@ end
 
 puncta = bwlabel(threshed_image,4);
 
+if (sum(sum(puncta)) == 0)
+    error('Didn''t find any puncta, aborting')
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Remove objects outside mask
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

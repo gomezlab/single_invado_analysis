@@ -21,8 +21,6 @@ function image_with_bar = draw_scale_bar(image_no_bar,pixel_size,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
 i_p.FunctionName = 'DRAW_SCALE_BAR';
 

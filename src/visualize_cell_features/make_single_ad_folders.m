@@ -1,23 +1,9 @@
 function make_single_ad_folders(cfg_file,varargin)
-%MAKE_MOVIE_FRAMES    Builds movie frames with the adhesions highlighted in
-%                     using various conventions
-%
-%   make_movie_frames(cfg_file,options) builds individual movie frames from
-%   raw experimental data, where files are placed and the movie config
-%   options are coded in cfg_file
-%
-%   Options:
-%
-%       -debug: set to 1 to output debugging information, defaults to 0
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 i_p = inputParser;
-i_p.FunctionName = 'MAKE_MOVIE_FRAMES';
 
 i_p.addRequired('cfg_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
