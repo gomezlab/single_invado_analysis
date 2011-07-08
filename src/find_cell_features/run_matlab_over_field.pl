@@ -12,7 +12,6 @@ use File::Path;
 use File::Spec::Functions;
 use File::Spec;
 use File::Basename;
-use Image::ExifTool;
 use Getopt::Long;
 use Data::Dumper;
 
@@ -49,7 +48,10 @@ $opt{root_mwd} = File::Spec->rel2abs($opt{script_dir});
 ################################################################################
 # Main Program
 ################################################################################
-my @matlab_code = ("$opt{script}('$cfg{exp_results_folder}')\n");
+
+my $extra = &build_extra_command_line_opts;
+
+my @matlab_code = ("$opt{script}('$cfg{exp_results_folder}'$extra)\n");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, $opt{script});
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
@@ -59,3 +61,20 @@ if (defined $cfg{job_group}) {
 }
 
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
+
+################################################################################
+# Functions
+################################################################################
+
+sub build_extra_command_line_opts {
+	my $extra = '';
+
+	if ($opt{script} =~ /find_puncta_thresh/) {
+        if (defined $cfg{stdev_thresh}) {
+			my @split_stdev_vals = split(/\s+/,$cfg{stdev_thresh});
+            $extra .= ",'stdev_thresh',[" . join(",",@split_stdev_vals) . "]";
+        }
+	}
+
+	return $extra;
+}
