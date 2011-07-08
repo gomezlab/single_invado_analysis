@@ -1,5 +1,5 @@
 function cfg_struct = add_filenames_to_struct(cfg_struct)
-%AD_FILENAMES_TO_STRUCT    Takes in a struct, to which the filenames for
+%ADD_FILENAMES_TO_STRUCT    Takes in a struct, to which the filenames for
 %                          various files made in the pipeline are added
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,3 +33,6 @@ cfg_struct.bleaching_plot = '../../puncta_props/bleaching_curves.eps';
 cfg_struct.binary_shift = 'binary_shift.png';
 
 cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
+
+cfg_struct.invado_data = '../../puncta_props/invado_data.csv';
+cfg_struct.not_invado_data = '../../puncta_props/not_invado_data.csv';
