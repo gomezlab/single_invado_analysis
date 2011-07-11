@@ -43,14 +43,13 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-image_dirs = image_dirs(1:20);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tracking Sequence Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tracking_seq = load(fullfile(base_dir, image_dirs(1).name,filenames.tracking_matrix)) + 1;
-tracking_seq = tracking_seq(:,1:20);
+% tracking_seq = tracking_seq(:,1:20);
+% image_dirs = image_dirs(1:20);
 
 start_row = i_p.Results.start_row;
 end_row = i_p.Results.end_row;
