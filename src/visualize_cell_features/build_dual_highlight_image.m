@@ -80,6 +80,12 @@ if (not(exist(output_folder,'dir')))
     mkdir(output_folder);
 end
 
+output_folder_small = fullfile(exp_dir,'visualizations','invado_and_not_small');
+if (not(exist(output_folder_small,'dir')))
+    mkdir(output_folder_small);
+end
+
+
 for i = 1:length(image_dirs)
     %check for the presence of adhesions to map onto the last gel image, if
     %not present, skip to the next image folder
@@ -139,9 +145,6 @@ for i = 1:length(image_dirs)
 
     images_to_highlight = {gel_image, puncta_image};
     spacer = ones(size(images_to_highlight{1},1),1,3);
-
-    output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
-%     imwrite(output_image, fullfile(I_folder,image_dirs(i).name,'raw_images.png'));
     
     for j=1:length(images_to_highlight)
         %cell edge highlighting
@@ -159,6 +162,9 @@ for i = 1:length(image_dirs)
     
     output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
     imwrite(output_image, fullfile(output_folder,[sprintf('%04d',i),'.png']));
+    
+    output_image_small = imresize(output_image,0.5);
+    imwrite(output_image_small, fullfile(output_folder_small,[sprintf('%04d',i),'.png']));
     
     if(mod(i,10) == 0), disp(['Done with Image: ',num2str(i),'/',num2str(length(image_dirs))]); end
 end
