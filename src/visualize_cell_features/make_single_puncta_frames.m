@@ -159,7 +159,7 @@ for row_num = 1:size(tracking_seq,1)
         if (puncta_num == 0)
             puncta_num = NaN;
         end
-        
+                
         this_set = struct;
         
         this_set.puncta = image_sets{col_num}.puncta_perim == puncta_num;
@@ -187,6 +187,13 @@ for row_num = 1:size(tracking_seq,1)
         puncta_seq_high{row_num}{col_num} = this_set.puncta_image_norm;
         gel_seq_high{row_num}{col_num} = this_set.gel_image_norm;
     end
+    
+    puncta_seq{row_num} = remove_empty_cells(puncta_seq{row_num});
+    gel_seq{row_num} = remove_empty_cells(gel_seq{row_num});
+    puncta_seq_high{row_num} = remove_empty_cells(puncta_seq_high{row_num});
+    gel_seq_high{row_num} = remove_empty_cells(gel_seq_high{row_num});
+    
+    puncta_seq{row_num}{2} = puncta_seq_high{row_num}{2};
     
     puncta_montage = create_montage_image_set(puncta_seq{row_num},'num_rows',1);
     gel_montage = create_montage_image_set(gel_seq{row_num},'num_rows',1);
@@ -225,3 +232,8 @@ toc;
 function bounded_image = bound_image(image,bounding_mat)
 
 bounded_image = image(bounding_mat(2):bounding_mat(4),bounding_mat(1):bounding_mat(3),:);
+
+function image_set = remove_empty_cells(image_set)
+
+while isempty(image_set{1}), image_set = image_set(2:end); end
+while isempty(image_set{end}), image_set = image_set(1:(end-1)); end
