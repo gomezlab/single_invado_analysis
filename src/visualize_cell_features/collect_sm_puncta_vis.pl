@@ -63,13 +63,13 @@ sub build_single_ad_commands {
 	
 	my @commands;
 	if (-e $puncta_file) {
-		push @commands, "make_single_puncta_frames($cfg{exp_results_folder},'puncta_file',$puncta_file)";
+		push @commands, "make_single_puncta_frames('$cfg{exp_results_folder}','puncta_file','$puncta_file')";
 	} else {
 		print "Couldn't find puncta file ($puncta_file)";
 	}
 	
 	if (-e $not_puncta_file) {
-		push @commands, "make_single_puncta_frames($cfg{exp_results_folder},'puncta_file',$not_puncta_file)";
+		push @commands, "make_single_puncta_frames('$cfg{exp_results_folder}','puncta_file','$not_puncta_file')";
 	} else {
 		print "Couldn't find puncta file ($not_puncta_file)";
 	}
@@ -80,56 +80,3 @@ sub build_single_ad_commands {
 ###############################################################################
 #Documentation
 ###############################################################################
-
-=head1 NAME
-
-collect_visualizations.pl - build the visualizations of the focal adhesion
-movies
-
-=head1 SYNOPSIS
-
-collect_mask_set.pl -cfg FA_config
-
-=head1 DESCRIPTION
-
-This program builds a series of movies based on files available in the tracking
-matrices folder. Each file in the tracking matrices folder which ends with
-'.csv' and does not contain 'no_movie' is used to build a visualization of the
-tracked focal adhesions.
-
-Required parameter(s):
-
-=over 
-
-=item * cfg or c: the focal adhesion analysis config file
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: print debuging information during program execution
-
-=item * movie_debug: pass along the debug flag to the MATLAB visualization
-program, causing only a small subset of the tracked adhesions to be visualized
-in a single frame
-
-=item * config_only: only write the MATLAB config files out, do not execute the
-MATLAB program
-
-=item * emerald: build and execute long commands throught the LSF job system
-
-=back
-
-=head1 EXAMPLES
-
-collect_visualizations.pl -cfg FA_config
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 6/30/2008
-
-=cut
