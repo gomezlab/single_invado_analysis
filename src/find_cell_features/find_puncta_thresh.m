@@ -1,17 +1,16 @@
-function find_puncta_thresh(I_folder, varargin)
+function find_puncta_thresh(exp_dir, varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic;
 i_p = inputParser;
-i_p.FunctionName = 'find_puncta_thresh';
 
-i_p.addRequired('I_folder',@(x)exist(x,'dir') == 7);
-i_p.addParamValue('std_coeff',4,@(x)isnumeric(x))
+i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
+i_p.addParamValue('stdev_thresh',4,@(x)isnumeric(x))
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(I_folder,varargin{:});
+i_p.parse(exp_dir,varargin{:});
 
 addpath('matlab_scripts');
 filenames = add_filenames_to_struct(struct());
@@ -20,7 +19,7 @@ filenames = add_filenames_to_struct(struct());
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-base_dir = fullfile(i_p.Results.I_folder,'individual_pictures');
+base_dir = fullfile(exp_dir,'individual_pictures');
 image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
@@ -47,7 +46,7 @@ for i = 1:size(image_dirs)
 end
 all_filt = double(all_filt);
 
-threshold = mean(all_filt(:)) + i_p.Results.std_coeff*std(all_filt(:));
+threshold = mean(all_filt(:)) + i_p.Results.stdev_thresh*std(all_filt(:));
 
 csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold),threshold)
 
@@ -55,8 +54,13 @@ hist(all_filt(:),100);
 xlabel('High Pass Filtered Intensity','FontSize',16,'FontName','Helvetica');
 ylabel('Pixel Count','FontSize',16,'FontName','Helvetica');
 y_limits = ylim();
-line([threshold,threshold],[0,y_limits(2)],'Color','red', ... 
-    'LineStyle','--','LineWidth',3);
+
+for i=1:length(threshold)
+    this_thresh = threshold(i);
+    line([this_thresh,this_thresh],[0,y_limits(2)],'Color','red', ... 
+        'LineStyle','--','LineWidth',3);
+end
+
 set(gca, 'FontName','Helvetica','FontSize',16,'Box','off');
 set(gcf, 'PaperPositionMode', 'auto');
 print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold_plot));

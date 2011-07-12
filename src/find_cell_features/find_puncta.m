@@ -39,7 +39,8 @@ filter_thresh = csvread(fullfile(I_folder,filenames.puncta_threshold));
 I_filt = fspecial('disk',i_p.Results.filter_size);
 blurred_image = imfilter(only_reg_focal_image,I_filt,'same',mean(only_reg_focal_image(:)));
 high_passed_image = only_reg_focal_image - blurred_image;
-threshed_image = high_passed_image > filter_thresh;
+
+threshed_image = find_threshed_image(high_passed_image,filter_thresh);
 
 %identify and remove objects on the immediate edge of the image
 threshed_image = remove_edge_objects(threshed_image);
@@ -110,3 +111,26 @@ highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mas
 
 imwrite(highlighted_image, fullfile(I_folder, filenames.objects_highlight));
 toc;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function threshed_image = find_threshed_image(high_passed_image, filter_thresh)
+
+if (length(filter_thresh) == 1)
+    threshed_image = high_passed_image >= filter_thresh;
+else
+    high_threshed_image = high_passed_image >= filter_thresh(2);
+    high_threshed_image = remove_edge_objects(high_threshed_image);
+    
+    low_threshed_image = high_passed_image >= filter_thresh(1);
+    low_thresh_bwlabel = bwlabel(low_threshed_image,4);
+    
+    overlap_labels = unique(low_thresh_bwlabel.*high_threshed_image);
+    if (overlap_labels(1) == 0)
+        overlap_labels = overlap_labels(2:end);
+    end
+    
+    threshed_image = ismember(low_thresh_bwlabel,overlap_labels);
+end
