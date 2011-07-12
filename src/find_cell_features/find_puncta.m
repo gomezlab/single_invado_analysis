@@ -61,10 +61,6 @@ end
 
 puncta = bwlabel(threshed_image,4);
 
-if (sum(sum(puncta)) == 0)
-    error('Didn''t find any puncta, aborting')
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Remove objects outside mask
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,6 +80,13 @@ ad_nums = unique(puncta);
 assert(ad_nums(1) == 0, 'Background pixels not found after building puncta label matrix')
 for i = 2:length(ad_nums)
     puncta(puncta == ad_nums(i)) = i - 1;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Make Placeholder image for empties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if (sum(sum(puncta)) == 0)
+    puncta(end,end) = 1;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
