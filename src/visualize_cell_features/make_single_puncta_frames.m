@@ -113,9 +113,8 @@ for row_num = 1:size(tracking_seq,1)
         all_ad_overlap = all_ad_overlap | this_puncta;
     end
     
-    bounds = regionprops(all_ad_overlap,'BoundingBox');
-    corners = [bounds(1).BoundingBox(1), bounds(1).BoundingBox(2)];
-    corners = [corners, corners + bounds(1).BoundingBox(3:4)]; %#ok<AGROW>
+    corners = [find(sum(all_ad_overlap),1,'first'), find(sum(all_ad_overlap,2),1,'first') ...
+        find(sum(all_ad_overlap),1,'last'), find(sum(all_ad_overlap,2),1,'last')];
     b_mat(row_num,:) = corners;
 end
 

@@ -21,7 +21,7 @@ i_p.parse(image_set,varargin{:});
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%The image set may start when many empty cells, first we clear all those
+%The image set may start with empty cells, first we clear all those
 %out
 while isempty(image_set{1}), image_set = image_set(2:end); end
 while isempty(image_set{end}), image_set = image_set(1:(end-1)); end
