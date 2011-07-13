@@ -104,7 +104,7 @@ sub convert_data_to_units {
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Average_puncta_signal CB_corrected_signal
 	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr 
-	  First_local_gel_diff Pre_birth_diff);
+	  First_local_gel_diff);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -265,7 +265,7 @@ sub gather_and_output_lineage_properties {
     }
 
     #Pure Time Series Props
-	my @ts_props = qw(Area Local_gel_diff Pre_birth_diff Centroid_dist_from_edge);
+	my @ts_props = qw(Area Local_gel_diff Centroid_dist_from_edge);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
