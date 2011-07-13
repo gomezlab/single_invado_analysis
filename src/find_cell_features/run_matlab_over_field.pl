@@ -60,6 +60,8 @@ if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
 
+%opt = &add_extra_options(%opt);
+
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
 
 ################################################################################
@@ -77,4 +79,14 @@ sub build_extra_command_line_opts {
 	}
 
 	return $extra;
+}
+
+sub add_extra_options {
+	my %opt = @_;
+
+	if ($opt{script} =~ /find_pre_birth_diffs/) {
+		$opt{resource} = "mem96"; 
+	}
+	
+	return %opt;
 }

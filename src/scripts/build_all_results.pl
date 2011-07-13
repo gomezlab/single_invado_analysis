@@ -57,7 +57,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./collect_puncta_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],
-	[ [ "../analyze_cell_features",   "./collect_pre_birth_diffs.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_pre_birth_diffs" ], ],
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../analyze_cell_features",   "./find_invadopodia_puncta.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl" ], ],
@@ -279,7 +279,7 @@ sub running_LSF_jobs {
     @job_ids = sort @job_ids;
     
     push @running_jobs, \@job_ids;
-    &kill_long_running_jobs();
+    #&kill_long_running_jobs();
 
     if (scalar(@lines) <= 1) {
         return 0;
