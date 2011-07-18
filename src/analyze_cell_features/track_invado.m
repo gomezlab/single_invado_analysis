@@ -85,7 +85,7 @@ for j = 1:size(image_dirs,1)
     end
 end
 tracking_counts = process_tracking_counts(tracking_counts);
-disp(['Tracking done, made ', tracking_counts.total, ' decisions,' ...
+disp(['Tracking done, made ', num2str(tracking_counts.total), ' decisions,' ...
     tracking_counts.recip_percent,'% tracked with best reciprocal match, '...
     tracking_counts.area_percent, '% with largest area match.']);
 toc(start_match);
@@ -167,7 +167,12 @@ for col_num = 1:size(tracking_matrix,2)
     assert(all(these_puncta_nums == puncta_nums{col_num}'));
 end
 
-csvwrite(fullfile(exp_folder,'tracking_matrices','tracking_seq_diff.csv'),tracking_matrix - 1);
+output_folder = fullfile(exp_folder,'tracking_matrices');
+if (not(exist(output_folder,'dir')))
+    mkdir(output_folder)
+end
+
+csvwrite(fullfile(output_folder,'tracking_seq.csv'),tracking_matrix - 1);
 toc(start_all);
 end
 
