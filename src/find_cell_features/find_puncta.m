@@ -66,9 +66,9 @@ puncta = bwlabel(threshed_image,4);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:max(puncta(:))
     assert(any(any(puncta == i)), 'Error: can''t find ad number %d', i);
-    this_ad = zeros(size(puncta));
-    this_ad(puncta == i) = 1;
-    if (sum(sum(this_ad & cell_mask)) == 0)
+    this_puncta = zeros(size(puncta));
+    this_puncta(puncta == i) = 1;
+    if (sum(sum(this_puncta & cell_mask)) == 0)
         puncta(puncta == i) = 0;
     end
 end
@@ -80,6 +80,23 @@ ad_nums = unique(puncta);
 assert(ad_nums(1) == 0, 'Background pixels not found after building puncta label matrix')
 for i = 2:length(ad_nums)
     puncta(puncta == ad_nums(i)) = i - 1;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Find and fill holes in single puncta
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+props = regionprops(puncta,'Area');
+large_ad_nums = find([props.Area] >= 4);
+for this_num = large_ad_nums
+    %first make a binary image of the current adhesion and then run imfill
+    %to fill any holes present    
+    this_puncta = puncta == this_num;
+    filled_ad = imfill(this_puncta,'holes');
+    
+    puncta(logical(filled_ad)) = this_num;
+    if (i_p.Results.debug && mod(this_num,50)==0)
+        disp(['Done filling holes in ',num2str(this_num), '/', num2str(length(ad_nums))]);
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,9 +112,9 @@ end
 puncta_perim = zeros(size(puncta));
 for i = 1:max(puncta(:))
     assert(any(any(puncta == i)), 'Error: can''t find ad number %d', i);
-    this_ad = zeros(size(puncta));
-    this_ad(puncta == i) = 1;
-    puncta_perim(bwperim(this_ad)) = i;
+    this_puncta = zeros(size(puncta));
+    this_puncta(puncta == i) = 1;
+    puncta_perim(bwperim(this_puncta)) = i;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
