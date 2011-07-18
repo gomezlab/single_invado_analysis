@@ -82,12 +82,17 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             stat_tests$pre_diff = tryCatch(
                 t.test(pre_diff,conf.level=conf.level), 
                 error = t.test.error);
+            
+            #Difference between before birth and during lifetime
+            pre_local_diff = local_diff - pre_diff;
 
             stat_tests$pre_local_diff = tryCatch(
-                t.test(local_diff - pre_diff,conf.level=conf.level), 
+                t.test(pre_local_diff,conf.level=conf.level), 
                 error = t.test.error);
-            all_props$pre_diff_p_value = c(all_props$pre_diff_p_value, stat_tests$pre_local_diff$p.value);
-            all_props$mean_pre_diff = c(all_props$mean_pre_diff, as.numeric(stat_tests$pre_local_diff$estimate));
+            all_props$pre_local_diff_p_value = c(all_props$pre_local_diff_p_value, 
+                stat_tests$pre_local_diff$p.value);
+            all_props$mean_pre_local_diff = c(all_props$mean_pre_local_diff, 
+                as.numeric(stat_tests$pre_local_diff$estimate));
 
             only_area_data = na.omit(as.numeric(area_data[lin_num,]));
             only_edge_dist_data = na.omit(as.numeric(edge_dist_data[lin_num,]));
@@ -103,7 +108,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             # }
 
             if (build_plots) {
-                all_three_sets = cbind(local_diff, pre_diff, local_diff - pre_diff);
+                all_three_sets = cbind(local_diff, pre_diff, pre_local_diff);
                 build_single_invado_plot(all_three_sets,stat_tests,lin_num);
             }
         }
@@ -195,10 +200,10 @@ t.test.error <- function(e) {
 build_filter_sets <- function(raw_data_set, conf.level = 0.95) {
     filter_sets = list();
 
-    # filter_sets$local_diff_filter = raw_data_set$high_conf_int < 0;
-    filter_sets$pre_diff_filter = raw_data_set$mean_pre_diff < 0 & raw_data_set$pre_diff_p_value < (1 - conf.level);
-    filter_sets$local_diff_filter = raw_data_set$p_value < (1 - conf.level);
-    # filter_sets$pre_diff_filter = raw_data_set$pre_diff_p_value < 1 - conf.level;
+    filter_sets$pre_diff_filter = raw_data_set$mean_pre_local_diff < 0 & 
+        raw_data_set$pre_local_diff_p_value < (1 - conf.level);
+    filter_sets$local_diff_filter = raw_data_set$mean_local_diff < 0 &
+        raw_data_set$p_value < (1 - conf.level);
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
     filter_sets$not_invado_filter = ! filter_sets$invado_filter;
@@ -245,7 +250,7 @@ if (length(args) != 0) {
         hist(exp_props$p_value);
         graphics.off()
 
-        data_types_to_include = c('lineage_nums','p_value','mean_local_diff', 'pre_diff_p_value');
+        data_types_to_include = c('lineage_nums','p_value','mean_local_diff', 'pre_local_diff_p_value');
         
         filter_sets = build_filter_sets(exp_props);
         
