@@ -74,15 +74,6 @@ for i = 1:max(puncta(:))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Renumber objects to be sequential
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ad_nums = unique(puncta);
-assert(ad_nums(1) == 0, 'Background pixels not found after building puncta label matrix')
-for i = 2:length(ad_nums)
-    puncta(puncta == ad_nums(i)) = i - 1;
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find and fill holes in single puncta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 props = regionprops(puncta,'Area');
@@ -104,6 +95,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (sum(sum(puncta)) == 0)
     puncta(end,end) = 1;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Renumber objects to be sequential
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ad_nums = unique(puncta);
+assert(ad_nums(1) == 0, 'Background pixels not found after building puncta label matrix')
+for i = 2:length(ad_nums)
+    puncta(puncta == ad_nums(i)) = i - 1;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
