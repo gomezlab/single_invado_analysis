@@ -59,7 +59,7 @@ if (i_p.Results.min_puncta_size > 1)
     threshed_image = labeled_thresh > 0;
 end
 
-puncta = bwlabel(threshed_image,4);
+puncta = bwlabel(threshed_image,8);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Remove objects outside mask
