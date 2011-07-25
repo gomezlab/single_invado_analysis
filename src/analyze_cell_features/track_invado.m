@@ -47,36 +47,23 @@ for j = 1:size(image_dirs,1)
         matching_matrices{j} = all_match_sets;
         continue;
     end
-        
+    
     puncta_2 = imread(fullfile(base_folder,image_dirs(j+1).name,filenames.objects));
     puncta_nums{j} = 1:max(puncta_1(:));
     puncta_nums{j+1} = 1:max(puncta_2(:));
-
+    
     counts = determine_pixel_count_overlaps(puncta_1,puncta_2);
-
+    
     all_match_sets = zeros(length(puncta_nums{j}),2);
-    while (not(exist('old_match_sets','var')) || ...  
-           any(any(old_match_sets ~= all_match_sets)))
+    while (not(exist('old_match_sets','var')) || ...
+            any(any(old_match_sets ~= all_match_sets)))
         old_match_sets = all_match_sets;
         [all_match_sets,decision_count] = find_dual_max_hits_sets(counts,all_match_sets);
         tracking_counts.recip_best = tracking_counts.recip_best + decision_count;
         
-        [puncta_1,puncta_2] = remove_match_set_puncta(puncta_1,puncta_2,all_match_sets);
-        counts = determine_pixel_count_overlaps(puncta_1,puncta_2);
-        1;
+        counts = update_pixel_count_overlaps(counts,all_match_sets);
     end
-    if (any(any(counts > 0)))
-        [all_match_sets,decision_count] = find_area_row_matches(counts,all_match_sets,puncta_1,puncta_2);
-        tracking_counts.area = tracking_counts.area + decision_count;
-        [puncta_1,puncta_2] = remove_match_set_puncta(puncta_1,puncta_2,all_match_sets);
-        counts = determine_pixel_count_overlaps(puncta_1,puncta_2);
-
-        [all_match_sets,decision_count] = find_area_col_matches(counts,all_match_sets,puncta_1,puncta_2);
-        tracking_counts.area = tracking_counts.area + decision_count;
-        [puncta_1,puncta_2] = remove_match_set_puncta(puncta_1,puncta_2,all_match_sets);
-        counts = determine_pixel_count_overlaps(puncta_1,puncta_2);
-    end
-
+    
     matching_matrices{j} = all_match_sets;
     clear all_match_sets;
     clear old_match_sets;
@@ -90,13 +77,15 @@ disp(['Tracking done, made ', num2str(tracking_counts.total), ' decisions,' ...
     tracking_counts.area_percent, '% with largest area match.']);
 toc(start_match);
 
+%Used for debugging second part
 % save('matching_mat.mat','matching_matrices');
 % save('puncta_nums.mat','puncta_nums');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Matching to Tracking Matrix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% load('matching_mat.mat'); load('puncta_nums.mat');
+%used for debugging
+load('matching_mat.mat'); load('puncta_nums.mat');
 
 %run through all the matching matices, building all the rows of the
 %tracking matrix
@@ -106,7 +95,7 @@ for i_num = 1:size(matching_matrices,1)
     for row = 1:size(matching_matrices{i_num},1);
         this_i_num = i_num;
         match_row = matching_matrices{this_i_num}(row,:);
-
+        
         %this row of the matching matrix has already been cleared, skip to
         %next
         if (match_row(1) <= 0)
@@ -117,7 +106,7 @@ for i_num = 1:size(matching_matrices,1)
             end
             continue;
         end
-        
+                
         track_rows(track_num).start = i_num;
         track_rows(track_num).seq = match_row;
         
@@ -172,7 +161,7 @@ if (not(exist(output_folder,'dir')))
     mkdir(output_folder)
 end
 
-csvwrite(fullfile(output_folder,'tracking_seq.csv'),tracking_matrix - 1);
+csvwrite(fullfile(output_folder,'tracking_seq_new.csv'),tracking_matrix - 1);
 toc(start_all);
 end
 
@@ -185,19 +174,33 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function counts = determine_pixel_count_overlaps(puncta_1,puncta_2)
+
 counts = zeros(max(puncta_1(:)),max(puncta_2(:)));
 for puncta_num = 1:max(puncta_1(:))
     this_puncta = puncta_1 == puncta_num;
     
-    overlap_puncta = puncta_2 .* uint16(this_puncta);
+    all_overlap_puncta_nums = puncta_2(this_puncta);
+    overlap_nums = unique(all_overlap_puncta_nums);
     
-    overlap_nums = unique(overlap_puncta);
+    if (isempty(overlap_nums)), continue; end
     if (overlap_nums(1) == 0), overlap_nums = overlap_nums(2:end); end
     if (isempty(overlap_nums)), continue; end
     
     for this_overlap_num = overlap_nums';
-        counts(puncta_num,this_overlap_num) = sum(sum(overlap_puncta == this_overlap_num));
+        counts(puncta_num,this_overlap_num) = sum(all_overlap_puncta_nums == this_overlap_num);
     end
+end
+
+end
+
+function counts = update_pixel_count_overlaps(counts,match_sets)
+
+for row = 1:size(match_sets,1)
+    if (match_sets(row,1) == 0)
+        continue;
+    end
+    counts(match_sets(row,1),:) = 0;
+    counts(:,match_sets(row,2)) = 0;
 end
 
 end
@@ -228,93 +231,6 @@ for row = 1:size(counts,1)
         dual_match_sets(row,:) = [row,col];
         decision_count = decision_count + 1;
     end
-end
-
-end
-
-function [cleared_puncta_1,cleared_puncta_2] = remove_match_set_puncta(puncta_1,puncta_2,match_sets)
-
-cleared_puncta_1 = puncta_1;
-cleared_puncta_2 = puncta_2;
-
-for row = 1:size(match_sets,1)
-    if (match_sets(row,1) == 0)
-        continue;
-    end
-    cleared_puncta_1(puncta_1 == match_sets(row,1)) = 0;
-    cleared_puncta_2(puncta_2 == match_sets(row,2)) = 0;
-end
-
-end
-
-function [dual_match_sets,decision_count] = find_area_row_matches(counts,dual_match_sets,puncta_1,puncta_2)
-
-decision_count = 0;
-for row = 1:size(counts,1)
-    %if there isn't any overlap, skip out of the loop, there won't be any
-    %row matches
-    if (all(counts(row,:) == 0))
-        continue;
-    end
-    
-    %max_row_matches holds the column numbers that match the highest value
-    %in the row
-    max_row_matches = find(counts(row,:) == max(counts(row,:)));
-    
-    if (length(max_row_matches) < 2)
-        continue;
-    end
-    
-    next_props = regionprops(puncta_2,'Area');
-    
-    largest_area = -Inf;
-    largest_puncta_num = 0;
-    
-    for next_puncta_num = max_row_matches
-        if (next_props(next_puncta_num).Area > largest_area)
-            largest_area = next_props(next_puncta_num).Area;
-            largest_puncta_num = next_puncta_num;
-        end
-    end
-    
-    dual_match_sets(row,:) = [row,largest_puncta_num];
-    decision_count = decision_count + 1;
-end
-
-end
-
-function [dual_match_sets,decision_count] = find_area_col_matches(counts,dual_match_sets,puncta_1,puncta_2)
-
-decision_count = 0;
-for col = 1:size(counts,2)
-    %if there isn't any overlap, skip out of the loop, there won't be any
-    %row matches
-    if (all(counts(:,col) == 0))
-        continue;
-    end
-    
-    %max_row_matches holds the column numbers that match the highest value
-    %in the row
-    max_col_matches = find(counts(:,col) == max(counts(:,col)));
-    
-    if (length(max_col_matches) < 2)
-        continue;
-    end
-    
-    cur_props = regionprops(puncta_1,'Area');
-    
-    largest_area = -Inf;
-    largest_puncta_num = 0;
-    
-    for next_puncta_num = max_col_matches'
-        if (cur_props(next_puncta_num).Area > largest_area)
-            largest_area = cur_props(next_puncta_num).Area;
-            largest_puncta_num = next_puncta_num;
-        end
-    end
-    
-    dual_match_sets(largest_puncta_num,:) = [largest_puncta_num,col];
-    decision_count = decision_count + 1;
 end
 
 end
