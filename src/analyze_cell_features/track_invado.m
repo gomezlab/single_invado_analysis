@@ -161,7 +161,7 @@ if (not(exist(output_folder,'dir')))
     mkdir(output_folder)
 end
 
-csvwrite(fullfile(output_folder,'tracking_seq_new.csv'),tracking_matrix - 1);
+csvwrite(fullfile(output_folder,'tracking_seq.csv'),tracking_matrix - 1);
 toc(start_all);
 end
 
