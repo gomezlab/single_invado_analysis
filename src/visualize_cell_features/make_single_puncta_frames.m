@@ -1,23 +1,10 @@
 function make_single_puncta_frames(exp_dir,varargin)
-%MAKE_SINGLE_AD_FRAMES    Builds single image montages that track single
-%                         adhesions through their entire lifecycle,
-%                         including frames immediately preceding and
-%                         following the adhesion's lifetime, if available
-%
-%   make_single_ad_frames(cfg_file,options) builds single adhesion montages
-%   from raw experimental data, most config options are set in cfg_file
-%
-%   Options:
-%
-%       -debug: set to 1 to output debugging information, defaults to 0
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic;
 i_p = inputParser;
-i_p.FunctionName = 'MAKE_SINGLE_AD_FRAMES';
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
@@ -133,7 +120,6 @@ b_mat(b_mat(:,4) > image_size(1),4) = image_size(1);
 % Build Single Ad Image Sequences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 puncta_seq = cell(size(tracking_seq,1), 1);
 gel_seq = cell(size(tracking_seq,1), 1);
 
@@ -141,11 +127,19 @@ puncta_seq_high = cell(size(tracking_seq,1), 1);
 gel_seq_high = cell(size(tracking_seq,1), 1);
 
 for row_num = 1:size(tracking_seq,1)
+    %some rows will be have been completely blanked by the above filtering,
+    %skip these rows
     if (all(tracking_seq(row_num,:) <= 0))
         continue;
     end
     
+    %we know we have a row with an object now, scan through each image,
+    %pulling out that object
     for col_num = 1:size(tracking_seq,2)
+        %attempt to find the surrounding entries of the current tracking
+        %number position, if any of these numbers are above zero,
+        %indicating that an object is present in this image or in the next
+        %or immediately prior image
         surrounding_entries = [0, tracking_seq(row_num,col_num), 0];
         try surrounding_entries(1) = tracking_seq(row_num,col_num-1); end %#ok<TRYNC>
         try surrounding_entries(3) = tracking_seq(row_num,col_num+1); end %#ok<TRYNC>
@@ -155,36 +149,45 @@ for row_num = 1:size(tracking_seq,1)
         end
         
         puncta_num = tracking_seq(row_num,col_num);
+        %puncta_num of 0 indicates no object, but messes up the fact that
+        %the background of the label matrices is 0, so reset the number to
+        %NaN, so that their aren't any matches for highlighting
         if (puncta_num == 0)
             puncta_num = NaN;
         end
-                
-        this_set = struct;
         
-        this_set.puncta = image_sets{col_num}.puncta_perim == puncta_num;
-        this_set.not_this_puncta = image_sets{col_num}.puncta_perim ~= puncta_num & ...
+        puncta_set = struct;
+        
+        puncta_set.puncta = image_sets{col_num}.puncta_perim == puncta_num;
+        puncta_set.not_this_puncta = image_sets{col_num}.puncta_perim ~= puncta_num & ...
             image_sets{col_num}.puncta_perim ~= 0;
-        this_set.gel_image_norm = image_sets{col_num}.gel_image_norm;
-        this_set.puncta_image_norm = image_sets{col_num}.puncta_image_norm;
+        puncta_set.gel_image_norm = image_sets{col_num}.gel_image_norm;
+        puncta_set.puncta_image_norm = image_sets{col_num}.puncta_image_norm;
         
-        f_names = fieldnames(this_set);
+        %remove all the area outside the bounds plus the padding of the
+        %objects range based on the above bounding calculations
+        f_names = fieldnames(puncta_set);
         for i = 1:length(f_names)
             this_field = f_names{i};
-            this_set.(this_field) = bound_image(this_set.(this_field),b_mat(row_num,:));
+            puncta_set.(this_field) = bound_image(puncta_set.(this_field),b_mat(row_num,:));
         end
-        puncta_seq{row_num}{col_num} = this_set.puncta_image_norm;
-        gel_seq{row_num}{col_num} = this_set.gel_image_norm;
         
+        %save a copy of the un-highlighted puncta and gel images for output
+        %later
+        puncta_seq{row_num}{col_num} = puncta_set.puncta_image_norm;
+        gel_seq{row_num}{col_num} = puncta_set.gel_image_norm;
+        
+        %apply the highlights to the image sets
         highlight_fields = {'gel_image_norm','puncta_image_norm'};
         for i = 1:length(highlight_fields)
             this_field = highlight_fields{i};
-            this_set.(this_field) = create_highlighted_image(this_set.(this_field), ...
-                this_set.puncta,'color_map',[0,1,0],'mix_percent',0.5);
-            this_set.(this_field) = create_highlighted_image(this_set.(this_field), ...
-                this_set.not_this_puncta,'color_map',[0,0,1],'mix_percent',0.5);
+            puncta_set.(this_field) = create_highlighted_image(puncta_set.(this_field), ...
+                puncta_set.puncta,'color_map',[0,1,0],'mix_percent',0.25);
+            puncta_set.(this_field) = create_highlighted_image(puncta_set.(this_field), ...
+                puncta_set.not_this_puncta,'color_map',[0,0,1],'mix_percent',0.25);
         end
-        puncta_seq_high{row_num}{col_num} = this_set.puncta_image_norm;
-        gel_seq_high{row_num}{col_num} = this_set.gel_image_norm;
+        puncta_seq_high{row_num}{col_num} = puncta_set.puncta_image_norm;
+        gel_seq_high{row_num}{col_num} = puncta_set.gel_image_norm;
     end
     
     puncta_seq{row_num} = remove_empty_cells(puncta_seq{row_num});
@@ -192,8 +195,7 @@ for row_num = 1:size(tracking_seq,1)
     puncta_seq_high{row_num} = remove_empty_cells(puncta_seq_high{row_num});
     gel_seq_high{row_num} = remove_empty_cells(gel_seq_high{row_num});
     
-    puncta_seq{row_num}{2} = puncta_seq_high{row_num}{2};
-    
+    %Montage creation
     puncta_montage = create_montage_image_set(puncta_seq{row_num},'num_rows',1);
     gel_montage = create_montage_image_set(gel_seq{row_num},'num_rows',1);
     
@@ -202,6 +204,7 @@ for row_num = 1:size(tracking_seq,1)
     
     spacer = 0.5*ones(1,size(puncta_montage,2),3);
     
+    %Image output
     sub_out_folder = 'single_invadopodia';
     if (regexp(i_p.Results.puncta_file,'not_invado_data.csv'))
         sub_out_folder = 'single_notinvadopodia';

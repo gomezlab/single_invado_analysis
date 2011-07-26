@@ -85,6 +85,10 @@ if (not(exist(output_folder_small,'dir')))
     mkdir(output_folder_small);
 end
 
+output_folder_side = fullfile(exp_dir,'visualizations','side_by_side');
+if (not(exist(output_folder_side,'dir')))
+    mkdir(output_folder_side);
+end
 
 for i = 1:length(image_dirs)
     %check for the presence of adhesions to map onto the last gel image, if
@@ -142,8 +146,9 @@ for i = 1:length(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Image Creation
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    
     images_to_highlight = {gel_image, puncta_image};
+    original_images = images_to_highlight;
     spacer = ones(size(images_to_highlight{1},1),1,3);
     
     for j=1:length(images_to_highlight)
@@ -165,6 +170,10 @@ for i = 1:length(image_dirs)
     
     output_image_small = imresize(output_image,0.5);
     imwrite(output_image_small, fullfile(output_folder_small,[sprintf('%04d',i),'.png']));
+    
+    output_image = [original_images{1}, spacer, original_images{2}];
+    output_image = imresize(output_image,0.5);
+    imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i),'.png']));
     
     if(mod(i,10) == 0), disp(['Done with Image: ',num2str(i),'/',num2str(length(image_dirs))]); end
 end
