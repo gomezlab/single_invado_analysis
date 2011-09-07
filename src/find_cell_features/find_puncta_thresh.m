@@ -7,8 +7,9 @@ tic;
 i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
-i_p.addParamValue('stdev_thresh',4,@(x)isnumeric(x))
+i_p.addParamValue('stdev_thresh',4,@(x)isnumeric(x));
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('thresh_scan',0,@(x)x == 1 || x == 0);
 
 i_p.parse(exp_dir,varargin{:});
 
@@ -67,3 +68,22 @@ print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold
 close;
 
 toc;
+
+if (i_p.Results.thresh_scan)
+    props_folder = fileparts(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold));
+    props_folder = fullfile(props_folder,'thresh_scan');
+    if (not(exist(props_folder,'dir')))
+        mkdir(props_folder);
+    end
+    
+    mean_val = mean(all_filt(:));
+    stdev_val = std(all_filt(:));
+    
+    for low_thresh = 0.5:0.1:5
+        for high_thresh = 0.5:0.1:5
+            thresh_vals = mean_val + [low_thresh high_thresh]*stdev_val;
+            output_filename = [num2str(low_thresh),'_',num2str(high_thresh),'.csv'];
+            csvwrite(fullfile(props_folder,output_filename),thresh_vals);
+        end
+    end
+end
