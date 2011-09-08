@@ -73,10 +73,12 @@ sub create_all_matlab_commands {
     my @matlab_code;
 
     foreach my $file_name (@image_files) {
-		
 		my $extra_opt = '';
         if (defined $cfg{min_puncta_size}) {
 	    	$extra_opt .= ",'min_puncta_size',$cfg{min_puncta_size}";
+	    }
+        if (defined $cfg{max_eccentricity}) {
+	    	$extra_opt .= ",'max_eccentricity',$cfg{max_eccentricity}";
 	    }
 
 		$matlab_code[0] .= "find_puncta('$file_name'$extra_opt)\n";

@@ -9,6 +9,7 @@ i_p = inputParser;
 i_p.addRequired('I_file',@(x)exist(x,'file') == 2);
 
 i_p.addParamValue('min_puncta_size',1,@(x)isnumeric(x) && x > 0);
+i_p.addParamValue('max_eccentricity',1,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -50,49 +51,52 @@ threshed_temp = zeros(size(focal_image));
 threshed_temp(binary_shift) = threshed_image;
 threshed_image = threshed_temp;
 
-if (i_p.Results.min_puncta_size > 1)
-    labeled_thresh = bwlabel(threshed_image,4);
-    
-    props = regionprops(labeled_thresh,'Area'); %#ok<MRPBW>
-    labeled_thresh = ismember(labeled_thresh, find([props.Area] >= i_p.Results.min_puncta_size));
-    
-    threshed_image = labeled_thresh > 0;
-end
-
 puncta = bwlabel(threshed_image,8);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Remove objects outside mask
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for i = 1:max(puncta(:))
-    assert(any(any(puncta == i)), 'Error: can''t find ad number %d', i);
-    this_puncta = zeros(size(puncta));
-    this_puncta(puncta == i) = 1;
-    if (sum(sum(this_puncta & cell_mask)) == 0)
-        puncta(puncta == i) = 0;
-    end
-end
+inside_cell_mask = unique(puncta(cell_mask));
+inside_cell_mask = inside_cell_mask(inside_cell_mask > 0);
+
+puncta = puncta .* ismember(puncta,inside_cell_mask);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find and fill holes in single puncta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 props = regionprops(puncta,'Area');
-large_ad_nums = find([props.Area] >= 4);
-for this_num = large_ad_nums
+large_punc_nums = find([props.Area] >= 4);
+for this_num = large_punc_nums
     %first make a binary image of the current adhesion and then run imfill
     %to fill any holes present    
     this_puncta = puncta == this_num;
     filled_ad = imfill(this_puncta,'holes');
     
     puncta(logical(filled_ad)) = this_num;
-    if (i_p.Results.debug && mod(this_num,50)==0)
-        disp(['Done filling holes in ',num2str(this_num), '/', num2str(length(ad_nums))]);
-    end
+%     if (i_p.Results.debug && mod(this_num,50)==0)
+%         disp(['Done filling holes in ',num2str(this_num), '/', num2str(length(ad_nums))]);
+%     end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Size and Eccentricity Filtering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if (i_p.Results.min_puncta_size > 1)    
+    props = regionprops(puncta,'Area');
+    puncta = puncta .* ismember(puncta, find([props.Area] >= i_p.Results.min_puncta_size));
+end
+
+if (not(any(strcmp('max_eccentricity',i_p.UsingDefaults))))    
+    props = regionprops(puncta,'Eccentricity','MajorAxisLength','MinorAxisLength');
+    puncta = ismember(puncta, find([props.Eccentricity] <= i_p.Results.max_eccentricity));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Make Placeholder image for empties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%the tracking algorithm expects to find something in every frame, this
+%ensures that at least a single pixel is found
 if (sum(sum(puncta)) == 0)
     puncta(end,end) = 1;
 end
