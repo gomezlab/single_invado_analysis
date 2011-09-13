@@ -71,7 +71,7 @@ toc;
 
 if (i_p.Results.thresh_scan)
     props_folder = fileparts(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold));
-    props_folder = fullfile(props_folder,'thresh_scan');
+    props_folder = fullfile(props_folder,'thresh_scan_seed');
     if (not(exist(props_folder,'dir')))
         mkdir(props_folder);
     end
@@ -79,11 +79,22 @@ if (i_p.Results.thresh_scan)
     mean_val = mean(all_filt(:));
     stdev_val = std(all_filt(:));
     
-    for low_thresh = 0.5:0.1:5
-        for high_thresh = 0.5:0.1:5
-            thresh_vals = mean_val + [low_thresh high_thresh]*stdev_val;
-            output_filename = [num2str(low_thresh),'_',num2str(high_thresh),'.csv'];
-            csvwrite(fullfile(props_folder,output_filename),thresh_vals);
-        end
+    for std_count = 0.5:0.1:20
+        thresh_val = mean_val + std_count*stdev_val;
+        output_filename = sprintf('%0.1f.csv',std_count);
+        csvwrite(fullfile(props_folder,output_filename),thresh_val);
     end
+    
+    props_folder = fileparts(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold));
+    props_folder = fullfile(props_folder,'thresh_scan_expand');
+    if (not(exist(props_folder,'dir')))
+        mkdir(props_folder);
+    end
+    
+    for std_count = 0.1:0.1:4.9
+        thresh_val = mean_val + stdev_val*[std_count,5];
+        output_filename = sprintf('%0.1f.csv',std_count);
+        csvwrite(fullfile(props_folder,output_filename),thresh_val);
+    end
+
 end
