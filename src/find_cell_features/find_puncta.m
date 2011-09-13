@@ -73,9 +73,6 @@ for this_num = large_punc_nums
     filled_ad = imfill(this_puncta,'holes');
     
     puncta(logical(filled_ad)) = this_num;
-%     if (i_p.Results.debug && mod(this_num,50)==0)
-%         disp(['Done filling holes in ',num2str(this_num), '/', num2str(length(ad_nums))]);
-%     end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +85,7 @@ end
 
 if (not(any(strcmp('max_eccentricity',i_p.UsingDefaults))))    
     props = regionprops(puncta,'Eccentricity','MajorAxisLength','MinorAxisLength');
-    puncta = ismember(puncta, find([props.Eccentricity] <= i_p.Results.max_eccentricity));
+    puncta = puncta .* ismember(puncta, find([props.Eccentricity] <= i_p.Results.max_eccentricity));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
