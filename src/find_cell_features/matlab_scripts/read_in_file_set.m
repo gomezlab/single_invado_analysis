@@ -10,8 +10,8 @@ data_set.gel_image_norm = (data_set.gel_image - data_set.gel_range(1))/range(dat
 
 data_set.cell_mask = logical(imread(fullfile(this_dir, filenames.cell_mask)));
 
-data_set.puncta = imread(fullfile(this_dir, filenames.objects));
-data_set.puncta_perim = imread(fullfile(this_dir, filenames.objects_perim));
+data_set.objects = imread(fullfile(this_dir, filenames.objects));
+data_set.objects_perim = imread(fullfile(this_dir, filenames.objects_perim));
 data_set.puncta_range = csvread(fullfile(this_dir, filenames.puncta_range));
 data_set.puncta_image  = double(imread(fullfile(this_dir, filenames.puncta)));
 data_set.puncta_image_norm = (data_set.puncta_image - data_set.puncta_range(1))/range(data_set.puncta_range);

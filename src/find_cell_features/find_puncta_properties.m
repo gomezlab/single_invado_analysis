@@ -69,7 +69,7 @@ i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(c_d,first_d,f_d,varargin{:});
 
-adhesion_props = regionprops(c_d.puncta,'all');
+adhesion_props = regionprops(c_d.objects,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -79,14 +79,14 @@ adhesion_props = regionprops(c_d.puncta,'all');
 %%Properites Always Extracted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i=1:max(c_d.puncta(:))
-    adhesion_props(i).Average_puncta_signal = mean(c_d.puncta_image(c_d.puncta == i));
+for i=1:max(c_d.objects(:))
+    adhesion_props(i).Average_puncta_signal = mean(c_d.puncta_image(c_d.objects == i));
     
     %this bit of code isolates a single object as a logical image and
     %then builds another logical image of the region around the object,
     %excluding certain areas
-    this_ad = c_d.puncta;
-    this_ad(c_d.puncta ~= i) = 0;
+    this_ad = c_d.objects;
+    this_ad(c_d.objects ~= i) = 0;
     this_ad = logical(this_ad);
     
     current_diffs = collect_local_diff_properties(c_d,this_ad);
@@ -101,7 +101,7 @@ for i=1:max(c_d.puncta(:))
     final_diffs = collect_local_diff_properties(f_d,this_ad);
     adhesion_props(i).End_local_gel_diff = final_diffs.Local_gel_diff;
     
-    if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.puncta(:)))]); end
+    if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.objects(:)))]); end
 end
 
 
@@ -137,7 +137,7 @@ if (isfield(c_d, 'cell_mask'))
     dists(not(c_d.binary_shift)) = NaN;
     
     dists(bb_dists < dists) = NaN;
-    for i=1:max(c_d.puncta(:))
+    for i=1:max(c_d.objects(:))
         centroid_pos = round(adhesion_props(i).Centroid);
         centroid_unrounded = adhesion_props(i).Centroid; %#ok<NASGU>
         if(size(centroid_pos,1) == 0)
