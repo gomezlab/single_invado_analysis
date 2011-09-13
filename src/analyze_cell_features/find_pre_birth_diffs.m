@@ -72,7 +72,7 @@ for row = 1:size(tracking_seq,1)
         
         puncta_num = tracking_seq(row,col);
         
-        this_puncta = data_set{col}.puncta == puncta_num;
+        this_puncta = data_set{col}.objects == puncta_num;
         pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta);
         
         pre_birth_diffs(row,col) = pre_birth_diff.Local_gel_diff;
