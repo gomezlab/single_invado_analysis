@@ -29,6 +29,10 @@ i_p.parse(I,high,varargin{:});
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_size = size(I);
 
+if (max(I(:)) > 1 || min(I(:) < 0))
+    warn('Expected image to be scaled from 0-1');
+end
+
 if (size(image_size) < 3)
     high_image_red = I;
     high_image_green = I;
@@ -57,6 +61,8 @@ for i=1:length(labels)
     high_image_green(indexes) = this_cmap(2)*i_p.Results.mix_percent + high_image_green(indexes)*(1-i_p.Results.mix_percent);
     high_image_blue(indexes) = this_cmap(3)*i_p.Results.mix_percent + high_image_blue(indexes)*(1-i_p.Results.mix_percent);
 end
+
+
 
 high_image = cat(3,high_image_red,high_image_green,high_image_blue);
 

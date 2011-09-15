@@ -89,14 +89,14 @@ for row_num = 1:size(tracking_seq,1)
         continue;
     end
     
-    all_ad_overlap = zeros(size(image_sets{1}.puncta));
+    all_ad_overlap = zeros(size(image_sets{1}.objects));
     
     for col_num = 1:size(tracking_seq,2)
         if (tracking_seq(row_num,col_num) <= 0)
             continue;
         end
         
-        this_puncta = image_sets{col_num}.puncta == tracking_seq(row_num,col_num);
+        this_puncta = image_sets{col_num}.objects == tracking_seq(row_num,col_num);
         all_ad_overlap = all_ad_overlap | this_puncta;
     end
     
@@ -105,7 +105,7 @@ for row_num = 1:size(tracking_seq,1)
     b_mat(row_num,:) = corners;
 end
 
-image_size = size(image_sets{1}.puncta);
+image_size = size(image_sets{1}.objects);
 b_mat(:,1:2) = b_mat(:,1:2) - i_p.Results.image_padding;
 b_mat(:,1:2) = floor(b_mat(:,1:2));
 b_mat(b_mat(:,1) <= 0,1) = 1;
@@ -158,9 +158,9 @@ for row_num = 1:size(tracking_seq,1)
         
         puncta_set = struct;
         
-        puncta_set.puncta = image_sets{col_num}.puncta_perim == puncta_num;
-        puncta_set.not_this_puncta = image_sets{col_num}.puncta_perim ~= puncta_num & ...
-            image_sets{col_num}.puncta_perim ~= 0;
+        puncta_set.puncta = image_sets{col_num}.objects_perim == puncta_num;
+        puncta_set.not_this_puncta = image_sets{col_num}.objects_perim ~= puncta_num & ...
+            image_sets{col_num}.objects_perim ~= 0;
         puncta_set.gel_image_norm = image_sets{col_num}.gel_image_norm;
         puncta_set.puncta_image_norm = image_sets{col_num}.puncta_image_norm;
         
