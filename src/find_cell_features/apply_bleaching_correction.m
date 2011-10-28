@@ -1,6 +1,6 @@
-function determine_bleaching_correction(exp_dir,varargin)
-% DETERMINE_BLEACHING_CORRECTION    searches through the gel images to
-%                                   determine the photobleaching correction
+function apply_bleaching_correction(exp_dir,varargin)
+% APPLY_BLEACHING_CORRECTION    searches through the gel images and applies
+%                               photobleaching correction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -33,19 +33,21 @@ image_dirs = image_dirs(3:end);
 %read in a cell mask to get the size of the images to preallocate the size of
 %the matrix that will keep track of which pixels have been in a cell or
 %outside the registered range
-test_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.cell_mask));
+test_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.gel));
 
 no_cell_regions = ones(size(test_image));
 inside_registered = ones(size(test_image));
 
 for i=1:length(image_dirs)
     binary_shift = imread(fullfile(base_dir,image_dirs(i).name,filenames.binary_shift));
-    cell_mask = imread(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask));
     
     no_cell_regions = no_cell_regions & binary_shift;
-    no_cell_regions = no_cell_regions & not(cell_mask);
-    
     inside_registered = inside_registered & binary_shift;
+    
+    if (exist(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask),'file')) 
+        cell_mask = imread(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask));
+        no_cell_regions = no_cell_regions & not(cell_mask);
+    end
 end
 imwrite(no_cell_regions, fullfile(base_dir,image_dirs(1).name,filenames.no_cell_regions));
 
