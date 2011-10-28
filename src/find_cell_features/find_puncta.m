@@ -23,8 +23,9 @@ I_folder = fileparts(I_file);
 %read in binary shift file
 binary_shift = logical(imread(fullfile(I_folder,filenames.binary_shift)));
 
-cell_mask = logical(imread(fullfile(I_folder,filenames.cell_mask)));
-
+if (exist(fullfile(I_folder,filenames.cell_mask),'file'))
+    cell_mask = logical(imread(fullfile(I_folder,filenames.cell_mask)));
+end
 %read in and remove regions outside registered region
 focal_image  = double(imread(I_file));
 only_reg_focal_image = remove_region_outside_registered(focal_image,binary_shift);
@@ -56,10 +57,12 @@ puncta = bwlabel(threshed_image,8);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Remove objects outside mask
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-inside_cell_mask = unique(puncta(cell_mask));
-inside_cell_mask = inside_cell_mask(inside_cell_mask > 0);
-
-puncta = puncta .* ismember(puncta,inside_cell_mask);
+if (exist('cell_mask','var'))
+    inside_cell_mask = unique(puncta(cell_mask));
+    inside_cell_mask = inside_cell_mask(inside_cell_mask > 0);
+    
+    puncta = puncta .* ismember(puncta,inside_cell_mask);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Find and fill holes in single puncta
@@ -127,8 +130,12 @@ imwrite(im2bw(puncta),fullfile(I_folder, filenames.objects_binary));
 
 scaled_image = (focal_image - min_max(1))/(range(min_max));
 scaled_image(not(binary_shift)) = 0;
-highlighted_image = create_highlighted_image(scaled_image, im2bw(puncta_perim),'color_map',[1 0 0],'mix_percent',0.5);
-highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask),'color_map',[0 1 0],'mix_percent',0.5);
+highlighted_image = create_highlighted_image(scaled_image, im2bw(puncta_perim), ... 
+    'color_map',[1 0 0],'mix_percent',0.5);
+if (exist('cell_mask','var'))
+    highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask), ... 
+        'color_map',[0 1 0],'mix_percent',0.5);
+end
 
 imwrite(highlighted_image, fullfile(I_folder, filenames.objects_highlight));
 toc;
