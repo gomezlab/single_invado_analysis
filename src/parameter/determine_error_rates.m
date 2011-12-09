@@ -60,6 +60,8 @@ end
 consensus = sum(hand_seg_images,3);
 consensus = consensus >= 0.5*size(hand_seg_images,3);
 consensus_label = bwlabel(consensus, 8);
+consensus_props = regionprops(consensus_label,'all');
+save(fullfile(seg_folder,'consensus_stats.mat'),'consensus_props');
 imwrite(consensus,fullfile(seg_folder,'consensus.png'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,18 +135,20 @@ comp_pixels = zeros(1,length(t1_vals));
 consensus_pixels = zeros(1,length(t1_vals));
 overlap_pixels = zeros(1,length(t1_vals));
 for t1_index = 1:length(t1_vals)
-    filter_thresh = puncta_mean + puncta_std*[t1_vals(t1_index), 6];
-    threshed_image = find_threshed_image(high_passed,filter_thresh);
+    filter_thresh = puncta_mean + puncta_std*[t1_vals(t1_index), 4];
+    threshed_image = find_threshed_image(high_passed,filter_thresh,3);
     threshed_image = imfill(threshed_image,'holes');
     threshed_image_label = bwlabel(threshed_image,8);
-    threshed_image_label = filter_label_mat_by_size(threshed_image_label,3);
+    threshed_image_label = filter_label_mat_by_size(threshed_image_label,[-Inf,250]);
     threshed_image = threshed_image_label > 0;
+    
+    temp = zeros(size(threshed_image)); temp(consensus) = 1; temp(threshed_image) = 2; temp(threshed_image & consensus) = 3;
+    
     
     [comp_pixels(t1_index),consensus_pixels(t1_index),overlap_pixels(t1_index)] = ...
         find_pixel_stats(threshed_image,threshed_image_label,consensus,consensus_label);
     1;
 end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
@@ -159,7 +163,7 @@ hand_seg = hand_seg < 0.9;
 hand_seg = imfill(hand_seg,'holes');
 
 
-function threshed_image = find_threshed_image(high_passed_image, filter_thresh)
+function threshed_image = find_threshed_image(high_passed_image, filter_thresh, minimum_size)
 
 if (length(filter_thresh) == 1)
     threshed_image = high_passed_image >= filter_thresh;
@@ -167,20 +171,21 @@ if (length(filter_thresh) == 1)
 else
     high_threshed_image = high_passed_image >= filter_thresh(2);
     high_threshed_image = remove_edge_objects(high_threshed_image);
+    high_threshed_image_label = bwlabel(high_threshed_image,4);
+    high_threshed_image_label = filter_label_mat_by_size(high_threshed_image_label,minimum_size);
+    high_threshed_image = high_threshed_image_label > 0;
     
     low_threshed_image = high_passed_image >= filter_thresh(1);
     low_thresh_bwlabel = bwlabel(low_threshed_image,4);
     
     overlap_labels = unique(low_thresh_bwlabel.*high_threshed_image);
-    if (overlap_labels(1) == 0)
-        overlap_labels = overlap_labels(2:end);
-    end
+    overlap_labels = overlap_labels(overlap_labels > 0);
     
     threshed_image = ismember(low_thresh_bwlabel,overlap_labels);
     threshed_image = remove_edge_objects(threshed_image);
 end
 
-function [comp_sum, consen_sum,overlap_sum] = find_pixel_stats(comp,comp_label,consensus,consensus_label)
+function [comp_sum,consen_sum,overlap_sum] = find_pixel_stats(comp,comp_label,consensus,consensus_label)
 
 %find the consensus puncta that overlap with the comp puncta,
 %throwing out any background overlap
@@ -199,10 +204,13 @@ comp_sum= sum(comp_overlap(:));
 dual_overlap = consensus_overlap .* comp_overlap;
 overlap_sum = sum(dual_overlap(:));
 
-1;
 
-function filt_image = filter_label_mat_by_size(label_mat,min_size)
+function filt_image = filter_label_mat_by_size(label_mat,size_mat)
 
 props = regionprops(label_mat,'Area');
 
-filt_image = ismember(label_mat,find([props.Area] >= min_size)).*label_mat;
+if (length(size_mat) == 1)
+    filt_image = ismember(label_mat,find([props.Area] >= size_mat(1))).*label_mat;
+else
+    filt_image = ismember(label_mat,find([props.Area] >= size_mat(1) & [props.Area] <= size_mat(2))).*label_mat;
+end
