@@ -24,7 +24,7 @@ images_composite = cell(0);
 base_image_size = [NaN, NaN];
 
 total_images = length(dir(fullfile(base_dir,fields(1).name,'individual_pictures'))) - 2;
-
+all_pix_vals = [];
 for i = 1:total_images
     images = cell(0);
     
@@ -69,17 +69,21 @@ for i = 1:total_images
     end
     
     images_composite{i} = imresize(images_composite{i},[800,NaN]);
-        
+    all_pix_vals = [all_pix_vals; images_composite{i}(:)]; %#ok<AGROW>
+    
     if (mod(i,10) == 0)
         disp(['Done processing: ',num2str(i), ' of ', target_file])
     end
 end
 
+all_pix_vals = sort(all_pix_vals);
+
 %we only need to do image normalization if the images are not already in
 %color (i.e. have more than 2 dimensions)
 if (length(size(images_composite{1})) < 3)
-    images_min_max = double([min(min([images_composite{1:end}])),max(max([images_composite{1:end}]))]);
-    
+    %toss out the top 0.05% of pixels for the image min/max creation
+    end_trim_amount = round(length(all_pix_vals)*0.0005);
+    images_min_max = double([all_pix_vals(1), all_pix_vals(end-end_trim_amount)]);
     for i=1:length(images_composite)
         images_composite{i} = (double(images_composite{i}) - images_min_max(1))/range(images_min_max);
     end
