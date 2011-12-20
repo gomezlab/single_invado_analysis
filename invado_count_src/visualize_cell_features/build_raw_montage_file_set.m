@@ -14,7 +14,7 @@ i_p.parse(base_dir,target_file,varargin{:});
 addpath(genpath('..'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Main Program
+% Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fields = dir(base_dir);
@@ -25,6 +25,13 @@ base_image_size = [NaN, NaN];
 
 total_images = length(dir(fullfile(base_dir,fields(1).name,'individual_pictures'))) - 2;
 all_pix_vals = [];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Build Composite Images
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%build up composite images by scan through the image number, so time step, then
+%each field
 for i = 1:total_images
     images = cell(0);
     
@@ -62,12 +69,14 @@ for i = 1:total_images
     end
     images = image_temp;
     
+	%build up composite image, cat first 5 images in one row
     images_composite{i} = cat(1,images{1:5});
-    
     for j=2:(length(images)/5)
+		%then cat each subsequent five images in the next row
         images_composite{i} = cat(2,images_composite{i}, cat(1,images{((j-1)*5+1):(j*5)}));
     end
     
+	%finally resize to a reasonable image size
     images_composite{i} = imresize(images_composite{i},[800,NaN]);
     all_pix_vals = [all_pix_vals; images_composite{i}(:)]; %#ok<AGROW>
     
@@ -76,19 +85,27 @@ for i = 1:total_images
     end
 end
 
-all_pix_vals = sort(all_pix_vals);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Normalize Composite Images
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+all_pix_vals = sort(all_pix_vals);
 %we only need to do image normalization if the images are not already in
 %color (i.e. have more than 2 dimensions)
-if (length(size(images_composite{1})) < 3)
+if (ndims(images_composite{1}) < 3)
     %toss out the top 0.05% of pixels for the image min/max creation
     end_trim_amount = round(length(all_pix_vals)*0.0005);
     images_min_max = double([all_pix_vals(1), all_pix_vals(end-end_trim_amount)]);
     for i=1:length(images_composite)
+		%scale and then truncate the composite images
         images_composite{i} = (double(images_composite{i}) - images_min_max(1))/range(images_min_max);
+        images_composite{i}(images_composite{i} > images_min_max(2)) = images_min_max(2);
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Output Composite Images
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [pathstr, name] = fileparts(target_file); %#ok<ASGLU>
 output_dir = fullfile(base_dir,'montage',name);
@@ -102,14 +119,8 @@ for i=1:length(images_composite)
     padded_i_num = sprintf(['%0',padding_length,'d'],i);
     
     imwrite(images_composite{i}, fullfile(output_dir,[padded_i_num,'.png']));
-    %     imwrite(gel_composite{i}, fullfile(output_dir,'gel',[padded_i_num,'.png']));
-    %     imwrite(cat(3,gel_composite{i},images_composite{i},zeros(size(images_composite{i}))), fullfile(output_dir,'both',[padded_i_num,'.png']));
-    
     if (mod(i,10) == 0)
         disp(['Done writing: ',num2str(i),' of ', target_file])
     end
 end
-
-if (i_p.Results.debug)
-    toc;
-end
+toc;
