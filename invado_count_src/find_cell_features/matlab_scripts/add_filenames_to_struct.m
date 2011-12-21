@@ -6,20 +6,26 @@ function filenames = add_filenames_to_struct(filenames)
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filenames.puncta_labeled_filename = 'puncta_labeled.png';
-filenames.puncta_filename = 'focal_image.png';
+filenames.puncta_labeled = 'puncta_labeled.png';
+filenames.puncta = 'puncta.png';
 filenames.puncta_median = '../../../all_field_resources/puncta_median.png';
-filenames.puncta_range_file = '../../../all_field_resources/puncta_image_range.csv';
+filenames.puncta_range = '../../../all_field_resources/puncta_image_range.csv';
 
-filenames.cell_mask_filename = 'cell_mask.png';
-filenames.highlighted_cell_mask_filename = 'highlighted_mask.png';
-filenames.labeled_cell_mask_filename = 'cell_mask_labeled.png';
+filenames.cell_mask = 'cell_mask.png';
+filenames.highlighted_cell_mask = 'highlighted_mask.png';
+filenames.labeled_cell_mask = 'cell_mask_labeled.png';
 filenames.labeled_cell_mask_perim = 'cell_mask_perim_labeled.png';
 
-filenames.gel_filename = 'gel.png';
-filenames.gel_range_file = '../../../all_field_resources/gel_image_range.csv';
+filenames.gel = 'gel.png';
+filenames.gel_median = '../../../all_field_resources/gel_median.png';
+filenames.gel_range = '../../../all_field_resources/gel_image_range.csv';
 
-filenames.intensity_correction_filename = 'intensity_correction.csv';
+filenames.nucleus = 'nucleus.png';
+filenames.nucleus_median = '../../../all_field_resources/nucleus_median.png';
+filenames.nucleus_range = '../../../all_field_resources/nucleus_image_range.csv';
+filenames.nuclei_binary = 'nuclei_binary.png';
+
+filenames.intensity_correction = 'intensity_correction.csv';
 
 filenames.no_cells = '../../adhesion_props/no_cell_regions.png';
 
