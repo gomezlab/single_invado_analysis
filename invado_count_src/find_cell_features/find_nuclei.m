@@ -34,29 +34,32 @@ for j=1:length(fields)
     
     image_dirs = image_dirs(3:end);
     
+    puncta_range = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
+    
     for i = 1:size(image_dirs)
         puncta_image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta)));
         nuc_image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.nucleus)));        
         
-        puncta_image = puncta_image .* (mean(nuc_image(:))/mean(puncta_image(:)));
+        puncta_image_cor = puncta_image .* (mean(nuc_image(:))/mean(puncta_image(:)));
         
-        nuc_image = nuc_image - puncta_image;
+        nuc_image_bleed = nuc_image - puncta_image_cor;
         
-        nuclei = nuc_image > 75;
+        nuclei = nuc_image_bleed > 15 & nuc_image_bleed < 50;
         nuclei_label = bwlabel(nuclei,4);
         
         nuclei_props = regionprops(nuclei_label,'Area'); %#ok<MRPBW>
         
-        nuclei = ismember(nuclei_label,find([nuclei_props.Area] > 5));
+        nuclei = ismember(nuclei_label,find([nuclei_props.Area] > 25));
         nuclei = imfill(nuclei,'holes');
         imwrite(nuclei,fullfile(base_dir,image_dirs(i).name,filenames.nuclei_binary));
         
-        puncta_image = (puncta_image - min(puncta_image(:)))./range(puncta_image(:));
+        puncta_image = (puncta_image - puncta_range(1))./range(puncta_range);
         nuc_highlight = create_highlighted_image(puncta_image,nuclei);
         imwrite(nuc_highlight,fullfile(base_dir,image_dirs(i).name,'nuclei_highlight.png'));
-        if (i == 20)
+        if (i == 1)
             1;
         end
     end
+    disp(['Done with ', fields(j).name])
 end
 toc;
