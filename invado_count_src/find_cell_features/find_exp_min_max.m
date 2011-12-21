@@ -31,7 +31,7 @@ for i = 1:total_images
         image_nums = dir(image_base);
         image_nums = image_nums(3:end);
                 
-        gel_image = imread(fullfile(image_base,image_nums(i).name,filenames.gel_filename));
+        gel_image = imread(fullfile(image_base,image_nums(i).name,filenames.gel));
         this_gel_min_max = [min(gel_image(:)), max(gel_image(:))];
         if (this_gel_min_max(1) < gel_image_range(1))
             gel_image_range(1) = this_gel_min_max(1);
@@ -40,7 +40,7 @@ for i = 1:total_images
             gel_image_range(2) = this_gel_min_max(2);
         end
         
-        puncta_image = imread(fullfile(image_base,image_nums(i).name,filenames.puncta_filename));
+        puncta_image = imread(fullfile(image_base,image_nums(i).name,filenames.puncta));
         this_puncta_min_max = [min(puncta_image(:)), max(puncta_image(:))];
         if (this_puncta_min_max(1) < puncta_image_range(1))
             puncta_image_range(1) = this_puncta_min_max(1);
@@ -48,7 +48,6 @@ for i = 1:total_images
         if (this_puncta_min_max(2) > puncta_image_range(2))
             puncta_image_range(2) = this_puncta_min_max(2);
         end
-
     end
         
     if (mod(i,10) == 0)
@@ -60,8 +59,8 @@ output_base = fullfile(base_dir,fields(1).name,'individual_pictures');
 image_nums = dir(output_base);
 image_nums = image_nums(3:end);
 
-gel_output_file = fullfile(output_base,image_nums(1).name, filenames.gel_range_file);
-puncta_output_file = fullfile(output_base,image_nums(1).name, filenames.puncta_range_file);
+gel_output_file = fullfile(output_base,image_nums(1).name, filenames.gel_range);
+puncta_output_file = fullfile(output_base,image_nums(1).name, filenames.puncta_range);
 
 [output_path] = fileparts(gel_output_file);
 
