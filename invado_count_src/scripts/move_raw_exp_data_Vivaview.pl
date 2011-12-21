@@ -38,6 +38,7 @@ if ($default_config_file_location =~ m#\.\./\.\./data/(.*)#) {
 my %field_translation = (
 	'GFP' => 'puncta',
 	'RFP' => 'gel',
+	'CFP' => 'nucleus',
 );
 
 my %sample_translation; 
@@ -141,7 +142,8 @@ foreach my $sample_num (sort keys %sample_sets) {
 					".$suffix";
 				
 				my $target_file = catfile($image_directory, $image_filename);
-				
+				$target_file =~ s/\.[tT][iI][fF][fF]?/\.png/;
+
 				if ($image_num == 1) {
 					if ($opt{debug}) {
 						print "mkpath(dirname($target_file));\n";
@@ -151,9 +153,9 @@ foreach my $sample_num (sort keys %sample_sets) {
 				}
 
 				if ($opt{debug}) {
-					print "copy($source_file, $target_file);\n\n";
+					print "convert $source_file $target_file;\n\n";
 				} else {
-					copy($source_file, $target_file);
+					system("convert $source_file $target_file 2>/dev/null");
 				}
 			}
 		}
