@@ -44,6 +44,7 @@ my %cfg = ParseConfig(\%opt);
 mkpath($cfg{individual_results_folder});
 
 my @image_sets = ([qw(puncta_image_folder puncta_image_file)],
+				  [qw(nucleus_image_folder nucleus_image_file)],
 				  [qw(gel_image_folder gel_image_file)]);
 
 my @matlab_code;
@@ -64,9 +65,6 @@ foreach (@image_sets) {
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
 
-    #Move all the files with spaces in their names, MATLAB on emerald doesn't
-    #like them
-    @image_files = &remove_file_name_spaces(@image_files);
     $all_images_empty = 0 if (@image_files);
 
     if ($opt{debug}) {
