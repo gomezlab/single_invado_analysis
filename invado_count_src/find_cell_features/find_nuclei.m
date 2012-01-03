@@ -21,7 +21,7 @@ filenames = add_filenames_to_struct(struct());
 
 fields = dir(exp_dir);
 fields = filter_to_time_series(fields);
-% fields = fields(1);
+fields = fields(1);
 
 for j=1:length(fields)
     base_dir = fullfile(exp_dir,fields(j).name,'individual_pictures');
@@ -44,7 +44,7 @@ for j=1:length(fields)
         
         nuc_image_bleed = nuc_image - puncta_image_cor;
         
-        nuclei = nuc_image_bleed > 15 & nuc_image_bleed < 50;
+        nuclei = nuc_image_bleed > 15;
         nuclei_label = bwlabel(nuclei,4);
         
         nuclei_props = regionprops(nuclei_label,'Area'); %#ok<MRPBW>
@@ -56,9 +56,6 @@ for j=1:length(fields)
         puncta_image = (puncta_image - puncta_range(1))./range(puncta_range);
         nuc_highlight = create_highlighted_image(puncta_image,nuclei);
         imwrite(nuc_highlight,fullfile(base_dir,image_dirs(i).name,'nuclei_highlight.png'));
-        if (i == 1)
-            1;
-        end
     end
     disp(['Done with ', fields(j).name])
 end
