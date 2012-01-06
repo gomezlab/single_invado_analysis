@@ -48,7 +48,7 @@ for my $this_montage_folder (<$montage_folder/*>) {
 	my $movie_output_file = catfile($montage_folder,basename($this_montage_folder).".mp4");
 	
 	my $movie_command = $base_movie_command . 
-		"-i $this_montage_folder/%0" . $image_num_length . "d.png $movie_output_file";
+		"-i $this_montage_folder/%0" . $image_num_length . "d.png $movie_output_file >/dev/null 2>/dev/null";
 	
 	if ($opt{debug}) {
 		print $movie_command, "\n";
