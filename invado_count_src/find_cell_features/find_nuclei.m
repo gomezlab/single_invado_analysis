@@ -21,7 +21,6 @@ filenames = add_filenames_to_struct(struct());
 
 fields = dir(exp_dir);
 fields = filter_to_time_series(fields);
-fields = fields(1);
 
 for j=1:length(fields)
     base_dir = fullfile(exp_dir,fields(j).name,'individual_pictures');

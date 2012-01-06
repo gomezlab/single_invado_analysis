@@ -42,91 +42,91 @@ for i_num = 1:size(image_dirs)
     % reading in current image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
-    nuclei_binary = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.nuclei_binary));
-    nuclei_label = bwlabel(nuclei_binary,8);
-    
+%     nuclei_binary = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.nuclei_binary));
+%     nuclei_label = bwlabel(nuclei_binary,8);
+%     
     normalized_image = puncta_image - puncta_min_max(1);
     normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
     
-    puncta_image_invert = puncta_image*-1+max(puncta_image(:));
+%     puncta_image_invert = puncta_image*-1+max(puncta_image(:));
+%     
+%     puncta_image_invert = imimposemin(puncta_image_invert,nuclei_binary,8);
+%     
+%     watershed_seg = watershed(puncta_image_invert);
+%     
+%     cell_binary = puncta_image > i_p.Results.min_cell_intensity;
+%     cell_binary = imfill(cell_binary,'holes');
+%     cell_label = bwlabel(cell_binary,8);
+%     cell_nums = unique(cell_label.*nuclei_binary);
+%     cell_nums = cell_nums(cell_nums >= 1);
+%     cell_label = ismember(cell_label,cell_nums);
+%     cell_label(watershed_seg == 0) = 0;
+%     cell_label = bwlabel(cell_label,8);
+%     cell_binary = cell_label > 0;
+%     
+%     imwrite(create_highlighted_image(normalized_image,bwperim(cell_binary),'color_map',[1,0,0]), ...
+%         fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask))    
     
-    puncta_image_invert = imimposemin(puncta_image_invert,nuclei_binary,8);
+    pixel_values = puncta_image(:);
+
     
-    watershed_seg = watershed(puncta_image_invert);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % reading in prior connected areas
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if (i_num == 1)
+        prior_connected_areas = [];
+    else
+        prior_connected_areas = double(imread(fullfile(base_dir,image_dirs(i_num-1).name,filenames.labeled_cell_mask)));
+        1;
+    end
     
-    cell_binary = puncta_image > i_p.Results.min_cell_intensity;
-    cell_binary = imfill(cell_binary,'holes');
-    cell_label = bwlabel(cell_binary,8);
-    cell_nums = unique(cell_label.*nuclei_binary);
-    cell_nums = cell_nums(cell_nums >= 1);
-    cell_label = ismember(cell_label,cell_nums);
-    cell_label(watershed_seg == 0) = 0;
-    cell_label = bwlabel(cell_label,8);
-    cell_binary = cell_label > 0;
+    thresh = find_mask_threshold(pixel_values,i_p);
+    threshed_mask = puncta_image > thresh;
     
-    imwrite(create_highlighted_image(normalized_image,bwperim(cell_binary),'color_map',[1,0,0]), ...
-        fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask))    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%Mask Cleanup
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-%     pixel_values = puncta_image(:);
-% 
-%     
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     % reading in prior connected areas
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     if (i_num == 1)
-%         prior_connected_areas = [];
-%     else
-%         prior_connected_areas = double(imread(fullfile(base_dir,image_dirs(i_num-1).name,filenames.labeled_cell_mask_filename)));
-%         1;
-%     end
-%     
-%     thresh = find_mask_threshold(pixel_values,i_p);
-%     threshed_mask = puncta_image > thresh;
-%     
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     %%Mask Cleanup
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     
-%     connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
-%     threshed_mask = connected_areas > 0;
-%     
-%     if (not(isempty(prior_connected_areas)))
-%         connected_areas = filter_on_overlap(puncta_image,connected_areas,prior_connected_areas);
-%         threshed_mask = connected_areas > 0;
-%         connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
-%         threshed_mask = connected_areas > 0;
-%     end
-%     
-%     connected_perims = zeros(size(connected_areas));
-%     for i=1:max(connected_areas(:))
-%         temp = zeros(size(connected_areas));
-%         temp(connected_areas == i) = 1;
-%         temp = bwperim(temp);
-%         
-%         connected_perims(temp) = i;
-%     end
-%     
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     %%Output Image Creation/Writing
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         
-%     imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[1,0,0]), ...
-%         fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask_filename))
-%     
-%     imwrite(double(connected_areas)/2^16, ...
-%         fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_filename), ...
-%         'bitdepth',16)
-% 
-%     imwrite(double(connected_perims)/2^16, ...
-%         fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_perim), ...
-%         'bitdepth',16)
-% 
-%     %binary cell mask    
-%     imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask_filename))
-%     
-%     if (mod(i_num,10)==0)
-%         disp(['Done processing image number: ',num2str(i_num)])
-%     end
+    connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
+    threshed_mask = connected_areas > 0;
+    
+    if (not(isempty(prior_connected_areas)))
+        connected_areas = filter_on_overlap(puncta_image,connected_areas,prior_connected_areas);
+        threshed_mask = connected_areas > 0;
+        connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
+        threshed_mask = connected_areas > 0;
+    end
+    
+    connected_perims = zeros(size(connected_areas));
+    for i=1:max(connected_areas(:))
+        temp = zeros(size(connected_areas));
+        temp(connected_areas == i) = 1;
+        temp = bwperim(temp);
+        
+        connected_perims(temp) = i;
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%Output Image Creation/Writing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+    imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[1,0,0]), ...
+        fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask))
+    
+    imwrite(double(connected_areas)/2^16, ...
+        fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask), ...
+        'bitdepth',16)
+
+    imwrite(double(connected_perims)/2^16, ...
+        fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_perim), ...
+        'bitdepth',16)
+
+    %binary cell mask    
+    imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask))
+    
+    if (mod(i_num,10)==0)
+        disp(['Done processing image number: ',num2str(i_num)])
+    end
 end
 toc;
 

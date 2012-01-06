@@ -5,8 +5,7 @@ function determine_bleaching_correction(exp_dir,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-profile off; profile on;
-
+tic;
 i_p = inputParser;
 i_p.FunctionName = 'DETERMINE_BLEACHING_CORRECTION';
 
@@ -48,15 +47,11 @@ single_image_folders = single_image_folders(3:end);
 % Build the no cell region image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%read in an image to get the size of the images to preallocate the size of
-%the image that will keep track of which pixels have been in a cell or
-%outside the registered range
-test_image = imread(fullfile(image_dir,single_image_folders(1).name,filenames.cell_mask_filename));
-
-no_cell_regions = ones(size(test_image));
+no_cell_regions = [];
 
 for i=1:length(single_image_folders)
-    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask_filename));    
+    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask_filename));
+	if (size(no_cell_regions,1) == 0), no_cell_regions = ones(size(cell_mask)); end
     no_cell_regions = no_cell_regions & not(cell_mask);
 end
 
@@ -81,7 +76,6 @@ for i=1:length(single_image_folders)
         1000/gel_levels_outside_cell(i));
 end
 
-
 %diagnostic plot
 time_points = (0:(length(gel_levels) - 1))*5;
 diag_fig_hnd = plot(time_points,gel_levels);
@@ -100,5 +94,4 @@ close all;
 dlmwrite(fullfile(i_p.Results.output_dir,'bleaching_curves.csv'), ...
     [gel_levels_outside_cell,gel_levels]);
 
-profile off;
-if (i_p.Results.debug), profile viewer; end
+toc;
