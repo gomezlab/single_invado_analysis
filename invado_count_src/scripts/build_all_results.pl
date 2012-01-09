@@ -46,9 +46,11 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
+	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -R mem96" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script flat_field_correct_puncta" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script flat_field_correct_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -R mem96" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_nuclei" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties" ], ],
@@ -62,9 +64,11 @@ my @overall_command_seq = (
 
 #some of the scripts only need to be run once for each experiment, this will
 #rely on being able to find an experiment with "time_series_01" in its filename
-my @run_only_once = qw(find_median_images find_exp_min_max collect_montage_visualizations build_all_montage_file_sets);
+my @run_only_once = qw(find_median_images flat_field_correct_images find_nuclei
+	find_exp_min_max collect_montage_visualizations build_all_montage_file_sets);
 
-my @skip_check = qw(find_median_images find_exp_min_max collect_montage_visualizations gather_tracking_results);
+my @skip_check = qw(find_median_images find_exp_min_max
+	collect_montage_visualizations gather_tracking_results);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
