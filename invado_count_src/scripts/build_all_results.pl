@@ -49,9 +49,9 @@ $|  = 1;
 #commands in.
 my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images -R mem96" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script flat_field_correct_images" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max -R mem96" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_nuclei" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction" ], ],
