@@ -7,7 +7,6 @@ function determine_bleaching_correction(exp_dir,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic;
 i_p = inputParser;
-i_p.FunctionName = 'DETERMINE_BLEACHING_CORRECTION';
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
@@ -50,7 +49,7 @@ single_image_folders = single_image_folders(3:end);
 no_cell_regions = [];
 
 for i=1:length(single_image_folders)
-    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask_filename));
+    cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask));
 	if (size(no_cell_regions,1) == 0), no_cell_regions = ones(size(cell_mask)); end
     no_cell_regions = no_cell_regions & not(cell_mask);
 end
@@ -65,14 +64,14 @@ gel_levels = zeros(length(single_image_folders),1);
 gel_levels_outside_cell = zeros(size(gel_levels));
 
 for i=1:length(single_image_folders)
-    gel = imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel_filename));
+    gel = imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel));
         
     gel_levels(i) = mean(gel(:));
     gel_levels_outside_cell(i) = mean(gel(no_cell_regions));    
 end
 
 for i=1:length(single_image_folders)
-    dlmwrite(fullfile(image_dir, single_image_folders(i).name, filenames.intensity_correction_filename), ...
+    dlmwrite(fullfile(image_dir, single_image_folders(i).name, filenames.intensity_correction), ...
         1000/gel_levels_outside_cell(i));
 end
 
