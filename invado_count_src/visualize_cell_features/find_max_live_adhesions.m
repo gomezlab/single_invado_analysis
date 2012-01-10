@@ -19,12 +19,9 @@ i_p.addRequired('all_seqs',@isnumeric);
 
 i_p.parse(all_seqs);
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-maxNumCompThreads(2);
-
 max_live_adhesions = 0;
 
 for i = 1:size(all_seqs,2)
