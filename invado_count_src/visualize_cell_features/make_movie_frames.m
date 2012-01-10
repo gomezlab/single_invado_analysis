@@ -47,7 +47,7 @@ filenames = add_filenames_to_struct(struct());
 
 max_image_num = find_max_image_num(I_folder);
 folder_char_length = length(num2str(max_image_num));
-i_size = size(imread(fullfile(I_folder,num2str(max_image_num),filenames.puncta_filename)));
+i_size = size(imread(fullfile(I_folder,num2str(max_image_num),filenames.puncta)));
 
 tracking_seq = load(tracking_seq_file) + 1;
 %occastionally, there will be fields were no cells were detected, in that
@@ -68,8 +68,8 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input puncta image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    puncta_image = double(imread(fullfile(I_folder,padded_i_num,filenames.puncta_filename)));
-    puncta_limits = csvread(fullfile(I_folder,padded_i_num,filenames.puncta_range_file));
+    puncta_image = double(imread(fullfile(I_folder,padded_i_num,filenames.puncta)));
+    puncta_limits = csvread(fullfile(I_folder,padded_i_num,filenames.puncta_range));
     
     puncta_image = puncta_image - puncta_limits(1);
     puncta_image = puncta_image .* (1/puncta_limits(2));
@@ -77,8 +77,8 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the gel image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    gel_image = double(imread(fullfile(I_folder,padded_i_num,filenames.gel_filename)));
-    gel_limits = csvread(fullfile(I_folder,padded_i_num,filenames.gel_range_file));
+    gel_image = double(imread(fullfile(I_folder,padded_i_num,filenames.gel)));
+    gel_limits = csvread(fullfile(I_folder,padded_i_num,filenames.gel_range));
     
     gel_image = gel_image - gel_limits(1);
     gel_image = gel_image .* (1/gel_limits(2));
@@ -86,7 +86,7 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    cell_mask_label = imread(fullfile(I_folder,padded_i_num,filenames.labeled_cell_mask_filename));
+    cell_mask_label = imread(fullfile(I_folder,padded_i_num,filenames.labeled_cell_mask));
     cell_mask_label_perim = zeros(size(cell_mask_label));
     for j=1:max(cell_mask_label(:))
         this_cell = zeros(size(cell_mask_label));
