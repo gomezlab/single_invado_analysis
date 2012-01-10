@@ -52,8 +52,8 @@ gel_image_pix_vals = sort(gel_image_pix_vals);
 
 end_trim_amount = round(size(puncta_image_pix_vals,1)*0.00005);
 
-puncta_image_range = [punta_image_pix_vals(1),punta_image_pix_vals(end); ...
-    punta_image_pix_vals(1),punta_image_pix_vals(end-end_trim_amount)];
+puncta_image_range = [puncta_image_pix_vals(1),puncta_image_pix_vals(end); ...
+    puncta_image_pix_vals(1),puncta_image_pix_vals(end-end_trim_amount)];
 
 gel_image_range = [gel_image_pix_vals(1),gel_image_pix_vals(end); ...
     gel_image_pix_vals(1),gel_image_pix_vals(end-end_trim_amount)];
