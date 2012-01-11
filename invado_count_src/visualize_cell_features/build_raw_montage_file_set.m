@@ -32,15 +32,15 @@ all_pix_vals = [];
 
 %build up composite images by scan through the image number, so time step, then
 %each field
-for i = 1:total_images
+for time = 1:total_images
     images = cell(0);
     
     for j=1:length(fields)
         image_base = fullfile(base_dir,fields(j).name,'individual_pictures');
         image_nums = dir(image_base);
         image_nums = image_nums(3:end);
-        image_file = fullfile(image_base,image_nums(i).name, target_file);
-        
+        image_file = fullfile(image_base,image_nums(time).name, target_file);
+
         %deal with the case where the image does not exist
         if(not(exist(image_file,'file')))
             continue;
@@ -56,32 +56,26 @@ for i = 1:total_images
             images{j} = NaN*ones(base_image_size);
         end
     end
-    
-    %reverse every other column of images, to deal with the zig zag pattern
-    image_temp = images;
-    for j=1:(length(images)/5)
-        if (mod(j,2) == 1)
-            continue;
+        
+	%build up composite image, cat first 5 images in one column
+    images_composite{time} = cat(1,images{1:5});
+    for col_num=2:(length(images)/5)
+        image_nums = ((col_num-1)*5+1):(col_num*5);
+        %if this is an even row, reverse the image order to compensate for
+        %the zig-zag pattern of image collection
+        if (mod(col_num,2) == 0)
+            image_nums = image_nums(end:-1:1);
         end
-        for k=1:5
-            image_temp{j*5+k} = images{j*5+(6-k)};
-        end
-    end
-    images = image_temp;
-    
-	%build up composite image, cat first 5 images in one row
-    images_composite{i} = cat(1,images{1:5});
-    for j=2:(length(images)/5)
 		%then cat each subsequent five images in the next row
-        images_composite{i} = cat(2,images_composite{i}, cat(1,images{((j-1)*5+1):(j*5)}));
+        images_composite{time} = cat(2,images_composite{time}, cat(1,images{image_nums}));
     end
     
 	%finally resize to a reasonable image size
-    images_composite{i} = imresize(images_composite{i},[800,NaN]);
-    all_pix_vals = [all_pix_vals; images_composite{i}(:)]; %#ok<AGROW>
+    images_composite{time} = imresize(images_composite{time},[800,NaN]);
+    all_pix_vals = [all_pix_vals; images_composite{time}(:)]; %#ok<AGROW>
     
-    if (mod(i,10) == 0)
-        disp(['Done processing: ',num2str(i), ' of ', target_file])
+    if (mod(time,10) == 0)
+        disp(['Done processing: ',num2str(time), ' of ', target_file])
     end
 end
 
