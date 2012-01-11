@@ -40,11 +40,11 @@ for time = 1:total_images
         image_nums = dir(image_base);
         image_nums = image_nums(3:end);
         image_file = fullfile(image_base,image_nums(time).name, target_file);
-
+        
         %deal with the case where the image does not exist
         if(not(exist(image_file,'file')))
             continue;
-        end  
+        end
         images{j} = imread(image_file);
         base_image_size = size(images{j});
     end
@@ -56,8 +56,8 @@ for time = 1:total_images
             images{j} = NaN*ones(base_image_size);
         end
     end
-        
-	%build up composite image, cat first 5 images in one column
+    
+    %build up composite image, cat first 5 images in one column
     images_composite{time} = cat(1,images{1:5});
     for col_num=2:(length(images)/5)
         image_nums = ((col_num-1)*5+1):(col_num*5);
@@ -66,11 +66,11 @@ for time = 1:total_images
         if (mod(col_num,2) == 0)
             image_nums = image_nums(end:-1:1);
         end
-		%then cat each subsequent five images in the next row
+        %then cat each subsequent five images in the next row
         images_composite{time} = cat(2,images_composite{time}, cat(1,images{image_nums}));
     end
     
-	%finally resize to a reasonable image size
+    %finally resize to a reasonable image size
     images_composite{time} = imresize(images_composite{time},[800,NaN]);
     all_pix_vals = [all_pix_vals; images_composite{time}(:)]; %#ok<AGROW>
     
@@ -91,7 +91,7 @@ if (ndims(images_composite{1}) < 3)
     end_trim_amount = round(length(all_pix_vals)*0.0005);
     images_min_max = double([all_pix_vals(1), all_pix_vals(end-end_trim_amount)]);
     for i=1:length(images_composite)
-		%scale and then truncate the composite images
+        %scale and then truncate the composite images
         images_composite{i} = (double(images_composite{i}) - images_min_max(1))/range(images_min_max);
         images_composite{i}(images_composite{i} > images_min_max(2)) = images_min_max(2);
     end
