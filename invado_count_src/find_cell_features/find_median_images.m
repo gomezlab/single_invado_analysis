@@ -109,43 +109,43 @@ clear images_gel images;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Nuclei Image Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-images_nuc = cell(0);
-for i = 1:total_images
-    for j=1:length(fields)
-        image_base = fullfile(base_dir,fields(j).name,'individual_pictures');
-        image_nums = dir(image_base);
-        image_nums = image_nums(3:end);
-        image_file = fullfile(image_base,image_nums(i).name, filenames.nucleus);
-                
-        images_nuc{length(images_nuc)+1} = imread(image_file);
-    end
-        
-    if (mod(i,10) == 0)
-        disp(['Done reading: ',num2str(i), '/', num2str(total_images)])
-    end
-end
-
-images = zeros([size(images_nuc{1}),length(images_nuc)]);
-
-for i_num = 1:length(images)
-    images(:,:,i_num) = images_nuc{i_num};
-end
-
-median_image = median(images,3);
-
-output_base = fullfile(base_dir,fields(1).name,'individual_pictures');
-image_nums = dir(output_base);
-image_nums = image_nums(3:end);
-output_file = fullfile(output_base,image_nums(1).name, filenames.nucleus_median);
-
-[output_path] = fileparts(output_file);
-
-if (not(exist(fullfile(output_path),'dir')))
-    mkdir(fullfile(output_path));
-end
-
-imwrite(uint16(median_image),output_file,'bitdepth',16);
-
-clear images_nuc images;
+% images_nuc = cell(0);
+% for i = 1:total_images
+%     for j=1:length(fields)
+%         image_base = fullfile(base_dir,fields(j).name,'individual_pictures');
+%         image_nums = dir(image_base);
+%         image_nums = image_nums(3:end);
+%         image_file = fullfile(image_base,image_nums(i).name, filenames.nucleus);
+%                 
+%         images_nuc{length(images_nuc)+1} = imread(image_file);
+%     end
+%         
+%     if (mod(i,10) == 0)
+%         disp(['Done reading: ',num2str(i), '/', num2str(total_images)])
+%     end
+% end
+% 
+% images = zeros([size(images_nuc{1}),length(images_nuc)]);
+% 
+% for i_num = 1:length(images)
+%     images(:,:,i_num) = images_nuc{i_num};
+% end
+% 
+% median_image = median(images,3);
+% 
+% output_base = fullfile(base_dir,fields(1).name,'individual_pictures');
+% image_nums = dir(output_base);
+% image_nums = image_nums(3:end);
+% output_file = fullfile(output_base,image_nums(1).name, filenames.nucleus_median);
+% 
+% [output_path] = fileparts(output_file);
+% 
+% if (not(exist(fullfile(output_path),'dir')))
+%     mkdir(fullfile(output_path));
+% end
+% 
+% imwrite(uint16(median_image),output_file,'bitdepth',16);
+% 
+% clear images_nuc images;
 
 toc;

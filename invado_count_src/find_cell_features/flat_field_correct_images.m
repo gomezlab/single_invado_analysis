@@ -54,21 +54,21 @@ for j=1:length(fields)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Nucleus Correction
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    nucleus_flat_field = double(imread(fullfile(base_dir,image_dirs(1).name,filenames.nucleus_median))); 
-    for i = 1:size(image_dirs)
-        if (exist(fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.nucleus]),'file'))
-            continue;
-        end
-        nucleus_image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.nucleus)));
-        
-        nucleus_image = nucleus_image - nucleus_flat_field;
-        nucleus_image(nucleus_image < 0) = 0;
-        
-        movefile(fullfile(base_dir,image_dirs(i).name,filenames.nucleus), ...
-            fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.nucleus]));
-        
-        imwrite(uint16(nucleus_image),fullfile(base_dir,image_dirs(i).name,filenames.nucleus),'bitdepth',16);
-    end    
+%     nucleus_flat_field = double(imread(fullfile(base_dir,image_dirs(1).name,filenames.nucleus_median))); 
+%     for i = 1:size(image_dirs)
+%         if (exist(fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.nucleus]),'file'))
+%             continue;
+%         end
+%         nucleus_image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.nucleus)));
+%         
+%         nucleus_image = nucleus_image - nucleus_flat_field;
+%         nucleus_image(nucleus_image < 0) = 0;
+%         
+%         movefile(fullfile(base_dir,image_dirs(i).name,filenames.nucleus), ...
+%             fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.nucleus]));
+%         
+%         imwrite(uint16(nucleus_image),fullfile(base_dir,image_dirs(i).name,filenames.nucleus),'bitdepth',16);
+%     end    
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Gel Correction
