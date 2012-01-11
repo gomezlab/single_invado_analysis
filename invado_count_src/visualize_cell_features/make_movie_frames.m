@@ -71,8 +71,7 @@ for i = 1:max_image_num
     puncta_image = double(imread(fullfile(I_folder,padded_i_num,filenames.puncta)));
     puncta_limits = csvread(fullfile(I_folder,padded_i_num,filenames.puncta_range));
     
-    puncta_image = puncta_image - puncta_limits(1);
-    puncta_image = puncta_image .* (1/puncta_limits(2));
+    puncta_image = (puncta_image - puncta_limits(2,1))/range(puncta_limits(2,:));
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the gel image
@@ -80,8 +79,7 @@ for i = 1:max_image_num
     gel_image = double(imread(fullfile(I_folder,padded_i_num,filenames.gel)));
     gel_limits = csvread(fullfile(I_folder,padded_i_num,filenames.gel_range));
     
-    gel_image = gel_image - gel_limits(1);
-    gel_image = gel_image .* (1/gel_limits(2));
+    gel_image = (gel_image - gel_limits(2,1))/range(gel_limits(2,:));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
