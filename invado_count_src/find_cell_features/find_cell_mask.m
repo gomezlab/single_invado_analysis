@@ -41,34 +41,11 @@ for i_num = 1:size(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in current image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
-%     nuclei_binary = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.nuclei_binary));
-%     nuclei_label = bwlabel(nuclei_binary,8);
-%     
-    normalized_image = puncta_image - puncta_min_max(1);
-    normalized_image = normalized_image / (puncta_min_max(2) - puncta_min_max(1));
-    
-%     puncta_image_invert = puncta_image*-1+max(puncta_image(:));
-%     
-%     puncta_image_invert = imimposemin(puncta_image_invert,nuclei_binary,8);
-%     
-%     watershed_seg = watershed(puncta_image_invert);
-%     
-%     cell_binary = puncta_image > i_p.Results.min_cell_intensity;
-%     cell_binary = imfill(cell_binary,'holes');
-%     cell_label = bwlabel(cell_binary,8);
-%     cell_nums = unique(cell_label.*nuclei_binary);
-%     cell_nums = cell_nums(cell_nums >= 1);
-%     cell_label = ismember(cell_label,cell_nums);
-%     cell_label(watershed_seg == 0) = 0;
-%     cell_label = bwlabel(cell_label,8);
-%     cell_binary = cell_label > 0;
-%     
-%     imwrite(create_highlighted_image(normalized_image,bwperim(cell_binary),'color_map',[1,0,0]), ...
-%         fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask))    
-    
-    pixel_values = puncta_image(:);
+    normalized_image = (puncta_image - puncta_min_max(2,1))/range(puncta_min_max(2,:));
 
+    pixel_values = puncta_image(:);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in prior connected areas
@@ -84,7 +61,7 @@ for i_num = 1:size(image_dirs)
     threshed_mask = puncta_image > thresh;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%Mask Cleanup
+    % Mask Cleanup
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     connected_areas = filter_mask(threshed_mask, puncta_image, i_p);
@@ -107,7 +84,7 @@ for i_num = 1:size(image_dirs)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%Output Image Creation/Writing
+    % Output Image Creation/Writing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
     imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[1,0,0]), ...
