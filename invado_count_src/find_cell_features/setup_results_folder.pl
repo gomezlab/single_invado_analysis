@@ -44,7 +44,6 @@ my %cfg = ParseConfig(\%opt);
 mkpath($cfg{individual_results_folder});
 
 my @image_sets = ([qw(puncta_image_folder puncta_image_file)],
-				  [qw(nucleus_image_folder nucleus_image_file)],
 				  [qw(gel_image_folder gel_image_file)]);
 
 my @matlab_code;

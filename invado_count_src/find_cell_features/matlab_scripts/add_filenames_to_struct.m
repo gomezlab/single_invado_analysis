@@ -20,11 +20,6 @@ filenames.gel = 'gel.png';
 filenames.gel_median = '../../../all_field_resources/gel_median.png';
 filenames.gel_range = '../../../all_field_resources/gel_image_range.csv';
 
-filenames.nucleus = 'nucleus.png';
-filenames.nucleus_median = '../../../all_field_resources/nucleus_median.png';
-filenames.nucleus_range = '../../../all_field_resources/nucleus_image_range.csv';
-filenames.nuclei_binary = 'nuclei_binary.png';
-
 filenames.intensity_correction = 'intensity_correction.csv';
 
 filenames.no_cells = '../../adhesion_props/no_cell_regions.png';
