@@ -33,6 +33,7 @@ filenames.invader_vis = 'invader_vis.png';
 
 filenames.tracking_raw = '../../adhesion_props/raw_tracking_data.mat';
 filenames.tracking = '../../tracking_matrices/tracking_seq.csv';
+filenames.tracking_vis = 'tracking.png';
 
 filenames.cell_props = '../../adhesion_props/cell_props.mat';
 
