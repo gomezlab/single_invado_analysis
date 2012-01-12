@@ -22,11 +22,13 @@ use Config::Adhesions qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;
+$opt{lsf} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s", "no_email") or die;
 
 my $lsf_return = system("which bsub > /dev/null 2> /dev/null");
 
-if ($lsf_return != 0 && not $opt{lsf}) {
+#Remember a return code of 0 means success
+if ($lsf_return == 0 && not $opt{lsf}) {
 	die "LSF appears to be installed on this machine, don't you want to use it?" 
 }	
 
@@ -52,7 +54,6 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script flat_field_correct_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_nuclei" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script determine_bleaching_correction" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties" ], ],
