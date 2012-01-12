@@ -20,52 +20,18 @@ filenames = add_filenames_to_struct(struct());
 fields = dir(base_dir);
 fields = filter_to_time_series(fields);
 
-total_images = length(dir(fullfile(base_dir,fields(1).name,'individual_pictures'))) - 2;
+gel_pix_vals = get_all_image_array(base_dir,filenames.gel);
+gel_ranges = find_image_ranges(gel_pix_vals);
 
-gel_image_pix_vals = [];
-puncta_image_pix_vals = [];
+clear gel_pix_vals;
 
-for i = 1:total_images
-    for j=1:length(fields)
-        image_base = fullfile(base_dir,fields(j).name,'individual_pictures');
-        image_nums = dir(image_base);
-        image_nums = image_nums(3:end);
-        
-        gel_image = imread(fullfile(image_base,image_nums(i).name,filenames.gel));
-        gel_image_pix_vals = [gel_image_pix_vals; gel_image(:)]; %#ok<AGROW>
-        
-        puncta_image = imread(fullfile(image_base,image_nums(i).name,filenames.puncta));
-        puncta_image_pix_vals = [puncta_image_pix_vals; puncta_image(:)]; %#ok<AGROW>
-    end
-    
-    if (mod(i,10) == 0)
-        disp(['Done reading: ',num2str(i)]);
-    end
-end
+puncta_pix_vals = get_all_image_array(base_dir,filenames.puncta);
+puncta_ranges = find_image_ranges(puncta_pix_vals);
+
+clear gel_pix_vals;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Range determination
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-puncta_image_pix_vals = sort(puncta_image_pix_vals);
-gel_image_pix_vals = sort(gel_image_pix_vals);
-
-end_trim_amount = round(size(puncta_image_pix_vals,1)*0.01);
-
-puncta_ranges = [puncta_image_pix_vals(1),puncta_image_pix_vals(end)];
-gel_ranges = [gel_image_pix_vals(1),gel_image_pix_vals(end)];
-for i=1:5
-    puncta_ranges = cat(1,puncta_ranges, ...
-        [puncta_image_pix_vals(end_trim_amount*i), ...
-        puncta_image_pix_vals(end-end_trim_amount*i)]);
-    
-    gel_ranges = cat(1,gel_ranges, ...
-        [gel_image_pix_vals(end_trim_amount*i), ...
-        gel_image_pix_vals(end-end_trim_amount*i)]);
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Image Output
+% Range Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 output_base = fullfile(base_dir,fields(1).name,'individual_pictures');
@@ -83,3 +49,21 @@ end
 
 csvwrite(gel_output_file,gel_ranges);
 csvwrite(puncta_output_file,puncta_ranges);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function ranges = find_image_ranges(pixel_vals)
+
+pixel_vals = reshape(pixel_vals,[],1);
+pixel_vals = sort(pixel_vals);
+
+one_percent_data = round(size(pixel_vals,1)*0.01);
+
+ranges = [pixel_vals(1),pixel_vals(end)];
+for i=1:5
+    ranges = cat(1,ranges, ...
+        [pixel_vals(one_percent_data*i), ...
+         pixel_vals(end-one_percent_data*i)]);
+end
