@@ -38,7 +38,6 @@ if ($default_config_file_location =~ m#\.\./\.\./data/(.*)#) {
 my %field_translation = (
 	'GFP' => 'puncta',
 	'RFP' => 'gel',
-	'CFP' => 'nucleus',
 );
 
 my %sample_translation; 

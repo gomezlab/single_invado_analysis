@@ -42,8 +42,6 @@ my $exp_type_folder = "'".dirname($cfg{exp_results_folder}) ."'";
 my @matlab_code;
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'gel.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'puncta.png')";
-push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'nucleus.png')";
-push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'nuclei_highlight.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'uncorrected_puncta.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'uncorrected_gel.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'highlighted_mask.png')";

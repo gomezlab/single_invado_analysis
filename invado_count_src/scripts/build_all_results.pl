@@ -67,7 +67,7 @@ my @overall_command_seq = (
 
 #some of the scripts only need to be run once for each experiment, this will
 #rely on being able to find an experiment with "time_series_01" in its filename
-my @run_only_once = qw(find_median_images flat_field_correct_images find_nuclei
+my @run_only_once = qw(find_median_images flat_field_correct_images
 	find_exp_min_max collect_montage_visualizations build_all_montage_file_sets);
 
 my @skip_check = qw(find_median_images find_exp_min_max
