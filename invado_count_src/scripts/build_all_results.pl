@@ -60,7 +60,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_invading_cells" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/create_invader_visualization" ], ],
-	[ [ "../visualize_cell_features", "./collect_tracking_visualization.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ], ],
 	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
 );
 
