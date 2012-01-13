@@ -9,7 +9,7 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('min_cell_area',1500,@isnumeric);
-i_p.addParamValue('max_cell_area',Inf,@isnumeric);
+i_p.addParamValue('max_cell_area',20000,@isnumeric);
 i_p.addParamValue('min_cell_intensity',60,@isnumeric);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -163,7 +163,8 @@ threshed_mask = imfill(threshed_mask,'holes');
 connected_areas = bwlabel(threshed_mask,8);
 region_props = regionprops(connected_areas,puncta_image, 'Area','MeanIntensity'); %#ok<MRPBW>
 
-size_filter = [region_props.Area] > i_p.Results.min_cell_area & [region_props.Area] < i_p.Results.max_cell_area;
+size_filter = [region_props.Area] > i_p.Results.min_cell_area & ...
+    [region_props.Area] < i_p.Results.max_cell_area;
 
 intensity_filter = [region_props.MeanIntensity] > i_p.Results.min_cell_intensity;
 
@@ -180,7 +181,7 @@ for i=1:max(connected_areas(:))
     
     seeds = prior_connected_areas > 0 & this_cell;
     seeds_labeled = bwlabel(seeds,8);
-    seeds_props = regionprops(seeds_labeled,'Area');
+    seeds_props = regionprops(seeds_labeled,'Area'); %#ok<MRPBW>
     seeds_labeled = bwlabel(ismember(seeds_labeled, find([seeds_props.Area] > 10)),8);
     seeds = seeds_labeled > 0;
     
