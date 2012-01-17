@@ -67,7 +67,7 @@ foreach (@config_files) {
 
 =head1 NAME
 
-run_perl_program_for_all.pl
+run_program_for_all.pl
 
 =head1 SYNOPSIS
 
@@ -75,7 +75,11 @@ run_program_for_all.pl -cfg config.cfg -p program
 
 =head1 Description
 
-This program provides the means to run a program for each of the experiments in a set. This is helpful when a single step of a processing pipeline needs to be executed again. Config files (those with the same suffix as the config file provided on the command line) are searched for in subdirectories of the $cfg{data_folder} directory.
+This program provides the means to run a program for each of the experiments in
+a set. This is helpful when a single step of a processing pipeline needs to be
+executed again. Config files (those with the same suffix as the config file
+provided on the command line) are searched for in subdirectories of the
+$cfg{data_folder} directory.
 
 Required parameter(s):
 
@@ -107,6 +111,6 @@ run_program_for_all.pl -cfg FA_config -p ../analyze_cell_features/gather_trackin
 
 Matthew Berginski (mbergins@unc.edu)
 
-Documentation last updated: 6/9/2008 
+Documentation last updated: 1/17/2008 
 
 =cut
