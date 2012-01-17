@@ -1,15 +1,13 @@
-function write_montage_image_set(image_set,output_file,varargin)
-%WRITE_MONTAGE_IMAGE_SET    Takes in a set of images to be montaged,
-%                           arranges them into a single frame and writes to
-%                           the given output file
-%
-%   write_montage_image_set(i_set, out_f) 
+function montage = create_montage_image_set(image_set,varargin)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%setup variables and parse command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 i_p = inputParser;
 i_p.FunctionName = 'WRITE_MONTAGE_IMAGE_SET';
 
 i_p.addRequired('image_set',@iscell);
-i_p.addRequired('output_file',@ischar);
 i_p.addOptional('num_cols',0,@isnumeric);
 i_p.addOptional('num_images',0,@isnumeric);
 i_p.addOptional('phase','none',@ischar);
@@ -17,7 +15,11 @@ i_p.addOptional('pixel_size',-Inf,@(x)isnumeric(x) & x > 0);
 i_p.addOptional('bar_size',10,@(x)isnumeric(x) & x > 0);
 i_p.addOptional('bar_position',1,@(x)isnumeric(x) & x > 0);
 
-i_p.parse(image_set,output_file,varargin{:});
+i_p.parse(image_set,varargin{:});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% main program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %The image set may start when many empty cells, first we clear all those
 %out
@@ -92,12 +94,7 @@ for j = 1:images_per_side(1)
     end
 end
 
-output_folder = fileparts(output_file);
-if (not(isempty(output_folder)) && not(exist(output_folder,'dir'))), mkdir(output_folder); end
-
 if (isempty(strmatch('pixel_size', i_p.UsingDefaults)))
     montage = draw_scale_bar(montage,i_p.Results.pixel_size, 'bar_size', ...
         i_p.Results.bar_size,'position_code',i_p.Results.bar_position);
 end
-
-imwrite(montage, output_file);

@@ -7,7 +7,6 @@ tic;
 i_p = inputParser;
 
 i_p.addRequired('field_dir',@(x)exist(x,'dir') == 7);
-
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(field_dir,varargin{:});
@@ -55,7 +54,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i_num = 1:size(image_dirs,1)
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);
-    if (exist(output_file,'file'))
+    if (not(i_p.Results.debug) && exist(output_file,'file'))
         continue;
     end
     
@@ -130,7 +129,7 @@ for i_num = 1:size(image_dirs,1)
                 sprintf('%.2f',gel_diff(cell_num)), '\n', ...
                 sprintf('%.0f',gel_diff_total(cell_num)), '\n', ...
                 sprintf('%.2f',gel_diff_median(cell_num)),'" '];
-            command_str = ['convert ', output_file, ' -font VeraSe.ttf -fill ''rgba(255,255,255, 0.5)'' -annotate', ...
+            command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(0,0,0, 1)'' -annotate', ...
                 pos_str, label_str, ' ', output_file, '; '];
             system(command_str);
         end

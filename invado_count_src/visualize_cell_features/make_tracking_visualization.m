@@ -1,6 +1,4 @@
 function make_tracking_visualization(exp_dir,varargin)
-%MAKE_MOVIE_FRAMES    Builds movie frames with the adhesions highlighted in
-%                     using various conventions
 
 tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,17 +40,7 @@ for i_num = 1:length(image_dirs)
     current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
 
     %thicken the cell perimeter, easier for visualization
-    labeled_cells_perim_thick = current_data.labeled_cells_perim;
-    three_disk = strel('disk',3,0);
-    for cell_num = 1:max(labeled_cells_perim_thick(:))
-        this_cell_perim = current_data.labeled_cells_perim == cell_num;
-        this_cell = current_data.labeled_cells == cell_num;
-        
-        this_cell_perim = imdilate(this_cell_perim,three_disk);
-        this_cell_perim = this_cell_perim & this_cell;
-        
-        labeled_cells_perim_thick(this_cell_perim) = cell_num;
-    end
+    labeled_cells_perim_thick = thicken_perimeter(current_data.labeled_cells_perim,current_data.labeled_cells);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Image Creation
