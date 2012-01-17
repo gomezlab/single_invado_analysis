@@ -9,7 +9,7 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('min_cell_area',1500,@isnumeric);
-i_p.addParamValue('max_cell_area',20000,@isnumeric);
+i_p.addParamValue('max_cell_area',Inf,@isnumeric);
 i_p.addParamValue('min_cell_intensity',60,@isnumeric);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -44,7 +44,7 @@ for i_num = 1:size(image_dirs)
     
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
     normalized_image = (puncta_image - puncta_min_max(2,1))/range(puncta_min_max(2,:));
-
+    
     pixel_values = puncta_image(:);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,19 +86,19 @@ for i_num = 1:size(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Output Image Creation/Writing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
+    
     imwrite(create_highlighted_image(normalized_image,bwperim(threshed_mask),'color_map',[1,0,0]), ...
         fullfile(base_dir,image_dirs(i_num).name,filenames.highlighted_cell_mask))
     
     imwrite(double(connected_areas)/2^16, ...
         fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask), ...
         'bitdepth',16)
-
+    
     imwrite(double(connected_perims)/2^16, ...
         fullfile(base_dir,image_dirs(i_num).name,filenames.labeled_cell_mask_perim), ...
         'bitdepth',16)
-
-    %binary cell mask    
+    
+    %binary cell mask
     imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask))
     
     if (mod(i_num,10)==0)
@@ -208,5 +208,3 @@ assert(cell_nums(1) == 0, 'Background pixels not found after building adhesion l
 for i = 2:length(cell_nums)
     final_connected_areas(final_connected_areas == cell_nums(i)) = i - 1;
 end
-
-
