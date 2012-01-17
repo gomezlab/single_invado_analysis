@@ -33,3 +33,5 @@ filenames.tracking_vis = 'tracking.png';
 filenames.cell_props = '../../adhesion_props/cell_props.mat';
 
 filenames.lineage_dir = '../../adhesion_props/lin_time_series/';
+
+filenames.single_cell_dir = '../../adhesion_props/single_cells/';
