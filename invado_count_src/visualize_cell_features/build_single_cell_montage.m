@@ -82,7 +82,7 @@ for track_id = 1:size(tracking_seq,1)
         not_this_cell_perim = current_data.labeled_cells_perim ~= track_row(i_num) & ...
             current_data.labeled_cells_perim > 0;
         
-        thick_perim = thicken_perimiter(this_cell_perim,this_cell);
+        thick_perim = thicken_perimeter(this_cell_perim,this_cell);
         
         gel_frame = create_highlighted_image(current_data.gel_image_norm,thick_perim,'color_map',[1,0,0]);
         gel_frame = create_highlighted_image(gel_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
@@ -91,9 +91,11 @@ for track_id = 1:size(tracking_seq,1)
         puncta_frame = create_highlighted_image(current_data.puncta_image_norm,thick_perim,'color_map',[1,0,0]);
         puncta_frame = create_highlighted_image(puncta_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
         puncta_frames{length(puncta_frames) + 1} = puncta_frame;
-
     end
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Create final montage image and output
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     gel_montage = create_montage_image_set(gel_frames,'num_cols',length(gel_frames));
     puncta_montage = create_montage_image_set(puncta_frames,'num_cols',length(puncta_frames));
     spacer = 0.5*ones(1,size(gel_montage,2),3);
@@ -110,7 +112,6 @@ for track_id = 1:size(tracking_seq,1)
     imwrite(full_montage,output_file);
 end
 toc;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions

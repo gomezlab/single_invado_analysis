@@ -1,4 +1,4 @@
-function perim_thick = thicken_perimiter(perims,objects,varargin)
+function perim_thick = thicken_perimeter(perims,objects,varargin)
 
 if (islogical(perims)), perims = double(perims); end
 if (islogical(objects)), objects = double(objects); end
