@@ -89,10 +89,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 convert_cmd = 'convert ';
 convert_avail = not(system('which convert'));
-if (not(convert_avail) && exist('convert','file'))
-	convert_cmd = './convert ';
-else
-	exit();
+if (not(convert_avail))
+    if (exist('convert','file'))
+        convert_cmd = './convert ';
+    else
+        exit();
+    end
 end
 for i_num = 1:size(image_dirs,1)
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);

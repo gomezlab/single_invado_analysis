@@ -36,6 +36,15 @@ end
 
 lineage_cmap = jet(size(tracking_seq,1));
 
+convert_cmd = 'convert ';
+convert_avail = not(system('which convert'));
+if (not(convert_avail))
+    if (exist('convert','file'))
+        convert_cmd = './convert ';
+    else
+        exit();
+    end
+end
 for i_num = 1:length(image_dirs)
     current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
 
@@ -47,12 +56,27 @@ for i_num = 1:length(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     live_rows = tracking_seq(:,i_num) > 0;
     ad_nums = tracking_seq(live_rows,i_num);
+    tracking_nums = find(live_rows);
     
     %Build the unique lineage highlighted image
     this_cmap(ad_nums,:) = lineage_cmap(live_rows,:); %#ok<AGROW>    
     highlighted_puncta = create_highlighted_image(current_data.puncta_image_norm, ...
         labeled_cells_perim_thick,'color_map',this_cmap);
     
-    imwrite(highlighted_puncta,fullfile(base_dir,image_dirs(i_num).name,filenames.tracking_vis))
+    output_file = fullfile(base_dir,image_dirs(i_num).name,filenames.tracking_vis);
+    
+    imwrite(highlighted_puncta,output_file);
+    
+    props = regionprops(current_data.labeled_cells,'Centroid');
+    all_annotate = '';
+    for i = 1:length(ad_nums)
+        pos_str = ['+',num2str(props(ad_nums(i)).Centroid(1)),'+',num2str(props(ad_nums(i)).Centroid(2))];
+        label_str = [' "',num2str(tracking_nums(i)),'"'];
+        all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
+    end
+    command_str = [convert_cmd, output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(256,0,0,1)''', ...
+        all_annotate, ' ', output_file, '; '];
+    system(command_str);
+    1;
 end
 toc;
