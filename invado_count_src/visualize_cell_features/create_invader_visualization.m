@@ -87,13 +87,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Adding Degradation Annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+convert_cmd = 'convert ';
 convert_avail = not(system('which convert'));
+if (not(convert_avail) && exist('convert','file'))
+	convert_cmd = './convert ';
+else
+	exit();
+end
 for i_num = 1:size(image_dirs,1)
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);
-    
-    if (not(convert_avail))
-        break;
-    end
     
     if (exist(output_file,'file'))
         img_size = size(imread(output_file));
@@ -126,13 +128,13 @@ for i_num = 1:size(image_dirs,1)
         all_annotate = '';
         for cell_num = 1:length(gel_diff)
             pos_str = [' +',num2str(centroid(cell_num,1)),'+',num2str(centroid(cell_num,2))];
-            label_str = [' "',sprintf('%.0f',area(cell_num)), '\n', ...
+            label_str = [' "',sprintf('%.0f',area(cell_num)), '-test\n', ...
                 sprintf('%.2f',gel_diff(cell_num)), '\n', ...
                 sprintf('%.0f',gel_diff_total(cell_num)), '\n', ...
                 sprintf('%.2f',gel_diff_median(cell_num)),'" '];
             all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
         end
-        command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(0,0,0,1)''', ...
+        command_str = [convert_cmd, output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(0,0,0,1)''', ...
             all_annotate, ' ', output_file, ';'];
         
         system(command_str);
