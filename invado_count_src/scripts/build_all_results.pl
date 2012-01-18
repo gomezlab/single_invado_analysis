@@ -23,7 +23,8 @@ use Config::Adhesions qw(ParseConfig);
 my %opt;
 $opt{debug} = 0;
 $opt{lsf} = 0;
-GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s", "no_email") or die;
+GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s", "no_email",
+	"sync=s") or die;
 
 my $lsf_return = system("which bsub > /dev/null 2> /dev/null");
 
@@ -50,7 +51,7 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
+	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script flat_field_correct_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
@@ -62,6 +63,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_invading_cells" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/create_invader_visualization" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_single_cell_montage" ], ],
 	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
 );
 
@@ -71,7 +73,8 @@ my @run_only_once = qw(find_median_images flat_field_correct_images
 	find_exp_min_max collect_montage_visualizations build_all_montage_file_sets);
 
 my @skip_check = qw(find_median_images find_exp_min_max
-	collect_montage_visualizations gather_tracking_results);
+	collect_montage_visualizations gather_tracking_results
+	build_single_cell_montage);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
@@ -167,6 +170,10 @@ if (not($opt{debug})) {
 	
 	if (not $opt{no_email}) {
 		system($command) if $opt{lsf};
+	}
+	if ($opt{sync}) {
+		$command = "results/sync_to.pl -server $opt{sync}";
+		system($command);
 	}
 }
 
