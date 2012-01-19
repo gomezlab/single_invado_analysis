@@ -43,6 +43,7 @@ chdir $opt{script_dir};
 if ($opt{script} =~ /$opt{script_dir}\/(.*)/) {
 	$opt{script} = $1;
 }
+$opt{abs_script_dir} = File::Spec->rel2abs($opt{script_dir});
 
 ################################################################################
 # Main Program
