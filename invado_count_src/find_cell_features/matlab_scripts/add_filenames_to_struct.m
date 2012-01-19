@@ -22,16 +22,16 @@ filenames.gel_range = '../../../all_field_resources/gel_image_range.csv';
 
 filenames.intensity_correction = 'intensity_correction.csv';
 
-filenames.no_cells = '../../adhesion_props/no_cell_regions.png';
+filenames.no_cells = '../../cell_props/no_cell_regions.png';
 
 filenames.invader_vis = 'invader_vis.png';
 
-filenames.tracking_raw = '../../adhesion_props/raw_tracking_data.mat';
+filenames.tracking_raw = '../../cell_props/raw_tracking_data.mat';
 filenames.tracking = '../../tracking_matrices/tracking_seq.csv';
 filenames.tracking_vis = 'tracking.png';
 
-filenames.cell_props = '../../adhesion_props/cell_props.mat';
+filenames.cell_props = '../../cell_props/cell_props.mat';
 
-filenames.lineage_dir = '../../adhesion_props/lin_time_series/';
+filenames.lineage_dir = '../../cell_props/lin_time_series/';
 
-filenames.single_cell_dir = '../../adhesion_props/single_cells/';
+filenames.single_cell_dir = '../../cell_props/single_cells/';

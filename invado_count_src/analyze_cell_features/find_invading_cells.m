@@ -27,7 +27,7 @@ addpath(genpath('..'));
 raw_data = struct();
 files = struct();
 
-data_series_folder = fullfile(field_dir,'adhesion_props','lin_time_series');
+data_series_folder = fullfile(field_dir,'cell_props','lin_time_series');
 
 files.p_vals = fullfile(data_series_folder,'Cell_gel_diff_p_val.csv');
 files.cell_diffs = fullfile(data_series_folder,'Cell_gel_diff.csv');
@@ -65,7 +65,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 processed_data = process_raw_data(raw_data,i_p.Results.median_filter);
 
-output_dir = fullfile(field_dir,'adhesion_props');
+output_dir = fullfile(field_dir,'cell_props');
 
 csvwrite(fullfile(output_dir,'active_degrade.csv'),processed_data.active_degrade);
 csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);

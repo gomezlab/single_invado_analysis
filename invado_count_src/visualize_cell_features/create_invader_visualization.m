@@ -20,7 +20,7 @@ filenames = add_filenames_to_struct(struct());
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-active_degrade = csvread(fullfile(field_dir,'adhesion_props','active_degrade.csv'));
+active_degrade = csvread(fullfile(field_dir,'cell_props','active_degrade.csv'));
 
 %add one because perl indexes from 0
 tracking_matrix = csvread(fullfile(field_dir,'tracking_matrices','tracking_seq.csv')) + 1;

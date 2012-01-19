@@ -32,7 +32,6 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-no_cell_diffs = [];
 data_points = 0;
 all_tracking_props = cell(size(image_dirs,1),1);
 all_cell_props = cell(size(image_dirs,1),1);
@@ -64,7 +63,6 @@ for i_num = 1:size(image_dirs,1)
     
     if (i_num ~= 1)
         tracking_props = collect_tracking_properties(current_data,prior_data,'debug',i_p.Results.debug);
-        no_cell_diffs = [no_cell_diffs, [cell_props(1).no_cells_diff]'];
         cell_props = rmfield(cell_props,'no_cells_diff');
         
         all_tracking_props{i_num-1} = tracking_props;
@@ -95,20 +93,6 @@ end
 
 save(fullfile(base_dir,image_dirs(1).name,filenames.tracking_raw),'all_tracking_props');
 save(fullfile(base_dir,image_dirs(1).name,filenames.cell_props),'all_cell_props');
-% save(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/no_cell_diffs.mat'),'no_cell_diffs');
-
-% measurement_num = count_measurement_nums(all_cell_props);
-% 
-% sample_sizes = 1000:1000:10000;
-% min_maxes = NaN(2,length(sample_sizes));
-% for i=1:length(sample_sizes)
-%     min_maxes(:,i) = bootstrap_median_small(no_cell_diffs,'samp_size',sample_sizes(i), ...
-%         'bonfer_correction',measurement_num)';
-%     disp(sample_sizes(i));
-% end
-% % plot(sample_sizes, min_maxes);
-% save(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/min_maxes.mat'),'min_maxes');
-% csvwrite(fullfile(base_dir,image_dirs(1).name,'../../adhesion_props/min_maxes.csv'),cat(1,sample_sizes,min_maxes));
 toc;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -186,10 +170,8 @@ for i=1:max(current_data.labeled_cells(:))
     
     differences = current_data.gel_image_corr(overlap_region) - ...
         prior_data.gel_image_corr(overlap_region);
-    differences_no_corr = current_data.gel_image(overlap_region) - ...
-        prior_data.gel_image(overlap_region);
     
-    [h,p] = ttest(differences);
+    [~,p] = ttest(differences);
     cell_props(i).Cell_gel_diff = mean(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff_median = median(differences);
@@ -205,7 +187,7 @@ for i=1:max(current_data.labeled_cells(:))
         c_extent(c_extent <= 0) = 1;
         if (c_extent(2) > size(this_cell,1)), c_extent(2) = size(this_cell,1); end
         if (c_extent(4) > size(this_cell,2)), c_extent(4) = size(this_cell,2); end
-        c_extent = struct('row',[c_extent(1):c_extent(2)],'col',[c_extent(3):c_extent(4)]);
+        c_extent = struct('row',(c_extent(1):c_extent(2)),'col',(c_extent(3):c_extent(4)));
                 
         prior_puncta = normalize_image(prior_data.puncta_image(c_extent.row,c_extent.col));
         prior_gel = prior_data.gel_image(c_extent.row,c_extent.col)*prior_data.intensity_correction;
