@@ -36,15 +36,7 @@ end
 
 lineage_cmap = jet(size(tracking_seq,1));
 
-convert_cmd = 'convert ';
 convert_avail = not(system('which convert'));
-if (not(convert_avail))
-    if (exist('convert','file'))
-        convert_cmd = './convert ';
-    else
-        exit();
-    end
-end
 for i_num = 1:length(image_dirs)
     current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
 
@@ -67,6 +59,7 @@ for i_num = 1:length(image_dirs)
     
     imwrite(highlighted_puncta,output_file);
     
+	if (not(convert_avail)), continue; end
     props = regionprops(current_data.labeled_cells,'Centroid');
     all_annotate = '';
     for i = 1:length(ad_nums)
@@ -74,7 +67,7 @@ for i_num = 1:length(image_dirs)
         label_str = [' "',num2str(tracking_nums(i)),'"'];
         all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
     end
-    command_str = [convert_cmd, output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(256,0,0,1)''', ...
+    command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(256,0,0,1)''', ...
         all_annotate, ' ', output_file, '; '];
     system(command_str);
     1;

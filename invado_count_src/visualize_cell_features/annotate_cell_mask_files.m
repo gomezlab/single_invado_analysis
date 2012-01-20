@@ -46,18 +46,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Adding Area Annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-convert_cmd = 'convert ';
 convert_avail = not(system('which convert'));
-if (not(convert_avail))
-    if (exist('convert','file'))
-        convert_cmd = './convert ';
-    else
-        exit();
-    end
-end
 for i_num = 1:size(image_dirs,1)
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.highlighted_cell_mask);
     
+	if (not(convert_avail)), continue; end
     if (exist(output_file,'file'))
         img_size = size(imread(output_file));
         
@@ -88,7 +81,7 @@ for i_num = 1:size(image_dirs,1)
             label_str = [' "',sprintf('%.0f',area(cell_num)),'"'];
             all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
         end
-        command_str = [convert_cmd, output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(128,128,128,1)''', ...
+        command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(128,128,128,1)''', ...
             all_annotate, ' ', output_file, '; '];
 
         system(command_str);
