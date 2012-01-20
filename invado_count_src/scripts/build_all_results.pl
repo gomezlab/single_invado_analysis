@@ -94,11 +94,6 @@ my @run_once_configs = grep $_ =~ /time_series_01/, @config_files;
 #######################################
 our @running_jobs;
 
-if (not($opt{debug}) && $opt{lsf}) {
-	my $job_queue_thread = threads->create('shift_idle_jobs','');
-	$job_queue_thread->detach;
-}
-
 my $starting_dir = getcwd;
 for (@overall_command_seq) {
 	my $command_start_bench = new Benchmark;
@@ -300,28 +295,6 @@ sub kill_long_running_jobs {
             system("bkill $_");
         }
     }
-}
-
-sub shift_idle_jobs {
-    my $bjobs_command = "bjobs";
-    if (defined $cfg{job_group}) {
-        $bjobs_command .= " -g $cfg{job_group}";
-    }
-    
-    my @lines = `$bjobs_command 2>/dev/null`;
-    my @running_lines = `$bjobs_command -r 2>/dev/null`;
-    
-    if (scalar(@lines) > 1) {
-        #dealing with the strange case where all the idle jobs refuse to be
-        #shifted into a running queue position, so we slowly shift all the
-        #pending jobs into the week queue, where they will certainly get a
-        #running jobs spot
-        if (scalar(@lines) > scalar(@running_lines)) {
-            &move_job_to_week_queue($lines[-1]);
-        }
-    }
-    sleep(60);
-    &shift_idle_jobs();
 }
 
 sub move_job_to_week_queue {
