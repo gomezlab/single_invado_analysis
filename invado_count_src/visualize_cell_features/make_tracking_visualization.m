@@ -67,7 +67,7 @@ for i_num = 1:length(image_dirs)
         label_str = [' "',num2str(tracking_nums(i)),'"'];
         all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
     end
-    command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(256,0,0,1)''', ...
+    command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgb(255,0,0)''', ...
         all_annotate, ' ', output_file, '; '];
     system(command_str);
     1;
