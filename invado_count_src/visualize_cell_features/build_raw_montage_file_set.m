@@ -45,7 +45,15 @@ for time = 1:total_images
         if(not(exist(image_file,'file')))
             continue;
         end
-        images{j} = imread(image_file);
+        [images{j},map] = imread(image_file);
+        %deal with indexed or single layer png images, occasionaly produced
+        %by imagemagick
+        if (size(map,1) > 0)
+            images{j} = uint8(256*ind2rgb(images{j},map));
+        end
+        if (length(size(images{j})) < 3)
+            images{j} = cat(3,images{j},images{j},images{j});
+        end
         base_image_size = size(images{j});
     end
     
