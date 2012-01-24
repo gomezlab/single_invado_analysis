@@ -114,7 +114,12 @@ for track_id = 1:size(tracking_seq,1)
     full_montage = cat(1,puncta_montage,spacer,gel_montage);
     
     image_num = sprintf('%03d',track_id);
-    output_file = fullfile(base_dir,image_dirs(1).name,filenames.single_cell_dir,[image_num,'.png']);
+    [~,field_dir] = fileparts(fileparts(base_dir));
+%     [~,exp_type] = fileparts(fileparts(fileparts(base_dir)));
+    [~,date] = fileparts(fileparts(fileparts(fileparts(base_dir))));
+    output_file = fullfile(base_dir,image_dirs(1).name,filenames.single_cell_dir,...
+        [date,'-',field_dir,'-',image_num,'.png']);
+%     output_file = fullfile(base_dir,image_dirs(1).name,filenames.single_cell_dir,[image_num,'.png']);
     
     if (not(exist(fileparts(output_file),'dir')))
         mkdir(fileparts(output_file))
@@ -128,7 +133,6 @@ for track_id = 1:size(tracking_seq,1)
     
     all_annotate = '';
     for i = 1:length(i_num_sequence)
-%     for i = 1:1
         pos_str = ['+',num2str(upper_corners(i)),'+25'];
         label_str = [' "',num2str(i_num_sequence(i)),'"'];
         all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
