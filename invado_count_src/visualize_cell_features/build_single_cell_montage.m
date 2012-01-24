@@ -70,10 +70,15 @@ for track_id = 1:size(tracking_seq,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     gel_frames = cell(0);
     puncta_frames = cell(0);
+    upper_corners = [];
+    i_num_sequence = [];
     for i_num = 1:length(track_row)
         if (track_row(i_num) <= 0)
             continue;
         end
+        
+        i_num_sequence = [i_num_sequence, i_num];
+        
         current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
         current_data = trim_all_images(current_data,row_min_max,col_min_max);        
         
@@ -91,6 +96,12 @@ for track_id = 1:size(tracking_seq,1)
         puncta_frame = create_highlighted_image(current_data.puncta_image_norm,thick_perim,'color_map',[1,0,0]);
         puncta_frame = create_highlighted_image(puncta_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
         puncta_frames{length(puncta_frames) + 1} = puncta_frame;
+        
+        if (size(upper_corners,1) == 0)
+            upper_corners = 10;
+        else
+            upper_corners = [upper_corners, upper_corners(end) + 1 + size(gel_frames{1},2)];
+        end
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,6 +121,21 @@ for track_id = 1:size(tracking_seq,1)
     end
     
     imwrite(full_montage,output_file);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Add Image Number Labels
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    all_annotate = '';
+    for i = 1:length(i_num_sequence)
+%     for i = 1:1
+        pos_str = ['+',num2str(upper_corners(i)),'+25'];
+        label_str = [' "',num2str(i_num_sequence(i)),'"'];
+        all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
+    end
+    command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(128,128,128,1)''', ...
+        all_annotate, ' ', output_file, '; '];
+    system(command_str);
 end
 toc;
 
