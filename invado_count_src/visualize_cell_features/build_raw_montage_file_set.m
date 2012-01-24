@@ -30,8 +30,9 @@ all_pix_vals = [];
 % Build Composite Images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%build up composite images by scan through the image number, so time step, then
-%each field
+any_three_color = 0;
+%build up composite images by scanning through the image number, so time
+%step, then each field
 for time = 1:total_images
     images = cell(0);
     
@@ -51,10 +52,11 @@ for time = 1:total_images
         if (size(map,1) > 0)
             images{j} = uint8(256*ind2rgb(images{j},map));
         end
-        if (length(size(images{j})) < 3)
-            images{j} = cat(3,images{j},images{j},images{j});
-        end
+        
         base_image_size = size(images{j});
+        if (length(base_image_size) > 2)
+            any_three_color = 1;
+        end
     end
     
     %scan back through the images collected filling in missing files with
@@ -62,6 +64,9 @@ for time = 1:total_images
     for j=1:length(fields)
         if(length(images) < j || isempty(images{j}))
             images{j} = NaN*ones(base_image_size);
+        end
+        if (any_three_color && length(size(images{j})) < 3)
+            images{j} = cat(3,images{j},images{j},images{j});
         end
     end
     
