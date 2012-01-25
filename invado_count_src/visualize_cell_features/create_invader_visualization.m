@@ -87,11 +87,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Adding Degradation Annotations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-convert_avail = not(system('which convert'));
+% convert_avail = not(system('which convert'));
 for i_num = 1:size(image_dirs,1)
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);
     
-	if (not(convert_avail)), continue; end
+% 	if (not(convert_avail)), continue; end
     if (exist(output_file,'file'))
         img_size = size(imread(output_file));
         
@@ -129,7 +129,7 @@ for i_num = 1:size(image_dirs,1)
                 sprintf('%.2f',gel_diff_median(cell_num)),'" '];
             all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
         end
-        command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(0,0,0,1)''', ...
+        command_str = ['/sw/bin/convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(128,128,128,0.75)''', ...
             all_annotate, ' ', output_file, ';'];
         
         system(command_str);
