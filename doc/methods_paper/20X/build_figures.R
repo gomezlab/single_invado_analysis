@@ -8,7 +8,7 @@ debug=TRUE;
 
 degrade_files = list();
 
-base_dir = '../../../results/Invado_count/'
+base_dir = '../../../results/Invado_count_20000/'
 degrade_files$control = Sys.glob(file.path(base_dir,'*/*ntrol/overall*/degrade*'))
 degrade_files$BB94 = Sys.glob(file.path(base_dir,'*/BB94/overall*/degrade*'))
 degrade_files$DMSO = Sys.glob(file.path(base_dir,'*/DMSO/overall*/degrade*'))
@@ -47,58 +47,83 @@ colors = list(control = rgb(0,0,0), control_light = rgb(0,0,0,0.5),
 # Plotting
 ################################################################################
 
+###########################################################
+# Percentage of cells that have degraded
+###########################################################
+
+########################################
+# Single Exp
+########################################
+
 svg(file.path('single_exp','control.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=T)
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=T)
+source('../../../invado_count_src/analyze_cell_features/invado_analysis_lib.R')
 plot_single_exp_mat(time,degrade_percents$control,degrade_conf$control$upper,
     degrade_conf$control$lower, type='l',ylim=c(0,100),
     col=colors$control,xlab='Time Since Plating (hrs)',
-    ylab='Percentage of Degradative Cells',xlim=c(0,max(time)))
+    ylab='Fraction of Cells with Invadopodia',xlim=c(0,max(time)))
 graphics.off()
 
 svg(file.path('single_exp','DMSO.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=T)
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=T)
 plot_single_exp_mat(time,degrade_percents$DMSO,degrade_conf$DMSO$upper,
     degrade_conf$DMSO$lower, type='l',ylim=c(0,100),
     col=colors$DMSO,xlab='Time Since Plating (hrs)',
-    ylab='Percentage of Degradative Cells',xlim=c(0,max(time)))
+    ylab='Fraction of Cells with Invadopodia',xlim=c(0,max(time)))
 graphics.off()
 
 svg(file.path('single_exp','BB94.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=T)
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=T)
 plot_single_exp_mat(time,degrade_percents$BB94,degrade_conf$BB94$upper,
     degrade_conf$BB94$lower, type='l',ylim=c(0,100),
     col=colors$BB94,xlab='Time Since Plating (hrs)',
-    ylab='Percentage of Degradative Cells',xlim=c(0,max(time)))
+    ylab='Fraction of Cells with Invadopodia',xlim=c(0,max(time)))
 graphics.off()
 
 svg(file.path('single_exp','FAK.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=T)
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=T)
 plot_single_exp_mat(time,degrade_percents$FAK,degrade_conf$FAK$upper,
     degrade_conf$FAK$lower,type='l',ylim=c(0,100),
     col=colors$FAK,xlab='Time Since Plating (hrs)',
-    ylab='Percentage of Degradative Cells',xlim=c(0,max(time)))
+    ylab='Fraction of Cells with Invadopodia',xlim=c(0,max(time)))
 graphics.off()
 
 svg(file.path('single_exp','PP2.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=T)
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=T)
 plot_single_exp_mat(time,degrade_percents$PP2,degrade_conf$PP2$upper,
     degrade_conf$PP2$lower,type='l',ylim=c(0,100),
     col=colors$PP2,xlab='Time Since Plating (hrs)',
-    ylab='Percentage of Degradative Cells',xlim=c(0,max(time)))
+    ylab='Fraction of Cells with Invadopodia',xlim=c(0,max(time)))
 graphics.off()
 
-svg(file.path('single_exp','noc.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=t)
-plot_single_exp_mat(time,degrade_percents$noc,degrade_conf$noc$upper,
-    degrade_conf$noc$lower,type='l',ylim=c(0,100),
-    col=colors$noc,xlab='time since plating (hrs)',
-    ylab='percentage of degradative cells',xlim=c(0,max(time)))
+svg(file.path('single_exp','Noc.svg'),width=3.5,height=3.5);
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=t)
+plot_single_exp_mat(time,degrade_percents$Noc,degrade_conf$Noc$upper,
+    degrade_conf$Noc$lower,type='l',ylim=c(0,100),
+    col=colors$Noc,xlab='Time since plating (hrs)',
+    ylab='Fraction of Cells with Invadopodia',xlim=c(0,max(time)))
 graphics.off()
 
 svg(file.path('single_exp','PurvA.svg'),width=3.5,height=3.5);
-par(bty='n',mar=c(2.7,2.5,1.3,0), mgp=c(1.6,0.5,0),xpd=t)
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=t)
 plot_single_exp_mat(time,degrade_percents$PurvA,degrade_conf$PurvA$upper,
-    degrade_conf$PurvA$lower,type='l',ylim=c(0,100),
-    col=colors$PurvA,xlab='time since plating (hrs)',
-    ylab='percentage of degradative cells',xlim=c(0,max(time)))
+    degrade_conf$PurvA$lower,type='l',col=colors$PurvA,
+    ylim=c(0,100),ylab='Fraction of Cells with Invadopodia',
+    xlim=c(0,max(time)),xlab='Time since Plating (hrs)')
+graphics.off()
+
+########################################
+# Multiple Exp
+########################################
+
+source('../../../invado_count_src/analyze_cell_features/invado_analysis_lib.R')
+
+svg(file.path('degrade_curves.svg'),width=3.5,height=3.5);
+par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=t)
+plot_multiple_exp_mat(time,degrade_percents,degrade_conf,
+    cols=colors,exp_names=c("control","BB94","DMSO"),
+    ylim=c(0,100),ylab='Fraction of Cells with Invadopodia',
+    xlim=c(0,max(time)),xlab='Time since Plating (hrs)')
+legend('bottomright',c('Control','DMSO','BB94'),
+    fill=c(colors$control,colors$DMSO,colors$BB94),bty='n')
 graphics.off()
