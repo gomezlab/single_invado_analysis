@@ -115,10 +115,10 @@ for track_id = 1:size(tracking_seq,1)
     
     image_num = sprintf('%03d',track_id);
     [~,field_dir] = fileparts(fileparts(base_dir));
-%     [~,exp_type] = fileparts(fileparts(fileparts(base_dir)));
+    [~,exp_type] = fileparts(fileparts(fileparts(base_dir)));
     [~,date] = fileparts(fileparts(fileparts(fileparts(base_dir))));
     output_file = fullfile(base_dir,image_dirs(1).name,filenames.single_cell_dir,...
-        [date,'-',field_dir,'-',image_num,'.png']);
+        [date,'-',exp_type(1:2),'-',field_dir,'-',image_num,'.png']);
 %     output_file = fullfile(base_dir,image_dirs(1).name,filenames.single_cell_dir,[image_num,'.png']);
     
     if (not(exist(fileparts(output_file),'dir')))
@@ -137,7 +137,7 @@ for track_id = 1:size(tracking_seq,1)
         label_str = [' "',num2str(i_num_sequence(i)),'"'];
         all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
     end
-    command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(128,128,128,1)''', ...
+    command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 24 -fill ''rgba(255,255,255,0.5)''', ...
         all_annotate, ' ', output_file, '; '];
     system(command_str);
 end
