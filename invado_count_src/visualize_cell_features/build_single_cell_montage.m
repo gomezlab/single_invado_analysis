@@ -59,8 +59,8 @@ for track_id = 1:size(tracking_seq,1)
     col_min_max = [find(sum(cell_coverage),1,'first') - 10,...
         find(sum(cell_coverage),1,'last') + 10];
     
-    if (row_min_max(1) < 0), row_min_max(1) = 1; end
-    if (col_min_max(1) < 0), col_min_max(1) = 1; end
+    if (row_min_max(1) < 1), row_min_max(1) = 1; end
+    if (col_min_max(1) < 1), col_min_max(1) = 1; end
     
     if (row_min_max(2) > size(cell_coverage,1)), row_min_max(2) = size(cell_coverage,1); end
     if (col_min_max(2) > size(cell_coverage,2)), col_min_max(2) = size(cell_coverage,2); end
