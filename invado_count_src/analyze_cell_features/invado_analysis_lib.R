@@ -21,52 +21,106 @@ get_non_nan_data <- function(files) {
     return(data)
 }
 
+colMedians <- function(this_mat,na.rm=T) {
+    medis = c()
+    for (i in 1:dim(this_mat)[2]) {
+        medis = c(medis,median(this_mat[,i],na.rm=na.rm))
+    }
+    return(medis)
+}
+
+colConfUpper <- function(this_mat) {
+    upper = c()
+    for (i in 1:dim(this_mat)[2]) {
+        if (all(is.na(this_mat[,i]))) {
+            upper = c(upper,NA);
+        } else {
+            temp = t.test(this_mat[,i],conf.level=0.95)
+            if (is.nan(temp$conf.int[2])) {
+                upper = c(upper,0)
+            } else {
+                upper = c(upper,temp$conf.int[2])
+            }
+        }
+    }
+    return(upper)
+}
+
+colConfLower <- function(this_mat) {
+    lower = c()
+    for (i in 1:dim(this_mat)[2]) {
+        if (all(is.na(this_mat[,i]))) {
+            lower = c(lower,NA);
+        } else {
+            temp = t.test(this_mat[,i],conf.level=0.95)
+            if (is.nan(temp$conf.int[1])) {
+                lower = c(lower,0)
+            } else {
+                lower = c(lower,temp$conf.int[1])
+            }
+        }
+    }
+    return(lower)
+}
+
+################################################################################
+# Plotting
+################################################################################
+
+plot_single_exp_mat <- function(time,exp_mat,upper_conf=NA,lower_conf=NA,col=NA,...) {
+    
+    if (! is.na(col)) {
+        col_light = rgb(t(col2rgb(col))/255,alpha=0.5);
+    } else {
+        col_light = NA;
+    }
+    
+    for (i in 1:dim(exp_mat)[1]) {
+        if (i == 1) {
+            plot(time,exp_mat[i,],col=col_light,...)
+        } else {
+            lines(time,exp_mat[i,],col=col_light,...)
+        }
+    }
+    
+    lines(time,colMeans(exp_mat),col=col,lwd=3,...)
+    
+    if (! is.na(upper_conf[1]) && ! is.na(lower_conf[1])) {
+        polygon(c(time,rev(time)), c(lower_conf,rev(upper_conf)),col=col_light,border=NA)
+    }
+}
+
+plot_multiple_exp_mat <- function(time,exps,exp_confs,cols=NA,exp_names=NA,...) {
+    
+    #colors
+    if (is.na(cols[1])) {
+        cols = rainbow(length(names(exps)));
+    }
+
+    cols_light = list()
+    for (exp_type in names(exps)) {
+        cols_light[[exp_type]] = rgb(t(col2rgb(cols[[exp_type]]))/255,alpha=0.5)
+    }
+
+    #exps to include
+    if (is.na(exp_names[1])) {
+        exp_names = names(exps);
+    }
+    
+    first = 1;
+    for (exp_type in exp_names) {
+        print(exp_type)
+        if (first) {            
+            plot(time,colMeans(exps[[exp_type]]),col=cols[[exp_type]],lwd=3,typ='l',...)
+            first = 0;
+        } else {
+            lines(time,colMeans(exps[[exp_type]]),col=cols[[exp_type]],lwd=3,...)
+        }
+        polygon(c(time,rev(time)), c(exp_confs[[exp_type]]$upper,rev(exp_confs[[exp_type]]$lower)),
+            col=cols_light[[exp_type]],border=cols_light[[exp_type]])
+    }
+}
 
 ################################################################################
 # Main Program
 ################################################################################
-
-args = commandArgs(TRUE);
-if (length(args) != 0) {
-    debug = FALSE;
-    
-	#split out the arguments from the passed in parameters and assign variables 
-	#in the current scope
-    for (this_arg in commandArgs()) {
-        split_arg = strsplit(this_arg,"=",fixed=TRUE)
-        if (length(split_arg[[1]]) == 1) {
-            assign(split_arg[[1]][1], TRUE);
-        } else {
-            assign(split_arg[[1]][1], split_arg[[1]][2]);
-        }
-    }
-
-	print(data_dir);
-    if (exists('data_dir')) {
-        exp_props = gather_invado_properties(data_dir,
-            results.file = file.path('models','puncta_props_corr.Rdata'));
-        
-        pdf(file.path(data_dir,'p_vals.pdf'))
-        hist(exp_props$p_value);
-        graphics.off()
-
-        data_types_to_include = c('overall_filt','p_value','mean_local_diff', 'pre_diff_p_value');
-        
-        filter_sets = build_filter_sets(exp_props);
-        
-        invado_lineage_data = subset(exp_props, filter_sets$invado_filter, select = data_types_to_include);
-        local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, 
-            select = data_types_to_include);
-        
-        not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, 
-            select = data_types_to_include);
-        
-        write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), 
-            row.names=F, col.names=F, sep=',')
-        write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), 
-            row.names=F, col.names=F, sep=',')
-        
-        write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
-            row.names=F, col.names=F, sep=',')
-    }
-}

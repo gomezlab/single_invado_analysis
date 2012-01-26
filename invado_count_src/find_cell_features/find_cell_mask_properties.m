@@ -52,13 +52,7 @@ for i_num = 1:size(image_dirs,1)
     current_data = read_in_file_set(current_dir,filenames);
     
     cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);
-    
-    %convert cell props data into movieInfo data suitable for u-track
-    %     [xCoord, yCoord, amp] = convert_props_to_movieInfo(cell_props);
-    %     movieInfo(i_num).xCoord = xCoord;
-    %     movieInfo(i_num).yCoord = yCoord;
-    %     movieInfo(i_num).amp = amp;
-    
+        
     data_points = data_points + length(cell_props);
     
     if (i_num ~= 1)
@@ -134,11 +128,13 @@ if (isempty(cell_props))
     cell_props(1).Cell_gel_diff_p_val = [];
     cell_props(1).Cell_gel_diff_median = [];
     cell_props(1).Cell_gel_diff_total = [];
+    cell_props(1).Cell_gel_diff_percent = [];
 else
     [cell_props.Cell_gel_diff] = deal(NaN);
     [cell_props.Cell_gel_diff_p_val] = deal(NaN);
     [cell_props.Cell_gel_diff_median] = deal(NaN);
     [cell_props.Cell_gel_diff_total] = deal(NaN);
+    [cell_props.Cell_gel_diff_percent] = deal(NaN);
 end
 
 %when the first image is both the prior and current data, we only want the
@@ -168,17 +164,17 @@ for i=1:max(current_data.labeled_cells(:))
     overlap_region = this_cell & prev_cells;
     cell_props(i).Overlap_area = sum(overlap_region(:));
     
-    differences = current_data.gel_image_corr(overlap_region) - ...
-        prior_data.gel_image_corr(overlap_region);
+    differences = current_data.gel_image_corr(this_cell) - ...
+        prior_data.gel_image_corr(this_cell);
     
     [~,p] = ttest(differences);
     cell_props(i).Cell_gel_diff = mean(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff_median = median(differences);
     cell_props(i).Cell_gel_diff_total = sum(differences);
+    cell_props(i).Cell_gel_diff_percent = 100*(sum(differences)/sum(current_data.gel_image_corr(this_cell)));
     
     %single cell diagnostics
-%     if (i_p.Results.debug && not(isempty(regexp(current_data.this_dir,'ind.*03', 'once'))))
     if (i_p.Results.debug)
         c_extent = [find(sum(this_cell,2), 1 ),find(sum(this_cell,2), 1, 'last' ), ...
             find(sum(this_cell), 1 ),find(sum(this_cell), 1, 'last' )];
