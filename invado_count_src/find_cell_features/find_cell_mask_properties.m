@@ -129,12 +129,24 @@ if (isempty(cell_props))
     cell_props(1).Cell_gel_diff_median = [];
     cell_props(1).Cell_gel_diff_total = [];
     cell_props(1).Cell_gel_diff_percent = [];
+    
+    cell_props(1).Cell_gel_diff_no_corr = [];
+    cell_props(1).Cell_gel_diff_p_val_no_corr = [];
+    cell_props(1).Cell_gel_diff_median_no_corr = [];
+    cell_props(1).Cell_gel_diff_total_no_corr = [];
+    cell_props(1).Cell_gel_diff_percent_no_corr = [];
 else
     [cell_props.Cell_gel_diff] = deal(NaN);
     [cell_props.Cell_gel_diff_p_val] = deal(NaN);
     [cell_props.Cell_gel_diff_median] = deal(NaN);
     [cell_props.Cell_gel_diff_total] = deal(NaN);
     [cell_props.Cell_gel_diff_percent] = deal(NaN);
+    
+    [cell_props.Cell_gel_diff_no_corr] = deal(NaN);
+    [cell_props.Cell_gel_diff_p_val_no_corr] = deal(NaN);
+    [cell_props.Cell_gel_diff_median_no_corr] = deal(NaN);
+    [cell_props.Cell_gel_diff_total_no_corr] = deal(NaN);
+    [cell_props.Cell_gel_diff_percent_no_corr] = deal(NaN);
 end
 
 %when the first image is both the prior and current data, we only want the
@@ -167,12 +179,22 @@ for i=1:max(current_data.labeled_cells(:))
     differences = current_data.gel_image_corr(this_cell) - ...
         prior_data.gel_image_corr(this_cell);
     
-    [~,p] = ttest(differences);
     cell_props(i).Cell_gel_diff = mean(differences);
+    [~,p] = ttest(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff_median = median(differences);
     cell_props(i).Cell_gel_diff_total = sum(differences);
     cell_props(i).Cell_gel_diff_percent = 100*(sum(differences)/sum(current_data.gel_image_corr(this_cell)));
+
+    differences = current_data.gel_image(this_cell) - ...
+        prior_data.gel_image(this_cell);    
+    
+    cell_props(i).Cell_gel_diff_no_corr = mean(differences);
+    [~,p] = ttest(differences);
+    cell_props(i).Cell_gel_diff_p_val_no_corr = p;
+    cell_props(i).Cell_gel_diff_median_no_corr = median(differences);
+    cell_props(i).Cell_gel_diff_total_no_corr = sum(differences);
+    cell_props(i).Cell_gel_diff_percent_no_corr = 100*(sum(differences)/sum(current_data.gel_image(this_cell)));
     
     %single cell diagnostics
     if (i_p.Results.debug)
@@ -270,4 +292,3 @@ for i=1:max(prior_data.labeled_cells(:))
         prior_props(i).Pix_sim(this_overlap_num) = overlap_area/this_cell_area;
     end
 end
-
