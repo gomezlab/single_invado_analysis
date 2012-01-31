@@ -35,7 +35,8 @@ tracking_mat = csvread(fullfile(base_dir, image_dirs(1).name,filenames.tracking)
 load(fullfile(base_dir, image_dirs(1).name,filenames.cell_props));
 
 data_to_gather = {'Cell_gel_diff','Cell_gel_diff_median','Cell_gel_diff_p_val','Area' ... 
-    'Cell_gel_diff_total','MeanIntensity','Cell_gel_diff_percent'};
+    'Cell_gel_diff_total','Cell_gel_diff_percent','MeanIntensity','Cell_gel_diff_percent', ...
+    'Cell_gel_diff_no_corr','Cell_gel_diff_percent_no_corr'};
 
 for i = 1:length(data_to_gather)
     output_dir = fullfile(base_dir, image_dirs(1).name,filenames.lineage_dir);
