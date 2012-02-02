@@ -8,7 +8,7 @@ debug=TRUE;
 
 degrade_files = list();
 
-base_dir = '../../../results/Invado_count_20000/'
+base_dir = '../../../results/Invado_count/'
 degrade_files$control = Sys.glob(file.path(base_dir,'*/*ntrol/overall*/degrade*'))
 degrade_files$BB94 = Sys.glob(file.path(base_dir,'*/BB94/overall*/degrade*'))
 degrade_files$DMSO = Sys.glob(file.path(base_dir,'*/DMSO/overall*/degrade*'))
