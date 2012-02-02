@@ -5,20 +5,28 @@
 
 library(Hmisc);
 
-get_non_nan_data <- function(files) {
-    data = c();
+get_non_nan_data <- function(files,min.lifetime=0) {
+    data = list();
     
     for (this_file in files) {
-        temp = read.csv(this_file,header=F)
-        temp = temp[!is.na(temp)];
-        data = c(data,temp);
-
-        if (any(temp < -500)) {
-            print(this_file)
+        temp = read.csv(this_file,header=F);
+        values = apply(temp,1,na.omit)
+        if (length(values) == 0) {
+            next;
         }
+        for (cell_num in 1:length(values)) {
+            simple_values = unlist(values[cell_num]);
+            if (length(simple_values) < min.lifetime) {
+                next;
+            }
+            data$values = c(data$values,simple_values)
+            data$file = c(data$file, rep(this_file,length(simple_values)));
+            data$cell_num = c(data$cell_num, rep(cell_num,length(simple_values)));
+        }
+        # print(paste('Done reading', this_file))
     }
     
-    return(data)
+    return(as.data.frame(data))
 }
 
 colMedians <- function(this_mat,na.rm=T) {
