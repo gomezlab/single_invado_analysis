@@ -32,6 +32,7 @@ data_series_folder = fullfile(field_dir,'cell_props','lin_time_series');
 files.p_vals = fullfile(data_series_folder,'Cell_gel_diff_p_val.csv');
 files.cell_diffs = fullfile(data_series_folder,'Cell_gel_diff.csv');
 files.cell_diff_medians = fullfile(data_series_folder,'Cell_gel_diff_median.csv');
+files.cell_diff_percents = fullfile(data_series_folder,'Cell_gel_diff_percent.csv');
 files.tracking = fullfile(field_dir,'tracking_matrices','tracking_seq.csv');
 
 these_types = fieldnames(files);
@@ -63,7 +64,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process and Output 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-processed_data = process_raw_data(raw_data,i_p.Results.median_filter);
+processed_data = process_raw_data(raw_data,0);
 
 output_dir = fullfile(field_dir,'cell_props');
 
@@ -74,7 +75,7 @@ csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
 %% Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function process_data = process_raw_data(raw_data,median_filt,varargin)
+function process_data = process_raw_data(raw_data,max_percent,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -83,10 +84,10 @@ function process_data = process_raw_data(raw_data,median_filt,varargin)
 i_p = inputParser;
 
 i_p.addRequired('raw_data',@isstruct);
-i_p.addRequired('median_filt',@isnumeric);
+i_p.addRequired('max_percent',@isnumeric);
 i_p.addParamValue('filter_set',NaN,@islogical);
 
-i_p.parse(raw_data,median_filt,varargin{:});
+i_p.parse(raw_data,max_percent,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -104,11 +105,15 @@ bonferroni_correction = sum(sum(not(isnan(raw_data.p_vals))));
 
 process_data = struct();
 
-process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05/bonferroni_correction ...
-    & not(isnan(raw_data.cell_diff_medians)) & raw_data.cell_diff_medians < median_filt;
+process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.85;
+% process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < 0 ...
+%     & not(isnan(raw_data.cell_diff_median)) & raw_data.cell_diff_median < 0 ...
+%     & not(isnan(raw_data.cell_diff_mean)) & raw_data.cell_diff_mean < 0;
 
 disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
-disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
+% disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
 
 process_data.live_cells = raw_data.tracking > -1;
 process_data.longevities = sum(process_data.live_cells,2)/2;
