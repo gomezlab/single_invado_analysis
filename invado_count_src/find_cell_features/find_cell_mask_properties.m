@@ -51,6 +51,12 @@ for i_num = 1:size(image_dirs,1)
     current_dir = fullfile(base_dir,image_dirs(i_num).name);
     current_data = read_in_file_set(current_dir,filenames);
     
+    current_junk_thresh = mean(current_data.gel_image(:)) + 4*std(double(current_data.gel_image(:)));
+    prior_junk_thresh = mean(current_data.gel_image(:)) + 4*std(double(current_data.gel_image(:)));
+    
+    current_data.gel_junk = current_data.gel_image > current_junk_thresh;
+    prior_data.gel_junk = prior_data.gel_image > prior_junk_thresh;
+    
     cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);
         
     data_points = data_points + length(cell_props);
@@ -73,6 +79,7 @@ for i_num = 1:size(image_dirs,1)
     temp = double(current_data.cell_mask);
     temp(prior_data.cell_mask) = 2;
     temp(prior_data.cell_mask & current_data.cell_mask) = 3;
+    temp(current_data.gel_junk | prior_data.gel_junk) = 4;
     imwrite(label2rgb(temp),fullfile(current_dir,'cell_overlaps.png'));
     
     %make an image showing where the cells are located overlayed on the gel
@@ -173,11 +180,12 @@ for i=1:max(current_data.labeled_cells(:))
     
     prev_cells = prior_data.cell_mask;
     
-    overlap_region = this_cell & prev_cells;
+    overlap_region = this_cell & prev_cells & not(current_data.gel_junk) & ...
+        not(prior_data.gel_junk);
     cell_props(i).Overlap_area = sum(overlap_region(:));
     
-    differences = current_data.gel_image_corr(this_cell) - ...
-        prior_data.gel_image_corr(this_cell);
+    differences = current_data.gel_image_corr(overlap_region) - ...
+        prior_data.gel_image_corr(overlap_region);
     
     cell_props(i).Cell_gel_diff = mean(differences);
     [~,p] = ttest(differences);
@@ -186,8 +194,8 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_total = sum(differences);
     cell_props(i).Cell_gel_diff_percent = 100*(sum(differences)/sum(current_data.gel_image_corr(this_cell)));
 
-    differences = current_data.gel_image(this_cell) - ...
-        prior_data.gel_image(this_cell);    
+    differences = current_data.gel_image(overlap_region) - ...
+        prior_data.gel_image(overlap_region);    
     
     cell_props(i).Cell_gel_diff_no_corr = mean(differences);
     [~,p] = ttest(differences);
