@@ -9,7 +9,7 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('min_cell_area',1500,@isnumeric);
-i_p.addParamValue('max_cell_area',Inf,@isnumeric);
+i_p.addParamValue('max_cell_area',20000,@isnumeric);
 i_p.addParamValue('min_cell_intensity',60,@isnumeric);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
