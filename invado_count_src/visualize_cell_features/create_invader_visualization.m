@@ -33,7 +33,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 data_sets_to_read = {'Cell_gel_diff','Cell_gel_diff_median','Cell_gel_diff_p_val','Area' ...
-    'Cell_gel_diff_total','Centroid_x','Centroid_y'};
+    'Cell_gel_diff_total','Cell_gel_diff_percent','Centroid_x','Centroid_y'};
 raw_data = struct();
 
 for i = 1:length(data_sets_to_read)
@@ -54,9 +54,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i_num = 1:size(image_dirs,1)
     output_file = fullfile(base_dir,image_dirs(i_num).name, filenames.invader_vis);
-    if (not(i_p.Results.debug) && exist(output_file,'file'))
-        continue;
-    end
     
     current_dir = fullfile(base_dir,image_dirs(i_num).name);
     current_data = read_in_file_set(current_dir,filenames);
@@ -116,15 +113,16 @@ for i_num = 1:size(image_dirs,1)
         
         gel_diff = filtered_data.Cell_gel_diff;
         area = filtered_data.Area;
-        gel_diff_total = filtered_data.Cell_gel_diff_total;
+        gel_diff_percent = filtered_data.Cell_gel_diff_percent;
         gel_diff_median = filtered_data.Cell_gel_diff_median;
         
         all_annotate = '';
         for cell_num = 1:length(gel_diff)
             pos_str = [' +',num2str(centroid(cell_num,1)),'+',num2str(centroid(cell_num,2))];
-            label_str = [' "',sprintf('%.0f',area(cell_num)), '\n', ...
+            label_str = [' "', sprintf('%d',find(tracking_col == cell_num)), '/', ...
+                sprintf('%.0f',area(cell_num)),'\n', ...
+                sprintf('%.2f',gel_diff_percent(cell_num)), '% \n', ...
                 sprintf('%.2f',gel_diff(cell_num)), '\n', ...
-                sprintf('%.0f',gel_diff_total(cell_num)), '\n', ...
                 sprintf('%.2f',gel_diff_median(cell_num)),'" '];
             all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
         end
