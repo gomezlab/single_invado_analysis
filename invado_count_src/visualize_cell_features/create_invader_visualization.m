@@ -126,7 +126,7 @@ for i_num = 1:size(image_dirs,1)
                 sprintf('%.2f',gel_diff_median(cell_num)),'" '];
             all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
         end
-        command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(128,128,128,0.75)''', ...
+        command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(11,0,85,0.5)''', ...
             all_annotate, ' ', output_file, ';'];
         
         system(command_str);
