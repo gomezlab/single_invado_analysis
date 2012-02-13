@@ -131,6 +131,9 @@ end
 cell_props = rmfield(cell_props,'PixelValues');
 
 if (isempty(cell_props))
+    cell_props(1).Cell_gel_before = [];
+    cell_props(1).Cell_gel_after = [];
+    
     cell_props(1).Cell_gel_diff = [];
     cell_props(1).Cell_gel_diff_p_val = [];
     cell_props(1).Cell_gel_diff_median = [];
@@ -143,6 +146,9 @@ if (isempty(cell_props))
     cell_props(1).Cell_gel_diff_total_no_corr = [];
     cell_props(1).Cell_gel_diff_percent_no_corr = [];
 else
+    [cell_props.Cell_gel_before] = deal(NaN);
+    [cell_props.Cell_gel_after] = deal(NaN);
+    
     [cell_props.Cell_gel_diff] = deal(NaN);
     [cell_props.Cell_gel_diff_p_val] = deal(NaN);
     [cell_props.Cell_gel_diff_median] = deal(NaN);
@@ -187,12 +193,15 @@ for i=1:max(current_data.labeled_cells(:))
     differences = current_data.gel_image_corr(overlap_region) - ...
         prior_data.gel_image_corr(overlap_region);
     
+    cell_props(i).Cell_gel_before = mean(prior_data.gel_image_corr(overlap_region));
+    cell_props(i).Cell_gel_after = mean(current_data.gel_image_corr(overlap_region));
+    
     cell_props(i).Cell_gel_diff = mean(differences);
     [~,p] = ttest(differences);
     cell_props(i).Cell_gel_diff_p_val = p;
     cell_props(i).Cell_gel_diff_median = median(differences);
     cell_props(i).Cell_gel_diff_total = sum(differences);
-    cell_props(i).Cell_gel_diff_percent = 100*(sum(differences)/sum(current_data.gel_image_corr(this_cell)));
+    cell_props(i).Cell_gel_diff_percent = 100*(sum(differences)/sum(current_data.gel_image_corr(overlap_region)));
 
     differences = current_data.gel_image(overlap_region) - ...
         prior_data.gel_image(overlap_region);    
@@ -202,7 +211,7 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_p_val_no_corr = p;
     cell_props(i).Cell_gel_diff_median_no_corr = median(differences);
     cell_props(i).Cell_gel_diff_total_no_corr = sum(differences);
-    cell_props(i).Cell_gel_diff_percent_no_corr = 100*(sum(differences)/sum(current_data.gel_image(this_cell)));
+    cell_props(i).Cell_gel_diff_percent = 100*(sum(differences)/sum(current_data.gel_image(overlap_region)));
     
     %single cell diagnostics
     if (i_p.Results.debug)
