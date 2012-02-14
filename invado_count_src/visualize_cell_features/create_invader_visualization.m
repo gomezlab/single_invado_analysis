@@ -33,7 +33,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 data_sets_to_read = {'Cell_gel_diff','Cell_gel_diff_median','Cell_gel_diff_p_val','Area' ...
-    'Cell_gel_diff_total','Cell_gel_diff_percent','Centroid_x','Centroid_y'};
+    'Cell_gel_diff_total','Cell_gel_diff_percent','Centroid_x','Centroid_y','Overlap_area'};
 raw_data = struct();
 
 for i = 1:length(data_sets_to_read)
@@ -119,17 +119,18 @@ for i_num = 1:size(image_dirs,1)
         all_annotate = '';
         for cell_num = 1:length(gel_diff)
             pos_str = [' +',num2str(centroid(cell_num,1)),'+',num2str(centroid(cell_num,2))];
-            label_str = [' "', sprintf('%d',find(tracking_col == cell_num)), '/', ...
-                sprintf('%.0f',area(cell_num)),'\n', ...
+            top_line = sprintf('%d/%d/%d',find(tracking_col == cell_num), ... 
+                area(cell_num),filtered_data.Overlap_area(cell_num));
+            label_str = [' "', top_line,' \n', ...
                 sprintf('%.2f',gel_diff_percent(cell_num)), '% \n', ...
-                sprintf('%.2f',gel_diff(cell_num)), '\n', ...
-                sprintf('%.2f',gel_diff_median(cell_num)),'" '];
+                sprintf('%.2f',gel_diff(cell_num)),'"'];
             all_annotate = [all_annotate, ' -annotate ', pos_str, label_str]; %#ok<AGROW>
         end
         command_str = ['convert ', output_file, ' -font VeraBd.ttf -pointsize 16 -fill ''rgba(11,0,85,0.5)''', ...
             all_annotate, ' ', output_file, ';'];
         
         system(command_str);
+        1;
     end
 end
 
