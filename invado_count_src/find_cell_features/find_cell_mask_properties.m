@@ -131,6 +131,9 @@ end
 cell_props = rmfield(cell_props,'PixelValues');
 
 if (isempty(cell_props))
+    cell_props(1).Overlap_area = [];
+    cell_props(1).Overlap_percent = [];
+    
     cell_props(1).Cell_gel_before = [];
     cell_props(1).Cell_gel_after = [];
     
@@ -146,6 +149,9 @@ if (isempty(cell_props))
     cell_props(1).Cell_gel_diff_total_no_corr = [];
     cell_props(1).Cell_gel_diff_percent_no_corr = [];
 else
+    [cell_props.Overlap_area] = deal(NaN);
+    [cell_props.Overlap_percent] = deal(NaN);
+    
     [cell_props.Cell_gel_before] = deal(NaN);
     [cell_props.Cell_gel_after] = deal(NaN);
     
@@ -189,6 +195,13 @@ for i=1:max(current_data.labeled_cells(:))
     overlap_region = this_cell & prev_cells & not(current_data.gel_junk) & ...
         not(prior_data.gel_junk);
     cell_props(i).Overlap_area = sum(overlap_region(:));
+    
+    cell_props(i).Overlap_percent = cell_props(i).Overlap_area/cell_props(i).Area;
+    %If the percentage of valid overlap pixels falls below 40%, we want to
+    %leave all the other properties as defaults, so...
+    if (cell_props(i).Overlap_percent < 0.4)
+        continue;
+    end
     
     differences = current_data.gel_image_corr(overlap_region) - ...
         prior_data.gel_image_corr(overlap_region);
