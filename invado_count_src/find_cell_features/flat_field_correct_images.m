@@ -70,5 +70,7 @@ for j=1:length(fields)
         
         imwrite(uint16(gel_image),fullfile(base_dir,image_dirs(i).name,filenames.gel),'bitdepth',16);        
     end
+    
+    disp(['Done with ', fields(j).name]);
 end
 toc;
