@@ -69,6 +69,13 @@ processed_data = process_raw_data(raw_data,0);
 output_dir = fullfile(field_dir,'cell_props');
 
 csvwrite(fullfile(output_dir,'active_degrade.csv'),processed_data.active_degrade);
+csvwrite(fullfile(output_dir,'active_degrade_10.csv'),processed_data.active_degrade_10);
+csvwrite(fullfile(output_dir,'active_degrade_20.csv'),processed_data.active_degrade_20);
+csvwrite(fullfile(output_dir,'active_degrade_30.csv'),processed_data.active_degrade_30);
+csvwrite(fullfile(output_dir,'active_degrade_40.csv'),processed_data.active_degrade_40);
+csvwrite(fullfile(output_dir,'active_degrade_50.csv'),processed_data.active_degrade_50);
+csvwrite(fullfile(output_dir,'active_degrade_60.csv'),processed_data.active_degrade_60);
+csvwrite(fullfile(output_dir,'active_degrade_70.csv'),processed_data.active_degrade_70);
 csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,7 +113,22 @@ bonferroni_correction = sum(sum(not(isnan(raw_data.p_vals))));
 process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.85;
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.2;
+process_data.active_degrade_10 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.1;
+process_data.active_degrade_20 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.2;
+process_data.active_degrade_30 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.3;
+process_data.active_degrade_40 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.4;
+process_data.active_degrade_50 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.5;
+process_data.active_degrade_60 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.6;
+process_data.active_degrade_70 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.7;
+
 % process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
 %     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < 0 ...
 %     & not(isnan(raw_data.cell_diff_median)) & raw_data.cell_diff_median < 0 ...
