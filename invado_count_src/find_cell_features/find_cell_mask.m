@@ -35,15 +35,13 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-puncta_min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
-
 for i_num = 1:size(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reading in current image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
-    normalized_image = (puncta_image - puncta_min_max(2,1))/range(puncta_min_max(2,:));
+    normalized_image = (puncta_image - min(puncta_image(:)))/range(puncta_image(:));
     
     pixel_values = puncta_image(:);
     
