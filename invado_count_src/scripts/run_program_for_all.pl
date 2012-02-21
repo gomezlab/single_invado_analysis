@@ -53,14 +53,33 @@ if (exists($opt{exp_filter})) {
 	}
 } 
 
+my $parallel_return = system("which parallel");
+
+my @command_set;
 foreach (@config_files) {
     next if /config\/default/;
-    if ($opt{debug}) {
-        print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
-    } else {
-        print("$_\n");
-        system("./$program_base -cfg $_ $debug_string $opt{extra}");
-    }
+
+    my $command = "./$program_base -cfg $_ $debug_string $opt{extra}; echo $_";
+    $command =~ s/"/\\"/g;
+    push @command_set, "\"$command;\"";
+	if ($parallel_return != 0) {
+		if ($opt{debug}) {
+			print "$command\n";
+		} else {
+			print("$_\n");
+			system("$command");
+		}
+	}
+}
+
+if ($parallel_return == 0) {
+	my $parallel_cmd = "time parallel -u --nice 20 ::: " . join(" ", @command_set);
+	if ($opt{debug}) {
+		$parallel_cmd = "time parallel -u --nice 20 ::: \n\t" . join("\n\t", @command_set) . "\t\n";
+		print $parallel_cmd;
+	} else {
+		system($parallel_cmd);
+	}
 }
 
 ###############################################################################
