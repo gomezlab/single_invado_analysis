@@ -47,6 +47,7 @@ push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'uncorrected_gel
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'highlighted_mask.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'cell_overlaps.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'invader_vis.png')";
+push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'gel_highlights.png')";
 push @matlab_code, "build_raw_montage_file_set($exp_type_folder,'tracking.png')";
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'montage_vis');
