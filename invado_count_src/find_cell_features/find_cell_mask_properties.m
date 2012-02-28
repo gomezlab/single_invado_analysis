@@ -82,10 +82,12 @@ for i_num = 1:size(image_dirs,1)
     imwrite(label2rgb(temp),fullfile(current_dir,'cell_overlaps.png'));
     
     diagnostic_boundaries = get_obj_perims(temp);
+%     diagnostic_boundaries(current_data.gel_junk | prior_data.gel_junk) = 4;
     
+    diag_cmap = [[0,1,0];[0,0,1];[0,1,1];[1,0,0]];
     %make an image showing where the cells are located overlayed on the gel
     %image
-    gel_range_norm = create_highlighted_image(current_data.gel_image_norm,diagnostic_boundaries);
+    gel_range_norm = create_highlighted_image(current_data.gel_image_norm,diagnostic_boundaries,'color_map',diag_cmap);
     imwrite(gel_range_norm,fullfile(current_dir,'gel_highlights.png'));
     
     if (mod(i_num,10)==0)
