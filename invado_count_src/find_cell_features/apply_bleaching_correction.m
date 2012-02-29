@@ -41,15 +41,19 @@ end
 % Build the no cell region image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-no_cell_regions = [];
+photo_bleach_regions = [];
 
 for i=1:length(single_image_folders)
     cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask));
-	if (size(no_cell_regions,1) == 0), no_cell_regions = ones(size(cell_mask)); end
-    no_cell_regions = no_cell_regions & not(cell_mask);
+    gel = double(imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel)));
+    gel_junk = gel > (mean(gel(:)) + 2*std(gel(:)));
+    
+	if (size(photo_bleach_regions,1) == 0), photo_bleach_regions = ones(size(cell_mask)); end
+    
+    photo_bleach_regions = photo_bleach_regions & not(cell_mask) & not(gel_junk);
 end
 
-imwrite(no_cell_regions, fullfile(output_dir,'no_cell_regions.png'));
+imwrite(photo_bleach_regions, fullfile(output_dir,'photo_bleach_regions.png'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Collect the intensity correction
@@ -63,7 +67,7 @@ for i=1:length(single_image_folders)
     gel = imread(gel_file);
         
     gel_levels(i) = mean(gel(:));
-    gel_levels_outside_cell(i) = mean(gel(no_cell_regions));
+    gel_levels_outside_cell(i) = mean(gel(photo_bleach_regions));
     
 %     gel_file_no_corr = fullfile(image_dir,single_image_folders(i).name,'gel_no_bleaching.png');
 %     copyfile(gel_file,gel_file_no_corr);
