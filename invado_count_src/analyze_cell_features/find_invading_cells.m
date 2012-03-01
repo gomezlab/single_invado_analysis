@@ -64,11 +64,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process and Output 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-processed_data = process_raw_data(raw_data,0);
+processed_data = process_raw_data(raw_data);
 
 output_dir = fullfile(field_dir,'cell_props');
 
 csvwrite(fullfile(output_dir,'active_degrade.csv'),processed_data.active_degrade);
+
 csvwrite(fullfile(output_dir,'active_degrade_10.csv'),processed_data.active_degrade_10);
 csvwrite(fullfile(output_dir,'active_degrade_20.csv'),processed_data.active_degrade_20);
 csvwrite(fullfile(output_dir,'active_degrade_30.csv'),processed_data.active_degrade_30);
@@ -76,13 +77,16 @@ csvwrite(fullfile(output_dir,'active_degrade_40.csv'),processed_data.active_degr
 csvwrite(fullfile(output_dir,'active_degrade_50.csv'),processed_data.active_degrade_50);
 csvwrite(fullfile(output_dir,'active_degrade_60.csv'),processed_data.active_degrade_60);
 csvwrite(fullfile(output_dir,'active_degrade_70.csv'),processed_data.active_degrade_70);
+csvwrite(fullfile(output_dir,'active_degrade_80.csv'),processed_data.active_degrade_80);
+csvwrite(fullfile(output_dir,'active_degrade_90.csv'),processed_data.active_degrade_90);
+
 csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function process_data = process_raw_data(raw_data,max_percent,varargin)
+function process_data = process_raw_data(raw_data,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -91,10 +95,9 @@ function process_data = process_raw_data(raw_data,max_percent,varargin)
 i_p = inputParser;
 
 i_p.addRequired('raw_data',@isstruct);
-i_p.addRequired('max_percent',@isnumeric);
 i_p.addParamValue('filter_set',NaN,@islogical);
 
-i_p.parse(raw_data,max_percent,varargin{:});
+i_p.parse(raw_data,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -108,12 +111,11 @@ if (isempty(strmatch('filter_set',i_p.UsingDefaults)))
     end
 end
 
-bonferroni_correction = sum(sum(not(isnan(raw_data.p_vals))));
-
 process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.2;
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.7;
+
 process_data.active_degrade_10 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.1;
 process_data.active_degrade_20 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
@@ -128,6 +130,10 @@ process_data.active_degrade_60 = not(isnan(raw_data.p_vals)) & raw_data.p_vals <
     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.6;
 process_data.active_degrade_70 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.7;
+process_data.active_degrade_80 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.8;
+process_data.active_degrade_90 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -0.9;
 
 % process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
 %     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < 0 ...
