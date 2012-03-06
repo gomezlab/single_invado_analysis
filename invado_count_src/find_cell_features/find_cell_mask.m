@@ -80,7 +80,7 @@ for i_num = 1:size(image_dirs)
         
         connected_perims(temp) = i;
     end
-    
+        
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Output Image Creation/Writing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
