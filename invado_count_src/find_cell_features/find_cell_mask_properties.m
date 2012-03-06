@@ -222,7 +222,7 @@ for i=1:max(current_data.labeled_cells(:))
     if (gel_intensity_corrected < 0)
         cell_props(i).Cell_gel_diff_percent = 0;
     else
-        cell_props(i).Cell_gel_diff_percent = 100*(cell_props(i).Cell_gel_diff_total/gel_intensity_corrected);
+        cell_props(i).Cell_gel_diff_percent = 100*(cell_props(i).Cell_gel_diff/gel_intensity_corrected);
     end
     
     %single cell diagnostics
