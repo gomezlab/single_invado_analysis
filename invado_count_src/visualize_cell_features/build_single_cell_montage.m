@@ -84,12 +84,12 @@ for track_id = 1:size(tracking_seq,1)
 
         data_sets{i_num} = trim_all_images(data_sets{i_num},row_min_max,col_min_max);
         
-        gel_pix = [gel_pix,data_sets{i_num}.gel_image(:)];
-        puncta_pix = [puncta_pix,data_sets{i_num}.puncta_image(:)];        
+        gel_pix = [gel_pix;data_sets{i_num}.gel_image(:)];
+        puncta_pix = [puncta_pix;data_sets{i_num}.puncta_image(:)];        
     end
     
-    gel_min_max = [min(gel_pix(:)), max(gel_pix(:))];
-    puncta_min_max = [min(puncta_pix(:)), max(puncta_pix(:))];
+    gel_min_max = quantile(gel_pix,[0.01,0.99]);
+    puncta_min_max = quantile(puncta_pix,[0.01,0.99]);
     clear gel_pix puncta_pix;
     
     gel_frames = [];
