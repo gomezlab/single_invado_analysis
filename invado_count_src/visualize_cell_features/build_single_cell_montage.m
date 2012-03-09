@@ -42,16 +42,20 @@ end
 for track_id = 1:size(tracking_seq,1)
     track_row = tracking_seq(track_id,:);
     
+    if (sum(track_row > 0) < 10)
+        continue;
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Determine extent of cell coverage
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    data_sets = [];
     cell_coverage = [];
     for i_num = 1:length(track_row)
-        if (track_row(i_num) <= 0)
-            continue;
-        end
-        current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
-        this_cell = current_data.labeled_cells == track_row(i_num);
+        if (track_row(i_num) <= 0), continue; end
+        
+        data_sets{i_num} = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
+        this_cell = data_sets{i_num}.labeled_cells == track_row(i_num);
         if (size(cell_coverage,1) == 0)
             cell_coverage = this_cell;
         else
@@ -73,41 +77,58 @@ for track_id = 1:size(tracking_seq,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Build visualization frames
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    gel_frames = cell(0);
-    puncta_frames = cell(0);
+    gel_pix = [];
+    puncta_pix = [];
+    for i_num = 1:length(track_row)
+        if (track_row(i_num) <= 0), continue; end
+
+        data_sets{i_num} = trim_all_images(data_sets{i_num},row_min_max,col_min_max);
+        
+        gel_pix = [gel_pix,data_sets{i_num}.gel_image(:)];
+        puncta_pix = [puncta_pix,data_sets{i_num}.puncta_image(:)];        
+    end
+    
+    gel_min_max = [min(gel_pix(:)), max(gel_pix(:))];
+    puncta_min_max = [min(puncta_pix(:)), max(puncta_pix(:))];
+    clear gel_pix puncta_pix;
+    
+    gel_frames = [];
+    puncta_frames = [];
+    
+    %upper corners will hold the x position for image number labeling
     upper_corners = [];
     i_num_sequence = [];
     for i_num = 1:length(track_row)
-        if (track_row(i_num) <= 0)
-            continue;
-        end
+        if (track_row(i_num) <= 0), continue; end
         
         i_num_sequence = [i_num_sequence, i_num];
-        
-        current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
-        current_data = trim_all_images(current_data,row_min_max,col_min_max);        
-        
-        this_cell = current_data.labeled_cells == track_row(i_num);
-        this_cell_perim = current_data.labeled_cells_perim == track_row(i_num);
-        not_this_cell_perim = current_data.labeled_cells_perim ~= track_row(i_num) & ...
-            current_data.labeled_cells_perim > 0;
-        
-        thick_perim = thicken_perimeter(this_cell_perim,this_cell);
-        
-        gel_frame = create_highlighted_image(current_data.gel_image_norm,thick_perim,'color_map',[1,0,0]);
-        gel_frame = create_highlighted_image(gel_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
-        gel_frames{length(gel_frames) + 1} = gel_frame;
-        
-        puncta_frame = create_highlighted_image(current_data.puncta_image_norm,thick_perim,'color_map',[1,0,0]);
-        puncta_frame = create_highlighted_image(puncta_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
-        puncta_frames{length(puncta_frames) + 1} = puncta_frame;
-        
+
         if (size(upper_corners,1) == 0)
             upper_corners = 10;
         else
             upper_corners = [upper_corners, upper_corners(end) + 1 + size(gel_frames{1},2)];
         end
+        
+        data_sets{i_num}.gel_image_norm = (data_sets{i_num}.gel_image - gel_min_max(1))/range(gel_min_max);
+        data_sets{i_num}.puncta_image_norm = (data_sets{i_num}.puncta_image - puncta_min_max(1))/range(puncta_min_max);
+        
+        this_cell = data_sets{i_num}.labeled_cells == track_row(i_num);
+        this_cell_perim = data_sets{i_num}.labeled_cells_perim == track_row(i_num);
+        not_this_cell_perim = data_sets{i_num}.labeled_cells_perim ~= track_row(i_num) & ...
+            data_sets{i_num}.labeled_cells_perim > 0;
+        
+        thick_perim = thicken_perimeter(this_cell_perim,this_cell);
+        
+        gel_frame = create_highlighted_image(data_sets{i_num}.gel_image_norm,thick_perim,'color_map',[1,0,0]);
+        gel_frame = create_highlighted_image(gel_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
+        gel_frames{length(gel_frames) + 1} = gel_frame;
+        
+        puncta_frame = create_highlighted_image(data_sets{i_num}.puncta_image_norm,thick_perim,'color_map',[1,0,0]);
+        puncta_frame = create_highlighted_image(puncta_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
+        puncta_frames{length(puncta_frames) + 1} = puncta_frame;
     end
+    
+    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Create final montage image and output
@@ -170,5 +191,3 @@ for i = 1:size(names)
         1;
     end
 end
-
-
