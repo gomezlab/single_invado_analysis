@@ -217,7 +217,7 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_median = median(differences);
     cell_props(i).Cell_gel_diff_total = sum(differences);
     
-    gel_intensity_corrected = cell_props(i).Cell_gel_after - current_data.gel_range(7,1);
+    gel_intensity_corrected = cell_props(i).Cell_gel_after - current_data.gel_range(1,1);
     
     if (gel_intensity_corrected < 0)
         cell_props(i).Cell_gel_diff_percent = 0;
