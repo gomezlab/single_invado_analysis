@@ -1,5 +1,6 @@
 rm(list = ls())
 source('../../../invado_count_src/analyze_cell_features/invado_analysis_lib.R')
+source('misc_plotting_properties.R')
 debug=TRUE;
 
 ################################################################################
@@ -8,14 +9,14 @@ debug=TRUE;
 
 degrade_files = list();
 
-base_dir = '../../../results/Invado_count/'
-degrade_files$control = Sys.glob(file.path(base_dir,'*/*ntrol/overall*/degrade*'))
-degrade_files$BB94 = Sys.glob(file.path(base_dir,'*/BB94/overall*/degrade*'))
-degrade_files$DMSO = Sys.glob(file.path(base_dir,'*/DMSO/overall*/degrade*'))
-degrade_files$FAK = Sys.glob(file.path(base_dir,'*/FAK/overall*/degrade*'))
-degrade_files$PP2 = Sys.glob(file.path(base_dir,'*/PP2/overall*/degrade*'))
-degrade_files$Noc = Sys.glob(file.path(base_dir,'*/Noc/overall*/degrade*'))
-degrade_files$PurvA = Sys.glob(file.path(base_dir,'*/PurvA/overall*/degrade*'))
+base_dir = '../../../results/Invado_count_old/'
+degrade_files$control = Sys.glob(file.path(base_dir,'*/*ntrol/overall*/degrade_percentage_70.csv'))
+degrade_files$BB94 = Sys.glob(file.path(base_dir,'*/BB94/overall*/degrade_percentage_70.csv'))
+degrade_files$DMSO = Sys.glob(file.path(base_dir,'*/DMSO/overall*/degrade_percentage_70.csv'))
+degrade_files$FAK = Sys.glob(file.path(base_dir,'*/FAK/overall*/degrade_percentage_70.csv'))
+degrade_files$PP2 = Sys.glob(file.path(base_dir,'*/PP2/overall*/degrade_percentage_70.csv'))
+degrade_files$Noc = Sys.glob(file.path(base_dir,'*/Noc/overall*/degrade_percentage_70.csv'))
+degrade_files$PurvA = Sys.glob(file.path(base_dir,'*/PurvA/overall*/degrade_percentage_70.csv'))
 
 degrade_percents = list()
 
@@ -34,14 +35,7 @@ for (exp_type in names(degrade_files)) {
 
 time = seq(1.25,along.with=degrade_percents$control[1,],by=0.5)
 
-colors = list(control = rgb(0,0,0), control_light = rgb(0,0,0,0.5),
-    DMSO = rgb(1,0,0), DMSO_light = rgb(1,0,0,0.5),
-    BB94 = rgb(47/255,143/255,51/255), BB94_light = rgb(24/255,82/255,27/255,0.5),
-    PP2 = rgb(77/255,0/255,104/255), PP2_light = rgb(77/255,0/255,104/255,0.5),
-    Noc = rgb(255/255,128/255,0/255), Noc_light = rgb(255/255,128/255,0/255,0.5),
-    PurvA = rgb(0/255,255/255,241/255), PurvA_light = rgb(0/255,255/255,241/255,0.5),
-    FAK = rgb(14/255,19/255,149/255), FAK_light = rgb(14/255,19/255,149/255,0.5)
-    )
+colors = get_exp_colors()
 
 ################################################################################
 # Plotting
@@ -118,12 +112,12 @@ graphics.off()
 
 source('../../../invado_count_src/analyze_cell_features/invado_analysis_lib.R')
 
-svg(file.path('degrade_curves.svg'),width=3.5,height=3.5);
+svg(file.path('degrade_curves.svg'),width=3,height=3);
 par(bty='n',mar=c(2.7,2.5,0.3,0), mgp=c(1.6,0.5,0),xpd=t)
 plot_multiple_exp_mat(time,degrade_percents,degrade_conf,
-    cols=colors,exp_names=c("control","BB94","DMSO"),
-    ylim=c(0,100),ylab='Fraction of Cells with Invadopodia',
+    cols=colors,exp_names=c("BB94","DMSO"),
+    ylim=c(0,55),ylab='Fraction of Cells with Invadopodia',
     xlim=c(0,max(time)),xlab='Time since Plating (hrs)')
-legend('bottomright',c('Control','DMSO','BB94'),
-    fill=c(colors$control,colors$DMSO,colors$BB94),bty='n')
+legend('topleft',c('DMSO','BB94'),
+    fill=c(colors$DMSO,colors$BB94),bty='n')
 graphics.off()
