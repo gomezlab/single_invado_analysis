@@ -72,11 +72,6 @@ for i=1:length(single_image_folders)
 %     gel_file_no_corr = fullfile(image_dir,single_image_folders(i).name,'gel_no_bleaching.png');
 %     copyfile(gel_file,gel_file_no_corr);
     
-    %don't correct images which go up in intensity
-    if (gel_levels_outside_cell(i) > gel_levels_outside_cell(1))
-        continue;
-    end
-
     gel_corr = uint16(double(gel).*double(gel_levels_outside_cell(1)/gel_levels_outside_cell(i)));
     imwrite(gel_corr,gel_file,'BitDepth',16);    
 end
