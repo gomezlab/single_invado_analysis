@@ -9,24 +9,76 @@ get_non_nan_data <- function(files,min.lifetime=0) {
     data = list();
     
     for (this_file in files) {
-        temp = read.csv(this_file,header=F);
-        values = apply(temp,1,na.omit)
-        if (length(values) == 0) {
-            next;
-        }
-        for (cell_num in 1:length(values)) {
-            simple_values = unlist(values[cell_num]);
+        values = as.matrix(read.csv(this_file,header=F));        
+        
+        for (cell_num in 1:dim(values)[1]) {
+            i_nums = which(!is.na(values[cell_num,]));
+            simple_values = na.omit(values[cell_num,]);
             if (length(simple_values) < min.lifetime) {
                 next;
             }
             data$values = c(data$values,simple_values)
             data$file = c(data$file, rep(this_file,length(simple_values)));
             data$cell_num = c(data$cell_num, rep(cell_num,length(simple_values)));
+            data$i_nums = c(data$i_nums, i_nums);
         }
         # print(paste('Done reading', this_file))
     }
     
     return(as.data.frame(data))
+}
+
+get_row_cumprods <- function(files,min.lifetime=0) {
+    data = list();
+
+    for (this_file in files) {
+        values = as.matrix(read.csv(this_file,header=F));
+        values_no_zero = values;
+        values_no_zero[is.na(values)] = 0;
+        # print(values_no_zero/100 + 1)
+        for (cell_num in 1:dim(values)[1]) {
+            total_data_points = sum(! is.na(values[cell_num,]))
+            if (total_data_points < min.lifetime) {
+                next;
+            }
+            # print(values_no_zero[cell_num,]/100 + 1);
+            this_cumprod = cumprod(values_no_zero[cell_num,]/100+1);
+            
+            data$values = rbind(data$values,this_cumprod);
+            data$file = c(data$file, this_file);
+            data$cell_num = c(data$cell_num, cell_num);
+            data$min_val = c(data$min_val, min(this_cumprod))
+        }
+    }
+    
+    return(data)
+}
+
+process_gel_diff_percents <- function(files,min.lifetime=0) {
+
+    results = list()
+
+    for (this_file in files) {
+        percent_change = as.matrix(read.csv(this_file,header=F))
+        for (cell_num in 1:dim(percent_change)[1]) {
+            this_cell = percent_change[cell_num,]
+            this_cell_na_omit = na.omit(this_cell)
+            if (length(this_cell_na_omit) < min.lifetime) {
+                next;
+            }
+            
+            this_cumprod = 1-cumprod(this_cell_na_omit/100+1);
+            
+            results$file = c(results$file, this_file)
+            results$cell_num = c(results$cell_num, cell_num)
+            results$start_time = c(results$start_time, which(!is.na(this_cell))[1])
+            results$max_degrade = c(results$max_degrade,max(this_cumprod));
+            
+            results$degrade_seq[[length(results$degrade_seq) + 1]] = this_cumprod;
+        }
+    }
+
+    return(results)
 }
 
 colMedians <- function(this_mat,na.rm=T) {
@@ -43,7 +95,7 @@ colConfUpper <- function(this_mat) {
         if (all(is.na(this_mat[,i]))) {
             upper = c(upper,NA);
         } else {
-            temp = t.test(this_mat[,i],conf.level=0.95)
+            temp = t.test(this_mat[,i],conf.level=0.9)
             if (is.nan(temp$conf.int[2])) {
                 upper = c(upper,0)
             } else {
@@ -60,7 +112,7 @@ colConfLower <- function(this_mat) {
         if (all(is.na(this_mat[,i]))) {
             lower = c(lower,NA);
         } else {
-            temp = t.test(this_mat[,i],conf.level=0.95)
+            temp = t.test(this_mat[,i],conf.level=0.9)
             if (is.nan(temp$conf.int[1])) {
                 lower = c(lower,0)
             } else {
@@ -71,12 +123,23 @@ colConfLower <- function(this_mat) {
     return(lower)
 }
 
+colSD <- function(this_mat) {
+    st_devs = c()
+    for (i in 1:dim(this_mat)[2]) {
+        if (all(is.na(this_mat[,i]))) {
+            st_devs = c(st_devs,NA);
+        } else {
+            st_devs = c(st_devs,sd(this_mat[,i],na.rm=T))
+        }
+    }
+    return(st_devs)
+}
+
 ################################################################################
 # Plotting
 ################################################################################
 
 plot_single_exp_mat <- function(time,exp_mat,upper_conf=NA,lower_conf=NA,col=NA,...) {
-    
     if (! is.na(col)) {
         col_light = rgb(t(col2rgb(col))/255,alpha=0.5);
     } else {
@@ -99,7 +162,6 @@ plot_single_exp_mat <- function(time,exp_mat,upper_conf=NA,lower_conf=NA,col=NA,
 }
 
 plot_multiple_exp_mat <- function(time,exps,exp_confs,cols=NA,exp_names=NA,...) {
-    
     #colors
     if (is.na(cols[1])) {
         cols = rainbow(length(names(exps)));
