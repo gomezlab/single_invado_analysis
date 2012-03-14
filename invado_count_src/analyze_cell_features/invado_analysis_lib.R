@@ -76,8 +76,8 @@ process_gel_diff_percents <- function(files,min.lifetime=0) {
             results$max_degrade = c(results$max_degrade,max(this_cumprod));
             results$min_degrade = c(results$min_degrade,min(this_cumprod));
                         
-            results$degrade_seq[[length(results$degrade_seq) + 1]] = this_cumprod;
-            results$degrade_seq_pad[[length(results$degrade_seq_pad) + 1]] = this_cumprod_pad;
+            results$seq$degrade_seq[[length(results$seq$degrade_seq) + 1]] = this_cumprod;
+            results$seq$degrade_seq_pad[[length(results$seq$degrade_seq_pad) + 1]] = this_cumprod_pad;
         }
     }
 
