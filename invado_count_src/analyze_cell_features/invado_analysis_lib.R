@@ -68,13 +68,16 @@ process_gel_diff_percents <- function(files,min.lifetime=0) {
             }
             
             this_cumprod = 1-cumprod(this_cell_na_omit/100+1);
+            this_cumprod_pad = c(this_cumprod, rep(NA, 51 - length(this_cumprod)));
             
             results$file = c(results$file, this_file)
             results$cell_num = c(results$cell_num, cell_num)
             results$start_time = c(results$start_time, which(!is.na(this_cell))[1])
             results$max_degrade = c(results$max_degrade,max(this_cumprod));
-            
+            results$min_degrade = c(results$min_degrade,min(this_cumprod));
+                        
             results$degrade_seq[[length(results$degrade_seq) + 1]] = this_cumprod;
+            results$degrade_seq_pad[[length(results$degrade_seq_pad) + 1]] = this_cumprod_pad;
         }
     }
 
@@ -95,7 +98,7 @@ colConfUpper <- function(this_mat) {
         if (all(is.na(this_mat[,i]))) {
             upper = c(upper,NA);
         } else {
-            temp = t.test(this_mat[,i],conf.level=0.9)
+            temp = t.test(this_mat[,i],conf.level=0.95)
             if (is.nan(temp$conf.int[2])) {
                 upper = c(upper,0)
             } else {
@@ -112,7 +115,7 @@ colConfLower <- function(this_mat) {
         if (all(is.na(this_mat[,i]))) {
             lower = c(lower,NA);
         } else {
-            temp = t.test(this_mat[,i],conf.level=0.9)
+            temp = t.test(this_mat[,i],conf.level=0.95)
             if (is.nan(temp$conf.int[1])) {
                 lower = c(lower,0)
             } else {
