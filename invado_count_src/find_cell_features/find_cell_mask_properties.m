@@ -9,6 +9,7 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('gelatin_min_value',382,@(x)isnumeric(x) && x > 0)
 
 i_p.parse(exp_dir,varargin{:});
 
@@ -131,6 +132,7 @@ i_p = inputParser;
 i_p.addRequired('current_data',@isstruct);
 i_p.addRequired('prior_data',@isstruct);
 
+i_p.addParamValue('gelatin_min_value',382,@(x)isnumeric(x) && x > 0)
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(current_data,prior_data,varargin{:});
@@ -217,7 +219,7 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_median = median(differences);
     cell_props(i).Cell_gel_diff_total = sum(differences);
     
-    gel_intensity_corrected = cell_props(i).Cell_gel_after - current_data.gel_range(1,1);
+    gel_intensity_corrected = cell_props(i).Cell_gel_after - i_p.Results.gelatin_min_value;
     
     if (gel_intensity_corrected < 0)
         cell_props(i).Cell_gel_diff_percent = 0;
