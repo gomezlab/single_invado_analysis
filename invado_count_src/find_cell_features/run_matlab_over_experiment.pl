@@ -48,6 +48,7 @@ $opt{abs_script_dir} = File::Spec->rel2abs($opt{script_dir});
 ################################################################################
 # Main Program
 ################################################################################
+
 my @matlab_code = ("$opt{script}('" . dirname($cfg{exp_results_folder}) . "')\n");
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, $opt{script});
@@ -55,6 +56,9 @@ $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 $opt{runtime} = "1";
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
+}
+if ($opt{script} =~ /find_median_images/) {
+	$opt{M} = 16;
 }
 
 &FA_job::run_matlab_progam(\@matlab_code,\%opt);
