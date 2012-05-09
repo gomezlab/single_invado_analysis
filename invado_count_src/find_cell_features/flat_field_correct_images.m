@@ -45,8 +45,8 @@ for j=1:length(fields)
         puncta_image = puncta_image - puncta_flat_field;
         puncta_image(puncta_image < 0) = 0;
         
-        movefile(fullfile(base_dir,image_dirs(i).name,filenames.puncta), ...
-            fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.puncta]));
+%         movefile(fullfile(base_dir,image_dirs(i).name,filenames.puncta), ...
+%             fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.puncta]));
         
         imwrite(uint16(puncta_image),fullfile(base_dir,image_dirs(i).name,filenames.puncta),'bitdepth',16);
     end
@@ -65,8 +65,8 @@ for j=1:length(fields)
         gel_image = gel_image - gel_flat_field;
         gel_image(gel_image < 0) = 0;
         
-        movefile(fullfile(base_dir,image_dirs(i).name,filenames.gel), ...
-            fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.gel]));
+%         movefile(fullfile(base_dir,image_dirs(i).name,filenames.gel), ...
+%             fullfile(base_dir,image_dirs(i).name,['uncorrected_', filenames.gel]));
         
         imwrite(uint16(gel_image),fullfile(base_dir,image_dirs(i).name,filenames.gel),'bitdepth',16);        
     end
