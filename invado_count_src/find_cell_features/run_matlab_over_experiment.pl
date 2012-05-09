@@ -57,7 +57,8 @@ $opt{runtime} = "1";
 if (defined $cfg{job_group}) {
     $opt{job_group} = $cfg{job_group};
 }
-if ($opt{script} =~ /find_median_images/) {
+if ($opt{script} =~ /find_median_images/ ||
+	$opt{script} =~ /find_exp_min_max/) {
 	$opt{M} = 16;
 }
 
