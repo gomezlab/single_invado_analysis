@@ -54,6 +54,7 @@ my @overall_command_seq = (
 	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script flat_field_correct_images" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script apply_bleaching_correction" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
@@ -110,8 +111,8 @@ for (@overall_command_seq) {
 
 	#If debugging is not on, we want to wait till the current jobs finish
 	#and then check the file complements of the experiments for completeness
-	&wait_till_LSF_jobs_finish if ($opt{lsf} && not($opt{debug}));
-	if (not($opt{debug}) && not(grep $command_seq[0][1] =~ /$_/, @skip_check)) {
+	my $LSF_was_run = &wait_till_LSF_jobs_finish if ($opt{lsf} && not($opt{debug}));
+	if (not($opt{debug}) && $LSF_was_run && not(grep $command_seq[0][1] =~ /$_/, @skip_check)) {
 		print "Checking for all output files on command $command_seq[0][1]\n";
 		my %exp_sets = &check_file_sets(\@config_files);
 
@@ -228,14 +229,22 @@ sub wait_till_LSF_jobs_finish {
     #After each step of the pipeline, we want to wait till all the individual
     #jobs are completed, which will be checked three times
 	my $total_checks = 3;
-    for (1 .. $total_checks) {
-        print "LSF finished check number $_/$total_checks\n";
-        my $sleep_time = 10;
-        do {
-            sleep($sleep_time);
-        } while (&running_LSF_jobs);
-    }
-    print "\n";
+	my $first_check = &running_LSF_jobs;
+	
+	if (! $first_check) {
+		print "No LSF jobs detected, jumping to next command.\n";
+		return 0;
+	} else {
+		for (1 .. $total_checks) {
+			print "LSF finished check number $_/$total_checks\n";
+			my $sleep_time = 10;
+			do {
+				sleep($sleep_time);
+			} while (&running_LSF_jobs);
+		}
+	}
+	print "\n";
+	return 1;
 }
 
 sub running_LSF_jobs {
@@ -246,63 +255,10 @@ sub running_LSF_jobs {
 
     my @lines = `$bjobs_command`;
     
-    #find and add the job ids onto the running job list
-    my @job_ids;
-    for (@lines) {
-        if (/^(\d+) /) {
-            push @job_ids,$1;
-        }
-    }
-    @job_ids = sort @job_ids;
-    
-    push @running_jobs, \@job_ids;
-    &kill_long_running_jobs();
-
     if (scalar(@lines) <= 1) {
         return 0;
     } else {
         return 1;
-    }
-}
-
-sub kill_long_running_jobs {
-	#we only need to worry about killing jobs that have run for at least 6
-	#hours, we check for running jobs every 10 seconds, so...
-    if (scalar(@running_jobs) > (6*60*10)) {
-        my @long_running_jobs = @{$running_jobs[$#running_jobs]};
-        my @last_hour = @running_jobs[($#running_jobs - 59) .. $#running_jobs];
-        foreach my $jobs_ref (@last_hour) {
-            #check to make sure the length of the jobs ref is the same as the
-            #long running jobs set, if it isn't, break out of the function
-            if (scalar(@$jobs_ref) != scalar(@long_running_jobs)) {
-                return 0;
-            }
-            
-            #scan through this entry in the jobs list, if an entry is present
-            #the current list of jobs, but not in the long_running_jobs list,
-            #break away from the function
-            for my $this_job (@$jobs_ref) {
-                if (not grep $this_job == $_, @long_running_jobs) {
-                    return 0;
-                }
-            }
-        }
-
-        #if we made is this far in the function, the entries in
-        #long_running_jobs should have each been running for at least an hour
-        #beyond the last other jobs in the queue, so we kill them
-
-        for (@long_running_jobs) {
-            print "Killing job $_\n";
-            system("bkill $_");
-        }
-    }
-}
-
-sub move_job_to_week_queue {
-    my $line = pop @_;
-    if ($line =~ /^(\d+)/) {
-       system("bmod -q week $1 > /dev/null 2>/dev/null");
     }
 }
 
