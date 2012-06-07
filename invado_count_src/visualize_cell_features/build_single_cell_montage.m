@@ -32,7 +32,7 @@ filenames = add_filenames_to_struct(struct());
 try
     tracking_seq = csvread(fullfile(base_dir,image_dirs(1).name,filenames.tracking)) + 1;
 catch %#ok<CTCH>
-    disp('Empty tracking sequence, quiting.')
+    disp('Empty or missing tracking sequence, quiting.')
     return;
 end
 if (isempty(tracking_seq))
