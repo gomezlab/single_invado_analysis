@@ -62,7 +62,7 @@ pixel_vals = sort(pixel_vals);
 one_percent_data = round(size(pixel_vals,1)*0.01);
 
 ranges = [pixel_vals(1),pixel_vals(end)];
-for i=[0.1,1:5]
+for i=[0.5,1:5]
     ranges = cat(1,ranges, ...
         [pixel_vals(round(one_percent_data*i)), ...
          pixel_vals(end-round(one_percent_data*i))]);
