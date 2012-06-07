@@ -31,7 +31,15 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-tracking_mat = csvread(fullfile(base_dir, image_dirs(1).name,filenames.tracking))+1;
+tracking_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
+%check for the existance of a tracking file, if absent, there weren't any
+%cells in this field, return from the function
+if (not(exist(tracking_file,'file')))
+    return;
+else
+    tracking_mat = csvread(tracking_file)+1;
+end
+
 load(fullfile(base_dir, image_dirs(1).name,filenames.cell_props));
 
 data_to_gather = {'Cell_gel_diff','Cell_gel_diff_median','Cell_gel_diff_p_val','Area' ... 
