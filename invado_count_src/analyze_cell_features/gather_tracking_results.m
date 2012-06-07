@@ -35,6 +35,7 @@ tracking_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
 %check for the existance of a tracking file, if absent, there weren't any
 %cells in this field, return from the function
 if (not(exist(tracking_file,'file')))
+    disp('No tracking matrix found, assuming no cells in field');
     return;
 else
     tracking_mat = csvread(tracking_file)+1;
