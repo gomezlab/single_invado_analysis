@@ -41,7 +41,8 @@ for i_num = 1:size(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
-    normalized_image = (puncta_image - min(puncta_image(:)))/range(puncta_image(:));
+    puncta_range = csvread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range));
+    normalized_image = (puncta_image - puncta_range(2,1))/range(puncta_range(2,:));
     
     pixel_values = puncta_image(:);
     
