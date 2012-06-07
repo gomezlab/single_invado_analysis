@@ -33,7 +33,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-load(fullfile(base_dir, image_dirs(1).name,filenames.tracking_raw));
+load(fullfile(base_dir,image_dirs(1).name,filenames.tracking_raw));
 
 %fill in the possible linked objects based on the number of values in the
 %centroid
@@ -93,9 +93,15 @@ tracking_mat = convert_tracking_props_to_matrix(all_tracking_props) - 1;
 
 output_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
 
-if (not(exist(fileparts(output_file),'dir'))), mkdir(fileparts(output_file)); end
+%If the tracking matrix is empty, don't output anything and don't make a
+%folder for the empty matrix
+if (any(size(tracking_mat==0)))
+    
+else
+    if (not(exist(fileparts(output_file),'dir'))), mkdir(fileparts(output_file)); end
 
-csvwrite(fullfile(base_dir, image_dirs(1).name,filenames.tracking),tracking_mat);
+    csvwrite(fullfile(base_dir, image_dirs(1).name,filenames.tracking),tracking_mat);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
@@ -149,7 +155,6 @@ for col_num = 1:size(tracking_matrix,2)
     assert((isempty(all_tracking_props{col_num}) && isempty(this_col)) || ...
         (length(all_tracking_props{col_num}) == max(this_col)));
 end
-
 
 function [i_num,obj_num] = find_unassigned_obj(all_tracking_props)
 
