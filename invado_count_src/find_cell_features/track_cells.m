@@ -95,7 +95,7 @@ output_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
 
 %If the tracking matrix is empty, don't output anything and don't make a
 %folder for the empty matrix
-if (any(size(tracking_mat==0)))
+if (any(size(tracking_mat) == 0))
     
 else
     if (not(exist(fileparts(output_file),'dir'))), mkdir(fileparts(output_file)); end
