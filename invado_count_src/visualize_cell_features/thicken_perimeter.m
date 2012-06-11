@@ -10,12 +10,17 @@ end
 
 perim_thick = perims;
 three_disk = strel('disk',thickness,0);
-for cell_num = 1:max(perim_thick(:))
-    this_cell_perim = perims == cell_num;
-    this_cell = objects == cell_num;
+for perim_num = 1:max(perims(:))
+    this_cell_perim = perims == perim_num;
+    cell_nums = unique(objects(this_cell_perim));
     
+    this_cell = zeros(size(objects,1),size(objects,2));
+    for cell_num = cell_nums'
+        this_cell(objects == cell_num) = 1;
+    end
+     
     this_cell_perim = imdilate(this_cell_perim,three_disk);
     this_cell_perim = this_cell_perim & this_cell;
     
-    perim_thick(this_cell_perim) = cell_num;
+    perim_thick(this_cell_perim) = perim_num;
 end

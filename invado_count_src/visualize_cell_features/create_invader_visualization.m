@@ -45,6 +45,8 @@ else
         data_dir = fullfile(base_dir, image_dirs(1).name,filenames.lineage_dir);
         raw_data.(data_sets_to_read{i}) = csvread(fullfile(data_dir,[data_sets_to_read{i}, '.csv']));
     end
+    
+    longevity = sum(not(isnan(raw_data.Area)),2)/2;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,6 +64,7 @@ for i_num = 1:size(image_dirs,1)
         assert(sum(this_tracking_row) == 1);
         
         degrade_status = active_degrade(this_tracking_row,i_num);
+
         
         %use 1 for non-degraders, 2 for degraders
         if (degrade_status == 0)
@@ -71,11 +74,21 @@ for i_num = 1:size(image_dirs,1)
         else
             disp('Found unexpected degrade status');
         end
+        
+        %use 3 for short lived cells, without regard for the degradation
+        %status
+        long_lived = longevity(this_tracking_row) >= 20;        
+        if (not(long_lived))
+            degrade_marked(current_data.labeled_cells_perim == cell_num) = 3;
+        end
+        
     end
     
-    c_map = [[1,0,0];[0,1,0]];
+    c_map = [[1,0,0];[0,1,0];[95/255,0,128/255]];
     
-    degrade_highlights = create_highlighted_image(current_data.gel_image_norm,degrade_marked,'color_map',c_map);
+    thick_degrade_marked = thicken_perimeter(degrade_marked,current_data.labeled_cells);
+    
+    degrade_highlights = create_highlighted_image(current_data.gel_image_norm,thick_degrade_marked,'color_map',c_map);
     imwrite(degrade_highlights,output_file);
 end
 
