@@ -8,8 +8,8 @@ i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
-i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('gelatin_min_value',382,@(x)isnumeric(x) && x > 0)
+i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(exp_dir,varargin{:});
 
@@ -37,6 +37,8 @@ data_points = 0;
 all_tracking_props = cell(size(image_dirs,1),1);
 all_cell_props = cell(size(image_dirs,1),1);
 
+final_data = read_in_file_set(fullfile(base_dir,image_dirs(size(image_dirs,1)).name),filenames);
+
 for i_num = 1:size(image_dirs,1)
     if (i_num > 1)
         prior_dir = fullfile(base_dir,image_dirs(i_num-1).name);
@@ -58,8 +60,9 @@ for i_num = 1:size(image_dirs,1)
     current_data.gel_junk = current_data.gel_image > current_junk_thresh;
     prior_data.gel_junk = prior_data.gel_image > prior_junk_thresh;
     
-    cell_props = collect_cell_properties(current_data,prior_data,'debug',i_p.Results.debug);
-        
+    cell_props = collect_cell_properties(current_data,prior_data,final_data,'debug',i_p.Results.debug);
+    all_cell_props{i_num} = cell_props;
+    
     data_points = data_points + length(cell_props);
     
     if (i_num ~= 1)
@@ -67,7 +70,6 @@ for i_num = 1:size(image_dirs,1)
         
         all_tracking_props{i_num-1} = tracking_props;
     end
-    all_cell_props{i_num} = cell_props;
     
     if (i_num == size(image_dirs,1))
         tracking_props = collect_tracking_properties(current_data,current_data,'debug',i_p.Results.debug);
@@ -83,7 +85,7 @@ for i_num = 1:size(image_dirs,1)
     imwrite(label2rgb(temp),fullfile(current_dir,'cell_overlaps.png'));
     
     diagnostic_boundaries = get_obj_perims(temp);
-%     diagnostic_boundaries(current_data.gel_junk | prior_data.gel_junk) = 4;
+    %     diagnostic_boundaries(current_data.gel_junk | prior_data.gel_junk) = 4;
     
     diag_cmap = [[0,1,0];[0,0,1];[0,1,1];[1,0,0]];
     %make an image showing where the cells are located overlayed on the gel
@@ -113,12 +115,12 @@ if (max(label_mat(:)) == 0)
 end
 
 for i = 1:max(label_mat(:))
-   this_obj = label_mat == i;
-   this_perim = bwperim(this_obj);
-   obj_perims(this_perim) = i;
+    this_obj = label_mat == i;
+    this_perim = bwperim(this_obj);
+    obj_perims(this_perim) = i;
 end
 
-function cell_props = collect_cell_properties(current_data,prior_data,varargin)
+function cell_props = collect_cell_properties(current_data,prior_data,final_data,varargin)
 % COLLECT_cell_PROPERTIES    using the identified cells, various
 %                                properties are collected concerning the
 %                                morphology and physical properties of the
@@ -131,11 +133,12 @@ i_p = inputParser;
 
 i_p.addRequired('current_data',@isstruct);
 i_p.addRequired('prior_data',@isstruct);
+i_p.addRequired('final_data',@isstruct);
 
 i_p.addParamValue('gelatin_min_value',382,@(x)isnumeric(x) && x > 0)
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(current_data,prior_data,varargin{:});
+i_p.parse(current_data,prior_data,final_data,varargin{:});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -161,6 +164,7 @@ if (isempty(cell_props))
     cell_props(1).Cell_gel_diff_median = [];
     cell_props(1).Cell_gel_diff_total = [];
     cell_props(1).Cell_gel_diff_percent = [];
+    cell_props(1).Cell_gel_diff_percent_final = [];
 else
     [cell_props.Overlap_area] = deal(NaN);
     [cell_props.Overlap_percent] = deal(NaN);
@@ -172,7 +176,8 @@ else
     [cell_props.Cell_gel_diff_p_val] = deal(NaN);
     [cell_props.Cell_gel_diff_median] = deal(NaN);
     [cell_props.Cell_gel_diff_total] = deal(NaN);
-    [cell_props.Cell_gel_diff_percent] = deal(NaN);    
+    [cell_props.Cell_gel_diff_percent] = deal(NaN);
+    [cell_props.Cell_gel_diff_percent_final] = deal(NaN);
 end
 
 %when the first image is both the prior and current data, we only want the
@@ -219,13 +224,12 @@ for i=1:max(current_data.labeled_cells(:))
     cell_props(i).Cell_gel_diff_median = median(differences);
     cell_props(i).Cell_gel_diff_total = sum(differences);
     
-    gel_intensity_corrected = cell_props(i).Cell_gel_after - i_p.Results.gelatin_min_value;
+    gel_intensity_corrected = cell_props(i).Cell_gel_before - i_p.Results.gelatin_min_value;
+    cell_props(i).Cell_gel_diff_percent = 100*(cell_props(i).Cell_gel_diff/gel_intensity_corrected);
     
-    if (gel_intensity_corrected < 0)
-        cell_props(i).Cell_gel_diff_percent = 0;
-    else
-        cell_props(i).Cell_gel_diff_percent = 100*(cell_props(i).Cell_gel_diff/gel_intensity_corrected);
-    end
+    final_diffs = final_data.gel_image(overlap_region) - ...
+        current_data.gel_image(overlap_region);
+    cell_props(i).Cell_gel_diff_percent_final = 100*(mean(final_diffs)/gel_intensity_corrected);
     
     %single cell diagnostics
     if (i_p.Results.debug)
@@ -237,7 +241,7 @@ for i=1:max(current_data.labeled_cells(:))
         if (c_extent(2) > size(this_cell,1)), c_extent(2) = size(this_cell,1); end
         if (c_extent(4) > size(this_cell,2)), c_extent(4) = size(this_cell,2); end
         c_extent = struct('row',(c_extent(1):c_extent(2)),'col',(c_extent(3):c_extent(4)));
-                
+        
         prior_puncta = normalize_image(prior_data.puncta_image(c_extent.row,c_extent.col));
         prior_gel = prior_data.gel_image(c_extent.row,c_extent.col)*prior_data.intensity_correction;
         
@@ -253,7 +257,7 @@ for i=1:max(current_data.labeled_cells(:))
         prior_both = cat(1,prior_puncta,prior_gel);
         current_both = cat(1,current_puncta,current_gel);
         
-        diff_gel = normalize_image(current_gel - prior_gel);      
+        diff_gel = normalize_image(current_gel - prior_gel);
         
         temp = double(this_cell);
         temp(prev_cells) = 2;
@@ -261,7 +265,7 @@ for i=1:max(current_data.labeled_cells(:))
         subplot(2,2,1); imshow(label2rgb(temp));
         subplot(2,2,2); hist(differences);
         subplot(2,2,3); imshow(diff_gel);
-        1;       
+        1;
     end
 end
 
@@ -286,7 +290,7 @@ prior_props = regionprops(prior_data.labeled_cells,'Centroid','Area');
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if (all(current_data.gel_image(:) == prior_data.gel_image(:)) == 1)    
+if (all(current_data.gel_image(:) == prior_data.gel_image(:)) == 1)
     return;
 end
 
@@ -311,7 +315,7 @@ for i=1:max(prior_data.labeled_cells(:))
         continue;
     end
     
-    prior_props(i).Pix_sim = zeros(1,max(current_data.labeled_cells(:)));    
+    prior_props(i).Pix_sim = zeros(1,max(current_data.labeled_cells(:)));
     overlap_nums = unique(next_overlaping_cells);
     if (overlap_nums(1) == 0)
         overlap_nums = overlap_nums(2:end);
