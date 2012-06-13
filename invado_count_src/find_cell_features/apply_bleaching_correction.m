@@ -45,18 +45,16 @@ photo_bleach_regions = [];
 
 for i=1:length(single_image_folders)
     cell_mask = imread(fullfile(image_dir,single_image_folders(i).name,filenames.cell_mask));
-    gel = double(imread(fullfile(image_dir,single_image_folders(i).name,filenames.gel)));
-    gel_junk = gel > (mean(gel(:)) + 2*std(gel(:)));
     
 	if (size(photo_bleach_regions,1) == 0), photo_bleach_regions = ones(size(cell_mask)); end
     
-    photo_bleach_regions = photo_bleach_regions & not(cell_mask) & not(gel_junk);
+    photo_bleach_regions = photo_bleach_regions & not(cell_mask);
 end
 
 imwrite(photo_bleach_regions, fullfile(output_dir,'photo_bleach_regions.png'));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Collect the intensity correction
+% Correct the Intensity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 gel_levels = zeros(length(single_image_folders),1);
@@ -73,9 +71,9 @@ for i=1:length(single_image_folders)
 %     copyfile(gel_file,gel_file_no_corr);
     
     gel_corr = uint16(double(gel).*double(gel_levels_outside_cell(1)/gel_levels_outside_cell(i)));
-    imwrite(gel_corr,gel_file,'BitDepth',16);    
+    imwrite(gel_corr,gel_file,'BitDepth',16);
 end
-
+1;
 % for i=1:length(single_image_folders)
 %     dlmwrite(fullfile(image_dir, single_image_folders(i).name, filenames.intensity_correction), ...
 %         1000/gel_levels_outside_cell(i));
