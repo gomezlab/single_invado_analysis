@@ -20,23 +20,22 @@ filenames = add_filenames_to_struct(struct());
 fields = dir(base_dir);
 fields = filter_to_time_series(fields);
 
+output_base = fullfile(base_dir,fields(1).name,'individual_pictures');
+image_nums = dir(output_base);
+image_nums = image_nums(3:end);
+
+output_file = fullfile(output_base,image_nums(1).name, filenames.puncta_median);
+[output_path] = fileparts(output_file);
+if (not(exist(fullfile(output_path),'dir')))
+    mkdir(fullfile(output_path));
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Puncta Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 images_puncta = get_all_image_array(base_dir,filenames.puncta);
 puncta_median = median(images_puncta,3);
-
-output_base = fullfile(base_dir,fields(1).name,'individual_pictures');
-image_nums = dir(output_base);
-image_nums = image_nums(3:end);
-output_file = fullfile(output_base,image_nums(1).name, filenames.puncta_median);
-
-[output_path] = fileparts(output_file);
-
-if (not(exist(fullfile(output_path),'dir')))
-    mkdir(fullfile(output_path));
-end
 
 imwrite(uint16(puncta_median),output_file,'bitdepth',16);
 
