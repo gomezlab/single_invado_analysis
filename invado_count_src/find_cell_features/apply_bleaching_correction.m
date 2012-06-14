@@ -51,7 +51,7 @@ for i=1:length(single_image_folders)
     photo_bleach_regions = photo_bleach_regions & not(cell_mask);
 end
 
-imwrite(photo_bleach_regions, fullfile(output_dir,'photo_bleach_regions.png'));
+imwrite(photo_bleach_regions, fullfile(image_dir,single_image_folders(i).name,filenames.no_cells));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Correct the Intensity
