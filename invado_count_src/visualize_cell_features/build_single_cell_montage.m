@@ -23,7 +23,7 @@ image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'error: expected "." to be first string in the dir command')
 assert(strcmp(image_dirs(2).name, '..'), 'error: expected ".." to be second string in the dir command')
-assert(str2num(image_dirs(3).name) == 1, 'error: expected the third string to be image set one') %#ok<st2nm>
+assert(str2num(image_dirs(3).name) == 1, 'error: expected the third string to be image set one') %#ok<ST2NM>
 
 image_dirs = image_dirs(3:end);
 
@@ -54,7 +54,7 @@ for track_id = 1:size(tracking_seq,1)
     for i_num = 1:length(track_row)
         if (track_row(i_num) <= 0), continue; end
         
-        data_sets{i_num} = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
+        data_sets{i_num} = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames); %#ok<AGROW>
         this_cell = data_sets{i_num}.labeled_cells == track_row(i_num);
         if (size(cell_coverage,1) == 0)
             cell_coverage = this_cell;
@@ -73,25 +73,17 @@ for track_id = 1:size(tracking_seq,1)
     
     if (row_min_max(2) > size(cell_coverage,1)), row_min_max(2) = size(cell_coverage,1); end
     if (col_min_max(2) > size(cell_coverage,2)), col_min_max(2) = size(cell_coverage,2); end
+
+    for i_num = 1:length(track_row)
+        if (track_row(i_num) <= 0), continue; end
+
+        data_sets{i_num} = trim_all_images(data_sets{i_num},row_min_max,col_min_max); %#ok<AGROW>
+    end
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Build visualization frames
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    gel_pix = [];
-    puncta_pix = [];
-    for i_num = 1:length(track_row)
-        if (track_row(i_num) <= 0), continue; end
-
-        data_sets{i_num} = trim_all_images(data_sets{i_num},row_min_max,col_min_max);
-        
-        gel_pix = [gel_pix;data_sets{i_num}.gel_image(:)];
-        puncta_pix = [puncta_pix;data_sets{i_num}.puncta_image(:)];        
-    end
-    
-    gel_min_max = quantile(gel_pix,[0.01,0.99]);
-    puncta_min_max = quantile(puncta_pix,[0.01,0.99]);
-    clear gel_pix puncta_pix;
-    
     gel_frames = [];
     puncta_frames = [];
     
@@ -108,10 +100,7 @@ for track_id = 1:size(tracking_seq,1)
         else
             upper_corners = [upper_corners, upper_corners(end) + 1 + size(gel_frames{1},2)];
         end
-        
-        data_sets{i_num}.gel_image_norm = (data_sets{i_num}.gel_image - gel_min_max(1))/range(gel_min_max);
-        data_sets{i_num}.puncta_image_norm = (data_sets{i_num}.puncta_image - puncta_min_max(1))/range(puncta_min_max);
-        
+                
         this_cell = data_sets{i_num}.labeled_cells == track_row(i_num);
         this_cell_perim = data_sets{i_num}.labeled_cells_perim == track_row(i_num);
         not_this_cell_perim = data_sets{i_num}.labeled_cells_perim ~= track_row(i_num) & ...
@@ -127,8 +116,6 @@ for track_id = 1:size(tracking_seq,1)
         puncta_frame = create_highlighted_image(puncta_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
         puncta_frames{length(puncta_frames) + 1} = puncta_frame;
     end
-    
-    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Create final montage image and output
