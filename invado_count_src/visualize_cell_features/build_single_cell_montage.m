@@ -12,9 +12,10 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.parse(exp_dir,varargin{:});
 
 addpath(genpath('../find_cell_features'));
+filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% main program
+% Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 base_dir = fullfile(exp_dir,'individual_pictures');
@@ -27,8 +28,6 @@ assert(str2num(image_dirs(3).name) == 1, 'error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-filenames = add_filenames_to_struct(struct());
-
 try
     tracking_seq = csvread(fullfile(base_dir,image_dirs(1).name,filenames.tracking)) + 1;
 catch %#ok<CTCH>
@@ -39,9 +38,18 @@ if (isempty(tracking_seq))
     tracking_seq = zeros(1,max_image_num);
 end
 
-for track_id = 1:size(tracking_seq,1)
-    track_row = tracking_seq(track_id,:);
+active_degrade = csvread(fullfile(base_dir,image_dirs(1).name,filenames.active_degrade));
+
+data_sets = cell(size(tracking_seq,2),1);
+for i_num = 1:size(tracking_seq,2)
+    data_sets{i_num} = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
+end
+
+for cell_num = 1:size(tracking_seq,1)
+    track_row = tracking_seq(cell_num,:);
+    degrade_row = active_degrade(cell_num,:);
     
+    %Don't make montages for cells that live less than 10 frames
     if (sum(track_row > 0) < 10)
         continue;
     end
@@ -49,12 +57,11 @@ for track_id = 1:size(tracking_seq,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Determine extent of cell coverage
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    data_sets = [];
+    
     cell_coverage = [];
     for i_num = 1:length(track_row)
         if (track_row(i_num) <= 0), continue; end
         
-        data_sets{i_num} = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames); %#ok<AGROW>
         this_cell = data_sets{i_num}.labeled_cells == track_row(i_num);
         if (size(cell_coverage,1) == 0)
             cell_coverage = this_cell;
@@ -73,11 +80,12 @@ for track_id = 1:size(tracking_seq,1)
     
     if (row_min_max(2) > size(cell_coverage,1)), row_min_max(2) = size(cell_coverage,1); end
     if (col_min_max(2) > size(cell_coverage,2)), col_min_max(2) = size(cell_coverage,2); end
-
+    
+    data_sets_trimmed = cell(size(tracking_seq,2),1);
     for i_num = 1:length(track_row)
         if (track_row(i_num) <= 0), continue; end
 
-        data_sets{i_num} = trim_all_images(data_sets{i_num},row_min_max,col_min_max); %#ok<AGROW>
+        data_sets_trimmed{i_num} = trim_all_images(data_sets{i_num},row_min_max,col_min_max);
     end
 
     
@@ -101,18 +109,23 @@ for track_id = 1:size(tracking_seq,1)
             upper_corners = [upper_corners, upper_corners(end) + 1 + size(gel_frames{1},2)];
         end
                 
-        this_cell = data_sets{i_num}.labeled_cells == track_row(i_num);
-        this_cell_perim = data_sets{i_num}.labeled_cells_perim == track_row(i_num);
-        not_this_cell_perim = data_sets{i_num}.labeled_cells_perim ~= track_row(i_num) & ...
-            data_sets{i_num}.labeled_cells_perim > 0;
+        this_cell = data_sets_trimmed{i_num}.labeled_cells == track_row(i_num);
+        this_cell_perim = data_sets_trimmed{i_num}.labeled_cells_perim == track_row(i_num);
+        not_this_cell_perim = data_sets_trimmed{i_num}.labeled_cells_perim ~= track_row(i_num) & ...
+            data_sets_trimmed{i_num}.labeled_cells_perim > 0;
         
         thick_perim = thicken_perimeter(this_cell_perim,this_cell);
         
-        gel_frame = create_highlighted_image(data_sets{i_num}.gel_image_norm,thick_perim,'color_map',[1,0,0]);
+        perim_color = [1,0,0];
+        if (degrade_row(i_num) == 1)
+            perim_color = [0,1,0];
+        end
+        
+        gel_frame = create_highlighted_image(data_sets_trimmed{i_num}.gel_image_norm,thick_perim,'color_map',perim_color);
         gel_frame = create_highlighted_image(gel_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
         gel_frames{length(gel_frames) + 1} = gel_frame;
         
-        puncta_frame = create_highlighted_image(data_sets{i_num}.puncta_image_norm,thick_perim,'color_map',[1,0,0]);
+        puncta_frame = create_highlighted_image(data_sets_trimmed{i_num}.puncta_image_norm,thick_perim,'color_map',perim_color);
         puncta_frame = create_highlighted_image(puncta_frame,not_this_cell_perim,'color_map',[0,0,0.5]);
         puncta_frames{length(puncta_frames) + 1} = puncta_frame;
     end
@@ -126,7 +139,7 @@ for track_id = 1:size(tracking_seq,1)
     
     full_montage = cat(1,puncta_montage,spacer,gel_montage);
     
-    image_num = sprintf('%03d',track_id);
+    image_num = sprintf('%03d',cell_num);
     [~,field_dir] = fileparts(fileparts(base_dir));
     [~,exp_type] = fileparts(fileparts(fileparts(base_dir)));
     [~,date] = fileparts(fileparts(fileparts(fileparts(base_dir))));
