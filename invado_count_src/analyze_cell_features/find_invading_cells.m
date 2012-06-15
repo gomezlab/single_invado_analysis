@@ -36,13 +36,12 @@ end
 
 data_series_folder = fullfile(field_dir,'cell_props','lin_time_series');
 
-
-
 files.p_vals = fullfile(data_series_folder,'Cell_gel_diff_p_val.csv');
 files.cell_diffs = fullfile(data_series_folder,'Cell_gel_diff.csv');
 files.cell_diff_medians = fullfile(data_series_folder,'Cell_gel_diff_median.csv');
 files.cell_diff_percents = fullfile(data_series_folder,'Cell_gel_diff_percent.csv');
 
+files.cell_total_degrade = fullfile(data_series_folder,'..','final_gel_diffs.csv');
 
 these_types = fieldnames(files);
 for j = 1:length(these_types)
@@ -51,7 +50,7 @@ for j = 1:length(these_types)
     %matlab doesn't like you to reference fields that haven't been
     %created, so create files that aren't present yet before loading
     %data in
-    if(isempty(strmatch(these_types{j},fieldnames(raw_data))))
+    if(isempty(strcmp(these_types{j},fieldnames(raw_data))))
         raw_data.(these_types{j}) = [];
     end
     
@@ -61,6 +60,8 @@ for j = 1:length(these_types)
         error('Invado:MissingFile',['Can''t find ',this_file])
     end
 end
+
+raw_data.cell_total_degrade = repmat(raw_data.cell_total_degrade,1,size(raw_data.cell_diff_percents,2));
 
 %check that all the raw data files are the same size
 these_names = fieldnames(raw_data);
@@ -79,15 +80,15 @@ output_dir = fullfile(field_dir,'cell_props');
 
 csvwrite(fullfile(output_dir,'active_degrade.csv'),processed_data.active_degrade);
 
-csvwrite(fullfile(output_dir,'active_degrade_1_0.csv'),processed_data.active_degrade_1);
-csvwrite(fullfile(output_dir,'active_degrade_1_25.csv'),processed_data.active_degrade_1_25);
-csvwrite(fullfile(output_dir,'active_degrade_1_5.csv'),processed_data.active_degrade_1_5);
-csvwrite(fullfile(output_dir,'active_degrade_1_75.csv'),processed_data.active_degrade_1_75);
-csvwrite(fullfile(output_dir,'active_degrade_2_0.csv'),processed_data.active_degrade_2);
-csvwrite(fullfile(output_dir,'active_degrade_2_25.csv'),processed_data.active_degrade_2_25);
-csvwrite(fullfile(output_dir,'active_degrade_2_5.csv'),processed_data.active_degrade_2_5);
-csvwrite(fullfile(output_dir,'active_degrade_2_75.csv'),processed_data.active_degrade_2_75);
-csvwrite(fullfile(output_dir,'active_degrade_3_0.csv'),processed_data.active_degrade_3);
+% csvwrite(fullfile(output_dir,'active_degrade_1_0.csv'),processed_data.active_degrade_1);
+% csvwrite(fullfile(output_dir,'active_degrade_1_25.csv'),processed_data.active_degrade_1_25);
+% csvwrite(fullfile(output_dir,'active_degrade_1_5.csv'),processed_data.active_degrade_1_5);
+% csvwrite(fullfile(output_dir,'active_degrade_1_75.csv'),processed_data.active_degrade_1_75);
+% csvwrite(fullfile(output_dir,'active_degrade_2_0.csv'),processed_data.active_degrade_2);
+% csvwrite(fullfile(output_dir,'active_degrade_2_25.csv'),processed_data.active_degrade_2_25);
+% csvwrite(fullfile(output_dir,'active_degrade_2_5.csv'),processed_data.active_degrade_2_5);
+% csvwrite(fullfile(output_dir,'active_degrade_2_75.csv'),processed_data.active_degrade_2_75);
+% csvwrite(fullfile(output_dir,'active_degrade_3_0.csv'),processed_data.active_degrade_3);
 
 csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
 
@@ -113,7 +114,7 @@ i_p.parse(raw_data,varargin{:});
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %use the filter_set variable to filter all the data sets before continuing
-if (isempty(strmatch('filter_set',i_p.UsingDefaults)))
+if (isempty(strcmp('filter_set',i_p.UsingDefaults)))
     these_names = fieldnames(raw_data);
     for j=1:size(these_names,1)
         raw_data.(these_names{j}) = raw_data.(these_names{j})(i_p.Results.filter_set,:);
@@ -123,28 +124,27 @@ end
 process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2;
+    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2 ...
+    & not(isnan(raw_data.cell_total_degrade)) & raw_data.cell_total_degrade < -0.02;
 
-process_data.active_degrade_1 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1;
-process_data.active_degrade_1_25 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.25;
-process_data.active_degrade_1_5 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.5;
-process_data.active_degrade_1_75 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.75;
-process_data.active_degrade_2 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2;
-process_data.active_degrade_2_25 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.25;
-process_data.active_degrade_2_5 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.5;
-process_data.active_degrade_2_75 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.75;
-process_data.active_degrade_3 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -3;
-
-
+% process_data.active_degrade_1 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1;
+% process_data.active_degrade_1_25 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.25;
+% process_data.active_degrade_1_5 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.5;
+% process_data.active_degrade_1_75 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.75;
+% process_data.active_degrade_2 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2;
+% process_data.active_degrade_2_25 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.25;
+% process_data.active_degrade_2_5 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.5;
+% process_data.active_degrade_2_75 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.75;
+% process_data.active_degrade_3 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
+%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -3;
 
 disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
 % disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
