@@ -92,13 +92,13 @@ colMedians <- function(this_mat,na.rm=T) {
     return(medis)
 }
 
-colConfUpper <- function(this_mat) {
+colConfUpper <- function(this_mat,conf.int=0.95) {
     upper = c()
     for (i in 1:dim(this_mat)[2]) {
         if (all(is.na(this_mat[,i]))) {
             upper = c(upper,NA);
         } else {
-            temp = t.test(this_mat[,i],conf.level=0.95)
+            temp = t.test(this_mat[,i],conf.level=conf.int)
             if (is.nan(temp$conf.int[2])) {
                 upper = c(upper,0)
             } else {
@@ -109,13 +109,13 @@ colConfUpper <- function(this_mat) {
     return(upper)
 }
 
-colConfLower <- function(this_mat) {
+colConfLower <- function(this_mat,conf.int=0.95) {
     lower = c()
     for (i in 1:dim(this_mat)[2]) {
         if (all(is.na(this_mat[,i]))) {
             lower = c(lower,NA);
         } else {
-            temp = t.test(this_mat[,i],conf.level=0.95)
+            temp = t.test(this_mat[,i],conf.level=conf.int)
             if (is.nan(temp$conf.int[1])) {
                 lower = c(lower,0)
             } else {
