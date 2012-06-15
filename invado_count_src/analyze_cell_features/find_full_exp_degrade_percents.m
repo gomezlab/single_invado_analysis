@@ -12,7 +12,6 @@ i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.parse(exp_dir,varargin{:});
 
 addpath(genpath('..'));
-filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -21,17 +20,30 @@ filenames = add_filenames_to_struct(struct());
 fields = dir(exp_dir);
 fields = filter_to_time_series(fields);
 
-raw_data = struct('active_degrade',[],'longevity',[],'tracking',[]);
+raw_data = struct('active_degrade',[],'longevity',[],'tracking',[],'diff_percents',[], ...
+    'final_diff',[]);
 
 for j=1:length(fields)
     props_base = fullfile(exp_dir,fields(j).name,'cell_props');
+
+    tracking_file = fullfile(exp_dir,fields(j).name,'tracking_matrices','tracking_seq.csv');
+    if (not(exist(tracking_file,'file')))
+        fprintf('No tracking file found in field %s, moving to next set.\n',fields(j).name);
+        continue;
+    end
     
-    try
+    try %#ok<TRYNC>
     degrade_data = csvread(fullfile(props_base,'active_degrade.csv'));
     raw_data.active_degrade = [raw_data.active_degrade; degrade_data];
     
     longev_data = csvread(fullfile(props_base,'longevity.csv'));
     raw_data.longevity = [raw_data.longevity;longev_data];
+
+    diff_percents = csvread(fullfile(props_base,'lin_time_series','Cell_gel_diff_percent.csv'));
+    raw_data.diff_percents = [raw_data.diff_percents;diff_percents];    
+
+    final_diff = csvread(fullfile(props_base,'final_gel_diffs.csv'));
+    raw_data.final_diff = [raw_data.final_diff;final_diff];    
     
     tracking_data = csvread(fullfile(exp_dir,fields(j).name,'tracking_matrices','tracking_seq.csv'));
     raw_data.tracking = [raw_data.tracking;tracking_data];
@@ -53,6 +65,12 @@ end
 csvwrite(fullfile(output_dir,'degrade_percentage.csv'),processed_data.degrade_percentage);
 csvwrite(fullfile(output_dir,'live_cells_per_image.csv'),processed_data.live_cells_per_image);
 
+final_diffs_filt = raw_data.final_diff(longev_filter);
+csvwrite(fullfile(output_dir,'final_diffs.csv'),final_diffs_filt);
+
+diff_percents = raw_data.diff_percents(longev_filter,:);
+csvwrite(fullfile(output_dir,'diff_percents.csv'),diff_percents);
+
 function processed_data = process_raw_data(raw_data,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,7 +89,7 @@ i_p.parse(raw_data,varargin{:});
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if (isempty(strmatch('filter_set',i_p.UsingDefaults)))
+if (isempty(strcmp('filter_set',i_p.UsingDefaults)))
     these_names = fieldnames(raw_data);
     for j=1:size(these_names,1)
         raw_data.(these_names{j}) = raw_data.(these_names{j})(i_p.Results.filter_set,:);
@@ -92,7 +110,13 @@ processed_data.has_degraded = zeros(size(raw_data.active_degrade));
 for i=1:size(raw_data.active_degrade,1)
     for j = 1:size(raw_data.active_degrade,2)
         processed_data.has_degraded(i,j) = raw_data.active_degrade(i,j) | any(processed_data.has_degraded(i,1:j));
+%         if (j == size(raw_data.active_degrade,2)) 
+%             processed_data.has_degraded(i,j) = raw_data.active_degrade(i,j) | any(processed_data.has_degraded(i,1:j));
+%         else
+%             processed_data.has_degraded(i,j) = ((raw_data.active_degrade(i,j) & raw_data.active_degrade(i,j+1))) | any(processed_data.has_degraded(i,1:j));
+%         end 
     end
 end
 
+processed_data.degraded_count = sum(processed_data.has_degraded);
 processed_data.degrade_percentage = sum(processed_data.has_degraded)/size(raw_data.active_degrade,1);
