@@ -31,6 +31,7 @@ filenames.tracking = '../../tracking_matrices/tracking_seq.csv';
 filenames.tracking_vis = 'tracking.png';
 
 filenames.cell_props = '../../cell_props/cell_props.mat';
+filenames.active_degrade = '../../cell_props/active_degrade.csv';
 
 filenames.lineage_dir = '../../cell_props/lin_time_series/';
 
