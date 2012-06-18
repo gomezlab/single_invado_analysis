@@ -32,7 +32,6 @@ for j=1:length(fields)
         continue;
     end
     
-    try %#ok<TRYNC>
     degrade_data = csvread(fullfile(props_base,'active_degrade.csv'));
     raw_data.active_degrade = [raw_data.active_degrade; degrade_data];
     
@@ -47,7 +46,6 @@ for j=1:length(fields)
     
     tracking_data = csvread(fullfile(exp_dir,fields(j).name,'tracking_matrices','tracking_seq.csv'));
     raw_data.tracking = [raw_data.tracking;tracking_data];
-    end
 end
 
 longev_filter = raw_data.longevity > i_p.Results.min_longevity;

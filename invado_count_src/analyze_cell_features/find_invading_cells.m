@@ -80,16 +80,6 @@ output_dir = fullfile(field_dir,'cell_props');
 
 csvwrite(fullfile(output_dir,'active_degrade.csv'),processed_data.active_degrade);
 
-% csvwrite(fullfile(output_dir,'active_degrade_1_0.csv'),processed_data.active_degrade_1);
-% csvwrite(fullfile(output_dir,'active_degrade_1_25.csv'),processed_data.active_degrade_1_25);
-% csvwrite(fullfile(output_dir,'active_degrade_1_5.csv'),processed_data.active_degrade_1_5);
-% csvwrite(fullfile(output_dir,'active_degrade_1_75.csv'),processed_data.active_degrade_1_75);
-% csvwrite(fullfile(output_dir,'active_degrade_2_0.csv'),processed_data.active_degrade_2);
-% csvwrite(fullfile(output_dir,'active_degrade_2_25.csv'),processed_data.active_degrade_2_25);
-% csvwrite(fullfile(output_dir,'active_degrade_2_5.csv'),processed_data.active_degrade_2_5);
-% csvwrite(fullfile(output_dir,'active_degrade_2_75.csv'),processed_data.active_degrade_2_75);
-% csvwrite(fullfile(output_dir,'active_degrade_3_0.csv'),processed_data.active_degrade_3);
-
 csvwrite(fullfile(output_dir,'longevity.csv'),processed_data.longevities);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,26 +115,7 @@ process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2 ...
-    & not(isnan(raw_data.cell_total_degrade)) & raw_data.cell_total_degrade < -0.02;
-
-% process_data.active_degrade_1 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1;
-% process_data.active_degrade_1_25 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.25;
-% process_data.active_degrade_1_5 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.5;
-% process_data.active_degrade_1_75 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -1.75;
-% process_data.active_degrade_2 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2;
-% process_data.active_degrade_2_25 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.25;
-% process_data.active_degrade_2_5 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.5;
-% process_data.active_degrade_2_75 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2.75;
-% process_data.active_degrade_3 = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-%     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -3;
+    & not(isnan(raw_data.cell_total_degrade)) & raw_data.cell_total_degrade < 0;
 
 disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
 % disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
