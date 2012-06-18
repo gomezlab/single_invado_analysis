@@ -60,6 +60,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask_properties" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script track_cells" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_degrade_amount" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_invading_cells" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script ../analyze_cell_features/find_full_exp_degrade_percents" ], ],
@@ -77,7 +78,8 @@ my @run_only_once = qw(find_median_images flat_field_correct_images
 
 my @skip_check = qw(find_median_images find_exp_min_max
 	find_full_exp_degrade_percents collect_montage_visualizations
-	gather_tracking_results build_single_cell_montage);
+	gather_tracking_results create_invader_visualization find_invading_cells
+	build_single_cell_montage);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
@@ -199,15 +201,18 @@ sub execute_command_seq {
             my $config_command = "$command -cfg $cfg_file";
             chdir $dir;
             my $return_code = 0;
+			$executed_scripts_count++;
             if ($opt{debug}) {
 				# print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
-                $executed_scripts_count++;
                 $return_code = system($config_command);
-				if (not $return_code) {
+				if ($return_code) {
                 	print "PROBLEM WITH: $config_command\n";
 					print "RETURN CODE: $return_code\n";
+				}
+				if ($executed_scripts_count % sprintf('%.0f',scalar(@these_config_files)/10) == 0) {
+					print "Done submitting $executed_scripts_count/" . scalar(@these_config_files) . "\n";
 				}
             }
             chdir $starting_dir;
@@ -287,7 +292,7 @@ sub check_file_sets {
         }
 
         $number_configs_run++;
-        if ($number_configs_run % ceil(scalar(@config_files)/20) == 0) {
+        if ($number_configs_run % sprintf('%.0f',scalar(@config_files)/10) == 0) {
             print " $number_configs_run";
         }
     }
