@@ -32,7 +32,11 @@ if ($opt{server} eq "NOSERVER" || $opt{debug}) {
     while($opt{repeat} != 0) {
 		my $return = system "$command";
 	  	print "Done with sync $opt{repeat} Return code: $return\n\n";
-	    if ($return) { 
+		#5888 is the code returned when a file disappears that rsync thinks it
+		#will need to transfer, during processing some files are removed as
+		#needed, but we don't want this return code to kill the repeated
+		#transfers
+	    if ($return && $return != 5888) { 
 			print "Caught exit code.";
 			last; 
 		}
