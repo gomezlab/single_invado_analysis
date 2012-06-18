@@ -66,7 +66,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/create_invader_visualization" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_single_cell_montage" ], ],
-	[ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
+	# [ [ "../visualize_cell_features", "./collect_montage_visualizations.pl" ], ],
 );
 
 #some of the scripts only need to be run once for each experiment, this will
@@ -204,9 +204,11 @@ sub execute_command_seq {
                 print $config_command, "\n";
             } else {
                 $executed_scripts_count++;
-                print "RUNNING: $config_command $executed_scripts_count/" . scalar(@these_config_files) . "\n";
                 $return_code = system($config_command);
-				print "RETURN CODE: $return_code\n";
+				if (not $return_code) {
+                	print "PROBLEM WITH: $config_command\n";
+					print "RETURN CODE: $return_code\n";
+				}
             }
             chdir $starting_dir;
 
