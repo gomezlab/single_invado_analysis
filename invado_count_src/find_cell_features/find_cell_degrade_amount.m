@@ -41,9 +41,18 @@ if (not(exist(tracking_file,'file')))
 else
     tracking_mat = csvread(tracking_file)+1;
 end
+first_data = read_in_file_set(fullfile(base_dir,image_dirs(1).name),filenames);
+first_data.gel_image_trunc = first_data.gel_image;
+outside_range = first_data.gel_image < first_data.gel_range(2,1) | ...
+    first_data.gel_image > first_data.gel_range(2,2);
+first_data.gel_image_trunc(outside_range) = NaN;
 
 final_data = read_in_file_set(fullfile(base_dir,image_dirs(size(image_dirs,1)).name),filenames);
-first_data = read_in_file_set(fullfile(base_dir,image_dirs(1).name),filenames);
+final_data.gel_image_trunc = final_data.gel_image;
+outside_range = final_data.gel_image < final_data.gel_range(2,1) | ...
+    final_data.gel_image > final_data.gel_range(2,2);
+final_data.gel_image_trunc(outside_range) = NaN;
+
 
 cell_hit_counts =  cell(size(tracking_mat,1),1);
 
@@ -66,7 +75,14 @@ diffs = zeros(length(cell_hit_counts),1);
 
 for cell_num = 1:length(cell_hit_counts)
     cell_extent = cell_hit_counts{cell_num} > 10;
-    diffs(cell_num) = mean(final_data.gel_image(cell_extent) - first_data.gel_image(cell_extent))/386;
+
+    diff_vals = final_data.gel_image_trunc(cell_extent) - first_data.gel_image_trunc(cell_extent);
+    nan_count = sum(isnan(diff_vals));
+    if (nan_count > length(diff_vals)*0.25)
+        diffs(cell_num) = NaN;
+    else
+        diffs(cell_num) = nanmean(diff_vals)/386;
+    end
 end
 
 csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.final_gel_diffs),diffs);
