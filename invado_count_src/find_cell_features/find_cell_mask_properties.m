@@ -165,6 +165,9 @@ if (isempty(cell_props))
     cell_props(1).Cell_gel_diff_total = [];
     cell_props(1).Cell_gel_diff_percent = [];
     cell_props(1).Cell_gel_diff_percent_final = [];
+    
+    cell_props(1).Surrounding_diff_percent = [];
+    cell_props(1).Gel_diff_minus_surrounding = [];
 else
     [cell_props.Overlap_area] = deal(NaN);
     [cell_props.Overlap_percent] = deal(NaN);
@@ -178,6 +181,9 @@ else
     [cell_props.Cell_gel_diff_total] = deal(NaN);
     [cell_props.Cell_gel_diff_percent] = deal(NaN);
     [cell_props.Cell_gel_diff_percent_final] = deal(NaN);
+
+    [cell_props.Surrounding_diff_percent] = deal(NaN);
+    [cell_props.Gel_diff_minus_surrounding] = deal(NaN);
 end
 
 %when the first image is both the prior and current data, we only want the
@@ -200,6 +206,8 @@ for i=1:max(current_data.labeled_cells(:))
     this_cell = logical(this_cell);
     
     prev_cells = prior_data.cell_mask;
+
+    this_surrounding_region = imdilate(this_cell,strel('disk',20)) & not(this_cell) & not(prev_cells);    
     
     overlap_region = this_cell & prev_cells & not(current_data.gel_junk) & ...
         not(prior_data.gel_junk);
@@ -212,6 +220,7 @@ for i=1:max(current_data.labeled_cells(:))
         continue;
     end
     
+    %Cell overlap differences
     differences = current_data.gel_image(overlap_region) - ...
         prior_data.gel_image(overlap_region);
     
@@ -227,6 +236,16 @@ for i=1:max(current_data.labeled_cells(:))
     gel_intensity_corrected = cell_props(i).Cell_gel_before - i_p.Results.gelatin_min_value;
     cell_props(i).Cell_gel_diff_percent = 100*(cell_props(i).Cell_gel_diff/gel_intensity_corrected);
     
+    %Surrounding differences
+    differences = current_data.gel_image(this_surrounding_region) - ...
+        prior_data.gel_image(this_surrounding_region);
+    
+    cell_props(i).Surrounding_diff_percent = 100*(mean(differences)/gel_intensity_corrected);
+    
+    cell_props(i).Gel_diff_minus_surrounding = cell_props(i).Cell_gel_diff_percent - ...
+        cell_props(i).Surrounding_diff_percent;
+    
+    %Final image differences
     final_diffs = final_data.gel_image(overlap_region) - ...
         current_data.gel_image(overlap_region);
     cell_props(i).Cell_gel_diff_percent_final = 100*(mean(final_diffs)/gel_intensity_corrected);
