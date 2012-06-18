@@ -44,7 +44,7 @@ my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
 my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
-@config_files = sort @config_files;
+@config_files = reverse sort @config_files;
 if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
@@ -75,8 +75,10 @@ if ($parallel_return == 0) {
 	} else {
 		while (@command_set) {
 			my @sub_command_set;
-			for (1..25) {
-				push @sub_command_set, pop @command_set;
+			for (1..75) {
+				if (@command_set) {
+					push @sub_command_set, pop @command_set;
+				}
 			}
 			my $parallel_cmd = "time parallel -u --nice 20 ::: " . join(" ", @sub_command_set);
 			system($parallel_cmd);
