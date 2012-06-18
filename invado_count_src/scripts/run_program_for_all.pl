@@ -8,10 +8,10 @@ use lib "../lib";
 use lib "../lib/perl";
 
 use File::Basename;
-use File::Find::Rule;
 use File::Spec::Functions;
 use Cwd 'abs_path';
 use Getopt::Long;
+use File::Find::Rule;
 
 use Config::Adhesions qw(ParseConfig);
 
@@ -23,7 +23,7 @@ my %opt;
 $opt{debug} = 0;
 $opt{extra} = "";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", 
-                  "run_all_debug", "exp_filter=s", "filter_negate") or die;
+                  "run_all_debug", "exp_filter=s") or die;
 
 die "Can't find cfg file specified on the command line" if not(exists $opt{cfg});
 die "Can't find program to execute on the command line" if not(exists $opt{program});
@@ -32,7 +32,7 @@ print "Collecting Configuration\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
 
 ###############################################################################
-# Main Program
+#Main Program
 ###############################################################################
 chdir(dirname($opt{program}));
 
@@ -46,12 +46,8 @@ $cfg_suffix =~ s/.*\.(.*)/$1/;
 my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
 @config_files = sort @config_files;
 if (exists($opt{exp_filter})) {
-	if ($opt{filter_negate}) {
-		@config_files = grep not($_ =~ /$opt{exp_filter}/), @config_files;
-	} else {
-		@config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
-	}
-} 
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
 
 my $parallel_return = system("which parallel");
 
@@ -59,9 +55,9 @@ my @command_set;
 foreach (@config_files) {
     next if /config\/default/;
 
-    my $command = "./$program_base -cfg $_ $debug_string $opt{extra}; echo $_";
+    my $command = "nice -n 20 ionice -c3 ./$program_base -cfg $_ $debug_string $opt{extra}";
     $command =~ s/"/\\"/g;
-    push @command_set, "\"$command;\"";
+    push @command_set, "\"$command; echo $_;\"";
 	if ($parallel_return != 0) {
 		if ($opt{debug}) {
 			print "$command\n";
@@ -73,65 +69,17 @@ foreach (@config_files) {
 }
 
 if ($parallel_return == 0) {
-	my $parallel_cmd = "time parallel -u --nice 20 ::: " . join(" ", @command_set);
 	if ($opt{debug}) {
-		$parallel_cmd = "time parallel -u --nice 20 ::: \n\t" . join("\n\t", @command_set) . "\t\n";
+		my $parallel_cmd = "time parallel -j 75% -u --nice 20 ::: \n\t" . join("\n\t", @command_set) . "\t\n";
 		print $parallel_cmd;
 	} else {
-		system($parallel_cmd);
+		while (@command_set) {
+			my @sub_command_set;
+			for (1..25) {
+				push @sub_command_set, pop @command_set;
+			}
+			my $parallel_cmd = "time parallel -u --nice 20 ::: " . join(" ", @sub_command_set);
+			system($parallel_cmd);
+		}
 	}
 }
-
-###############################################################################
-# Documentation
-###############################################################################
-
-=head1 NAME
-
-run_program_for_all.pl
-
-=head1 SYNOPSIS
-
-run_program_for_all.pl -cfg config.cfg -p program 
-
-=head1 Description
-
-This program provides the means to run a program for each of the experiments in
-a set. This is helpful when a single step of a processing pipeline needs to be
-executed again. Config files (those with the same suffix as the config file
-provided on the command line) are searched for in subdirectories of the
-$cfg{data_folder} directory.
-
-Required parameter(s):
-
-=over 
-
-=item * cfg or c: the focal adhesion analysis config file
-
-=item * program or p: the path to a program that should be run using the standard "-cfg exp_config.cfg" parameter
-
-=back
-
-Optional parameter(s):
-
-=over 
-
-=item * debug or d: if present do not run the program specified in the program parameter, instead print the commands that would be run
-
-=back
-
-=head1 EXAMPLES
-
-run_program_for_all.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl
-
-OR
-
-run_program_for_all.pl -cfg FA_config -p ../analyze_cell_features/gather_tracking_results.pl -e '-skip_pix_props'
-
-=head1 AUTHORS
-
-Matthew Berginski (mbergins@unc.edu)
-
-Documentation last updated: 1/17/2008 
-
-=cut

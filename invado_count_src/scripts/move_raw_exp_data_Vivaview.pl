@@ -154,7 +154,7 @@ foreach my $sample_num (sort keys %sample_sets) {
 				if ($opt{debug}) {
 					print "convert $source_file $target_file;\n\n";
 				} else {
-					system("convert $source_file $target_file 2>/dev/null");
+					system("convert \"$source_file\" \"$target_file\" 2>/dev/null");
 				}
 			}
 		}
