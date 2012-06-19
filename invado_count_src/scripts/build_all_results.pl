@@ -51,7 +51,6 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	# [ [ "../find_cell_features",      "./setup_results_folder.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_median_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script flat_field_correct_images" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_experiment.pl -script find_exp_min_max" ], ],
@@ -74,12 +73,12 @@ my @overall_command_seq = (
 #rely on being able to find an experiment with "time_series_01" in its filename
 my @run_only_once = qw(find_median_images flat_field_correct_images
 	find_exp_min_max find_full_exp_degrade_percents collect_montage_visualizations
-	build_all_montage_file_sets);
+	build_all_montage_file_sets find_cell_mask_experiment);
 
 my @skip_check = qw(find_median_images find_exp_min_max
 	find_full_exp_degrade_percents collect_montage_visualizations
 	gather_tracking_results create_invader_visualization find_invading_cells
-	build_single_cell_montage);
+	build_single_cell_montage flat_field_correct_images);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
@@ -97,8 +96,6 @@ my @run_once_configs = grep $_ =~ /time_series_01/, @config_files;
 #######################################
 # Program Running
 #######################################
-our @running_jobs;
-
 my $starting_dir = getcwd;
 for (@overall_command_seq) {
 	my $command_start_bench = new Benchmark;
@@ -155,9 +152,6 @@ for (@overall_command_seq) {
 	#we are done with the current command, so we print a few spacer lines to
 	#indicate we have moved onto a new command
 	print "\n\n";
-	
-	#we expect the running jobs listed to be emptied after every command
-	@running_jobs = ();
 }
 
 if (not($opt{debug})) {
@@ -211,7 +205,7 @@ sub execute_command_seq {
                 	print "PROBLEM WITH: $config_command\n";
 					print "RETURN CODE: $return_code\n";
 				}
-				if ($executed_scripts_count % sprintf('%.0f',scalar(@these_config_files)/10) == 0) {
+				if ($executed_scripts_count % ceil(scalar(@these_config_files)/10) == 0) {
 					print "Done submitting $executed_scripts_count/" . scalar(@these_config_files) . "\n";
 				}
             }
@@ -292,7 +286,7 @@ sub check_file_sets {
         }
 
         $number_configs_run++;
-        if ($number_configs_run % sprintf('%.0f',scalar(@config_files)/10) == 0) {
+        if ($number_configs_run % ceil(scalar(@config_files)/10) == 0) {
             print " $number_configs_run";
         }
     }
