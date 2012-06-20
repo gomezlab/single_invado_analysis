@@ -81,7 +81,7 @@ for cell_num = 1:length(cell_hit_counts)
     if (nan_count > length(diff_vals)*0.25)
         diffs(cell_num) = NaN;
     else
-        diffs(cell_num) = nanmean(diff_vals)/386;
+        diffs(cell_num) = 100*(nanmean(diff_vals)/386);
     end
 end
 
