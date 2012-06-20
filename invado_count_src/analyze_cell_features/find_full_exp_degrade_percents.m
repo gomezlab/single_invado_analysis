@@ -26,7 +26,7 @@ if (isempty(fields))
 end
 
 raw_data = struct('active_degrade',[],'longevity',[],'tracking',[],'diff_percents',[], ...
-    'final_diff',[]);
+    'final_diff',[],'gel_minus_surrounding',[]);
 
 for j=1:length(fields)
     props_base = fullfile(exp_dir,fields(j).name,'cell_props');
@@ -46,6 +46,9 @@ for j=1:length(fields)
     diff_percents = csvread(fullfile(props_base,'lin_time_series','Cell_gel_diff_percent.csv'));
     raw_data.diff_percents = [raw_data.diff_percents;diff_percents];    
 
+    gel_minus = csvread(fullfile(props_base,'lin_time_series','Gel_diff_minus_surrounding.csv'));
+    raw_data.gel_minus_surrounding = [raw_data.gel_minus_surrounding;gel_minus];    
+    
     final_diff = csvread(fullfile(props_base,'final_gel_diffs.csv'));
     raw_data.final_diff = [raw_data.final_diff;final_diff];    
     
@@ -73,6 +76,10 @@ csvwrite(fullfile(output_dir,'final_diffs.csv'),final_diffs_filt);
 
 diff_percents = raw_data.diff_percents(longev_filter,:);
 csvwrite(fullfile(output_dir,'diff_percents.csv'),diff_percents);
+
+gel_minus = raw_data.gel_minus_surrounding(longev_filter,:);
+csvwrite(fullfile(output_dir,'gel_minus_surrounding.csv'),gel_minus);
+
 
 function processed_data = process_raw_data(raw_data,varargin)
 
