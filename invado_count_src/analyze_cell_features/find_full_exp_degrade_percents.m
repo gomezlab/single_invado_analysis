@@ -20,6 +20,11 @@ addpath(genpath('..'));
 fields = dir(exp_dir);
 fields = filter_to_time_series(fields);
 
+if (isempty(fields))
+    disp('Expected to find directories for the fields, did you provide the correct directory?');
+    return;
+end
+
 raw_data = struct('active_degrade',[],'longevity',[],'tracking',[],'diff_percents',[], ...
     'final_diff',[]);
 

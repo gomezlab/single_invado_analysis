@@ -40,6 +40,7 @@ files.p_vals = fullfile(data_series_folder,'Cell_gel_diff_p_val.csv');
 files.cell_diffs = fullfile(data_series_folder,'Cell_gel_diff.csv');
 files.cell_diff_medians = fullfile(data_series_folder,'Cell_gel_diff_median.csv');
 files.cell_diff_percents = fullfile(data_series_folder,'Cell_gel_diff_percent.csv');
+files.gel_diff_minus = fullfile(data_series_folder,'Gel_diff_minus_surrounding.csv');
 
 files.cell_total_degrade = fullfile(data_series_folder,'..','final_gel_diffs.csv');
 
@@ -115,6 +116,7 @@ process_data = struct();
 
 process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
     & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2 ...
+    & not(isnan(raw_data.gel_diff_minus)) & raw_data.gel_diff_minus < -1 ...
     & not(isnan(raw_data.cell_total_degrade)) & raw_data.cell_total_degrade < 0;
 
 disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
