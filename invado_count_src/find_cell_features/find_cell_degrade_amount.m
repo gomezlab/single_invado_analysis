@@ -72,20 +72,31 @@ for i_num = 1:size(tracking_mat,2)
 end
 
 diffs = zeros(length(cell_hit_counts),1);
+corrected_diffs = zeros(length(cell_hit_counts),1);
 
 for cell_num = 1:length(cell_hit_counts)
     cell_extent = cell_hit_counts{cell_num} > 10;
-
+    
+    surrounding_cell_extent = imdilate(cell_extent,strel('disk',20));
+    
     diff_vals = final_data.gel_image_trunc(cell_extent) - first_data.gel_image_trunc(cell_extent);
+    surrounding_diff_pixels = final_data.gel_image_trunc(surrounding_cell_extent) - ...
+        first_data.gel_image_trunc(surrounding_cell_extent);
     nan_count = sum(isnan(diff_vals));
     if (nan_count > length(diff_vals)*0.25)
         diffs(cell_num) = NaN;
+        corrected_diffs(cell_num) = NaN;
     else
-        diffs(cell_num) = 100*(nanmean(diff_vals)/386);
+        first_intensity = nanmean(first_data.gel_image_trunc(cell_extent));
+        diffs(cell_num) = 100*(nanmean(diff_vals)/first_intensity);
+        corrected_diffs(cell_num) = 100*(nanmean(diff_vals)/first_intensity) - ...
+            100*(nanmean(surrounding_diff_pixels)/first_intensity);
     end
+    1;
 end
 
 csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.final_gel_diffs),diffs);
+csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.corrected_final_gel_diffs),corrected_diffs);
 
 toc;
 

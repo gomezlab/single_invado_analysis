@@ -37,3 +37,4 @@ filenames.lineage_dir = '../../cell_props/lin_time_series/';
 
 filenames.single_cell_dir = '../../cell_props/single_cells/';
 filenames.final_gel_diffs = '../../cell_props/final_gel_diffs.csv';
+filenames.corrected_final_gel_diffs = '../../cell_props/corrected_final_gel_diffs.csv';
