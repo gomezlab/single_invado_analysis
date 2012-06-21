@@ -26,7 +26,7 @@ if (isempty(fields))
 end
 
 raw_data = struct('active_degrade',[],'longevity',[],'tracking',[],'diff_percents',[], ...
-    'final_diff',[],'gel_minus_surrounding',[]);
+    'final_diff',[],'gel_minus_surrounding',[],'corrected_final_diff',[]);
 
 for j=1:length(fields)
     props_base = fullfile(exp_dir,fields(j).name,'cell_props');
@@ -51,6 +51,9 @@ for j=1:length(fields)
     
     final_diff = csvread(fullfile(props_base,'final_gel_diffs.csv'));
     raw_data.final_diff = [raw_data.final_diff;final_diff];    
+
+    corrected_final_diff = csvread(fullfile(props_base,'corrected_final_gel_diffs.csv'));
+    raw_data.corrected_final_diff = [raw_data.corrected_final_diff;corrected_final_diff];    
     
     tracking_data = csvread(fullfile(exp_dir,fields(j).name,'tracking_matrices','tracking_seq.csv'));
     raw_data.tracking = [raw_data.tracking;tracking_data];
@@ -73,6 +76,9 @@ csvwrite(fullfile(output_dir,'live_cells_per_image.csv'),processed_data.live_cel
 
 final_diffs_filt = raw_data.final_diff(longev_filter);
 csvwrite(fullfile(output_dir,'final_diffs.csv'),final_diffs_filt);
+
+corrected_final_diffs_filt = raw_data.corrected_final_diff(longev_filter);
+csvwrite(fullfile(output_dir,'corrected_final_diffs.csv'),corrected_final_diffs_filt);
 
 diff_percents = raw_data.diff_percents(longev_filter,:);
 csvwrite(fullfile(output_dir,'diff_percents.csv'),diff_percents);
