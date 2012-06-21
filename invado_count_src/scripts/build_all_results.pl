@@ -78,7 +78,7 @@ my @run_only_once = qw(find_median_images flat_field_correct_images
 my @skip_check = qw(find_median_images find_exp_min_max
 	find_full_exp_degrade_percents collect_montage_visualizations
 	gather_tracking_results create_invader_visualization find_invading_cells
-	build_single_cell_montage flat_field_correct_images);
+	build_single_cell_montage flat_field_correct_images find_cell_degrade_amount);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
@@ -196,7 +196,9 @@ sub execute_command_seq {
             chdir $dir;
             my $return_code = 0;
 			$executed_scripts_count++;
-            if ($opt{debug}) {
+			print "Done submitting: " if $executed_scripts_count == 1;
+            
+			if ($opt{debug}) {
 				# print "Working in directory: $dir\n";
                 print $config_command, "\n";
             } else {
@@ -206,7 +208,7 @@ sub execute_command_seq {
 					print "RETURN CODE: $return_code\n";
 				}
 				if ($executed_scripts_count % ceil(scalar(@these_config_files)/10) == 0) {
-					print "Done submitting $executed_scripts_count/" . scalar(@these_config_files) . "\n";
+					print sprintf('%.0f%% ',100*($executed_scripts_count/scalar(@these_config_files)));
 				}
             }
             chdir $starting_dir;
@@ -219,6 +221,7 @@ sub execute_command_seq {
                 @config_files = grep $cfg_file ne $_, @config_files;
             }
         }
+		print "\n";
     }
 }
 
@@ -229,7 +232,7 @@ sub execute_command_seq {
 sub wait_till_LSF_jobs_finish {
     #After each step of the pipeline, we want to wait till all the individual
     #jobs are completed, which will be checked three times
-	my $total_checks = 3;
+	my $total_checks = 1;
 	my $first_check = &running_LSF_jobs;
 	
 	if (! $first_check) {
