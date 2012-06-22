@@ -53,6 +53,8 @@ outside_range = final_data.gel_image < final_data.gel_range(2,1) | ...
     final_data.gel_image > final_data.gel_range(2,2);
 final_data.gel_image_trunc(outside_range) = NaN;
 
+no_cell_regions = imread(fullfile(base_dir,image_dirs(1).name,filenames.no_cells));
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Count the number of times a cell was seen in each pixel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,16 +77,6 @@ for i_num = 1:size(tracking_mat,2)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull out the position where all cells was present often
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-all_cell_extents = zeros(size(cell_hit_counts{1},1),size(cell_hit_counts{1},2));
-for cell_num = 1:length(cell_hit_counts)
-    cell_extent = cell_hit_counts{cell_num} > 10;
-    all_cell_extents = cell_extent | all_cell_extents;
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Determine what the matrix does underneath each cell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -94,7 +86,7 @@ corrected_diffs = zeros(length(cell_hit_counts),1);
 for cell_num = 1:length(cell_hit_counts)
     cell_extent = cell_hit_counts{cell_num} > 10;
     
-    surrounding_cell_extent = imdilate(cell_extent,strel('disk',20)) & not(all_cell_extents);
+    surrounding_cell_extent = imdilate(cell_extent,strel('disk',40)) & no_cell_regions;
     
     diff_vals = final_data.gel_image_trunc(cell_extent) - first_data.gel_image_trunc(cell_extent);
     surrounding_diff_pixels = final_data.gel_image_trunc(surrounding_cell_extent) - ...
