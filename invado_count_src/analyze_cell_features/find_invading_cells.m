@@ -43,6 +43,7 @@ files.cell_diff_percents = fullfile(data_series_folder,'Cell_gel_diff_percent.cs
 files.gel_diff_minus = fullfile(data_series_folder,'Gel_diff_minus_surrounding.csv');
 
 files.cell_total_degrade = fullfile(data_series_folder,'..','final_gel_diffs.csv');
+files.corrected_cell_total_degrade = fullfile(data_series_folder,'..','corrected_final_gel_diffs.csv');
 
 these_types = fieldnames(files);
 for j = 1:length(these_types)
@@ -63,6 +64,7 @@ for j = 1:length(these_types)
 end
 
 raw_data.cell_total_degrade = repmat(raw_data.cell_total_degrade,1,size(raw_data.cell_diff_percents,2));
+raw_data.corrected_cell_total_degrade = repmat(raw_data.corrected_cell_total_degrade,1,size(raw_data.cell_diff_percents,2));
 
 %check that all the raw data files are the same size
 these_names = fieldnames(raw_data);
@@ -114,10 +116,8 @@ end
 
 process_data = struct();
 
-process_data.active_degrade = not(isnan(raw_data.p_vals)) & raw_data.p_vals < 0.05 ...
-    & not(isnan(raw_data.cell_diff_percents)) & raw_data.cell_diff_percents < -2 ...
-    & not(isnan(raw_data.gel_diff_minus)) & raw_data.gel_diff_minus < -1 ...
-    & not(isnan(raw_data.cell_total_degrade)) & raw_data.cell_total_degrade < 0;
+process_data.active_degrade = not(isnan(raw_data.gel_diff_minus)) & raw_data.gel_diff_minus < -1.6 ...
+    & not(isnan(raw_data.corrected_cell_total_degrade)) & raw_data.corrected_cell_total_degrade < -0.4;
 
 disp(['Detected ', num2str(sum(process_data.active_degrade(:))), ' invasion events.']);
 % disp(['Bonferroni Corrected p-value threshold: ', num2str(0.05/bonferroni_correction)]);
