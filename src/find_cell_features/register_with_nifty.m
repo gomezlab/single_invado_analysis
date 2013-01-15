@@ -30,12 +30,16 @@ image_dirs = image_dirs(3:end);
 % Collect all the images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%write a dummy registration values file, to make sure follow up file count checks work
+affine_file = fullfile(base_dir,image_dirs(1).name,'reg_values.txt');
+csvwrite(affine_file,diag(ones(4,1)));
+
 %registration will go in a step-wise fashion, register image 2 to image 1,
 %then image 3 to 2, then image 4 to 3, ...
 for i_num = 1:(size(image_dirs,1)-1)
-    % for i_num = 1:
-    file1 = fullfile(base_dir,image_dirs(i_num).name,filenames.puncta);
-    file2 = fullfile(base_dir,image_dirs(i_num+1).name,filenames.puncta);
+% for i_num = 1:10
+    file1 = fullfile(base_dir,image_dirs(i_num).name,filenames.gel);
+    file2 = fullfile(base_dir,image_dirs(i_num+1).name,filenames.gel);
     
     img1 = int16(imread(file1));
     img2 = int16(imread(file2));
@@ -43,8 +47,8 @@ for i_num = 1:(size(image_dirs,1)-1)
     img1_nii = make_nii(img1);
     img2_nii = make_nii(img2);
     
-    file_nii_temp_1 = fullfile(base_dir,image_dirs(i_num).name,[filenames.puncta,'.nii']);
-    file_nii_temp_2 = fullfile(base_dir,image_dirs(i_num+1).name,[filenames.puncta,'.nii']);
+    file_nii_temp_1 = fullfile(base_dir,image_dirs(i_num).name,[filenames.gel,'.nii']);
+    file_nii_temp_2 = fullfile(base_dir,image_dirs(i_num+1).name,[filenames.gel,'.nii']);
     
     save_nii(img1_nii,file_nii_temp_1);
     save_nii(img2_nii,file_nii_temp_2);
@@ -59,13 +63,14 @@ for i_num = 1:(size(image_dirs,1)-1)
     imwrite(uint16(reg_result.img),file2);
     
     delete(file_nii_temp_1,file_nii_temp_2,reg_result_file);
-
-    gel_image = imread(fullfile(base_dir,image_dirs(i_num+1).name,filenames.gel));
+	
+	%apply the same transformation to the puncta image
+    puncta_image = imread(fullfile(base_dir,image_dirs(i_num+1).name,filenames.puncta));
     nifti_transform = dlmread(affine_file,' ');
     transform = maketform('affine',[1,0;0,1;-1*nifti_transform(2,4),-1*nifti_transform(1,4)]);
     
-    gel_image = imtransform(gel_image,transform, 'XData',[1 size(gel_image,2)], 'YData', [1 size(gel_image,1)]);
-    imwrite(gel_image,fullfile(base_dir,image_dirs(i_num+1).name,filenames.gel));
+    puncta_image = imtransform(puncta_image,transform, 'XData',[1 size(puncta_image,2)], 'YData', [1 size(puncta_image,1)]);
+    imwrite(puncta_image,fullfile(base_dir,image_dirs(i_num+1).name,filenames.puncta));
     
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
         fprintf('Done with %d/%d\n',i_num,size(image_dirs,1));
@@ -79,14 +84,14 @@ end
 %contains the image regions.
 image_mask = [];
 for i_num = 2:size(image_dirs,1)
-    FA_file = fullfile(base_dir,image_dirs(i_num).name,filenames.puncta);
+    file = fullfile(base_dir,image_dirs(i_num).name,filenames.gel);
     
-    FA_img = imread(FA_file);
-    FA_img_binary = FA_img >= 5;
+    img = imread(file);
+    img_binary = img >= 5;
     if (size(image_mask,1) == 0)
-        image_mask = FA_img_binary;
+        image_mask = img_binary;
     else
-        image_mask = FA_img_binary & image_mask;
+        image_mask = img_binary & image_mask;
     end
 end
 lims = [find(sum(image_mask,2),1,'first')+1,find(sum(image_mask,2),1,'last')-1;
@@ -94,13 +99,15 @@ lims = [find(sum(image_mask,2),1,'first')+1,find(sum(image_mask,2),1,'last')-1;
 
 %Now we apply the mask to the images in the set
 for i_num = 1:size(image_dirs,1)
-    FA_file = fullfile(base_dir,image_dirs(i_num).name,filenames.puncta);
+    gel_file = fullfile(base_dir,image_dirs(i_num).name,filenames.gel);
+    gel_img = imread(gel_file);
+    gel_img = gel_img(lims(1,1):lims(1,2),lims(2,1):lims(2,2));
+    imwrite(gel_img,gel_file);
     
-    FA_img = imread(FA_file);
-    
-    FA_img = FA_img(lims(1,1):lims(1,2),lims(2,1):lims(2,2));
-    
-    imwrite(FA_img,FA_file);
+	puncta_file = fullfile(base_dir,image_dirs(i_num).name,filenames.puncta);
+    puncta_img = imread(puncta_file);
+    puncta_img = puncta_img(lims(1,1):lims(1,2),lims(2,1):lims(2,2));
+    imwrite(puncta_img,puncta_file);
 end
 
 toc;
