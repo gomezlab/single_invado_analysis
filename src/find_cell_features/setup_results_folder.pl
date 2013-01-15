@@ -12,16 +12,11 @@ use File::Path;
 use File::Spec::Functions;
 use File::Basename;
 use File::Copy;
-use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
 use Data::Dumper;
 
 use Config::Adhesions qw(ParseConfig);
-use Image::Stack;
-use Math::Matlab::Extra;
-use Emerald;
-use FA_job;
 
 #Perl built-in variable that controls buffering print output, 1 turns off
 #buffering
@@ -64,9 +59,6 @@ foreach (@image_sets) {
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
 
-    #Move all the files with spaces in their names, MATLAB on emerald doesn't
-    #like them
-    @image_files = &remove_file_name_spaces(@image_files);
     $all_images_empty = 0 if (@image_files);
 
     if ($opt{debug}) {
