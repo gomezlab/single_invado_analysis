@@ -31,15 +31,10 @@ I_folder = fileparts(I_file);
 
 mask_image = double(imread(I_file));
 
-binary_shift = logical(imread(fullfile(I_folder,filenames.binary_shift)));
-only_reg_pixels = mask_image(binary_shift);
-assert(length(only_reg_pixels) == sum(sum(binary_shift)));
-
-puncta_min_max = csvread(fullfile(I_folder,filenames.puncta_range));
-
+mask_image_pixels = mask_image(:);
 
 %%Threshold identification
-sorted_mask_pixels = sort(only_reg_pixels);
+sorted_mask_pixels = sort(mask_image_pixels);
 % sorted_mask_pixels(1:0.05*round(length(sorted_mask_pixels))) = 0;
 
 %when there are very few unique pixel values, having a large number of bins

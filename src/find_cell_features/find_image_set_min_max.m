@@ -29,32 +29,15 @@ image_dirs = image_dirs(3:end);
 
 gel_image_range = [Inf -Inf];
 puncta_image_range = [Inf -Inf];
-ranges = zeros(size(image_dirs), 1);
-maxes = zeros(size(image_dirs), 1);
-mins = zeros(size(image_dirs), 1);
 
 for i = 1:size(image_dirs,1)
-    binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,filenames.binary_shift)));
-    
     gel_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
-    if (min(gel_image(binary_shift)) < gel_image_range(1))
-        gel_image_range(1) = min(gel_image(binary_shift));
-    end
-    if (max(gel_image(binary_shift)) > gel_image_range(2))
-        gel_image_range(2) = max(gel_image(binary_shift));
-    end
-    
-    ranges(i) = max(gel_image(binary_shift)) - min(gel_image(binary_shift));
-    maxes(i) = max(gel_image(binary_shift));
-    mins(i) = min(gel_image(binary_shift));
+    gel_image_range(1) = min(gel_image(:));
+    gel_image_range(2) = max(gel_image(:));
     
     puncta_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta));
-    if (min(puncta_image(binary_shift)) < puncta_image_range(1))
-        puncta_image_range(1) = min(puncta_image(binary_shift));
-    end
-    if (max(puncta_image(binary_shift)) > puncta_image_range(2))
-        puncta_image_range(2) = max(puncta_image(binary_shift));
-    end
+    puncta_image_range(1) = min(puncta_image(:));
+    puncta_image_range(2) = max(puncta_image(:));
     
     disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))])
 end

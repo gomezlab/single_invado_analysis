@@ -27,22 +27,18 @@ background_region = logical(imdilate(this_ad,strel('disk',i_p.Results.background
 %we don't want to include any areas that have been identified as other
 %objects
 background_region = and(background_region,not(data_struct.objects));
-%also exclude areas outside the registered image
-background_region = and(background_region, data_struct.binary_shift);
 
 if (sum(sum(background_region)) == 0)
     diffs.Local_gel_diff = NaN;
 else
     diffs.Local_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(background_region));
 end
-diffs.Global_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(data_struct.binary_shift));
+diffs.Global_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(:));
 
 large_background_region = logical(imdilate(this_ad,strel('disk',10,0)));
 %we don't want to include any areas that have been identified as other
 %objects
 large_background_region = and(large_background_region,not(data_struct.objects));
-%also exclude areas outside the registered image
-large_background_region = and(large_background_region, data_struct.binary_shift);
 
 if (sum(sum(large_background_region)) == 0)
     diffs.Large_local_gel_diff = NaN;

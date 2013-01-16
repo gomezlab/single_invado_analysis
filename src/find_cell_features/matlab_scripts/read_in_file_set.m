@@ -14,8 +14,6 @@ data_set.puncta_range = csvread(fullfile(this_dir, filenames.puncta_range));
 data_set.puncta_image  = double(imread(fullfile(this_dir, filenames.puncta)));
 data_set.puncta_image_norm = (data_set.puncta_image - data_set.puncta_range(1))/range(data_set.puncta_range);
 
-data_set.binary_shift = logical(imread(fullfile(this_dir, filenames.binary_shift)));
-
 data_set.no_cells = imread(fullfile(this_dir, filenames.no_cell_regions));
 
 %read in the cell mask file if defined

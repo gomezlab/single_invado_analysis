@@ -34,13 +34,9 @@ all_filt = [];
 for i = 1:size(image_dirs)
     image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.gel)));
 
-    binary_shift = logical(imread(fullfile(base_dir,image_dirs(i).name,filenames.binary_shift)));
-    
-    only_reg_image = remove_region_outside_registered(image,binary_shift);
-
     I_filt = fspecial('disk',11);
-    blurred_image = imfilter(only_reg_image,I_filt,'same',mean(only_reg_image(:)));
-    high_passed_image = only_reg_image - blurred_image;
+    blurred_image = imfilter(image,I_filt,'same',mean(image(:)));
+    high_passed_image = image - blurred_image;
     
     all_filt = [all_filt high_passed_image(:)']; %#ok<AGROW>
     disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))]);

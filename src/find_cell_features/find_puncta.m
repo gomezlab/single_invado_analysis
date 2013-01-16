@@ -20,15 +20,11 @@ addpath(genpath('..'))
 filenames = add_filenames_to_struct(struct());
 I_folder = fileparts(I_file);
 
-%read in binary shift file
-binary_shift = logical(imread(fullfile(I_folder,filenames.binary_shift)));
-
 if (exist(fullfile(I_folder,filenames.cell_mask),'file'))
     cell_mask = logical(imread(fullfile(I_folder,filenames.cell_mask)));
 end
 %read in and remove regions outside registered region
-focal_image  = double(imread(I_file));
-only_reg_focal_image = remove_region_outside_registered(focal_image,binary_shift);
+focal_image = double(imread(I_file));
 
 %read in the global min max file
 min_max = csvread(fullfile(I_folder,filenames.puncta_range));
@@ -39,18 +35,13 @@ filter_thresh = csvread(fullfile(I_folder,filenames.puncta_threshold));
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 I_filt = fspecial('disk',i_p.Results.filter_size);
-blurred_image = imfilter(only_reg_focal_image,I_filt,'same',mean(only_reg_focal_image(:)));
-high_passed_image = only_reg_focal_image - blurred_image;
+blurred_image = imfilter(focal_image,I_filt,'same',mean(focal_image(:)));
+high_passed_image = focal_image - blurred_image;
 
 threshed_image = find_threshed_image(high_passed_image,filter_thresh);
 
 %identify and remove objects on the immediate edge of the image
 threshed_image = remove_edge_objects(threshed_image);
-
-%place the thresholded image back in place
-threshed_temp = zeros(size(focal_image));
-threshed_temp(binary_shift) = threshed_image;
-threshed_image = threshed_temp;
 
 puncta = bwlabel(threshed_image,8);
 
@@ -129,7 +120,6 @@ imwrite(double(puncta_perim)/2^16,fullfile(I_folder, filenames.objects_perim),'b
 imwrite(im2bw(puncta),fullfile(I_folder, filenames.objects_binary));
 
 scaled_image = (focal_image - min_max(1))/(range(min_max));
-scaled_image(not(binary_shift)) = 0;
 highlighted_image = create_highlighted_image(scaled_image, im2bw(puncta_perim), ... 
     'color_map',[1 0 0],'mix_percent',0.5);
 if (exist('cell_mask','var'))

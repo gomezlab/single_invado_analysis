@@ -104,37 +104,25 @@ for i=1:max(c_d.objects(:))
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.objects(:)))]); end
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Properites Extracted If Cell Mask Available
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (isfield(c_d, 'cell_mask'))
-    [dists, indicies] = bwdist(~c_d.cell_mask); %#ok<NASGU>
-    dists(not(c_d.binary_shift)) = NaN;
-    
-    min_row = find(sum(c_d.binary_shift,2),1,'first');
-    max_row = find(sum(c_d.binary_shift,2),1,'last');
-    min_col = find(sum(c_d.binary_shift),1,'first');
-    max_col = find(sum(c_d.binary_shift),1,'last');
-    
-    only_reg_mask = c_d.cell_mask(min_row:max_row, min_col:max_col);
-    assert(size(only_reg_mask,1)*size(only_reg_mask,2) == sum(sum(c_d.binary_shift)));
+    [dists, ~] = bwdist(~c_d.cell_mask); %#ok<NASGU>
     
     %Now we search for the pixels which are closest to an edge of the cell
     %mask that is also touching the edge of image. We want to find these
     %pixels because the true closest cell edge may be off the microscope
     %field of view. To be safe, we will set those
     %distance-to-nearest-cell-edge values to NaN.
-    black_border_mask = only_reg_mask;
+    black_border_mask = ones(size(c_d.cell_mask,1),size(c_d.cell_mask,2));
     black_border_mask(1,:) = 0; black_border_mask(end,:) = 0;
     black_border_mask(:,1) = 0; black_border_mask(:,end) = 0;
     
     bb_dists_temp = bwdist(~black_border_mask);
     
     bb_dists = zeros(size(c_d.cell_mask));
-    bb_dists(min_row:max_row, min_col:max_col) = bb_dists_temp;
-    dists(not(c_d.binary_shift)) = NaN;
     
     dists(bb_dists < dists) = NaN;
     for i=1:max(c_d.objects(:))

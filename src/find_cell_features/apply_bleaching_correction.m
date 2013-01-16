@@ -38,12 +38,7 @@ test_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.gel));
 no_cell_regions = ones(size(test_image));
 inside_registered = ones(size(test_image));
 
-for i=1:length(image_dirs)
-    binary_shift = imread(fullfile(base_dir,image_dirs(i).name,filenames.binary_shift));
-    
-    no_cell_regions = no_cell_regions & binary_shift;
-    inside_registered = inside_registered & binary_shift;
-    
+for i=1:length(image_dirs)    
     if (exist(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask),'file')) 
         cell_mask = imread(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask));
         no_cell_regions = no_cell_regions & not(cell_mask);
