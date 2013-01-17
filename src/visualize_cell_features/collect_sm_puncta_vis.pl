@@ -10,7 +10,6 @@ use strict;
 use File::Path;
 use File::Basename;
 use File::Find;
-use Image::ExifTool;
 use Math::Matlab::Local;
 use Getopt::Long;
 use Data::Dumper;
@@ -19,7 +18,6 @@ use Benchmark;
 use POSIX;
 
 use Config::Adhesions qw(ParseConfig);
-use Image::Stack;
 use Math::Matlab::Extra;
 use Emerald;
 use FA_job;

@@ -30,7 +30,7 @@ i_p.parse(I,high,varargin{:});
 image_size = size(I);
 
 if (max(I(:)) > 1 || min(I(:) < 0))
-    warn('Expected image to be scaled from 0-1');
+    disp('Expected image to be scaled from 0-1');
 end
 
 if (size(image_size) < 3)

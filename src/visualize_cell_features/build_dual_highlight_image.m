@@ -101,18 +101,14 @@ for i = 1:length(image_dirs)
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    binary_shift = logical(imread(fullfile(I_folder,image_dirs(i).name,filenames.binary_shift)));
-    
-    gel_image = double(imread(fullfile(I_folder,image_dirs(i).name,filenames.gel)));
+        gel_image = double(imread(fullfile(I_folder,image_dirs(i).name,filenames.gel)));
     gel_image = gel_image - gel_limits(1);
     gel_image = gel_image .* (1/gel_limits(2));
-    gel_image(not(binary_shift)) = 0;
     gel_image = cat(3,gel_image,gel_image,gel_image);
     
     puncta_image = double(imread(fullfile(I_folder,image_dirs(i).name,filenames.puncta)));
     puncta_image = puncta_image - puncta_limits(1);
     puncta_image = puncta_image .* (1/puncta_limits(2));
-    puncta_image(not(binary_shift)) = 0;
     puncta_image = cat(3,puncta_image,puncta_image,puncta_image);
     
     cell_mask = bwperim(logical(imread(fullfile(I_folder,image_dirs(i).name,filenames.cell_mask))));
@@ -152,6 +148,9 @@ for i = 1:length(image_dirs)
     spacer = ones(size(images_to_highlight{1},1),1,3);
     
     for j=1:length(images_to_highlight)
+        if (any(images_to_highlight{j}(:) > 1))
+            1;
+        end
         %cell edge highlighting
         images_to_highlight{j} = create_highlighted_image(images_to_highlight{j},cell_mask,'color_map',[150/255,46/255,166/255]);
         

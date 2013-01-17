@@ -122,11 +122,9 @@ image_dirs = image_dirs(3:end);
 
 %read in the last gel image and normalize to 0-1
 last_gel_image = double(imread(fullfile(I_folder,image_dirs(end).name,gel_image_filename)));
-last_binary_shift = logical(imread(fullfile(I_folder,image_dirs(end).name,'binary_shift.png')));
 gel_limits = csvread(fullfile(I_folder,image_dirs(end).name,'gel_image_range.csv'));
 last_gel_image = last_gel_image - gel_limits(1);
 last_gel_image = last_gel_image .* (1/gel_limits(2));
-last_gel_image(not(last_binary_shift)) = 0;
 last_gel_image = cat(3,last_gel_image,last_gel_image,last_gel_image);
 
 last_gel_image_high = last_gel_image;

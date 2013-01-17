@@ -106,15 +106,10 @@ for i = 1:max_image_num
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather and scale the input adhesion image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    binary_shift = logical(imread(fullfile(I_folder,padded_i_num,'binary_shift.png')));
     puncta_image = double(imread(fullfile(I_folder,padded_i_num,focal_image)));
-    puncta_limits = [min(puncta_image(binary_shift)) max(puncta_image(binary_shift))];
-    if (exist(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'),'file'))
-        puncta_limits = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
-    end
+    puncta_limits = csvread(fullfile(I_folder,padded_i_num,'puncta_image_range.csv'));
     puncta_image = puncta_image - puncta_limits(1);
     puncta_image = puncta_image .* (1/puncta_limits(2));
-    puncta_image(not(binary_shift)) = 0;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the adhesion label image and perimeters
