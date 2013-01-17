@@ -1,4 +1,4 @@
-function register_with_nifty(exp_dir,varargin)
+function register_with_matlab(exp_dir,varargin)
 tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -27,79 +27,81 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Collect all the images
+% Determine Registration in Gel Images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %write a dummy registration values file, to make sure follow up file count checks work
 affine_file = fullfile(base_dir,image_dirs(1).name,'reg_values.txt');
-csvwrite(affine_file,diag(ones(4,1)));
+csvwrite(affine_file,diag(ones(3,1)));
+
+[optimizer, metric] = imregconfig('monomodal');
 
 %registration will go in a step-wise fashion, register image 2 to image 1,
 %then image 3 to 2, then image 4 to 3, ...
 for i_num = 1:(size(image_dirs,1)-1)
-% for i_num = 1:10
+    affine_file = fullfile(base_dir,image_dirs(i_num+1).name,'reg_values.txt');
+    if (exist(affine_file,'file'))
+        continue;
+    end
+    
     file1 = fullfile(base_dir,image_dirs(i_num).name,filenames.gel);
     file2 = fullfile(base_dir,image_dirs(i_num+1).name,filenames.gel);
-
-    img1 = int16(imread(file1));
-    img2 = int16(imread(file2));
-    img1 = img1 * (mean(img2(:))/mean(img1(:)));
     
-    img1_nii = make_nii(img1);
-    img2_nii = make_nii(img2);
+    img1 = imread(file1);
+    img2 = imread(file2);
+    
+    [~,this_transform] = imregister_trans_out(img2,img1,'translation',optimizer,metric);
 
-    file_nii_temp_1 = fullfile(base_dir,image_dirs(i_num).name,[filenames.gel,'.nii']);
-    file_nii_temp_2 = fullfile(base_dir,image_dirs(i_num+1).name,[filenames.gel,'.nii']);
-
-    save_nii(img1_nii,file_nii_temp_1);
-    save_nii(img2_nii,file_nii_temp_2);
-
-    affine_file = fullfile(base_dir,image_dirs(i_num+1).name,'reg_values.txt');
-
-    system(['reg_aladin -source ', file_nii_temp_2, ' -target ',file_nii_temp_1, ...
-        ' -aff ',affine_file,' -rigOnly >/dev/null 2>/dev/null']);
-    delete(file_nii_temp_1,file_nii_temp_2);
-
+    csvwrite(affine_file,this_transform);
+    
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
         fprintf('Done with %d/%d\n',i_num,size(image_dirs,1));
     end
 end
 
+%load set of translation movements
 left_right_trans_set = zeros(size(image_dirs,1),1);
 up_down_trans_set = zeros(size(image_dirs,1),1);
-affine_mat = [1,0;0,1;0,0];
-
 for i_num = 2:size(image_dirs,1)
     affine_file = fullfile(base_dir,image_dirs(i_num).name,'reg_values.txt');
-    nifti_transform = dlmread(affine_file,' ');
-    
-    %The left/right, up/down translations are inverted and in positions
-    %(2,4) and (1,4), respectively
-    affine_mat(3,1) = affine_mat(3,1) - nifti_transform(2,4);
-    affine_mat(3,2) = affine_mat(3,2) - nifti_transform(1,4);
+    affine_mat = csvread(affine_file);
     left_right_trans_set(i_num) = affine_mat(3,1);
     up_down_trans_set(i_num) = affine_mat(3,2);
-    transform = maketform('affine',affine_mat);
-    
-%     gel_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.gel));
-%     puncta_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
-%     
-%     gel_image = imtransform(gel_image,transform,'XData',[1 size(puncta_image,2)],'YData',[1 size(puncta_image,1)]);
-%     puncta_image = imtransform(puncta_image,transform,'XData',[1 size(puncta_image,2)],'YData',[1 size(puncta_image,1)]);
-%     
-%     imwrite(gel_image,fullfile(base_dir,image_dirs(i_num).name,filenames.gel));
-%     imwrite(puncta_image,fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
-%     
-%     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
-%         fprintf('Done with %d/%d\n',i_num,size(image_dirs,1));
-%     end
 end
 
-sample_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.gel));
-lims = [1 + ceil(max(up_down_trans_set)), size(sample_image,1) + floor(min(up_down_trans_set)); ...
-    1 + ceil(max(left_right_trans_set)), size(sample_image,2) + floor(min(left_right_trans_set))];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Apply Registration to All Images
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for i_num = 2:size(image_dirs,1)
+    affine_mat = [1,0;0,1; ...
+        sum(left_right_trans_set(1:i_num)),sum(up_down_trans_set(1:i_num))];
+    
+    transform = maketform('affine',affine_mat);
+    
+    gel_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.gel));
+    puncta_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
+    
+    gel_image = imtransform(gel_image,transform,'XData',[1 size(puncta_image,2)],'YData',[1 size(puncta_image,1)]);
+    puncta_image = imtransform(puncta_image,transform,'XData',[1 size(puncta_image,2)],'YData',[1 size(puncta_image,1)]);
+    
+    imwrite(gel_image,fullfile(base_dir,image_dirs(i_num).name,filenames.gel));
+    imwrite(puncta_image,fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
+    
+    if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
+        fprintf('Done with %d/%d\n',i_num,size(image_dirs,1));
+    end
+end
 
-%Now we apply the mask to the images in the set
+left_right_history = cumsum(left_right_trans_set);
+up_down_history = cumsum(up_down_trans_set);
+
+sample_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.gel));
+lims = [1 + ceil(max(up_down_history)), size(sample_image,1) + floor(min(up_down_history)); ...
+    1 + ceil(max(left_right_history)), size(sample_image,2) + floor(min(left_right_history))];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Remove the Region Outside the
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i_num = 1:size(image_dirs,1)
     gel_file = fullfile(base_dir,image_dirs(i_num).name,filenames.gel);
     gel_img = imread(gel_file);
@@ -113,6 +115,7 @@ for i_num = 1:size(image_dirs,1)
 end
 
 toc;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
