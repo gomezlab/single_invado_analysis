@@ -26,7 +26,8 @@ GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s") or die;
 
 my $lsf_return = system("which bsub > /dev/null 2> /dev/null");
 
-if ($lsf_return != 0 && not $opt{lsf}) {
+#Remember a return code of 0 means success
+if ($lsf_return == 0 && not $opt{lsf}) {
 	die "LSF appears to be installed on this machine, don't you want to use it?" 
 }	
 
@@ -48,9 +49,7 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ [ "../find_cell_features",      "./register_gel_image_set.pl" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script cascade_registration_transformations" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script apply_registration" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script register_with_matlab" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_image_set_min_max" ], ],
 	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_thresh" ], ],
