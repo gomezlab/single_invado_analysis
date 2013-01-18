@@ -30,22 +30,24 @@ image_dirs = image_dirs(3:end);
 gel_image_range = [Inf -Inf];
 puncta_image_range = [Inf -Inf];
 
-for i = 1:size(image_dirs,1)
-    gel_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
+for i_num = 1:size(image_dirs,1)
+    gel_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.gel));
     gel_image_range(1) = min(gel_image(:));
     gel_image_range(2) = max(gel_image(:));
     
-    puncta_image = imread(fullfile(base_dir,image_dirs(i).name,filenames.puncta));
+    puncta_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
     puncta_image_range(1) = min(puncta_image(:));
     puncta_image_range(2) = max(puncta_image(:));
     
-    disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))])
+    if (mod(i_num,10)==0)
+        disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
+    end
 end
 
-output_file = fullfile(base_dir,image_dirs(i).name,filenames.gel_range);
+output_file = fullfile(base_dir,image_dirs(i_num).name,filenames.gel_range);
 if(not(exist(fileparts(output_file),'dir')))
     mkdir(fileparts(output_file))
 end
 csvwrite(output_file,gel_image_range)
 
-csvwrite(fullfile(base_dir,image_dirs(i).name,filenames.puncta_range),puncta_image_range)
+csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range),puncta_image_range)
