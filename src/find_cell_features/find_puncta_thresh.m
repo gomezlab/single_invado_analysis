@@ -31,15 +31,18 @@ image_dirs = image_dirs(3:end);
 
 all_filt = [];
 
-for i = 1:size(image_dirs)
-    image = double(imread(fullfile(base_dir,image_dirs(i).name,filenames.gel)));
-
+for i_num = 1:size(image_dirs)
+    image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.gel)));
+    
     I_filt = fspecial('disk',11);
     blurred_image = imfilter(image,I_filt,'same',mean(image(:)));
     high_passed_image = image - blurred_image;
     
     all_filt = [all_filt high_passed_image(:)']; %#ok<AGROW>
-    disp(['Done with ',num2str(i),'/',num2str(size(image_dirs,1))]);
+    
+    if (mod(i_num,10)==0)
+        disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
+    end
 end
 all_filt = double(all_filt);
 
@@ -54,7 +57,7 @@ y_limits = ylim();
 
 for i=1:length(threshold)
     this_thresh = threshold(i);
-    line([this_thresh,this_thresh],[0,y_limits(2)],'Color','red', ... 
+    line([this_thresh,this_thresh],[0,y_limits(2)],'Color','red', ...
         'LineStyle','--','LineWidth',3);
 end
 
@@ -92,5 +95,5 @@ if (i_p.Results.thresh_scan)
         output_filename = sprintf('%0.1f.csv',std_count);
         csvwrite(fullfile(props_folder,output_filename),thresh_val);
     end
-
+    
 end
