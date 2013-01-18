@@ -1,4 +1,4 @@
-function find_puncta_properties(current_dir,first_dir,final_dir,varargin)
+function find_puncta_properties(exp_dir,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Setup variables and parse command line
@@ -6,41 +6,40 @@ function find_puncta_properties(current_dir,first_dir,final_dir,varargin)
 tic;
 
 i_p = inputParser;
-i_p.FunctionName = 'FIND_PUNCTA_PROPERTIES';
 
-i_p.addRequired('current_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('first_dir',@(x)exist(x,'dir') == 7);
-i_p.addRequired('final_dir',@(x)exist(x,'dir') == 7);
-
-i_p.parse(current_dir,first_dir, final_dir);
-
-i_p.addParamValue('output_dir',current_dir,@ischar);
+i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
-i_p.parse(current_dir, first_dir, final_dir,varargin{:});
+i_p.parse(exp_dir,varargin{:});
 
 %Add the folder with all the scripts used in this master program
 addpath(genpath('matlab_scripts'));
 
 filenames = add_filenames_to_struct(struct());
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from directories
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-current_data = read_in_file_set(current_dir,filenames);
-final_data = read_in_file_set(final_dir,filenames);
-first_data = read_in_file_set(first_dir,filenames);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-adhesion_properties = collect_adhesion_properties(current_data, first_data, final_data,'debug',i_p.Results.debug);
+base_dir = fullfile(exp_dir,'individual_pictures');
 
-if (i_p.Results.debug), disp('Done with gathering properties'); end
+image_dirs = dir(base_dir);
+image_dirs = image_dirs(3:end);
 
-%write the results to files
-write_adhesion_data(adhesion_properties,'out_dir',fullfile(i_p.Results.output_dir,'raw_data'));
+first_data = read_in_file_set(fullfile(base_dir,image_dirs(1).name),filenames);
+final_data = read_in_file_set(fullfile(base_dir,image_dirs(end).name),filenames);
+
+for i_num = 1:size(image_dirs,1)
+    current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
+    adhesion_properties = collect_adhesion_properties(current_data, first_data, final_data,'debug',i_p.Results.debug);
+    
+    %write the results to files
+    write_adhesion_data(adhesion_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
+    
+    if (mod(i_num,10)==0)
+        disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
+    end
+end
 
 toc;
 

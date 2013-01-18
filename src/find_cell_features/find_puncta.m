@@ -36,7 +36,7 @@ image_dirs = image_dirs(3:end);
 min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
 filter_thresh = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold));
 
-for i_num = 1:size(image_dirs)
+for i_num = 1:size(image_dirs,1)
     this_image_directory = fullfile(base_dir,image_dirs(i_num).name);
     
     puncta_image = double(imread(fullfile(this_image_directory,filenames.puncta)));
