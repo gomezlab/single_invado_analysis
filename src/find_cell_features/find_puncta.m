@@ -136,7 +136,7 @@ for i_num = 1:size(image_dirs,1)
         highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask), ...
             'color_map',[0 1 0],'mix_percent',0.5);
     end
-    
+    highlighted_image = imresize(highlighted_image,[800,NaN]);
     imwrite(highlighted_image, fullfile(this_image_directory, filenames.objects_highlight));
     
     if (mod(i_num,10)==0)
