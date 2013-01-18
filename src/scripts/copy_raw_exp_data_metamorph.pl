@@ -22,7 +22,8 @@ $opt{debug} = 0;
 $opt{small_output} = 0;
 $opt{movie} = 0;
 GetOptions(\%opt, "src=s", "target=s", "debug|d", 
-	"default_config|cfg|default_cfg=s","small_output","movie") or die;
+	"default_config|cfg|default_cfg=s","small_output|small","movie",
+	"normalize|norm") or die;
 die "Can't find src folder on command line." if (not $opt{src});
 die "Can't find target folder on command line." if (not $opt{target});
 die "Can't find default_config on command line." if (not $opt{default_config});
@@ -141,11 +142,15 @@ foreach my $position (sort {$a<=>$b} keys %stage_position_sets) {
 			
 			$target_file =~ s/tif/png/i;
 			
-			my $resize_str = '';
+			my $extra_str = '';
 			if ($opt{small_output}) {
-				$resize_str = "-resize 50% -normalize ";
+				$extra_str .= "-resize 50% ";
 			}
-			my $command = "convert \"$source_file\" $resize_str\"$target_file\"";
+			if ($opt{normalize}) {
+				$extra_str .= "-contrast-stretch 0 ";
+			}
+
+			my $command = "convert \"$source_file\" $extra_str\"$target_file\"";
 			if ($opt{debug}) {
 				#print "$command\n\n";
 			} else {
@@ -155,8 +160,8 @@ foreach my $position (sort {$a<=>$b} keys %stage_position_sets) {
 
 		if ($opt{movie}) {
 			my $movie_source_dir = catdir($image_directory,"$no_spaces_field" ."_%03d.png");
-			my $output_file = catdir($position_directory,"$no_spaces_field.mp4");
-			my $command = "ffmpeg -i $movie_source_dir $output_file > /dev/null";
+			my $output_file = catdir($position_directory,"$no_spaces_field.mov");
+			my $command = "ffmpeg -i $movie_source_dir -sameq $output_file > /dev/null 2> /dev/null";
 			system($command);
 		}
 		# print catdir($image_directory,"$no_spaces_field" ."_%03d.png"),"\n";

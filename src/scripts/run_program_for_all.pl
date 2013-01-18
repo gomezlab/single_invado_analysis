@@ -4,13 +4,15 @@
 # Global Variables and Modules
 ###############################################################################
 use strict;
+use lib "../lib";
+use lib "../lib/perl";
+
 use File::Basename;
-use File::Find::Rule;
 use File::Spec::Functions;
 use Cwd 'abs_path';
 use Getopt::Long;
+use File::Find::Rule;
 
-use lib "../lib";
 use Config::Adhesions qw(ParseConfig);
 
 #Perl built-in variable that controls buffering print output, 1 turns off
@@ -21,7 +23,7 @@ my %opt;
 $opt{debug} = 0;
 $opt{extra} = "";
 GetOptions(\%opt, "cfg|config=s", "debug|d", "program|p=s", "extra|e=s", 
-                  "run_all_debug", "exp_filter=s", "filter_negate") or die;
+                  "run_all_debug", "exp_filter=s") or die;
 
 die "Can't find cfg file specified on the command line" if not(exists $opt{cfg});
 die "Can't find program to execute on the command line" if not(exists $opt{program});
@@ -30,7 +32,7 @@ print "Collecting Configuration\n" if $opt{debug};
 my %cfg = ParseConfig(\%opt);
 
 ###############################################################################
-# Main Program
+#Main Program
 ###############################################################################
 chdir(dirname($opt{program}));
 
@@ -44,25 +46,39 @@ $cfg_suffix =~ s/.*\.(.*)/$1/;
 my @config_files = File::Find::Rule->file()->name( "*.$cfg_suffix" )->in( ($cfg{data_folder}) );
 @config_files = sort @config_files;
 if (exists($opt{exp_filter})) {
-	if ($opt{filter_negate}) {
-		@config_files = grep not($_ =~ /$opt{exp_filter}/), @config_files;
-	} else {
-		@config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
-	}
-} 
+   @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
+}
 
+my $parallel_return = system("which parallel");
+
+my @command_set;
 foreach (@config_files) {
     next if /config\/default/;
-    if ($opt{debug}) {
-        print("./$program_base -cfg $_ $debug_string $opt{extra}\n");
-    } else {
-        print("$_\n");
-        system("./$program_base -cfg $_ $debug_string $opt{extra}");
-    }
+
+    my $command = "./$program_base -cfg $_ $debug_string $opt{extra}";
+    $command =~ s/"/\\"/g;
+    push @command_set, "\"$command; echo $_;\"";
+	if ($parallel_return != 0) {
+		if ($opt{debug}) {
+			print "$command\n";
+		} else {
+			system("ionice -c3 nice -n 20 $command");
+		}
+	}
+}
+
+if ($parallel_return == 0) {
+	if ($opt{debug}) {
+		my $parallel_cmd = "time parallel --ungroup --nice 20 ::: \n\t" . join("\n\t", @command_set) . "\t\n";
+		print $parallel_cmd;
+	} else {
+		my $parallel_cmd = "time parallel --ungroup --nice 20 ::: " . join(" ", @command_set);
+		system($parallel_cmd);
+	}
 }
 
 ###############################################################################
-# Documentation
+#Documentation
 ###############################################################################
 
 =head1 NAME

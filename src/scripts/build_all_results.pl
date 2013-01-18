@@ -51,10 +51,10 @@ $|  = 1;
 my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script register_with_matlab" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_image_set_min_max" ], ],
-	[ [ "../find_cell_features",      "./collect_mask_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_thresh" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script apply_bleaching_correction" ], ],
-	[ [ "../find_cell_features",      "./collect_puncta_image_set.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta" ], ],
 	[ [ "../find_cell_features",      "./collect_puncta_properties.pl" ], ],
 	[ [ "../analyze_cell_features",   "./build_tracking_data.pl" ], ],
 	[ [ "../analyze_cell_features",   "./track_adhesions.pl" ], ],

@@ -21,8 +21,8 @@ close OUTPUT;
 
 store \%exp_nums, 'exp_nums.stor'; 
 
-my @invado_sm_folders = <../../results/Invadopodia_testing/control/*/visualizations/single_invadopodia/no_highlights/>;
-my @notinvado_sm_folders = <../../results/Invadopodia_testing/control/*/visualizations/single_notinvadopodia/no_highlights/>;
+my @invado_sm_folders = <../../results/Invadopodia_testing/control/*/visualizations/single_invadopodia/highlights/>;
+my @notinvado_sm_folders = <../../results/Invadopodia_testing/control/*/visualizations/single_notinvadopodia/highlights/>;
 
 mkpath('sm_sets');
 
