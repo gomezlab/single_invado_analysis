@@ -86,21 +86,14 @@ foreach my $position (sort {$a<=>$b} keys %stage_position_sets) {
 	my $position_directory = catdir($opt{target}, "time_series_" . 
 		sprintf('%02d',$position + $current_max_exp_num));
 	
-	my $exp_name;
-	if ($position_directory =~ /$data_folder(.*)/) {
-		$exp_name = $1;
-	} else {
-		die "Unable to find exp name in $position_directory";
-	}
-	
 	if ($opt{debug}) {
 		print "mkpath($position_directory);\n";
 		print "copy($log_file, catfile($position_directory, 'log.txt'));\n";
-		print "&write_standard_config_file(catfile($position_directory,'analysis.cfg'),$exp_name)\n";
+		print "&write_standard_config_file(catfile($position_directory,'analysis.cfg'))\n";
 	} else {
 		mkpath($position_directory);
 		copy($log_file, catfile($position_directory, 'log.txt'));
-		&write_standard_config_file(catfile($position_directory,'analysis.cfg'),$exp_name);
+		&write_standard_config_file(catfile($position_directory,'analysis.cfg'));
 	}
 
 	foreach my $field (keys %{$stage_position_sets{$position}}) {
@@ -224,7 +217,6 @@ sub confirm_stage_hash {
 
 sub write_standard_config_file {
 	my $file_name = shift;
-	my $exp_name = shift;
 
 	my $default_config_depth = &find_main_config_depth($file_name);
 	my $config_prefix = "../" x $default_config_depth;
@@ -233,12 +225,6 @@ sub write_standard_config_file {
 	open OUTPUT, ">$file_name";
 	print OUTPUT 
 "<<include " . $config_prefix . $relative_config_file . ">>
-
-###############################################################################
-# Required Experiment Parameters
-###############################################################################
-
-exp_name = $exp_name 
 
 ###############################################################################
 # Experiment Specific Parameters
