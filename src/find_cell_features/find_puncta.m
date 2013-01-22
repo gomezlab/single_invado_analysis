@@ -131,7 +131,7 @@ for i_num = 1:size(image_dirs,1)
     scaled_image(scaled_image < 0) = 0;
     scaled_image(scaled_image > 1) = 1;
     highlighted_image = create_highlighted_image(scaled_image, im2bw(puncta_perim), ...
-        'color_map',[1 0 0],'mix_percent',0.5);
+        'color_map',[1 0 0]);
     if (exist('cell_mask','var'))
         highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask), ...
             'color_map',[0 1 0],'mix_percent',0.5);

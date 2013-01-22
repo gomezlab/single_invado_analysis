@@ -71,13 +71,21 @@ if (defined $cfg{job_group}) {
 sub build_extra_command_line_opts {
 	my $extra = '';
 
-	if ($opt{script} =~ /find_puncta_thresh/) {
+	if ($opt{script} eq "find_puncta_thresh") {
         if (defined $cfg{stdev_thresh}) {
 			my @split_stdev_vals = split(/\s+/,$cfg{stdev_thresh});
             $extra .= ",'stdev_thresh',[" . join(",",@split_stdev_vals) . "]";
         }
 	}
 
+	if ($opt{script} eq "find_puncta") {
+        if (defined $cfg{min_puncta_size}) {
+	    	$extra .= ",'min_puncta_size',$cfg{min_puncta_size}";
+	    }
+        if (defined $cfg{max_eccentricity}) {
+	    	$extra .= ",'max_eccentricity',$cfg{max_eccentricity}";
+	    }
+	}
 	return $extra;
 }
 
