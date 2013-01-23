@@ -21,7 +21,7 @@ my %opt;
 $opt{debug} = 0;
 $opt{small_output} = 0;
 $opt{movie} = 0;
-GetOptions(\%opt, "src=s", "target=s", "debug|d", 
+GetOptions(\%opt, "src|source=s", "target=s", "debug|d", 
 	"default_config|cfg|default_cfg=s","small_output|small","movie",
 	"normalize|norm") or die;
 die "Can't find src folder on command line." if (not $opt{src});
