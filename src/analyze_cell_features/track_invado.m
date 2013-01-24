@@ -135,7 +135,7 @@ if (not(exist(fullfile(base_dir,'..','tracking_matrices'),'dir')))
     mkdir(fullfile(base_dir,'..','tracking_matrices'))
 end
 
-csvwrite(fullfile(base_dir,'..','tracking_matrices','tracking_seq_testing.csv'),tracking_mat);
+csvwrite(fullfile(base_dir,'..','tracking_matrices','tracking_seq.csv'),tracking_mat);
 toc(start_time);
 
 % output_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
