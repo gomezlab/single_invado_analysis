@@ -69,7 +69,7 @@ for i_num = 1:size(image_dirs,1)
     props = regionprops(puncta,'Area');
     large_punc_nums = find([props.Area] >= 4);
     for this_num = large_punc_nums
-        %first make a binary image of the current adhesion and then run imfill
+        %first make a binary image of the current object and then run imfill
         %to fill any holes present
         this_puncta = puncta == this_num;
         filled_ad = imfill(this_puncta,'holes');

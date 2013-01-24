@@ -31,10 +31,10 @@ final_data = read_in_file_set(fullfile(base_dir,image_dirs(end).name),filenames)
 
 for i_num = 1:size(image_dirs,1)
     current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
-    adhesion_properties = collect_adhesion_properties(current_data, first_data, final_data,'debug',i_p.Results.debug);
+    object_properties = collect_object_properties(current_data, first_data, final_data,'debug',i_p.Results.debug);
     
     %write the results to files
-    write_adhesion_data(adhesion_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
+    write_object_data(object_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
     
     if (mod(i_num,10)==0)
         disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
@@ -47,17 +47,12 @@ toc;
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function adhesion_props = collect_adhesion_properties(c_d,first_d,f_d,varargin)
-% COLLECT_ADHESION_PROPERTIES    using the identified adhesions, various
-%                                properties are collected concerning the
-%                                morphology and physical properties of the
-%                                adhesions
+function object_props = collect_object_properties(c_d,first_d,f_d,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 i_p = inputParser;
-i_p.FunctionName = 'COLLECT_ADHESION_PROPERTIES';
 
 i_p.addRequired('c_d',@isstruct);
 i_p.addRequired('first_d',@isstruct);
@@ -68,7 +63,7 @@ i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(c_d,first_d,f_d,varargin{:});
 
-adhesion_props = regionprops(c_d.objects,'all');
+object_props = regionprops(c_d.objects,'all');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -79,7 +74,7 @@ adhesion_props = regionprops(c_d.objects,'all');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i=1:max(c_d.objects(:))
-    adhesion_props(i).Average_puncta_signal = mean(c_d.puncta_image(c_d.objects == i));
+    object_props(i).Average_puncta_signal = mean(c_d.puncta_image(c_d.objects == i));
     
     %this bit of code isolates a single object as a logical image and
     %then builds another logical image of the region around the object,
@@ -90,15 +85,15 @@ for i=1:max(c_d.objects(:))
     
     current_diffs = collect_local_diff_properties(c_d,this_ad);
     
-    adhesion_props(i).Local_gel_diff = current_diffs.Local_gel_diff;
-    adhesion_props(i).Global_gel_diff = current_diffs.Global_gel_diff;
-    adhesion_props(i).Large_local_gel_diff = current_diffs.Large_local_gel_diff;
+    object_props(i).Local_gel_diff = current_diffs.Local_gel_diff;
+    object_props(i).Global_gel_diff = current_diffs.Global_gel_diff;
+    object_props(i).Large_local_gel_diff = current_diffs.Large_local_gel_diff;
     
     first_diffs = collect_local_diff_properties(first_d,this_ad);
-    adhesion_props(i).First_local_gel_diff = first_diffs.Local_gel_diff;
+    object_props(i).First_local_gel_diff = first_diffs.Local_gel_diff;
     
     final_diffs = collect_local_diff_properties(f_d,this_ad);
-    adhesion_props(i).End_local_gel_diff = final_diffs.Local_gel_diff;
+    object_props(i).End_local_gel_diff = final_diffs.Local_gel_diff;
     
     if (mod(i,10) == 0 && i_p.Results.debug), disp(['Finished Ad: ',num2str(i), '/', num2str(max(c_d.objects(:)))]); end
 end
@@ -108,7 +103,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if (isfield(c_d, 'cell_mask'))
-    [dists, ~] = bwdist(~c_d.cell_mask); %#ok<NASGU>
+    [dists, ~] = bwdist(~c_d.cell_mask);
     
     %Now we search for the pixels which are closest to an edge of the cell
     %mask that is also touching the edge of image. We want to find these
@@ -120,18 +115,16 @@ if (isfield(c_d, 'cell_mask'))
     black_border_mask(:,1) = 0; black_border_mask(:,end) = 0;
     
     bb_dists_temp = bwdist(~black_border_mask);
-    
-    bb_dists = zeros(size(c_d.cell_mask));
-    
-    dists(bb_dists < dists) = NaN;
+        
+    dists(bb_dists_temp < dists) = NaN;
     for i=1:max(c_d.objects(:))
-        centroid_pos = round(adhesion_props(i).Centroid);
-        centroid_unrounded = adhesion_props(i).Centroid; %#ok<NASGU>
+        centroid_pos = round(object_props(i).Centroid);
+        centroid_unrounded = object_props(i).Centroid; %#ok<NASGU>
         if(size(centroid_pos,1) == 0)
-            warning('MATLAB:noCentroidFound','collect_adhesion_properties - centroid not found');
-            adhesion_props(i).Centroid_dist_from_edge = NaN;
+            warning('MATLAB:noCentroidFound','collect_object_properties - centroid not found');
+            object_props(i).Centroid_dist_from_edge = NaN;
         else
-            adhesion_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
+            object_props(i).Centroid_dist_from_edge = dists(centroid_pos(2),centroid_pos(1));
         end
     end
 end
