@@ -1,4 +1,4 @@
-function track_adhesions(exp_dir,varargin)
+function track_invado(exp_dir,varargin)
 
 start_time = tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,8 +38,7 @@ adhesions = cell(0);
 tracking_props = cell(0);
 
 image_reading_start = tic;
-%for i_num=1:length(image_dirs)
-for i_num=1:2
+for i_num=1:length(image_dirs)
     adhesions{i_num} = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.objects));
     
     for ad_num = 1:max(adhesions{i_num}(:))
