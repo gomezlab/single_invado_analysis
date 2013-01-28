@@ -7,7 +7,6 @@ function apply_bleaching_correction(exp_dir,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic;
 i_p = inputParser;
-i_p.FunctionName = 'DETERMINE_BLEACHING_CORRECTION';
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
@@ -36,13 +35,15 @@ image_dirs = image_dirs(3:end);
 test_image = imread(fullfile(base_dir,image_dirs(1).name,filenames.gel));
 
 no_cell_regions = ones(size(test_image));
-inside_registered = ones(size(test_image));
-
 for i=1:length(image_dirs)    
     if (exist(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask),'file')) 
         cell_mask = imread(fullfile(base_dir,image_dirs(i).name,filenames.cell_mask));
         no_cell_regions = no_cell_regions & not(cell_mask);
     end
+end
+out_dir = fileparts(fullfile(base_dir,image_dirs(1).name,filenames.no_cell_regions));
+if (not(exist(out_dir,'dir')))
+    mkdir(out_dir);
 end
 imwrite(no_cell_regions, fullfile(base_dir,image_dirs(1).name,filenames.no_cell_regions));
 
@@ -51,6 +52,7 @@ imwrite(no_cell_regions, fullfile(base_dir,image_dirs(1).name,filenames.no_cell_
 %photobleaching correction
 gel_levels_outside_cell = zeros(length(image_dirs),1);
 gel_levels = zeros(length(image_dirs),1);
+gel_levels_final = zeros(length(image_dirs),1);
 
 for i=1:length(image_dirs)    
     gel = imread(fullfile(base_dir,image_dirs(i).name,filenames.gel));
@@ -59,6 +61,7 @@ for i=1:length(image_dirs)
     gel_levels_outside_cell(i) = mean(gel(no_cell_regions));
     
     gel_corrected = gel .* (gel_levels_outside_cell(1)/gel_levels_outside_cell(i));
+    gel_levels_final(i) = mean(gel_corrected(:));
     
     imwrite(gel_corrected,fullfile(base_dir,image_dirs(i).name,filenames.gel),'Bitdepth',16);
 end
@@ -70,11 +73,12 @@ xlabel('Time (min)', 'Fontsize',16)
 ylabel('Average Intensity', 'Fontsize',16);
 hold on;
 plot(time_points,gel_levels_outside_cell,'r');
+plot(time_points,gel_levels_final,'k');
 
 y_limits = ylim();
 ylim([0 y_limits(2)]);
 
-legend('Overall','Outside Cell', 'location','SouthEast')
+legend('Overall','Outside Cell','Corrected','location','SouthEast')
 print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.bleaching_plot));
 close all;
 

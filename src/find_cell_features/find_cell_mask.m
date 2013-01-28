@@ -43,7 +43,6 @@ for i_num = 1:size(image_dirs)
 end
 
 overall_threshold = nanmedian(thresholds(:));
-puncta_min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
 
 for i_num = 1:size(image_dirs)
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
@@ -65,6 +64,7 @@ for i_num = 1:size(image_dirs)
     end
     
     if (i_p.Results.debug)
+        puncta_min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
         puncta_norm = (puncta_image - puncta_min_max(1))/range(puncta_min_max);
         edge_highlight = create_highlighted_image(puncta_norm,bwperim(threshed_mask));
         imwrite(edge_highlight, fullfile(base_dir,image_dirs(i_num).name,'edge_highlight.png'));

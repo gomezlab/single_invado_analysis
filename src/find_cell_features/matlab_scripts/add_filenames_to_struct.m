@@ -6,10 +6,6 @@ function cfg_struct = add_filenames_to_struct(cfg_struct)
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cfg_struct.affine_matrix = 'affine_matrix.csv';
-cfg_struct.registration_diff = 'registration_diffs.csv';
-cfg_struct.affine_matrix_cascade = 'affine_matrix_cascade.csv';
-
 cfg_struct.objects = 'puncta_labeled.png';
 cfg_struct.objects_perim = 'puncta_labeled_perim.png';
 cfg_struct.objects_binary = 'puncta_binary.png';

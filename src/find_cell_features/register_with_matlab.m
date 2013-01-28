@@ -36,6 +36,7 @@ csvwrite(affine_file,diag(ones(3,1)));
 
 [optimizer, metric] = imregconfig('monomodal');
 
+reg_start = tic;
 %registration will go in a step-wise fashion, register image 2 to image 1,
 %then image 3 to 2, then image 4 to 3, ...
 for i_num = 1:(size(image_dirs,1)-1)
@@ -55,7 +56,9 @@ for i_num = 1:(size(image_dirs,1)-1)
     csvwrite(affine_file,this_transform);
     
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
-        fprintf('Done with %d/%d\n',i_num,size(image_dirs,1));
+        run_so_far = toc(reg_start);
+        est_left = (run_so_far/i_num)*(size(image_dirs,1) - i_num);
+        fprintf('Done Calculating with %d/%d (%d min left)\n',i_num,size(image_dirs,1),round(est_left/60));
     end
 end
 
@@ -68,6 +71,12 @@ for i_num = 2:size(image_dirs,1)
     left_right_trans_set(i_num) = affine_mat(3,1);
     up_down_trans_set(i_num) = affine_mat(3,2);
 end
+
+plot(cumsum(left_right_trans_set),cumsum(up_down_trans_set));
+xlabel('Left-Right Translation', 'Fontsize',16)
+ylabel('Up-Down Translation', 'Fontsize',16);
+print('-depsc2', fullfile(base_dir,image_dirs(1).name,'../../puncta_props/tranlation.eps'));
+close all;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Apply Registration to All Images
@@ -88,7 +97,7 @@ for i_num = 2:size(image_dirs,1)
     imwrite(puncta_image,fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
     
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
-        fprintf('Done with %d/%d\n',i_num,size(image_dirs,1));
+        fprintf('Done Appling with %d/%d\n',i_num,size(image_dirs,1));
     end
 end
 
