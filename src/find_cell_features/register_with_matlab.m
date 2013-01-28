@@ -58,7 +58,7 @@ for i_num = 1:(size(image_dirs,1)-1)
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
         run_so_far = toc(reg_start);
         est_left = (run_so_far/i_num)*(size(image_dirs,1) - i_num);
-        fprintf('Done Calculating with %d/%d (%d min left)\n',i_num,size(image_dirs,1),round(est_left/60));
+        fprintf('Done Calculating %d/%d (%d min left)\n',i_num,size(image_dirs,1),round(est_left/60));
     end
 end
 
@@ -97,7 +97,7 @@ for i_num = 2:size(image_dirs,1)
     imwrite(puncta_image,fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
     
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
-        fprintf('Done Appling with %d/%d\n',i_num,size(image_dirs,1));
+        fprintf('Done Applying %d/%d\n',i_num,size(image_dirs,1));
     end
 end
 
