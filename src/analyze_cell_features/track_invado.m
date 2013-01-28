@@ -55,7 +55,6 @@ assign_start = tic;
 for i_num=1:(length(adhesions) - 1)
     pix_sim = calc_pix_sim(adhesions{i_num},adhesions{i_num+1});
     cent_dist = calc_cent_dist(adhesions{i_num},adhesions{i_num+1});
-    save(fullfile(base_dir,image_dirs(i_num).name,'pix_sim.mat'),'pix_sim');
         
     %Start by searching for reciprical high pixel similarity matches,
     %defined as those cells that overlap a single cell in the next frame by
