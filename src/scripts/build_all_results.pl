@@ -100,23 +100,6 @@ for (@overall_command_seq) {
 		print "Checking for all output files on command $command_seq[0][1]\n";
 		my %exp_sets = &check_file_sets(\@config_files);
 
-		for (1..2) {
-			#if no experiments are left to retry, we break out and continue
-			#to the next command set
-			if (not(@{$exp_sets{retry}})) {
-				last;
-				next;
-			}
-			print "Retrying these experiments:\n".
-				  join("\n", @{$exp_sets{retry}}) . "\n";
-			&execute_command_seq(\@command_seq, $starting_dir, \@{$exp_sets{retry}});
-			&wait_till_LSF_jobs_finish if ($opt{lsf});
-			my %these_exp_sets = &check_file_sets(\@{$exp_sets{retry}});
-
-			push @{$exp_sets{good}}, @{$these_exp_sets{good}};
-			@{$exp_sets{retry}} = @{$these_exp_sets{retry}};
-		}
-
 		#check if there are any files left in the retry set, if so, clear
 		#out the failed experiments from the next round
 		if (@{$exp_sets{retry}}) {
