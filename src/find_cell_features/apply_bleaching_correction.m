@@ -68,7 +68,7 @@ end
 
 %diagnostic plot
 time_points = (0:(length(gel_levels) - 1))*5;
-diag_fig_hnd = plot(time_points,gel_levels);
+plot(time_points,gel_levels);
 xlabel('Time (min)', 'Fontsize',16)
 ylabel('Average Intensity', 'Fontsize',16);
 hold on;
