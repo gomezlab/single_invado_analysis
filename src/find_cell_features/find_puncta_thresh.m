@@ -30,14 +30,17 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 all_filt = [];
+single_image_thresh = [];
 
 for i_num = 1:size(image_dirs)
-    image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.gel)));
+    image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
     
     I_filt = fspecial('disk',11);
     blurred_image = imfilter(image,I_filt,'same',mean(image(:)));
     high_passed_image = image - blurred_image;
     
+    single_image_thresh = [single_image_thresh ...
+        mean(high_passed_image(:)) + i_p.Results.stdev_thresh*std(high_passed_image(:))]; %#ok<AGROW>
     all_filt = [all_filt high_passed_image(:)']; %#ok<AGROW>
     
     if (mod(i_num,10)==0)
@@ -45,8 +48,13 @@ for i_num = 1:size(image_dirs)
     end
 end
 all_filt = double(all_filt);
+plot(single_image_thresh)
+xlabel('Image Number');
+ylabel('Puncta Threshold');
+print('-depsc2', fullfile(base_dir,'puncta_props','single_image_thresholds.eps'));
 
-threshold = mean(all_filt(:)) + i_p.Results.stdev_thresh*std(all_filt(:));
+% threshold = mean(all_filt(:)) + i_p.Results.stdev_thresh*std(all_filt(:));
+threshold = median(single_image_thresh);
 
 csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold),threshold)
 
