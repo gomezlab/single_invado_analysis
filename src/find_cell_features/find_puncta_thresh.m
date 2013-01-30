@@ -51,7 +51,8 @@ all_filt = double(all_filt);
 plot(single_image_thresh)
 xlabel('Image Number');
 ylabel('Puncta Threshold');
-print('-depsc2', fullfile(base_dir,'puncta_props','single_image_thresholds.eps'));
+print('-depsc2', fullfile(base_dir,'..','puncta_props','single_image_thresholds.eps'));
+close;
 
 % threshold = mean(all_filt(:)) + i_p.Results.stdev_thresh*std(all_filt(:));
 threshold = median(single_image_thresh);
