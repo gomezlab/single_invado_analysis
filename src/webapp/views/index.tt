@@ -1,0 +1,34 @@
+<div class="container">
+
+<div class="page-header">
+	<div class="row">
+		<div class="span12">
+			<h1>Invadopodia Degradation Assay Server</h1>
+		</div>
+	</div>
+</div>
+
+<div class="row">
+	<div class="span12">
+
+	<h2>Options</h2>
+	<ul>
+	<li><a href="upload">Submit Experiment</a></li>
+	<li><a href="thresh_testing">Test Puncta Finding Threshold</a></li>
+	</ul>
+
+	<hr>
+
+	<p>Welcome to the Invadopodia Degradation Assay Server operated out of
+	Shawn Gomez's <a href="http://gomezlab.bme.unc.edu/">lab</a> at the
+	University of North Carolina at Chapel Hill. This website is designed to
+	process image sets related to assessing how single invadopodia structures
+	degrade extra-cellular matrix (ECM) in 2D fluorescence assays.</p>
+	
+
+	<p>If you have any questions or concerns, please email me at matthew.berginski [at] gmail.com</p>
+	
+	</div>
+</div>
+
+</div>
