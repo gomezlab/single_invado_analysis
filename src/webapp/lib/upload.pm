@@ -9,7 +9,10 @@ use File::Basename qw/ dirname /;
 use File::Spec::Functions;
 use File::Path qw/ make_path /;
 use File::Copy qw/ move /;
+use File::Find;
 use Config::General;
+
+my $out_folder = catdir('..','uploaded_experiments');
 
 ###############################################################################
 # Main
@@ -20,18 +23,19 @@ get '/upload' => sub {
 };
 
 post '/upload' => sub {
-	mkdir "uploaded_experiments" if (! -e "uploaded_experiments");
+	if (! -e $out_folder) {
+		make_path $out_folder or die $!;
+		chmod 0777, $out_folder;
+	}
 
 	my $puncta_file = upload('puncta_image') or die $!;
-	my ($puncta_fh, $puncta_filename) = tempfile("puncta_XXXXXX",DIR=>"uploaded_experiments");
+	my ($puncta_fh, $puncta_filename) = tempfile("puncta_XXXXXX",DIR=>$out_folder);
 	while ($puncta_filename =~ /puncta_.*_.*/) {
 		unlink $puncta_filename;
-		($puncta_fh, $puncta_filename) = tempfile("puncta_XXXXXX",DIR=>"uploaded_experiments");
+		($puncta_fh, $puncta_filename) = tempfile("puncta_XXXXXX",DIR=>$out_folder);
 	}
 	$puncta_file->copy_to($puncta_filename);
 	
-	&is_file_TIFF($puncta_filename);
-
 	my $ecm_filename = $puncta_filename;
 	$ecm_filename =~ s/puncta/ecm/;
 	my $ecm_file = upload('ecm_image') or die $!;
@@ -90,16 +94,23 @@ sub organize_uploaded_files {
 	my $cfg_file = $_[2];
 	
 	$puncta_file =~ /puncta_(.*)/;
-	my $out_folder = "invado_$1";
+	my $out_folder = catdir(dirname($puncta_file),"invado_$1");
 	
-	my $base_folder = dirname($puncta_file);
-	my $puncta_folder = catdir($base_folder, $out_folder,'Images','puncta');
-	my $gel_folder = catdir($base_folder, $out_folder,'Images','gel');
+	my $puncta_folder = catdir($out_folder,'Images','puncta');
+	my $gel_folder = catdir($out_folder,'Images','gel');
 	make_path($puncta_folder, $gel_folder);
 	
 	move($puncta_file, catfile($puncta_folder,'puncta.tif'));
 	move($gel_file, catfile($gel_folder,'gel.tif'));
-	move($cfg_file, catdir($base_folder, $out_folder, "analysis.cfg"));
+	move($cfg_file, catdir($out_folder, "analysis.cfg"));
+	
+	chmod 0777, $out_folder;
+	find(\&change_file_perm, $out_folder);
+}
+
+sub change_file_perm {
+	chmod 0777, $_ or debug "$!";
+	debug "$File::Find::name";
 }
 
 true;

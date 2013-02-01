@@ -7,9 +7,9 @@ use Sys::Hostname;
 use File::Spec::Functions;
 use Data::Dumper;
 
-my $upload_dir = "uploaded_experiments";
-my $results_dir = "public/results";
-my $running_dir = "Invapodia/data";
+my $upload_dir = catdir('..','uploaded_experiments');
+my $results_dir = "results";
+my $running_dir = catdir('Invapodia','data');
 
 ###############################################################################
 # Main
