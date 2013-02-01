@@ -1,60 +1,60 @@
 <!-- HEADER line -->
 <div class="container">
+	<div class="page-header">
+		<div class="row">
+			<div class="span12">
+				<h1>Invadopodia Degradation Assay Image Upload</h1>
+			</div>
+		</div>
+	</div>
 
-<div class="page-header">
 	<div class="row">
 		<div class="span12">
-			<h1>Invadopodia Degradation Assay Image Upload</h1>
+
+
+			<!--- ################
+			Form starts here
+			################ -->
+
+			<form class="form-horizontal" enctype="multipart/form-data" method="post">
+				<fieldset>
+
+					<h2>Required Files</h2>
+					<!-- Text-Entry Control -->
+					<div class="control-group">
+						<label class="control-label" for="puncta_image">Puncta Image</label>
+						<div class="controls">
+							<input type="file" name="puncta_image">
+							<span class="help-inline">TIFF formated image of the actin puncta</span> 
+						</div>
+					</div>
+
+					<div class="control-group">
+						<label class="control-label" for="ecm_image">ECM Image</label>
+						<div class="controls">
+							<input type="file" name="ecm_image">
+							<span class="help-inline">TIFF formated image of the ECM</span> 
+						</div>
+					</div>
+
+					<h2>Optional</h2>
+					<div class="control-group">
+						<label class="control-label" for="email">Email Address</label>
+						<div class="controls">
+							<input type="text" class="input-xlarge" name="email">
+							<span class="help-inline">Your email address will only be used for notification purposes</span> 
+						</div>
+					</div>
+
+
+					<!-- The Submit buttons -->
+					<div class="form-actions"> 
+						<button type="submit" class="btn btn-primary">Submit Experiment</button> 
+					</div> 
+
+				</fieldset>
+			</form>
+
 		</div>
-	</div>
-</div>
-
-<div class="row">
-	<div class="span12">
-
-
-<!--- ################
-      Form starts here
-      ################ -->
-
-<form class="form-horizontal" enctype="multipart/form-data" method="post">
-<fieldset>
-	
-	<h2>Required Parameters</h2>
-	<!-- Text-Entry Control -->
-	<div class="control-group">
-		<label class="control-label" for="puncta_image">Puncta Image</label>
-		<div class="controls">
-			<input type="file" name="puncta_image">
-			<span class="help-inline">TIFF formated image of the actin puncta</span> 
-		</div>
-	</div>
-
-	<div class="control-group">
-		<label class="control-label" for="ecm_image">ECM Image</label>
-		<div class="controls">
-			<input type="file" name="ecm_image">
-			<span class="help-inline">TIFF formated image of the ECM</span> 
-		</div>
-	</div>
-
-	<h2>Optional</h2>
-	<div class="control-group">
-		<label class="control-label" for="email">Email Address</label>
-		<div class="controls">
-			<input type="text" class="input-xlarge" name="email">
-			<span class="help-inline">Your email address will only be used for notification purposes</span> 
-		</div>
-	</div>
-	
-
-	<!-- The Submit buttons -->
-	<div class="form-actions"> 
-		<button type="submit" class="btn btn-primary">Submit Experiment</button> 
-	</div> 
-
-</fieldset>
-</form>
-
 	</div>
 </div>
