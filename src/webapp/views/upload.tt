@@ -25,7 +25,7 @@
 						<label class="control-label" for="puncta_image">Puncta Image</label>
 						<div class="controls">
 							<input type="file" name="puncta_image">
-							<span class="help-inline">TIFF formated image of the actin puncta</span> 
+							<span class="help-inline">TIFF formatted image of the actin puncta</span> 
 						</div>
 					</div>
 
@@ -33,7 +33,7 @@
 						<label class="control-label" for="ecm_image">ECM Image</label>
 						<div class="controls">
 							<input type="file" name="ecm_image">
-							<span class="help-inline">TIFF formated image of the ECM</span> 
+							<span class="help-inline">TIFF formatted image of the ECM</span> 
 						</div>
 					</div>
 
