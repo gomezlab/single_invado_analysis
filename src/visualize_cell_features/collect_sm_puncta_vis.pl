@@ -41,8 +41,6 @@ my %cfg = ParseConfig(\%opt);
 
 my @matlab_code = &build_single_ad_commands;
 
-# $opt{memsize} = 1024*10;
-$opt{resource} = "mem96"; 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'sm_vis');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
 if (defined $cfg{job_group}) {
