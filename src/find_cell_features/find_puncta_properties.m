@@ -63,7 +63,7 @@ i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(c_d,first_d,f_d,varargin{:});
 
-object_props = regionprops(c_d.objects,'all');
+object_props = regionprops(c_d.objects,'Area','Centroid','Eccentricity');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
@@ -172,20 +172,18 @@ field_names = fieldnames(S);
 
 ad_props_cell = struct2cell(S);
 
-print_strings = struct('PixelIdxList','%0.f','Angle_diff_from_radial','%0.2f',...
-    'Orientation','%0.2f','Angle_to_FA_cent','%0.2f','MajorAxisLength','%0.2f',...
-    'MinorAxisLength','%0.2f','Average_adhesion_signal','%0.2f', ...
-    'Variance_adhesion_signal','%0.2f','Min_adhesion_signal','%0.2f', ...
-    'Max_adhesion_signal','%0.2f','Kinase_intensity','%0.2f', ...
-    'Kinase_intensity_corrected','%0.2f','Area','%d');
+print_strings = struct('PixelIdxList','%0.f',...
+    'Orientation','%0.2f','MajorAxisLength','%0.2f',...
+    'MinorAxisLength','%0.2f','Area','%d','Centroid_dist_from_edge','%0.2f',...
+    'Local_gel_diff','%0.2f');
 
 for i = 1:size(field_names,1)
-    if(strmatch(field_names(i),to_exclude))
+    if(strcmp(field_names(i),to_exclude))
         continue;
     end
     
     format_string = '%f';
-    if(strmatch(field_names(i),fieldnames(print_strings)))
+    if(strcmp(field_names(i),fieldnames(print_strings)))
         format_string = print_strings.(field_names{i});
     end
     
