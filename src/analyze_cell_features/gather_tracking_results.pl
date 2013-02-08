@@ -107,7 +107,7 @@ sub convert_data_to_units {
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
-            if (grep $data_type eq $_, qw(Centroid_dist_from_edge Centroid_dist_from_center MajorAxisLength 
+            if (grep $data_type eq $_, qw(Centroid_dist_from_edge Centroid_dist_from_center 
                                           MinorAxisLength)) {
                 @{ $data_sets{$time}{$data_type} } = map $lin_conv_factor * $_, @{ $data_sets{$time}{$data_type} };
             } elsif (grep $data_type eq $_, qw(Area Cell_size)) {
@@ -142,7 +142,7 @@ sub gather_single_ad_props {
     my @data;
 
     my @possible_data_types =
-      qw(Area Average_puncta_signal Eccentricity Solidity MajorAxisLength 
+      qw(Area Average_puncta_signal Eccentricity Solidity 
          MinorAxisLength Centroid_dist_from_edge Centroid_dist_from_center 
          Variance_adhesion_signal);
 
@@ -277,7 +277,6 @@ sub gather_and_output_lineage_properties {
     $props{merge_count}             = &gather_merge_count;
     $props{death_status}            = &gather_death_status;
     $props{split_birth_status}      = &gather_split_birth_status;
-    $props{average_eccentricity}    = &gather_average_eccentricity;
     $props{Average_puncta_signal} = &gather_prop_seq("Average_puncta_signal");
     &output_prop_time_series($props{Average_puncta_signal}, "Average_puncta_signal");
     $props{ad_sig} = &gather_average_value($props{Average_puncta_signal});
@@ -757,26 +756,6 @@ sub gather_death_status {
     }
 
     return \@death_status;
-}
-
-sub gather_average_eccentricity {
-    print "\r", " " x 80, "\rGathering Average Eccentricity" if $opt{debug};
-	my @major_axis = @{&gather_prop_seq("MajorAxisLength")};
-	my @minor_axis = @{&gather_prop_seq("MinorAxisLength")};
-	
-	my @eccentricity;
-
-    for my $i (0 .. $#major_axis) {
-        for my $j (0 .. $#{ $major_axis[$i] }) {
-			die "Minor Axis value of zero at position: $i $j, value of $minor_axis[$i][$j]" 
-				if ($minor_axis[$i][$j] == 0);
-			$eccentricity[$i][$j] = $major_axis[$i][$j]/$minor_axis[$i][$j];
-        }
-    }
-	
-	my @average_eccentricity = @{&gather_average_value(\@eccentricity)};
-
-	return \@average_eccentricity;
 }
 
 sub gather_split_birth_status {

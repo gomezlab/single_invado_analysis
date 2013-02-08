@@ -55,7 +55,6 @@ toc(start_read);
 
 start_process = tic;
 for row = 1:size(tracking_seq,1)
-    
     pre_birth_i_num = find_birth_i_num(tracking_seq(row,:) < 1) - 1;
     %the above function returns NaN if there isn't a pre-birth image
     %number, catch that situation and exit out of the loop in that case
