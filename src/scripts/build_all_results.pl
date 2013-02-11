@@ -68,7 +68,8 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_dual_highlight_image" ], ],
 );
 
-my @skip_check = qw(find_image_set_min_max);
+my @skip_check = qw(find_image_set_min_max collect_sm_puncta_vis
+collect_final_image_highlights build_dual_highlight_image);
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
