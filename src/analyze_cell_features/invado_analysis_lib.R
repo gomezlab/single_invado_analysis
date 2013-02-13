@@ -17,8 +17,9 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                   "moving on to the next file."))
             next;
         }
-        
+        ########################################################################
         #Reading in raw data
+        ########################################################################
         print(paste('Working on:',this_exp_dir));
         lineage_data = read.table(file.path(this_exp_dir,'single_lin.csv'), 
             sep=",",header=T);
@@ -32,19 +33,15 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             sep=",",header=F);
         stopifnot(dim(lineage_data)[[1]] == dim(local_diff_data)[[1]])
         
+
+        ########################################################################
         #Building the filter sets
+        ########################################################################
         
-        #exclude puncta that don't live for at least 5 time steps
+        #We only want to consider puncta that live for at least 5 time steps
         longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
         
-        #exclude puncta that underwent split births
-        no_split_birth_filt = ! is.na(lineage_data$split_birth_status) & ! lineage_data$split_birth_status;
-
-        #exclude puncta that disappeared due to merge events (coded as 0 in the
-        #lineage data file)
-        death_filt = ! is.na(lineage_data$death_status) & lineage_data$death_status;
-
-        overall_filt = longev_filter & no_split_birth_filt & death_filt;
+        overall_filt = longev_filter;
 
         all_props$lineage_nums = c(all_props$lineage_nums,which(overall_filt));
         all_props$experiment = c(all_props$experiment,
