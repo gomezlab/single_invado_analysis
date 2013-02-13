@@ -5,9 +5,9 @@
 
 library(Hmisc);
 
-gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE, 
-    conf.level = 0.95, degrade_file = "Local_gel_diff.csv", results.file = NA, 
-    build_plots=TRUE, debug=FALSE) {
+gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
+                                     conf.level = 0.95, results.file = NA,
+                                     build_plots=TRUE, debug=FALSE) {
     
     for (this_exp_dir in results_dirs) {
         all_props = list();
@@ -23,9 +23,9 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         print(paste('Working on:',this_exp_dir));
         lineage_data = read.table(file.path(this_exp_dir,'single_lin.csv'), 
             sep=",",header=T);
-        local_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', degrade_file), 
+        local_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Local_gel_diff_percent.csv'), 
             sep=",",header=F);
-        pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff.csv'), 
+        pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff_percent.csv'), 
             sep=",",header=F);
         area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
             sep=",",header=F);
@@ -96,14 +96,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
 
             all_props$mean_edge_dist = c(all_props$mean_edge_dist, mean(only_edge_dist_data));
             
-            # if (lin_num == 515) {
-            #     all_three_sets = cbind(local_diff, pre_diff, local_diff - pre_diff);
-            #     # browser();
-            #     svg('single_invado_ctrl_02_23_pos04_515.svg')
-            #     build_presentation_single_invado_plot(all_three_sets,stat_tests,lin_num);
-            #     graphics.off()
-            # }
-
             if (build_plots) {
                 all_three_sets = cbind(local_diff, pre_diff, pre_local_diff);
                 build_single_invado_plot(all_three_sets,stat_tests,lin_num);

@@ -87,7 +87,7 @@ output_folder = fullfile(exp_folder,'puncta_props','lin_time_series');
 if (not(exist(output_folder,'dir')))
     mkdir(output_folder);
 end
-dlmwrite(fullfile(output_folder,'Pre_birth_diff.csv'), pre_birth_diffs);
+dlmwrite(fullfile(output_folder,'Pre_birth_diff_percent.csv'), pre_birth_diffs);
 
 toc(start_all);
 end
