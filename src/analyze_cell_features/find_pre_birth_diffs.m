@@ -74,7 +74,7 @@ for row = 1:size(tracking_seq,1)
         this_puncta = data_set{col}.objects == puncta_num;
         pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta);
         
-        pre_birth_diffs(row,col) = pre_birth_diff.Local_gel_diff;
+        pre_birth_diffs(row,col) = pre_birth_diff.Local_gel_diff_percent;
     end
     
     if (mod(row,100) == 0)
