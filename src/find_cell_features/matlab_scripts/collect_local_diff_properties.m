@@ -30,6 +30,7 @@ background_region = and(background_region,not(data_struct.objects));
 
 if (sum(sum(background_region)) == 0)
     diffs.Local_gel_diff = NaN;
+    diffs.Local_gel_diff_percent = NaN;
 else
     diffs.Local_gel_diff = mean(data_struct.gel_image(this_ad)) - mean(data_struct.gel_image(background_region));
     diffs.Local_gel_diff_percent = 100*(diffs.Local_gel_diff/(mean(data_struct.gel_image(background_region)) - data_struct.gel_range(1)));
