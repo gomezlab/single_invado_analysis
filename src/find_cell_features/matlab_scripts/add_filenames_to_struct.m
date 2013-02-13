@@ -28,3 +28,5 @@ cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
 
 cfg_struct.invado_data = '../../puncta_props/invado_data.csv';
 cfg_struct.not_invado_data = '../../puncta_props/not_invado_data.csv';
+
+cfg_struct.tracking = 'tracking_matrices/tracking_seq.csv';
