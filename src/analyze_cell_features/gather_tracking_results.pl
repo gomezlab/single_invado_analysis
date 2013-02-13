@@ -72,15 +72,6 @@ if ($opt{debug}) {
 print "\n\nCollecting Tracking Matrix\n" if $opt{debug};
 my @tracking_mat = &Image::Data::Collection::read_in_tracking_mat(\%cfg, \%opt);
 
-print "\n\nCreating/Outputing Overall Cell Property Files\n" if $opt{debug};
-&gather_and_output_overall_cell_properties;
-
-print "\n\nCreating/Outputing Individual Adhesion Property Files\n" if $opt{debug};
-my @single_ad_props = &gather_single_ad_props(\%cfg, \%opt);
-&output_single_adhesion_props(@single_ad_props);
-@single_ad_props = ();
-undef @single_ad_props;
-
 print "\n\nCreating/Outputing Adhesion Lineage Property Files\n", if $opt{debug};
 &gather_and_output_lineage_properties;
 
@@ -102,8 +93,8 @@ sub convert_data_to_units {
 	  Background_corrected_signal Angle_to_center Orientation
 	  Shrunk_corrected_signal Cell_mean_intensity Outside_mean_intensity
 	  Cell_not_ad_mean_intensity Average_puncta_signal CB_corrected_signal
-	  Global_gel_diff Local_gel_diff End_local_gel_diff Local_gel_diff_corr 
-	  First_local_gel_diff);
+	  Global_gel_diff Local_gel_diff Local_gel_diff_corr 
+	  First_local_gel_diff Local_gel_diff_percent);
 
     for my $time (sort keys %data_sets) {
         for my $data_type (keys %{ $data_sets{$time} }) {
@@ -264,7 +255,8 @@ sub gather_and_output_lineage_properties {
     }
 
     #Pure Time Series Props
-	my @ts_props = qw(Area Local_gel_diff Centroid_dist_from_edge);
+	my @ts_props = qw(Area Local_gel_diff Local_gel_diff_percent
+	Centroid_dist_from_edge);
     foreach my $data_type (@ts_props) {
         next if (not(grep $data_type eq $_, @available_data_types));
 
@@ -294,10 +286,6 @@ sub gather_and_output_lineage_properties {
     $props{end_y} = &gather_last_entry($props{Centroid_y});
     undef $props{Centroid_y};
 	
-    ($props{speeds}{All}, $props{velocity}) = &gather_adhesion_speeds;
-    ($props{average_speeds}, $props{variance_speeds}, $props{max_speeds}) = 
-		&gather_speed_props($props{speeds}{All});
-
     if (grep "Area" eq $_, @available_data_types) {
         $props{Area} = &gather_prop_seq("Area");
         $props{largest_area} = &gather_largest_entry($props{Area});
@@ -306,10 +294,6 @@ sub gather_and_output_lineage_properties {
         undef $props{Area};
     }
 	
-	$props{End_local_gel_diff} = &gather_prop_seq("End_local_gel_diff");
-	$props{last_local_gel_diff} = &gather_entry_by_inum($props{End_local_gel_diff}, $props{largest_area_inum});
-	undef $props{End_local_gel_diff};
-
     if (grep "Centroid_dist_from_center" eq $_, @available_data_types) {
         $props{Centroid_dist_from_center} = &gather_prop_seq("Centroid_dist_from_center");
         $props{starting_center_dist} = &gather_first_entry($props{Centroid_dist_from_center});

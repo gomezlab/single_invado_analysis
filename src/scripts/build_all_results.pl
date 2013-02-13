@@ -64,7 +64,6 @@ my @overall_command_seq = (
 	[ [ "../analyze_cell_features",   "./gather_tracking_results.pl" ], ],
 	[ [ "../analyze_cell_features",   "./find_invadopodia_puncta.pl" ], ],
 	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl" ], ],
-	[ [ "../visualize_cell_features", "./collect_final_image_highlights.pl" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_dual_highlight_image" ], ],
 );
