@@ -82,6 +82,9 @@ sub build_extra_command_line_opts {
         if (defined $cfg{min_puncta_size}) {
 	    	$extra .= ",'min_puncta_size',$cfg{min_puncta_size}";
 	    }
+        if (defined $cfg{max_puncta_size}) {
+	    	$extra .= ",'max_puncta_size',$cfg{max_puncta_size}";
+	    }
         if (defined $cfg{max_eccentricity}) {
 	    	$extra .= ",'max_eccentricity',$cfg{max_eccentricity}";
 	    }

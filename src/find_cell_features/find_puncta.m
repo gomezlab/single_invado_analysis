@@ -9,6 +9,7 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('min_puncta_size',1,@(x)isnumeric(x) && x > 0);
+i_p.addParamValue('max_puncta_size',Inf,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('max_eccentricity',1,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
@@ -84,21 +85,20 @@ for i_num = 1:size(image_dirs,1)
         props = regionprops(puncta,'Area');
         puncta = puncta .* ismember(puncta, find([props.Area] >= i_p.Results.min_puncta_size));
     end
+    if (not(isinf(i_p.Results.max_puncta_size)))
+        props = regionprops(puncta,'Area');
+        puncta = puncta .* ismember(puncta, find([props.Area] <= i_p.Results.max_puncta_size));
+    end
     
     if (not(any(strcmp('max_eccentricity',i_p.UsingDefaults))))
         props = regionprops(puncta,'Eccentricity','MajorAxisLength','MinorAxisLength');
         puncta = puncta .* ismember(puncta, find([props.Eccentricity] <= i_p.Results.max_eccentricity));
     end
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Make Placeholder image for empties
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    %the tracking algorithm expects to find something in every frame, this
-    %ensures that at least a single pixel is found
-    if (sum(sum(puncta)) == 0)
-        puncta(end,end) = 1;
-    end
+    %     if (not(any(strcmp('max_solidity',i_p.UsingDefaults))))
+    %         props = regionprops(puncta,'Solidity');
+    %         puncta = puncta .* ismember(puncta, find([props.Solidity] <= i_p.Results.max_eccentricity));
+    %     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Renumber objects to be sequential
@@ -136,7 +136,9 @@ for i_num = 1:size(image_dirs,1)
         highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask), ...
             'color_map',[0 1 0],'mix_percent',0.5);
     end
-    highlighted_image = imresize(highlighted_image,[800,NaN]);
+    if (size(highlighted_image,1) > 800)
+        highlighted_image = imresize(highlighted_image,[800,NaN]);
+    end
     imwrite(highlighted_image, fullfile(this_image_directory, filenames.objects_highlight));
     
     if (mod(i_num,10)==0)

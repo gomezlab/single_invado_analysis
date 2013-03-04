@@ -56,7 +56,7 @@ for i_num = 1:size(image_dirs)
     region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
     
     %filter out connected regions smaller than 10000 pixels
-    threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 10000));
+    threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 5000));
     
     imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask));
     if (mod(i_num,10)==0)
