@@ -50,6 +50,12 @@ for i_num = 1:length(image_folders)
         all_binary = zeros(size(this_binary));
     end
     all_binary = all_binary | this_binary;
+        
+    cell_mask_file = fullfile(individual_images_dir,image_folders(i_num).name,filenames.cell_mask);
+    if (exist(cell_mask_file,'file'))
+        cell_mask = imread(cell_mask_file);
+        all_binary = all_binary | cell_mask;
+    end
 end
 col_bounds = find(sum(all_binary));
 col_bounds = [col_bounds(1) - image_padding_min,col_bounds(end) + image_padding_min];
@@ -64,20 +70,11 @@ if (row_bounds(2) > size(all_binary,1)), row_bounds(2) = size(all_binary,1); end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Assign Each Adhesion a Unique Color
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+tracking_seq = csvread(fullfile(individual_images_dir,image_folders(1).name,filenames.tracking)) + 1;
 
-%The tracking file won't exist in cases where a single image has been
-%sent into the system. We still want to see the multi-color tracking-like
-%visualization though, so build a dummy tracking_seq variable
-if (exist(fullfile(exp_dir,filenames.tracking),'file'))
-    tracking_seq = csvread(fullfile(exp_dir,filenames.tracking)) + 1;
-else
-    the_adhesions = imread(fullfile(individual_images_dir,image_folders(1).name,filenames.adhesions));
-    tracking_seq = (1:max(the_adhesions(:)))';
-end
+max_live_objects = max(sum(tracking_seq > 0));
 
-max_live_adhesions = max(sum(tracking_seq > 0));
-
-lineage_cmap = jet(max_live_adhesions);
+lineage_cmap = jet(max_live_objects);
 lineage_to_cmap = zeros(size(tracking_seq,1),1);
 edge_cmap = jet(size(tracking_seq,2));
 
@@ -112,7 +109,7 @@ for i_num = 1:length(image_folders)
             used_c_nums = sort(lineage_to_cmap(tracking_seq(:,i_num) > 0));
             used_c_nums = used_c_nums(used_c_nums ~= 0);
 
-            taken_nums = zeros(1,max_live_adhesions);
+            taken_nums = zeros(1,max_live_objects);
             taken_nums(used_c_nums) = 1;
             taken_dists = bwdist(taken_nums);
 
@@ -124,7 +121,7 @@ for i_num = 1:length(image_folders)
         end
     end
 
-    %Make sure all the live adhesions have had a number assigned to their
+    %Make sure all the live objects have had a number assigned to their
     %lineage
     assert(all(lineage_to_cmap(tracking_seq(:,i_num) > 0) > 0), 'Error in assigning unique color codes');
 
@@ -139,7 +136,7 @@ for i_num = 1:length(image_folders)
     this_cmap(ad_nums_lineage_order,:) = lineage_cmap(cmap_nums,:); %#ok<AGROW>
     highlighted_all = create_highlighted_image(orig_i,ad_label_perim,'color_map',this_cmap);
 
-    if (exist('cell_mask','var'))
+    if (exist('cell_edge','var'))
         highlighted_all = create_highlighted_image(highlighted_all,cell_edge,'color_map',edge_cmap(i_num,:));
     end
     

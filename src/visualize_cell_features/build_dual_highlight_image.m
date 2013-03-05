@@ -80,11 +80,6 @@ if (not(exist(output_folder,'dir')))
     mkdir(output_folder);
 end
 
-output_folder_small = fullfile(exp_dir,'visualizations','invado_and_not_small');
-if (not(exist(output_folder_small,'dir')))
-    mkdir(output_folder_small);
-end
-
 output_folder_side = fullfile(exp_dir,'visualizations','side_by_side');
 if (not(exist(output_folder_side,'dir')))
     mkdir(output_folder_side);
@@ -166,10 +161,7 @@ for i = 1:length(image_dirs)
     
     output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
     imwrite(output_image, fullfile(output_folder,[sprintf('%04d',i),'.png']));
-    
-    output_image_small = imresize(output_image,0.5);
-    imwrite(output_image_small, fullfile(output_folder_small,[sprintf('%04d',i),'.png']));
-    
+        
     output_image = [original_images{1}, spacer, original_images{2}];
     output_image = imresize(output_image,0.5);
     imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i),'.png']));
