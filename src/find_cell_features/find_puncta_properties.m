@@ -37,7 +37,7 @@ for i_num = 1:size(image_dirs,1)
     all_cell_props{i_num} = object_properties;
     
     %write the results to files
-    write_object_data(object_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
+%     write_object_data(object_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
     
     if (mod(i_num,10)==0)
         disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
