@@ -68,9 +68,6 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_dual_highlight_image" ], ],
 );
 
-my @skip_check = qw(find_image_set_min_max collect_sm_puncta_vis
-collect_final_image_highlights build_dual_highlight_image);
-
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
 
@@ -81,7 +78,6 @@ if (exists($opt{exp_filter})) {
    @config_files = grep $_ =~ /$opt{exp_filter}/, @config_files;
 }
 die "No config files left after filtering." if (scalar(@config_files) == 0);
-
 
 #######################################
 # Program Running
@@ -96,22 +92,8 @@ for (@overall_command_seq) {
 
 	#If debugging is not on, we want to wait till the current jobs finish
 	#and then check the file complements of the experiments for completeness
-	my $LSF_was_run = &wait_till_LSF_jobs_finish if ($opt{lsf} && not($opt{debug}));
-	if (not($opt{debug}) && $LSF_was_run && not(grep $command_seq[0][1] =~ /$_/, @skip_check)) {
-		print "Checking for all output files on command $command_seq[0][1]\n";
-		my %exp_sets = &check_file_sets(\@config_files);
-
-		#check if there are any files left in the retry set, if so, clear
-		#out the failed experiments from the next round
-		if (@{$exp_sets{retry}}) {
-			print "\nProblem with collecting full file complement on experiments after three tries:\n\t" .
-				join("\n\t", @{$exp_sets{retry}}) . "\nRemoving them from the next run.\n\n";
-			@config_files = @{$exp_sets{good}};  
-		} else {
-			print "Output file set complete, moving on.\n";
-		}
-	}
-
+	&wait_till_LSF_jobs_finish if ($opt{lsf} && not($opt{debug}));
+	
 	if (not $opt{debug}) {
 		my $command_end_bench = new Benchmark;
 		my $td = timediff($command_end_bench, $command_start_bench);
@@ -233,36 +215,4 @@ sub running_LSF_jobs {
     } else {
         return 1;
     }
-}
-
-sub check_file_sets {
-    my @config_files = @{$_[0]};
-
-    print "Out of " . scalar(@config_files) . ", # done:";
-    my $number_configs_run = 0;
-    
-    my %exp_sets;
-    #intialize these as the code that checks these matrices in the main program
-    #assumes that a matrix will be present, even if it is empty
-    @{$exp_sets{good}} = ();
-    @{$exp_sets{retry}} = ();
-    foreach my $this_config_file (@config_files) {
-        my $return_code = system "./check_file_complement.pl -cfg $this_config_file";
-        
-        #if the return code is anything besides zero, add that config file back
-        #to the exp_to_retry list
-        if ($return_code) {
-            push @{$exp_sets{retry}}, $this_config_file ;
-        } else {
-            push @{$exp_sets{good}}, $this_config_file ;
-        }
-
-        $number_configs_run++;
-        if ($number_configs_run % ceil(scalar(@config_files)/10) == 0) {
-            print " $number_configs_run";
-        }
-    }
-    print "\n";
-
-    return %exp_sets;
 }
