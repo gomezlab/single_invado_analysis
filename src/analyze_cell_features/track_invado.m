@@ -133,28 +133,26 @@ fprintf('Tracking matrix building took %d minutes.\n',tracking_build_time);
 if (not(exist(fullfile(base_dir,'..','tracking_matrices'),'dir')))
     mkdir(fullfile(base_dir,'..','tracking_matrices'))
 end
-
-csvwrite(fullfile(base_dir,'..','tracking_matrices','tracking_seq.csv'),tracking_mat);
 toc(start_time);
 
-% output_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
-% 
-% %If the tracking matrix is empty, don't output anything and don't make a
-% %folder for the empty matrix
-% if (not(any(size(tracking_mat) == 0)))
-%     %check each column of the tracking matrix to make sure each cell number
-%     %occurs once and only once per column
-%     for col_num = 1:size(tracking_mat,2)
-%         all_tracking_nums = sort(tracking_mat(:,col_num));
-%         for cell_num = 1:max(all_tracking_nums)
-%             assert(sum(all_tracking_nums == cell_num) == 1);
-%         end
-%     end
-%     
-%     if (not(exist(fileparts(output_file),'dir'))), mkdir(fileparts(output_file)); end
-%     
-%     csvwrite(fullfile(base_dir, image_dirs(1).name,filenames.tracking),tracking_mat);
-% end
+output_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
+
+%If the tracking matrix is empty, don't output anything and don't make a
+%folder for the empty matrix
+if (not(any(size(tracking_mat) == 0)))
+    %check each column of the tracking matrix to make sure each cell number
+    %occurs once and only once per column
+    for col_num = 1:size(tracking_mat,2)
+        all_tracking_nums = sort(tracking_mat(:,col_num));
+        for cell_num = 1:max(all_tracking_nums)
+            assert(sum(all_tracking_nums == cell_num) == 1);
+        end
+    end
+    
+    if (not(exist(fileparts(output_file),'dir'))), mkdir(fileparts(output_file)); end
+    
+    csvwrite(fullfile(base_dir, image_dirs(1).name,filenames.tracking),tracking_mat);
+end
 
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

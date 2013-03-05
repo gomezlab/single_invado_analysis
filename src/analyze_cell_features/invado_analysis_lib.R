@@ -12,49 +12,45 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
     for (this_exp_dir in results_dirs) {
         all_props = list();
         
-        if (! file.exists(file.path(this_exp_dir,'single_lin.csv'))) {
-            warning(paste("Unable to find", file.path(this_exp_dir,'single_lin.csv'),
-                  "moving on to the next file."))
-            next;
-        }
         ########################################################################
         #Reading in raw data
         ########################################################################
         print(paste('Working on:',this_exp_dir));
-        lineage_data = read.table(file.path(this_exp_dir,'single_lin.csv'), 
-            sep=",",header=T);
+        area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
+            sep=",",header=F);
         local_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Local_gel_diff_percent.csv'), 
             sep=",",header=F);
         pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff_percent.csv'), 
             sep=",",header=F);
-        area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
-            sep=",",header=F);
         edge_dist_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Centroid_dist_from_edge.csv'), 
             sep=",",header=F);
-        stopifnot(dim(lineage_data)[[1]] == dim(local_diff_data)[[1]])
-        
 
         ########################################################################
         #Building the filter sets
         ########################################################################
-        
+        longevity = rowSums(! is.na(area_data))
+
         #We only want to consider puncta that live for at least 5 time steps
-        longev_filter = ! is.na(lineage_data$longevity) & lineage_data$longevity >= 5;
+        longev_filter = ! is.na(longevity) & longevity >= 5;
         
         overall_filt = longev_filter;
 
         all_props$lineage_nums = c(all_props$lineage_nums,which(overall_filt));
         all_props$experiment = c(all_props$experiment,
             rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
-        props_to_include = c("longevity","largest_area","birth_i_num","mean_area");
-        for (i in props_to_include) {
-            all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
-        }
+        all_props$longevity = longevity[overall_filt]
+
+        average_areas = rowMeans(area_data,na.rm=T);
+        all_props$mean_area = average_areas[overall_filt];
+
+        # props_to_include = c("longevity","largest_area","birth_i_num","mean_area");
+        # for (i in props_to_include) {
+        #     all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
+        # }
 
         if (build_plots) {
             pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
         }
-
         #analyzing each of the puncta in the filtered set for invadopodia filtering processes
         for (lin_num in which(overall_filt)) {
             local_diff = na.omit(as.numeric(local_diff_data[lin_num,]));
@@ -90,12 +86,15 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 stat_tests$pre_local_diff$p.value);
             all_props$mean_pre_local_diff = c(all_props$mean_pre_local_diff, 
                 as.numeric(stat_tests$pre_local_diff$estimate));
+            
+            if (length(all_props$mean_pre_local_diff) != length(all_props$mean_local_diff)) {
+                browser()
+            }
 
             only_area_data = na.omit(as.numeric(area_data[lin_num,]));
             only_edge_dist_data = na.omit(as.numeric(edge_dist_data[lin_num,]));
 
             all_props$mean_edge_dist = c(all_props$mean_edge_dist, mean(only_edge_dist_data));
-            
             if (build_plots) {
                 all_three_sets = cbind(local_diff, pre_diff, pre_local_diff);
                 build_single_invado_plot(all_three_sets,stat_tests,lin_num);
@@ -105,6 +104,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             graphics.off();
         }
     
+        browser();
         all_props = as.data.frame(all_props);
 
         if (! is.na(results.file)) {
