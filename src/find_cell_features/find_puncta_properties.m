@@ -26,9 +26,15 @@ base_dir = fullfile(exp_dir,'individual_pictures');
 image_dirs = dir(base_dir);
 image_dirs = image_dirs(3:end);
 
+all_cell_props = cell(0);
+
 for i_num = 1:size(image_dirs,1)
     current_data = read_in_file_set(fullfile(base_dir,image_dirs(i_num).name),filenames);
+    if (unique(current_data.objects(:)) == 0)
+        continue;
+    end
     object_properties = collect_object_properties(current_data,'debug',i_p.Results.debug);
+    all_cell_props{i_num} = object_properties;
     
     %write the results to files
     write_object_data(object_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
@@ -37,6 +43,8 @@ for i_num = 1:size(image_dirs,1)
         disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
     end
 end
+
+save(fullfile(base_dir, image_dirs(1).name,filenames.cell_props),'all_cell_props');
 
 toc;
 

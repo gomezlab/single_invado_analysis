@@ -24,9 +24,12 @@ cfg_struct.gel = 'gel.png';
 cfg_struct.gel_range = '../../puncta_props/gel_image_range.csv';
 cfg_struct.bleaching_plot = '../../puncta_props/bleaching_curves.eps';
 
-cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
-
 cfg_struct.invado_data = '../../puncta_props/invado_data.csv';
 cfg_struct.not_invado_data = '../../puncta_props/not_invado_data.csv';
 
-cfg_struct.tracking = 'tracking_matrices/tracking_seq.csv';
+cfg_struct.tracking = '../../tracking_matrices/tracking_seq.csv';
+cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
+
+cfg_struct.cell_props = '../../puncta_props/single_invado_props.mat';
+
+cfg_struct.lineage_dir = '../../puncta_props/lin_time_series';

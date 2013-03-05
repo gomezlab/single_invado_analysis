@@ -89,6 +89,13 @@ sub build_extra_command_line_opts {
 	    	$extra .= ",'max_eccentricity',$cfg{max_eccentricity}";
 	    }
 	}
+
+	if ($opt{script} eq "gather_tracking_results") {
+        if (defined $cfg{pixel_size}) {
+	    	$extra .= ",'pixel_size',$cfg{pixel_size}";
+        }
+	}
+
 	return $extra;
 }
 
