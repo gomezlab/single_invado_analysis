@@ -104,7 +104,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             graphics.off();
         }
     
-        browser();
         all_props = as.data.frame(all_props);
 
         if (! is.na(results.file)) {
