@@ -238,6 +238,10 @@ if (length(args) != 0) {
         exp_props = gather_invado_properties(data_dir,
             results.file = file.path('models','puncta_props_corr.Rdata'));
         
+        if (dim(exp_props)[1] > 0) {
+            return
+        }
+
         pdf(file.path(data_dir,'p_vals.pdf'))
         hist(exp_props$p_value);
         graphics.off()
@@ -247,18 +251,18 @@ if (length(args) != 0) {
         filter_sets = build_filter_sets(exp_props);
         
         invado_lineage_data = subset(exp_props, filter_sets$invado_filter, select = data_types_to_include);
-        local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, 
-            select = data_types_to_include);
         
         not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, 
             select = data_types_to_include);
         
         write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), 
             row.names=F, col.names=T, sep=',')
-        write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), 
-            row.names=F, col.names=T, sep=',')
-        
         write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
             row.names=F, col.names=T, sep=',')
+        
+        # local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, 
+        #     select = data_types_to_include);
+        # write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), 
+        #     row.names=F, col.names=T, sep=',')
     }
 }
