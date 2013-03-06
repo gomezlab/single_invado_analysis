@@ -38,7 +38,18 @@ end
 
 load(fullfile(base_dir, image_dirs(1).name,filenames.cell_props));
 
-data_types = fieldnames(all_cell_props{2});
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Determine the types of data in set
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+data_types = fieldnames(all_cell_props{1});
+for i_num = 2:length(all_cell_props)
+	%need this loop in case the first image set was empty
+	if (isempty(data_types)) 
+		data_types = fieldnames(all_cell_props{1});
+	else
+		continue;
+	end
+end
 
 data_to_exclude = {'MeanIntensity','StdIntensity','Centroid','Overlap_area',...
     'Overlap_percent','Eccentricity'};
