@@ -72,7 +72,7 @@ for puncta_num = 1:size(tracking_seq,1)
         puncta_num = tracking_seq(puncta_num,i_num);
         
         this_puncta = data_set{i_num}.objects == puncta_num;
-        pre_birth_diff = i_numlect_local_diff_properties(pre_birth_image_data,this_puncta);
+        pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta);
         
         pre_birth_diffs(puncta_num,i_num) = pre_birth_diff.Local_gel_diff_percent;
     end
