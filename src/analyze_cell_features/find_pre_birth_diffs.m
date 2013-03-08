@@ -54,8 +54,8 @@ end
 toc(start_read);
 
 start_process = tic;
-for puncta_num = 1:size(tracking_seq,1)
-    pre_birth_i_num = find_birth_i_num(tracking_seq(puncta_num,:) < 1) - 1;
+for lineage_num = 1:size(tracking_seq,1)
+    pre_birth_i_num = find_birth_i_num(tracking_seq(lineage_num,:) < 1) - 1;
     %the above function returns NaN if there isn't a pre-birth image
     %number, catch that situation and exit out of the loop in that case
     if (isnan(pre_birth_i_num))
@@ -65,20 +65,20 @@ for puncta_num = 1:size(tracking_seq,1)
     pre_birth_image_data = data_set{pre_birth_i_num};
     
     for i_num = 1:size(tracking_seq,2)
-        if (tracking_seq(puncta_num,i_num) <= 0)
+        if (tracking_seq(lineage_num,i_num) <= 0)
             continue;
         end
         
-        puncta_num = tracking_seq(puncta_num,i_num);
+        puncta_num = tracking_seq(lineage_num,i_num);
         
         this_puncta = data_set{i_num}.objects == puncta_num;
         pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta);
         
-        pre_birth_diffs(puncta_num,i_num) = pre_birth_diff.Local_gel_diff_percent;
+        pre_birth_diffs(lineage_num,i_num) = pre_birth_diff.Local_gel_diff_percent;
     end
     
-    if (mod(puncta_num,100) == 0)
-        disp(['Processed ',num2str(puncta_num),'/',num2str(size(tracking_seq,1))]);
+    if (mod(lineage_num,100) == 0)
+        disp(['Processed ',num2str(lineage_num),'/',num2str(size(tracking_seq,1))]);
     end    
 end
 toc(start_process);
