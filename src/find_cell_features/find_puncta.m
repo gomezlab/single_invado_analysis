@@ -10,7 +10,7 @@ i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('min_puncta_size',1,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('max_puncta_size',Inf,@(x)isnumeric(x) && x > 0);
-i_p.addParamValue('max_eccentricity',1,@(x)isnumeric(x) && x > 0);
+i_p.addParamValue('max_ratio',Inf,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('filter_size',11,@(x)isnumeric(x) && x > 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -90,9 +90,10 @@ for i_num = 1:size(image_dirs,1)
         puncta = puncta .* ismember(puncta, find([props.Area] <= i_p.Results.max_puncta_size));
     end
     
-    if (not(any(strcmp('max_eccentricity',i_p.UsingDefaults))))
-        props = regionprops(puncta,'Eccentricity','MajorAxisLength','MinorAxisLength');
-        puncta = puncta .* ismember(puncta, find([props.Eccentricity] <= i_p.Results.max_eccentricity));
+    if (not(isinf(i_p.Results.max_ratio)))
+        props = regionprops(puncta,'MajorAxisLength','MinorAxisLength');
+        ratio = [props.MajorAxisLength]./[props.MinorAxisLength];
+        puncta = puncta .* ismember(puncta, find(ratio <= i_p.Results.max_ratio));
     end
     
     %     if (not(any(strcmp('max_solidity',i_p.UsingDefaults))))
