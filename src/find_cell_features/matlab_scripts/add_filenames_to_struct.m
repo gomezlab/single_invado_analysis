@@ -11,6 +11,8 @@ cfg_struct.objects_perim = 'puncta_labeled_perim.png';
 cfg_struct.objects_binary = 'puncta_binary.png';
 cfg_struct.objects_highlight = 'puncta_highlight.png';
 
+cfg_struct.objects_above_thresh = 'puncta_above_thresh.png';
+
 cfg_struct.puncta = 'puncta.png';
 cfg_struct.puncta_range = '../../puncta_props/puncta_image_range.csv';
 cfg_struct.puncta_threshold = '../../puncta_props/puncta_threshold.csv';

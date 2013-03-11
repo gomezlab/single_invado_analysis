@@ -53,6 +53,7 @@ for i_num = 1:size(image_dirs,1)
     threshed_image = remove_edge_objects(threshed_image);
     
     puncta = bwlabel(threshed_image,8);
+    imwrite(threshed_image,fullfile(this_image_directory, filenames.objects_above_thresh));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Remove objects outside mask
@@ -79,7 +80,7 @@ for i_num = 1:size(image_dirs,1)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Size and Eccentricity Filtering
+    % Size and Ratio Filtering
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if (i_p.Results.min_puncta_size > 1)
         props = regionprops(puncta,'Area');
@@ -95,11 +96,6 @@ for i_num = 1:size(image_dirs,1)
         ratio = [props.MajorAxisLength]./[props.MinorAxisLength];
         puncta = puncta .* ismember(puncta, find(ratio <= i_p.Results.max_ratio));
     end
-    
-    %     if (not(any(strcmp('max_solidity',i_p.UsingDefaults))))
-    %         props = regionprops(puncta,'Solidity');
-    %         puncta = puncta .* ismember(puncta, find([props.Solidity] <= i_p.Results.max_eccentricity));
-    %     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Renumber objects to be sequential
