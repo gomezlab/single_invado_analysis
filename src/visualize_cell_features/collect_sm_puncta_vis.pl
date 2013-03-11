@@ -63,13 +63,13 @@ sub build_single_ad_commands {
 	if (-e $puncta_file) {
 		push @commands, "make_single_puncta_frames('$cfg{exp_results_folder}','puncta_file','$puncta_file')";
 	} else {
-		print "Couldn't find puncta file ($puncta_file)";
+		print "Couldn't find puncta file ($puncta_file)\n";
 	}
 	
 	if (-e $not_puncta_file) {
 		push @commands, "make_single_puncta_frames('$cfg{exp_results_folder}','puncta_file','$not_puncta_file')";
 	} else {
-		print "Couldn't find puncta file ($not_puncta_file)";
+		print "Couldn't find puncta file ($not_puncta_file)\n";
 	}
     
     return @commands;
