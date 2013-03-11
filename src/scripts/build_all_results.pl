@@ -63,7 +63,7 @@ my @overall_command_seq = (
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_pre_birth_diffs" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ], ],
 	[ [ "../analyze_cell_features",   "./find_invadopodia_puncta.pl" ], ],
-	[ [ "../visualize_cell_features", "./collect_sm_puncta_vis.pl" ], ],
+	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_single_puncta_frames" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ], ],
 	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_dual_highlight_image" ], ],
 );

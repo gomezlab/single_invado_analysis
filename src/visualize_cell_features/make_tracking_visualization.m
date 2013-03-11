@@ -150,7 +150,7 @@ for i_num = 1:length(image_folders)
     composite_image = [cat(3,orig_i,orig_i,orig_i),spacer,highlighted_all];
 
     %Add scale bars if the pixel size is available
-    if (exist('pixel_size','var') && not(i_p.Results.no_scale_bar))
+    if (exist('pixel_size','var'))
         composite_image = draw_scale_bar(composite_image,pixel_size);
     end
     

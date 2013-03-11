@@ -8,8 +8,6 @@ i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
-i_p.addParamValue('start_row',1,@(x)x >= 1);
-i_p.addParamValue('end_row',NaN,@(x)x >= 1);
 i_p.addParamValue('puncta_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('image_padding',15,@isnumeric);
 
@@ -34,30 +32,29 @@ image_dirs = image_dirs(3:end);
 % Tracking Sequence Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tracking_seq = load(fullfile(base_dir, image_dirs(1).name,filenames.tracking_matrix)) + 1;
-% tracking_seq = tracking_seq(:,1:20);
-% image_dirs = image_dirs(1:20);
+tracking_seq = load(fullfile(base_dir,image_dirs(1).name,filenames.tracking_matrix)) + 1;
 
-start_row = i_p.Results.start_row;
-end_row = i_p.Results.end_row;
-if (isnan(end_row) || end_row > size(tracking_seq,1))
-    end_row = size(tracking_seq,1);
-end
+invado_data_file = fullfile(base_dir,image_dirs(1).name,filenames.invado_data);
+not_invado_data_file = fullfile(base_dir,image_dirs(1).name,filenames.not_invado_data);
+
 tracking_temp = zeros(size(tracking_seq,1),size(tracking_seq,2));
-tracking_temp(start_row:end_row,:) = tracking_seq(start_row:end_row,:);
+if (exist(invado_data_file,'file'))
+    puncta_data = csvread(invado_data_file,1,0);
+    invado_nums = puncta_data(:,1);
+    %column one contains all the puncta lineage nums
+    tracking_temp(invado_nums,:) = tracking_seq(invado_nums,:);
+end
+
+if (exist(not_invado_data_file,'file'))
+    puncta_data = csvread(not_invado_data_file,1,0);
+    not_invado_nums = puncta_data(:,1);
+    %column one contains all the puncta lineage nums
+    tracking_temp(not_invado_nums,:) = tracking_seq(not_invado_nums,:);
+end
 tracking_seq = tracking_temp;
 
-if (not(any(strcmp('puncta_file',i_p.UsingDefaults))))
-    %the first row of the puncta data file is a header line
-    puncta_data = csvread(i_p.Results.puncta_file,1,0);
-    if (all(size(puncta_data) == [0 1]))
-        puncta_data = 0;
-    end
-    
-    puncta_nums = puncta_data(2:end,1);
-    tracking_temp = zeros(size(tracking_seq,1),size(tracking_seq,2));
-    tracking_temp(puncta_nums,:) = tracking_seq(puncta_nums,:);
-    tracking_seq = tracking_temp;
+if (exist(not_invado_data_file,'file') && exist(invado_data_file,'file'))
+    assert(isempty(intersect(invado_nums,not_invado_nums)));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,7 +79,6 @@ for i = 1:size(image_dirs,1)
         disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
     end
 end
-
 
 for row_num = 1:size(tracking_seq,1)
     if (all(tracking_seq(row_num,:) <= 0))
@@ -205,8 +201,10 @@ for row_num = 1:size(tracking_seq,1)
     spacer = 0.5*ones(1,size(puncta_montage,2),3);
     
     %Image output
-    sub_out_folder = 'single_invadopodia';
-    if (regexp(i_p.Results.puncta_file,'not_invado_data.csv'))
+    if (exist('invado_nums','var') && any(row_num == invado_nums))
+        sub_out_folder = 'single_invadopodia';
+    end
+    if (exist('not_invado_nums','var') && any(row_num == not_invado_nums))
         sub_out_folder = 'single_notinvadopodia';
     end
     
