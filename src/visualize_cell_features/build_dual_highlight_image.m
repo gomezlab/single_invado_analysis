@@ -14,8 +14,6 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_DUAL_HIGHLIGHT_IMAGES';
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
-% i_p.addRequired('invado_file',@(x)exist(x,'file') == 2);
-% i_p.addRequired('non_invado_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('no_scale_bar',0,@(x) islogical(x) || x == 0 || x == 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
@@ -61,9 +59,9 @@ else
 end
 
 %after loading the tracking sequence filter to only include those puncta
-%included in the invadopodia list, remember the list formated so the first
-%column contains the lineage number, with the first lineage as 1, so no
-%need to translate
+%included in the invadopodia list, remember the list is formated so the first
+%column contains the lineage number, with the first lineage as 1, so no need to
+%translate
 tracking_seq = load(fullfile(I_folder,image_dirs(1).name,filenames.tracking_matrix)) + 1;
 invado_tracking_seq = tracking_seq(invado_data(:,1),:);
 not_invado_tracking_seq = tracking_seq(not_invado_data(:,1),:);
@@ -96,7 +94,7 @@ for i = 1:length(image_dirs)
     %Gather the adhesion label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-        gel_image = double(imread(fullfile(I_folder,image_dirs(i).name,filenames.gel)));
+	gel_image = double(imread(fullfile(I_folder,image_dirs(i).name,filenames.gel)));
     gel_image = gel_image - gel_limits(1);
     gel_image = gel_image .* (1/gel_limits(2));
     gel_image = cat(3,gel_image,gel_image,gel_image);
@@ -163,7 +161,6 @@ for i = 1:length(image_dirs)
     imwrite(output_image, fullfile(output_folder,[sprintf('%04d',i),'.png']));
         
     output_image = [original_images{1}, spacer, original_images{2}];
-    output_image = imresize(output_image,0.5);
     imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i),'.png']));
     
     if(mod(i,10) == 0), disp(['Done with Image: ',num2str(i),'/',num2str(length(image_dirs))]); end
