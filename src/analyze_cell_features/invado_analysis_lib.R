@@ -41,16 +41,11 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
 
         all_props$lineage_nums = c(all_props$lineage_nums,which(overall_filt));
         all_props$experiment = c(all_props$experiment,
-            rep(basename(dirname(this_exp_dir)),length(which(overall_filt))));
+            this_exp_dir,sum(overall_filt));
         all_props$longevity = longevity[overall_filt]
 
-        average_areas = rowMeans(area_data,na.rm=T);
-        all_props$mean_area = average_areas[overall_filt];
-
-        # props_to_include = c("longevity","largest_area","birth_i_num","mean_area");
-        # for (i in props_to_include) {
-        #     all_props[[i]] = c(all_props[[i]], lineage_data[[i]][overall_filt]);
-        # }
+        all_props$mean_area = rowMeans(area_data[overall_filt,],na.rm=T);
+        all_props$mean_edge_dist = rowMeans(edge_dist_data[overall_filt,],na.rm=T);
 
         if (build_plots) {
             pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
@@ -95,10 +90,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 browser()
             }
 
-            only_area_data = na.omit(as.numeric(area_data[lin_num,]));
-            only_edge_dist_data = na.omit(as.numeric(edge_dist_data[lin_num,]));
-
-            all_props$mean_edge_dist = c(all_props$mean_edge_dist, mean(only_edge_dist_data));
             if (build_plots) {
                 all_three_sets = cbind(local_diff, pre_diff, pre_local_diff);
                 build_single_invado_plot(all_three_sets,stat_tests,lin_num);
