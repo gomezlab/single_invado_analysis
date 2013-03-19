@@ -19,7 +19,7 @@ i_p.addRequired('high',@(x)(isnumeric(x) || islogical(x)));
 
 i_p.parse(I,high);
 
-i_p.addParamValue('color_map',[0,1,0],@(x)(all(high(:) == 0) || (isnumeric(x) && (size(x,1) >= max(unique(high))))));
+i_p.addParamValue('color_map',jet(double(max(high(:)))),@(x)(all(high(:) == 0) || (isnumeric(x) && (size(x,1) >= max(unique(high))))));
 i_p.addParamValue('mix_percent',1,@(x)(isnumeric(x)));
 
 i_p.parse(I,high,varargin{:});
@@ -28,10 +28,6 @@ i_p.parse(I,high,varargin{:});
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 image_size = size(I);
-
-if (max(I(:)) > 1 || min(I(:) < 0))
-    disp('Expected image to be scaled from 0-1');
-end
 
 if (size(image_size) < 3)
     high_image_red = I;
@@ -61,8 +57,6 @@ for i=1:length(labels)
     high_image_green(indexes) = this_cmap(2)*i_p.Results.mix_percent + high_image_green(indexes)*(1-i_p.Results.mix_percent);
     high_image_blue(indexes) = this_cmap(3)*i_p.Results.mix_percent + high_image_blue(indexes)*(1-i_p.Results.mix_percent);
 end
-
-
 
 high_image = cat(3,high_image_red,high_image_green,high_image_blue);
 
