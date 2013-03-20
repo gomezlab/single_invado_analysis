@@ -34,14 +34,14 @@ image_dirs = image_dirs(3:end);
 % Image Reading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-adhesions = cell(0);
+objects = cell(0);
 tracking_props = cell(0);
 
 image_reading_start = tic;
 for i_num=1:length(image_dirs)
-    adhesions{i_num} = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.objects));
+    objects{i_num} = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.objects));
     
-    for ad_num = 1:max(adhesions{i_num}(:))
+    for ad_num = 1:max(objects{i_num}(:))
         tracking_props{i_num}(ad_num).assigned = 0;
         tracking_props{i_num}(ad_num).next_obj = [];
     end
@@ -52,9 +52,9 @@ fprintf('Reading images took ~%d sminutes.\n', round(toc(image_reading_start)/60
 % Object Assocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 assign_start = tic;
-for i_num=1:(length(adhesions) - 1)
-    pix_sim = calc_pix_sim(adhesions{i_num},adhesions{i_num+1});
-    cent_dist = calc_cent_dist(adhesions{i_num},adhesions{i_num+1});
+for i_num=1:(length(objects) - 1)
+    pix_sim = calc_pix_sim(objects{i_num},objects{i_num+1});
+    cent_dist = calc_cent_dist(objects{i_num},objects{i_num+1});
         
     %Start by searching for reciprical high pixel similarity matches,
     %defined as those cells that overlap a single cell in the next frame by
@@ -120,7 +120,7 @@ for i_num=1:(length(adhesions) - 1)
     
     if (mod(i_num,10)==0)
         runtime_now = toc(assign_start);
-        estimated_remaining = round(((runtime_now/i_num)*(length(adhesions) - 1 - i_num))/60);
+        estimated_remaining = round(((runtime_now/i_num)*(length(objects) - 1 - i_num))/60);
         fprintf('Done with image %d, estimating %d minutes left.\n',i_num,estimated_remaining);
     end
 end
@@ -214,7 +214,7 @@ while (i_num ~= 0 && obj_num ~= 0)
         [i_num, obj_num] = find_unassigned_obj(tracking_props);
         tracking_num = tracking_num + 1;
         if (mod(tracking_num,1000) == 0)
-            fprintf('Done with %d adhesions.\n', tracking_num);
+            fprintf('Done with building tracking for %d objects.\n', tracking_num);
         end
     end
 end
@@ -232,7 +232,7 @@ for col_num = 1:size(tracking_matrix,2)
     
     this_col = sort(unique(this_col))';
     
-    %empty columns mean there weren't any adhesions in that time step, so
+    %empty columns mean there weren't any objects in that time step, so
     %check for that in the following assert first, then if there were
     %cells, make sure all were accounted for
     assert(isempty(this_col) || all(this_col == 1:max(this_col)))
