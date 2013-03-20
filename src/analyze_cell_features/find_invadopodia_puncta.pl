@@ -55,7 +55,7 @@ if ($opt{lsf}) {
     exit(0);
 }
 
-my $data_dir = catdir($cfg{exp_results_folder}, $cfg{adhesion_props_folder});
+my $data_dir = catdir($cfg{exp_results_folder}, "puncta_props");
 
 my $output_base = catfile($cfg{exp_results_folder}, $cfg{errors_folder}, 'find_invadopodia');
 if (! -e $output_base) {

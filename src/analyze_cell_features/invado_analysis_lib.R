@@ -39,9 +39,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
 
         overall_filt = longev_filter & birth_filter;
 
-        all_props$lineage_nums = c(all_props$lineage_nums,which(overall_filt));
-        all_props$experiment = c(all_props$experiment,
-            this_exp_dir,sum(overall_filt));
+        all_props$lineage_nums = which(overall_filt)
+        all_props$experiment = rep(this_exp_dir,sum(overall_filt));
         all_props$longevity = longevity[overall_filt]
 
         all_props$mean_area = rowMeans(area_data[overall_filt,],na.rm=T);
@@ -98,7 +97,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         if (build_plots) {
             graphics.off();
         }
-    
         all_props = as.data.frame(all_props);
 
         if (! is.na(results.file)) {
