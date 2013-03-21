@@ -41,7 +41,7 @@ if (not(exist(test_file,'file')))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Find edges of image data in adhesion images
+% Find edges of image data in binary images
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 all_binary = [];
 for i_num = 1:length(image_folders)
@@ -68,7 +68,7 @@ if (col_bounds(2) > size(all_binary,2)), col_bounds(2) = size(all_binary,2); end
 if (row_bounds(2) > size(all_binary,1)), row_bounds(2) = size(all_binary,1); end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Assign Each Adhesion a Unique Color
+% Assign Each Object a Unique Color
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tracking_seq = csvread(fullfile(individual_images_dir,image_folders(1).name,filenames.tracking)) + 1;
 
@@ -81,13 +81,13 @@ edge_cmap = jet(size(tracking_seq,2));
 image_set_range = csvread(fullfile(individual_images_dir,image_folders(1).name,filenames.(image_min_max_file)));
 for i_num = 1:length(image_folders)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather and scale the input adhesion image
+    %Gather and scale the input image
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     orig_i = double(imread(fullfile(individual_images_dir,image_folders(i_num).name,filenames.(image_file))));
     orig_i = (orig_i - image_set_range(1))/(image_set_range(2) - image_set_range(1));
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather the adhesion label image and perimeters
+    %Gather the label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ad_label_perim = imread(fullfile(individual_images_dir,image_folders(i_num).name,filenames.objects_perim));
     
@@ -100,7 +100,7 @@ for i_num = 1:length(image_folders)
     %Build the matrices translating number to colormap
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     for j = 1:size(tracking_seq,1)
-        %if the adhesion idenfied by the current lineage is not alive, skip
+        %if the object idenfied by the current lineage is not alive, skip
         %this lineage
         if (tracking_seq(j,i_num) <= 0), continue; end
 

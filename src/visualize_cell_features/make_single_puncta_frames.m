@@ -62,7 +62,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %The bounding matrix will hold the proper ranges to cut out only the
-%relavent area for each adhesion's life cycle. The matrix is initialized
+%relavent area for each object's life cycle. The matrix is initialized
 %with values that will always be replaced and the data is structured like
 %this:
 %   Column 1: top corner left (column)

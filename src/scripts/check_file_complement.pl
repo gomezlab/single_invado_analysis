@@ -98,7 +98,7 @@ Required parameter(s):
 
 =over 
 
-=item * cfg or c: the focal adhesion analysis config file
+=item * cfg or c: the image set config file
 
 =back
 

@@ -84,14 +84,14 @@ if (not(exist(output_folder_side,'dir')))
 end
 
 for i = 1:length(image_dirs)
-    %check for the presence of adhesions to map onto the last gel image, if
+    %check for the presence of objects to map onto the last gel image, if
     %not present, skip to the next image folder
     if (not(any(tracking_seq(:,i) > 0)))
         continue;
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather the adhesion label image and perimeters
+    %Gather the label image and perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 	gel_image = double(imread(fullfile(I_folder,image_dirs(i).name,filenames.gel)));
@@ -107,7 +107,7 @@ for i = 1:length(image_dirs)
     cell_mask = bwperim(logical(imread(fullfile(I_folder,image_dirs(i).name,filenames.cell_mask))));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather the adhesion label perimeters
+    %Gather the object label perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     puncta_label_perim = imread(fullfile(I_folder,image_dirs(i).name,filenames.objects));
     
