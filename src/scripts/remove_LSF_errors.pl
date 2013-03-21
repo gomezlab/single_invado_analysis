@@ -8,7 +8,7 @@ use File::Spec::Functions;
 use Data::Dumper;
 
 use FA_job;
-use Config::Adhesions qw(ParseConfig);
+use Config::ImageSet qw(ParseConfig);
 
 my %opt;
 $opt{debug} = 0;

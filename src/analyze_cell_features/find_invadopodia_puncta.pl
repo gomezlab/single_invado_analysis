@@ -16,7 +16,7 @@ use Math::Matlab::Local;
 use Getopt::Long;
 use Data::Dumper;
 
-use Config::Adhesions qw(ParseConfig);
+use Config::ImageSet qw(ParseConfig);
 use Math::Matlab::Extra;
 use Emerald;
 use FA_job;
