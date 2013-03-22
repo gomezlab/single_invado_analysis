@@ -16,10 +16,9 @@ i_p.parse(exp_dir,varargin{:});
 addpath(genpath('matlab_scripts'));
 filenames = add_filenames_to_struct(struct());
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pull in data from the current directory
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Main
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 base_dir = fullfile(i_p.Results.exp_dir,'individual_pictures');
 image_dirs = dir(base_dir);
 

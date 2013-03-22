@@ -31,13 +31,12 @@ GetOptions(\%opt, "cfg|c=s", "script=s", "debug|d", "lsf|l", "queue=s",
 
 die "Can't find script specified on the command line" if not exists $opt{script};
 
-my $ad_conf = new Config::ImageSet(\%opt);
-my %cfg     = $ad_conf->get_cfg_hash;
-
+my @cfg_files = split(",",$opt{cfg});
+my @cfg_set;
 
 foreach (@cfg_files) {
 	die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
-	my $ad_conf = new Config::Adhesions({cfg => $_});
+	my $ad_conf = new Config::ImageSet({cfg => $_});
 	my %cfg     = $ad_conf->get_cfg_hash;
 	push @cfg_set, \%cfg;
 }
@@ -83,6 +82,13 @@ if (defined $sample_cfg{job_group}) {
 
 sub build_extra_command_line_opts {
 	my $extra = '';
+	
+	if ($opt{script} eq "find_puncta_properties" ||
+		$opt{script} eq "find_pre_birth_diffs") {
+        if (defined $sample_cfg{gel_min_val}) {
+            $extra .= ",'gel_min_val',$sample_cfg{gel_min_val}";
+        }
+	}
 
 	if ($opt{script} eq "find_puncta_thresh") {
         if (defined $sample_cfg{stdev_thresh}) {
