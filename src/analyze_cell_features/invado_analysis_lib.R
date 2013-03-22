@@ -49,7 +49,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         if (build_plots) {
             pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
         }
-        #analyzing each of the puncta in the filtered set for invadopodia filtering processes
+
+        #analyzing each of the puncta in the filtered set to identify invadopodia
         for (lin_num in which(overall_filt)) {
             local_diff = na.omit(as.numeric(local_diff_data[lin_num,]));
 
@@ -178,12 +179,12 @@ t.test.error <- function(e) {
     list(conf.int = c(Inf, -Inf), p.value = 1)
 }
 
-build_filter_sets <- function(raw_data_set, conf.level = 0.95) {
+build_filter_sets <- function(raw_data_set, conf.level = 0.99) {
     filter_sets = list();
 
-    filter_sets$pre_diff_filter = raw_data_set$mean_pre_local_diff < 0 & 
+    filter_sets$pre_diff_filter = raw_data_set$mean_pre_local_diff > 0 & 
         raw_data_set$pre_local_diff_p_value < (1 - conf.level);
-    filter_sets$local_diff_filter = raw_data_set$mean_local_diff < 0 &
+    filter_sets$local_diff_filter = raw_data_set$mean_local_diff > 0 &
         raw_data_set$p_value < (1 - conf.level);
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;

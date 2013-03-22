@@ -12,6 +12,8 @@ i_p = inputParser;
 i_p.FunctionName = 'FIND_PRE_BIRTH_DIFFS';
 
 i_p.addRequired('exp_folder',@(x)exist(x,'dir') == 7);
+
+i_p.addOptional('gel_min_val',0,@(x)isnumeric(x) & x >= 0);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(exp_folder,varargin{:});
@@ -72,7 +74,7 @@ for lineage_num = 1:size(tracking_seq,1)
         puncta_num = tracking_seq(lineage_num,i_num);
         
         this_puncta = data_set{i_num}.objects == puncta_num;
-        pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta);
+        pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta,i_p.Results.gel_min_val);
         
         pre_birth_diffs(lineage_num,i_num) = pre_birth_diff.Local_gel_diff_percent;
     end
