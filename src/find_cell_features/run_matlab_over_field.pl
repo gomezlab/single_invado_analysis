@@ -26,13 +26,22 @@ $| = 1;
 
 my %opt;
 $opt{debug} = 0;
-GetOptions(\%opt, "cfg|c=s", "script=s", "debug|d", "lsf|l", "queue=s", "resource|R=s") or die;
+GetOptions(\%opt, "cfg|c=s", "script=s", "debug|d", "lsf|l", "queue=s",
+	"resource|R=s") or die;
 
-die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
 die "Can't find script specified on the command line" if not exists $opt{script};
 
 my $ad_conf = new Config::ImageSet(\%opt);
 my %cfg     = $ad_conf->get_cfg_hash;
+
+
+foreach (@cfg_files) {
+	die "Can't find cfg file specified on the command line" if not exists $opt{cfg};
+	my $ad_conf = new Config::Adhesions({cfg => $_});
+	my %cfg     = $ad_conf->get_cfg_hash;
+	push @cfg_set, \%cfg;
+}
+my %sample_cfg = %{$cfg_set[0]};
 
 if ($opt{script} =~ /(.*)\.m/) {
 	$opt{script} = $1;
@@ -51,13 +60,17 @@ $opt{root_mwd} = File::Spec->rel2abs($opt{script_dir});
 
 my $extra = &build_extra_command_line_opts;
 
-my @matlab_code = ("$opt{script}('$cfg{exp_results_folder}'$extra)\n");
+my $matlab_code;
+for (@cfg_set) {
+	my %cfg = %{$_};
+	$matlab_code = $matlab_code . "try,$opt{script}('$cfg{exp_results_folder}'$extra),end,"
+}
+my @matlab_code = ($matlab_code);
 
-$opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, $opt{script});
+$opt{error_folder} = catdir($sample_cfg{exp_results_folder}, $sample_cfg{errors_folder}, $opt{script});
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
-$opt{runtime} = "1";
-if (defined $cfg{job_group}) {
-    $opt{job_group} = $cfg{job_group};
+if (defined $sample_cfg{job_group}) {
+    $opt{job_group} = $sample_cfg{job_group};
 }
 
 %opt = &add_extra_options(%opt);
@@ -72,27 +85,27 @@ sub build_extra_command_line_opts {
 	my $extra = '';
 
 	if ($opt{script} eq "find_puncta_thresh") {
-        if (defined $cfg{stdev_thresh}) {
-			my @split_stdev_vals = split(/\s+/,$cfg{stdev_thresh});
+        if (defined $sample_cfg{stdev_thresh}) {
+			my @split_stdev_vals = split(/\s+/,$sample_cfg{stdev_thresh});
             $extra .= ",'stdev_thresh',[" . join(",",@split_stdev_vals) . "]";
         }
 	}
 
 	if ($opt{script} eq "find_puncta") {
-        if (defined $cfg{min_puncta_size}) {
-	    	$extra .= ",'min_puncta_size',$cfg{min_puncta_size}";
+        if (defined $sample_cfg{min_puncta_size}) {
+	    	$extra .= ",'min_puncta_size',$sample_cfg{min_puncta_size}";
 	    }
-        if (defined $cfg{max_puncta_size}) {
-	    	$extra .= ",'max_puncta_size',$cfg{max_puncta_size}";
+        if (defined $sample_cfg{max_puncta_size}) {
+	    	$extra .= ",'max_puncta_size',$sample_cfg{max_puncta_size}";
 	    }
-        if (defined $cfg{max_ratio}) {
-	    	$extra .= ",'max_ratio',$cfg{max_ratio}";
+        if (defined $sample_cfg{max_ratio}) {
+	    	$extra .= ",'max_ratio',$sample_cfg{max_ratio}";
 	    }
 	}
 
 	if ($opt{script} eq "gather_tracking_results") {
-        if (defined $cfg{pixel_size}) {
-	    	$extra .= ",'pixel_size',$cfg{pixel_size}";
+        if (defined $sample_cfg{pixel_size}) {
+	    	$extra .= ",'pixel_size',$sample_cfg{pixel_size}";
         }
 	}
 
