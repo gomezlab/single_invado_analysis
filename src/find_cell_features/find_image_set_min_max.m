@@ -39,11 +39,13 @@ for i_num = 1:size(image_dirs,1)
         gel_data = zeros(size(gel_image,1),size(gel_image,2),size(image_dirs,1));
     end
     gel_data(:,:,i_num) = gel_image; %#ok<AGROW>
-    
     gel_range = update_min_max(gel_image(:),gel_range);
-    
+
     puncta_image = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta));
-    puncta_data = [puncta_data, puncta_image(:)]; %#ok<AGROW>
+    if (any(size(puncta_data)) == 0)
+        puncta_data = zeros(size(puncta_image,1),size(puncta_image,2),size(image_dirs,1));
+    end
+    puncta_data(:,:,i_num) = puncta_image; %#ok<AGROW>
     puncta_range = update_min_max(puncta_image(:),puncta_range);
     
     if (mod(i_num,10)==0)
@@ -59,9 +61,9 @@ gel_vis_range = quantile(double(gel_data(:)),[0.001,0.999]);
 csvwrite(output_file,gel_vis_range)
 csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.gel_range),gel_range);
 
-puncta_vis_range = quantile(double(gel_data(:)),[0.001,0.999]);
-csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_vis_range),puncta_vis_range)
-csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range),puncta_vis_range)
+% puncta_vis_range = quantile(double(puncta_data(:)),[0.001,0.999]);
+csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_vis_range),puncta_range)
+csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range),puncta_range)
 
 end
 
