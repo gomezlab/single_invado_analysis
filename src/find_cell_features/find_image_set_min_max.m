@@ -61,8 +61,8 @@ gel_vis_range = quantile(double(gel_data(:)),[0.001,0.999]);
 csvwrite(output_file,gel_vis_range)
 csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.gel_range),gel_range);
 
-% puncta_vis_range = quantile(double(puncta_data(:)),[0.001,0.999]);
-csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_vis_range),puncta_range)
+puncta_vis_range = quantile(double(puncta_data(:)),[0.001,0.999]);
+csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_vis_range),puncta_vis_range)
 csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range),puncta_range)
 
 end
