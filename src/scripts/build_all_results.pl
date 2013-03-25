@@ -51,22 +51,22 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script apply_bleaching_correction" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script register_with_matlab" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_image_set_min_max" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_thresh" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_properties" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/track_invado" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_pre_birth_diffs" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ], ],
-	[ [ "../analyze_cell_features",   "./find_invadopodia_puncta.pl" ], ],
-	[ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_all_visualizations" ], ],
-	# [ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_single_puncta_frames" ], ],
-	# [ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ], ],
-	# [ [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_dual_highlight_image" ], ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script apply_bleaching_correction" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script register_with_matlab", 1],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_image_set_min_max" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_thresh" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_properties" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/track_invado" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_pre_birth_diffs" ],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ],
+	[ "../analyze_cell_features",   "./find_invadopodia_puncta.pl", 1],
+	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_all_visualizations" ],
+	# [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_single_puncta_frames" ],
+	# [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/make_tracking_visualization" ],
+	# [ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_dual_highlight_image" ],
 );
 
 my $cfg_suffix = basename($opt{cfg});
@@ -87,8 +87,9 @@ my $starting_dir = getcwd;
 for (@overall_command_seq) {
 	my $command_start_bench = new Benchmark;
 	my @command_seq = @{$_};
-	@command_seq = map { [ $_->[0], $_->[1] . " -lsf" ] } @command_seq if $opt{lsf};
-	print "Starting on $command_seq[0][1]\n";
+	$command_seq[1] .= " -lsf" if $opt{lsf};
+
+	print "Starting on $command_seq[1]\n";
 	&execute_command_seq(\@command_seq, $starting_dir);
 
 	#If debugging is not on, we want to wait till the current jobs finish
@@ -140,41 +141,32 @@ sub execute_command_seq {
         @these_config_files = @{$_[2]};
     }
 	
-    foreach my $set (@command_seq) {
-        my $dir     = $set->[0];
-        my $command = $set->[1];
-        my $executed_scripts_count = 0;
-        foreach my $cfg_file (@these_config_files) {
-            my $config_command = "$command -cfg $cfg_file";
-            chdir $dir;
-            my $return_code = 0;
-			$executed_scripts_count++;
-			print "Done submitting: " if $executed_scripts_count == 1;
-            
-			if ($opt{debug}) {
-                print $config_command, "\n";
-            } else {
-                $return_code = system($config_command);
-				if ($return_code) {
-                	print "PROBLEM WITH: $config_command\n";
-					print "RETURN CODE: $return_code\n";
-				}
-				if ($executed_scripts_count % ceil(scalar(@these_config_files)/10) == 0) {
-					print sprintf('%.0f%% ',100*($executed_scripts_count/scalar(@these_config_files)));
-				}
-            }
-            chdir $starting_dir;
+	my $dir     = $command_seq[0];
+	my $command = $command_seq[1];
+	my $cmd_bundling = 5;
+	if (scalar(@command_seq) > 2) {
+		$cmd_bundling = $command_seq[2];
+	}
 
-            #if the return code was any number beside zero, indicating a problem
-            #with the program exit, remove that config file from the run and
-            #continue
-            if ($return_code) {
-				print "REMOVING: $cfg_file\n";
-                @config_files = grep $cfg_file ne $_, @config_files;
-            }
-        }
-		print "\n";
-    }
+	chdir $dir;
+	while (@these_config_files) {
+		my $cfg_set = pop @these_config_files;
+		for (2..$cmd_bundling) {
+			next if (not(@these_config_files));
+			my $cfg_file = pop @these_config_files;
+			$cfg_set .= ",$cfg_file";
+		}
+
+		my $config_command = "$command -cfg $cfg_set";
+		my $return_code = 0;
+		if ($opt{debug}) {
+			print $config_command, "\n";
+		} else {
+			$return_code = system($config_command);
+		}
+	}
+	chdir $starting_dir;
+	print "\n";
 }
 
 #######################################
