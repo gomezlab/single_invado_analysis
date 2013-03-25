@@ -147,43 +147,43 @@ for row_num = 1:size(tracking_seq,1)
         puncta_num = tracking_seq(row_num,col_num);
         %puncta_num of 0 indicates no object, but messes up the fact that
         %the background of the label matrices is 0, so reset the number to
-        %NaN, so that their aren't any matches for highlighting
+        %NaN, so that their aren't any matches for highlighting before the
+        %puncta of interest is present in the frame
         if (puncta_num == 0)
             puncta_num = NaN;
         end
         
-        puncta_set = struct;
-        
-        puncta_set.puncta = image_sets{col_num}.objects_perim == puncta_num;
-        puncta_set.not_this_puncta = image_sets{col_num}.objects_perim ~= puncta_num & ...
+        this_puncta_images = struct;
+        this_puncta_images.puncta = image_sets{col_num}.objects_perim == puncta_num;
+        this_puncta_images.not_this_puncta = image_sets{col_num}.objects_perim ~= puncta_num & ...
             image_sets{col_num}.objects_perim ~= 0;
-        puncta_set.gel_image_norm = image_sets{col_num}.gel_image_norm;
-        puncta_set.puncta_image_norm = image_sets{col_num}.puncta_image_norm;
-        
+        this_puncta_images.gel_image_norm = image_sets{col_num}.gel_image_norm;
+        this_puncta_images.puncta_image_norm = image_sets{col_num}.puncta_image_norm;
+         
         %remove all the area outside the bounds plus the padding of the
         %objects range based on the above bounding calculations
-        f_names = fieldnames(puncta_set);
+        f_names = fieldnames(this_puncta_images);
         for i = 1:length(f_names)
             this_field = f_names{i};
-            puncta_set.(this_field) = bound_image(puncta_set.(this_field),b_mat(row_num,:));
+            this_puncta_images.(this_field) = bound_image(this_puncta_images.(this_field),b_mat(row_num,:));
         end
         
         %save a copy of the un-highlighted puncta and gel images for output
         %later
-        puncta_seq{row_num}{col_num} = puncta_set.puncta_image_norm;
-        gel_seq{row_num}{col_num} = puncta_set.gel_image_norm;
+        puncta_seq{row_num}{col_num} = this_puncta_images.puncta_image_norm;
+        gel_seq{row_num}{col_num} = this_puncta_images.gel_image_norm;
         
         %apply the highlights to the image sets
         highlight_fields = {'gel_image_norm','puncta_image_norm'};
         for i = 1:length(highlight_fields)
             this_field = highlight_fields{i};
-            puncta_set.(this_field) = create_highlighted_image(puncta_set.(this_field), ...
-                puncta_set.puncta,'color_map',[0,1,0],'mix_percent',0.25);
-            puncta_set.(this_field) = create_highlighted_image(puncta_set.(this_field), ...
-                puncta_set.not_this_puncta,'color_map',[0,0,1],'mix_percent',0.25);
+            this_puncta_images.(this_field) = create_highlighted_image(this_puncta_images.(this_field), ...
+                this_puncta_images.puncta,'color_map',[0,1,0],'mix_percent',0.25);
+            this_puncta_images.(this_field) = create_highlighted_image(this_puncta_images.(this_field), ...
+                this_puncta_images.not_this_puncta,'color_map',[0,0,1],'mix_percent',0.25);
         end
-        puncta_seq_high{row_num}{col_num} = puncta_set.puncta_image_norm;
-        gel_seq_high{row_num}{col_num} = puncta_set.gel_image_norm;
+        puncta_seq_high{row_num}{col_num} = this_puncta_images.puncta_image_norm;
+        gel_seq_high{row_num}{col_num} = this_puncta_images.gel_image_norm;
     end
     
     puncta_seq{row_num} = remove_empty_cells(puncta_seq{row_num});

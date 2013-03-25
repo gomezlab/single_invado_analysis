@@ -38,8 +38,7 @@ for i_num = 1:size(image_dirs,1)
     if (any(size(gel_data)) == 0)
         gel_data = zeros(size(gel_image,1),size(gel_image,2),size(image_dirs,1));
     end
-    gel_data(:,:,i_num) = gel_image;
-%     gel_data = [gel_data, gel_image(:)]; %#ok<AGROW>
+    gel_data(:,:,i_num) = gel_image; %#ok<AGROW>
     
     gel_range = update_min_max(gel_image(:),gel_range);
     
@@ -62,7 +61,7 @@ csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.gel_range),gel_range
 
 puncta_vis_range = quantile(double(gel_data(:)),[0.001,0.999]);
 csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_vis_range),puncta_vis_range)
-csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range),puncta_range)
+csvwrite(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta_range),puncta_vis_range)
 
 end
 
