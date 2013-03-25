@@ -3,22 +3,23 @@ function make_single_puncta_frames(exp_dir,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tic;
+start_time = tic;
 i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('puncta_file',@(x)exist(x,'file') == 2);
 i_p.addParamValue('image_padding',15,@isnumeric);
+i_p.addParamValue('image_sets',NaN,@iscell);
 
 i_p.parse(exp_dir,varargin{:});
 
 addpath(genpath('..'));
 filenames = add_filenames_to_struct(struct());
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 base_dir = fullfile(exp_dir,'individual_pictures');
 image_dirs = dir(base_dir);
 
@@ -31,7 +32,6 @@ image_dirs = image_dirs(3:end);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tracking Sequence Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 tracking_seq = load(fullfile(base_dir,image_dirs(1).name,filenames.tracking_matrix)) + 1;
 
 invado_data_file = fullfile(base_dir,image_dirs(1).name,filenames.invado_data);
@@ -58,6 +58,22 @@ if (exist(not_invado_data_file,'file') && exist(invado_data_file,'file'))
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Image Reading, If Not All Ready Defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if (not(any(strcmp(i_p.UsingDefaults,'image_sets'))))
+    image_sets = i_p.Results.image_sets;
+else
+    image_sets = cell(size(image_dirs,1),1);
+    for i = 1:size(image_dirs,1)
+        image_sets{i} = read_in_file_set(fullfile(base_dir,image_dirs(i).name),filenames);
+        if (mod(i,10) == 0)
+            disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
+        end
+    end
+    toc(start_time);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gather Bounding Matrices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -71,14 +87,6 @@ end
 %   Column 4: bottom corner right (row)
 b_mat = [Inf*ones(size(tracking_seq,1),1), Inf*ones(size(tracking_seq,1),1), ...
     -Inf*ones(size(tracking_seq,1),1), -Inf*ones(size(tracking_seq,1),1)];
-
-image_sets = cell(size(image_dirs,1),1);
-for i = 1:size(image_dirs,1)
-    image_sets{i} = read_in_file_set(fullfile(base_dir,image_dirs(i).name),filenames);
-    if (mod(i,10) == 0)
-        disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
-    end
-end
 
 for row_num = 1:size(tracking_seq,1)
     if (all(tracking_seq(row_num,:) <= 0))
@@ -159,7 +167,7 @@ for row_num = 1:size(tracking_seq,1)
             image_sets{col_num}.objects_perim ~= 0;
         this_puncta_images.gel_image_norm = image_sets{col_num}.gel_image_norm;
         this_puncta_images.puncta_image_norm = image_sets{col_num}.puncta_image_norm;
-         
+        
         %remove all the area outside the bounds plus the padding of the
         %objects range based on the above bounding calculations
         f_names = fieldnames(this_puncta_images);
@@ -178,9 +186,9 @@ for row_num = 1:size(tracking_seq,1)
         for i = 1:length(highlight_fields)
             this_field = highlight_fields{i};
             this_puncta_images.(this_field) = create_highlighted_image(this_puncta_images.(this_field), ...
-                this_puncta_images.puncta,'color_map',[0,1,0],'mix_percent',0.25);
+                this_puncta_images.puncta,'color_map',[0,1,0]);
             this_puncta_images.(this_field) = create_highlighted_image(this_puncta_images.(this_field), ...
-                this_puncta_images.not_this_puncta,'color_map',[0,0,1],'mix_percent',0.25);
+                this_puncta_images.not_this_puncta,'color_map',[0,0,1]);
         end
         puncta_seq_high{row_num}{col_num} = this_puncta_images.puncta_image_norm;
         gel_seq_high{row_num}{col_num} = this_puncta_images.gel_image_norm;
@@ -218,12 +226,12 @@ for row_num = 1:size(tracking_seq,1)
         mkdir(output_folder_high);
     end
     
-    imwrite([puncta_montage;spacer;gel_montage], ... 
+    imwrite([puncta_montage;spacer;gel_montage], ...
         fullfile(output_folder_no_high,[num2str(row_num),'.png']));
-    imwrite([puncta_montage_high;spacer;gel_montage_high], ... 
+    imwrite([puncta_montage_high;spacer;gel_montage_high], ...
         fullfile(output_folder_high,[num2str(row_num),'.png']));
 end
-toc;
+toc(start_time);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
