@@ -14,28 +14,39 @@ i_p.addParamValue('image_sets',NaN,@iscell);
 
 i_p.parse(exp_dir,varargin{:});
 
-addpath(genpath('..'));
+addpath(genpath('../find_cell_features'));
 filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-base_dir = fullfile(exp_dir,'individual_pictures');
-image_dirs = dir(base_dir);
-
-assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
-assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
-assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be image set one') %#ok<ST2NM>
-
+individual_images_dir = fullfile(exp_dir,'individual_pictures');
+image_dirs = dir(individual_images_dir);
 image_dirs = image_dirs(3:end);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Image Reading, If Not All Ready Defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if (not(any(strcmp(i_p.UsingDefaults,'image_sets'))))
+    image_sets = i_p.Results.image_sets;
+else
+    image_sets = cell(size(image_dirs,1),1);
+    for i = 1:size(image_dirs,1)
+        image_sets{i} = read_in_file_set(fullfile(individual_images_dir,image_dirs(i).name),filenames);
+        if (mod(i,10) == 0)
+            disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
+        end
+    end
+    toc(start_time);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tracking Sequence Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tracking_seq = load(fullfile(base_dir,image_dirs(1).name,filenames.tracking_matrix)) + 1;
+tracking_seq = load(fullfile(individual_images_dir,image_dirs(1).name,filenames.tracking_matrix)) + 1;
 
-invado_data_file = fullfile(base_dir,image_dirs(1).name,filenames.invado_data);
-not_invado_data_file = fullfile(base_dir,image_dirs(1).name,filenames.not_invado_data);
+invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.invado_data);
+not_invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.not_invado_data);
 
 tracking_temp = zeros(size(tracking_seq,1),size(tracking_seq,2));
 if (exist(invado_data_file,'file'))
@@ -55,22 +66,6 @@ tracking_seq = tracking_temp;
 
 if (exist(not_invado_data_file,'file') && exist(invado_data_file,'file'))
     assert(isempty(intersect(invado_nums,not_invado_nums)));
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Image Reading, If Not All Ready Defined
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (not(any(strcmp(i_p.UsingDefaults,'image_sets'))))
-    image_sets = i_p.Results.image_sets;
-else
-    image_sets = cell(size(image_dirs,1),1);
-    for i = 1:size(image_dirs,1)
-        image_sets{i} = read_in_file_set(fullfile(base_dir,image_dirs(i).name),filenames);
-        if (mod(i,10) == 0)
-            disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
-        end
-    end
-    toc(start_time);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

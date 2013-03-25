@@ -16,6 +16,7 @@ i_p.FunctionName = 'BUILD_DUAL_HIGHLIGHT_IMAGES';
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('no_scale_bar',0,@(x) islogical(x) || x == 0 || x == 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('image_sets',NaN,@iscell);
 
 i_p.parse(exp_dir,varargin{:});
 
@@ -65,6 +66,22 @@ invado_tracking_seq = tracking_seq(invado_data(:,1),:);
 not_invado_tracking_seq = tracking_seq(not_invado_data(:,1),:);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Image Reading, If Not All Ready Defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if (not(any(strcmp(i_p.UsingDefaults,'image_sets'))))
+    image_sets = i_p.Results.image_sets;
+else
+    image_sets = cell(size(image_dirs,1),1);
+    for i = 1:size(image_dirs,1)
+        image_sets{i} = read_in_file_set(fullfile(base_dir,image_dirs(i).name),filenames);
+        if (mod(i,10) == 0)
+            disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
+        end
+    end
+    toc(start_time);
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Image Creation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 output_folder = fullfile(exp_dir,'visualizations','invado_and_not');
@@ -85,12 +102,6 @@ for i = 1:length(image_dirs)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Gather the label image and perimeters
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    image_set = read_in_file_set(fullfile(I_folder,image_dirs(i).name),filenames);
-    cell_perim = bwperim(image_set.cell_mask);
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the object label perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     puncta_nums = tracking_seq(:,i);
@@ -103,13 +114,13 @@ for i = 1:length(image_dirs)
     not_invado_nums = not_invado_tracking_seq(:,i);
     not_invado_nums = not_invado_nums(not_invado_nums > 0);
     
-    puncta_label_perim_invado = ismember(image_set.objects_perim,invado_nums);
+    puncta_label_perim_invado = ismember(image_sets{i}.objects_perim,invado_nums);
 
-    puncta_label_perim_not_invado = zeros(size(image_set.objects_perim));
-    puncta_label_perim_not_invado(ismember(image_set.objects_perim,not_invado_nums)) = image_set.objects_perim(ismember(image_set.objects_perim,not_invado_nums));
+    puncta_label_perim_not_invado = zeros(size(image_sets{i}.objects_perim));
+    puncta_label_perim_not_invado(ismember(image_sets{i}.objects_perim,not_invado_nums)) = image_sets{i}.objects_perim(ismember(image_sets{i}.objects_perim,not_invado_nums));
     puncta_label_perim_not_invado = im2bw(puncta_label_perim_not_invado,0);
     
-    puncta_label_perim_neither = image_set.objects_perim;
+    puncta_label_perim_neither = image_sets{i}.objects_perim;
     puncta_label_perim_neither(puncta_label_perim_invado > 0) = 0;
     puncta_label_perim_neither(puncta_label_perim_not_invado > 0) = 0;
     puncta_label_perim_neither = im2bw(puncta_label_perim_neither,0);
@@ -117,10 +128,11 @@ for i = 1:length(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Image Creation
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    images_to_highlight = {image_set.gel_image_norm, image_set.puncta_image_norm};
+    images_to_highlight = {image_sets{i}.gel_image_norm, image_sets{i}.puncta_image_norm};
     original_images = images_to_highlight;
     spacer = ones(size(images_to_highlight{1},1),1,3);
     spacer_gray = ones(size(images_to_highlight{1},1),1);
+    cell_perim = bwperim(image_sets{i}.cell_mask);
     
     for j=1:length(images_to_highlight)
         %cell edge highlighting
@@ -141,8 +153,6 @@ for i = 1:length(image_dirs)
         
     output_image = [original_images{1}, spacer_gray, original_images{2}];
     imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i),'.png']));
-    
-    if(mod(i,10) == 0), disp(['Done with Image: ',num2str(i),'/',num2str(length(image_dirs))]); end
 end
 
 toc;
