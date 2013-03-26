@@ -35,7 +35,7 @@ sub create_LSF_Matlab_commands {
     $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_filename});
     unlink($opt{output_file}, $opt{error_file});
     
-    my $bsub_command   = "bsub -mig 0 -r -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    my $bsub_command   = "bsub -r -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     if (defined $opt{job_group}) {
         $bsub_command .= " -g $opt{job_group}";
     }
@@ -47,7 +47,7 @@ sub create_LSF_Matlab_commands {
     if (defined $opt{memsize}) {
 		$bsub_command .= " -M $opt{memsize}";
     }
-    my $matlab_command = "matlab -singleCompThread -nodisplay -nojvm -nosplash -r";
+    my $matlab_command = "/nas02/apps/matlab-2012a/matlab -singleCompThread -nodisplay -nojvm -nosplash -r";
 
     @commands = map { split(/\n/, $_) } @commands;
     @commands = map { "$bsub_command $matlab_command \"$_\""} @commands;
@@ -64,7 +64,7 @@ sub create_general_LSF_commands {
     $opt{error_file}  = File::Spec->catfile($opt{error_folder},$opt{error_filename});
     unlink($opt{output_file}, $opt{error_file});
     
-    my $bsub_command   = "bsub -mig 0 -r -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
+    my $bsub_command   = "bsub -r -q $opt{queue} -o $opt{output_file} -e $opt{error_file} -We $opt{runtime}";
     if (defined $opt{job_group}) {
         $bsub_command .= " -g $opt{job_group}";
     }
