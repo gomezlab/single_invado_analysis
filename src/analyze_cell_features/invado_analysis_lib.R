@@ -16,13 +16,14 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         #Reading in raw data
         ########################################################################
         print(paste('Working on:',this_exp_dir));
-        area_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Area.csv'), 
+        data_folder = file.path(this_exp_dir,'lin_time_series');
+        area_data = read.table(file.path(data_folder, 'Area.csv'), 
             sep=",",header=F);
-        local_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Local_gel_diff_percent.csv'), 
+        local_diff_data = read.table(file.path(data_folder,'Local_gel_diff_percent.csv'), 
             sep=",",header=F);
-        pre_diff_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Pre_birth_diff_percent.csv'), 
+        pre_diff_data = read.table(file.path(data_folder,'Pre_birth_diff_percent.csv'), 
             sep=",",header=F);
-        edge_dist_data = read.table(file.path(this_exp_dir,'lin_time_series', 'Centroid_dist_from_edge.csv'), 
+        edge_dist_data = read.table(file.path(data_folder,'Centroid_dist_from_edge.csv'), 
             sep=",",header=F);
 
         ########################################################################
@@ -85,7 +86,9 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 stat_tests$pre_local_diff$p.value);
             all_props$mean_pre_local_diff = c(all_props$mean_pre_local_diff, 
                 as.numeric(stat_tests$pre_local_diff$estimate));
-            
+            all_props$max_pre_local_diff = c(all_props$max_pre_local_diff,
+                max(pre_diff));
+
             if (length(all_props$mean_pre_local_diff) != length(all_props$mean_local_diff)) {
                 browser()
             }
@@ -179,7 +182,7 @@ t.test.error <- function(e) {
     list(conf.int = c(Inf, -Inf), p.value = 1)
 }
 
-build_filter_sets <- function(raw_data_set, conf.level = 0.99) {
+build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_pre_local_diff = NA) {
     filter_sets = list();
 
     filter_sets$pre_diff_filter = raw_data_set$mean_pre_local_diff > 0 & 
@@ -188,6 +191,12 @@ build_filter_sets <- function(raw_data_set, conf.level = 0.99) {
         raw_data_set$p_value < (1 - conf.level);
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
+
+    if (!is.na(min_mean_pre_local_diff)) {
+        filter_sets$min_pre_local_diff = raw_data_set$mean_pre_local_diff > min_mean_pre_local_diff;
+        filter_sets$invado_filter = filter_sets$invado_filter & filter_sets$min_pre_local_diff;
+    }
+
     filter_sets$not_invado_filter = ! filter_sets$invado_filter;
 
     return(filter_sets);
