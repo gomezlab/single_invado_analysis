@@ -57,11 +57,11 @@ $opt{root_mwd} = File::Spec->rel2abs($opt{script_dir});
 # Main Program
 ################################################################################
 
-my $extra = &build_extra_command_line_opts;
-
 my $matlab_code;
 for (@cfg_set) {
 	my %cfg = %{$_};
+	my $extra = &build_extra_command_line_opts(%cfg);
+	#all commands wrapped in try, to ensure other commands will run if this fails
 	$matlab_code = $matlab_code . "try,$opt{script}('$cfg{exp_results_folder}'$extra),end,"
 }
 my @matlab_code = ($matlab_code);
@@ -81,37 +81,38 @@ if (defined $sample_cfg{job_group}) {
 ################################################################################
 
 sub build_extra_command_line_opts {
+	my %this_config = @_;
 	my $extra = '';
 	
 	if ($opt{script} eq "find_puncta_properties" ||
 		$opt{script} eq "find_pre_birth_diffs") {
-        if (defined $sample_cfg{gel_min_val}) {
-            $extra .= ",'gel_min_val',$sample_cfg{gel_min_val}";
+        if (defined $this_config{gel_min_val}) {
+            $extra .= ",'gel_min_val',$this_config{gel_min_val}";
         }
 	}
 
 	if ($opt{script} eq "find_puncta_thresh") {
-        if (defined $sample_cfg{stdev_thresh}) {
-			my @split_stdev_vals = split(/\s+/,$sample_cfg{stdev_thresh});
+        if (defined $this_config{stdev_thresh}) {
+			my @split_stdev_vals = split(/\s+/,$this_config{stdev_thresh});
             $extra .= ",'stdev_thresh',[" . join(",",@split_stdev_vals) . "]";
         }
 	}
 
 	if ($opt{script} eq "find_puncta") {
-        if (defined $sample_cfg{min_puncta_size}) {
-	    	$extra .= ",'min_puncta_size',$sample_cfg{min_puncta_size}";
+        if (defined $this_config{min_puncta_size}) {
+	    	$extra .= ",'min_puncta_size',$this_config{min_puncta_size}";
 	    }
-        if (defined $sample_cfg{max_puncta_size}) {
-	    	$extra .= ",'max_puncta_size',$sample_cfg{max_puncta_size}";
+        if (defined $this_config{max_puncta_size}) {
+	    	$extra .= ",'max_puncta_size',$this_config{max_puncta_size}";
 	    }
-        if (defined $sample_cfg{max_ratio}) {
-	    	$extra .= ",'max_ratio',$sample_cfg{max_ratio}";
+        if (defined $this_config{max_ratio}) {
+	    	$extra .= ",'max_ratio',$this_config{max_ratio}";
 	    }
 	}
 
 	if ($opt{script} eq "gather_tracking_results") {
-        if (defined $sample_cfg{pixel_size}) {
-	    	$extra .= ",'pixel_size',$sample_cfg{pixel_size}";
+        if (defined $this_config{pixel_size}) {
+	    	$extra .= ",'pixel_size',$this_config{pixel_size}";
         }
 	}
 
