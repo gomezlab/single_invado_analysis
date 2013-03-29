@@ -90,6 +90,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 as.numeric(stat_tests$local_diff_corrected$estimate));
             all_props$max_local_diff_corrected = c(all_props$max_local_diff_corrected,
                 max(local_diff_corrected));
+            all_props$range_local_diff_corrected = c(all_props$max_local_diff_corrected,
+                max(local_diff_corrected) - min(local_diff_corrected));
 
             if (length(all_props$mean_local_diff_corrected) != length(all_props$mean_local_diff)) {
                 browser()
