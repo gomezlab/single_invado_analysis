@@ -9,7 +9,7 @@ i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
-i_p.addOptional('gel_min_val',0,@(x)isnumeric(x) & x >= 0);
+i_p.addOptional('write_to_flat_files',0,@(x)x == 1 | x == 0);
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
 i_p.parse(exp_dir,varargin{:});
@@ -34,11 +34,14 @@ for i_num = 1:size(image_dirs,1)
     if (unique(current_data.objects(:)) == 0)
         continue;
     end
-    object_properties = collect_object_properties(current_data,i_p.Results.gel_min_val,'debug',i_p.Results.debug);
+    object_properties = collect_object_properties(current_data,'debug',i_p.Results.debug);
     all_cell_props{i_num} = object_properties;
     
     %write the results to files
-%     write_object_data(object_properties,'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
+    if (i_p.Results.write_to_flat_files)
+        write_object_data(object_properties,...
+            'out_dir',fullfile(base_dir,image_dirs(i_num).name,'raw_data'));
+    end
     
     if (mod(i_num,10)==0)
         disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
@@ -53,7 +56,7 @@ toc;
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function object_props = collect_object_properties(c_d,gel_min_val,varargin)
+function object_props = collect_object_properties(c_d,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
@@ -61,11 +64,10 @@ function object_props = collect_object_properties(c_d,gel_min_val,varargin)
 i_p = inputParser;
 
 i_p.addRequired('c_d',@isstruct);
-i_p.addRequired('gel_min_val',@(x)isnumeric(x));
 
 i_p.addOptional('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(c_d,gel_min_val,varargin{:});
+i_p.parse(c_d,varargin{:});
 
 object_props = regionprops(c_d.objects,'Area','Centroid','Eccentricity');
 
@@ -76,7 +78,6 @@ object_props = regionprops(c_d.objects,'Area','Centroid','Eccentricity');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Properites Always Extracted
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 for i=1:max(c_d.objects(:))
     object_props(i).Average_puncta_signal = mean(c_d.puncta_image(c_d.objects == i));
     
@@ -87,11 +88,10 @@ for i=1:max(c_d.objects(:))
     this_ad(c_d.objects ~= i) = 0;
     this_ad = logical(this_ad);
     
-    current_diffs = collect_local_diff_properties(c_d,this_ad,gel_min_val);
+    current_diffs = collect_local_diff_properties(c_d,this_ad);
     
     diff_names = fieldnames(current_diffs);
     for j=1:length(diff_names)
-        1;
         object_props(i).(diff_names{j}) = current_diffs.(diff_names{j});
     end
         
@@ -101,8 +101,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Properites Extracted If Cell Mask Available
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-min([object_props.gel_intensity_puncta])
-
 if (isfield(c_d, 'cell_mask'))
     [dists, ~] = bwdist(~c_d.cell_mask);
     
