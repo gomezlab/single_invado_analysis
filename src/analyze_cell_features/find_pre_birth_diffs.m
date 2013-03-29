@@ -94,7 +94,7 @@ output_dir = fullfile(exp_dir,'puncta_props','lin_time_series');
 if (not(exist(output_dir,'dir')))
     mkdir(output_dir);
 end
-dlmwrite(fullfile(output_dir,'Pre_birth_diffs.csv'), pre_birth_diffs);
+dlmwrite(fullfile(output_dir,'Pre_birth_diff.csv'), pre_birth_diffs);
 
 dlmwrite(fullfile(output_dir,'Local_diff_corrected.csv'), local_diffs - pre_birth_diffs);
 

@@ -19,9 +19,11 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         data_folder = file.path(this_exp_dir,'lin_time_series');
         area_data = read.table(file.path(data_folder, 'Area.csv'), 
             sep=",",header=F);
-        local_diff_data = read.table(file.path(data_folder,'Local_gel_diff_percent.csv'), 
+        local_diff_data = read.table(file.path(data_folder,'Local_gel_diff.csv'), 
             sep=",",header=F);
-        pre_diff_data = read.table(file.path(data_folder,'Pre_birth_diff_percent.csv'), 
+        local_diff_corrected_data = read.table(file.path(data_folder,'Local_diff_corrected.csv'), 
+            sep=",",header=F);
+        pre_diff_data = read.table(file.path(data_folder,'Pre_birth_diff.csv'), 
             sep=",",header=F);
         edge_dist_data = read.table(file.path(data_folder,'Centroid_dist_from_edge.csv'), 
             sep=",",header=F);
@@ -77,24 +79,25 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 error = t.test.error);
             
             #Difference between before birth and during lifetime
-            pre_local_diff = local_diff - pre_diff;
+            local_diff_corrected = na.omit(as.numeric(local_diff_corrected_data[lin_num,]));
 
-            stat_tests$pre_local_diff = tryCatch(
-                t.test(pre_local_diff,conf.level=conf.level), 
+            stat_tests$local_diff_corrected = tryCatch(
+                t.test(local_diff_corrected,conf.level=conf.level), 
                 error = t.test.error);
-            all_props$pre_local_diff_p_value = c(all_props$pre_local_diff_p_value, 
-                stat_tests$pre_local_diff$p.value);
-            all_props$mean_pre_local_diff = c(all_props$mean_pre_local_diff, 
-                as.numeric(stat_tests$pre_local_diff$estimate));
-            all_props$max_pre_local_diff = c(all_props$max_pre_local_diff,
+            all_props$local_diff_corrected_p_value = c(all_props$local_diff_corrected_p_value, 
+                stat_tests$local_diff_corrected$p.value);
+            all_props$mean_local_diff_corrected = c(all_props$mean_local_diff_corrected, 
+                as.numeric(stat_tests$local_diff_corrected$estimate));
+            all_props$max_local_diff_corrected = c(all_props$max_local_diff_corrected,
                 max(pre_diff));
 
-            if (length(all_props$mean_pre_local_diff) != length(all_props$mean_local_diff)) {
+            if (length(all_props$mean_local_diff_corrected) != length(all_props$mean_local_diff)) {
                 browser()
             }
 
             if (build_plots) {
-                all_three_sets = cbind(local_diff, pre_diff, pre_local_diff);
+                all_three_sets = cbind(local_diff, pre_diff, local_diff_corrected);
+                # browser();
                 build_single_invado_plot(all_three_sets,stat_tests,lin_num);
             }
         }
@@ -117,7 +120,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
 
 build_single_invado_plot <- function(data_sets,stat_tests, lin_num) {
     time_points = seq(from=0,by=5,along.with=data_sets[,1]);
-
+    
     par(bty='n', mar=c(4,4,2,0))
     matplot(time_points, data_sets, 
         typ='l', lty=c(1,2,4), xlab='Time (min)', ylab='Difference Metric', main=lin_num, 
@@ -133,8 +136,8 @@ build_single_invado_plot <- function(data_sets,stat_tests, lin_num) {
         stat_tests$local_diff$conf.int[2], stat_tests$local_diff$conf.int[1], add=T)
     errbar(max(time_points)*1.03, stat_tests$pre_diff$estimate, 
         stat_tests$pre_diff$conf.int[2], stat_tests$pre_diff$conf.int[1], add=T, col='red')
-    errbar(max(time_points)*1.05, stat_tests$pre_local_diff$estimate, 
-        stat_tests$pre_local_diff$conf.int[2], stat_tests$pre_local_diff$conf.int[1], 
+    errbar(max(time_points)*1.05, stat_tests$local_diff_corrected$estimate, 
+        stat_tests$local_diff_corrected$conf.int[2], stat_tests$local_diff_corrected$conf.int[1], 
         add=T, col='green')
 
     #Adding the areas to the same plot
@@ -173,8 +176,8 @@ build_presentation_single_invado_plot <- function(data_sets,stat_tests, lin_num)
         stat_tests$local_diff$conf.int[2], stat_tests$local_diff$conf.int[1], add=T,lwd=3)
     errbar(max(time_points)*1.03, stat_tests$pre_diff$estimate, 
         stat_tests$pre_diff$conf.int[2], stat_tests$pre_diff$conf.int[1], add=T, col='red',lwd=3)
-    errbar(max(time_points)*1.05, stat_tests$pre_local_diff$estimate, 
-        stat_tests$pre_local_diff$conf.int[2], stat_tests$pre_local_diff$conf.int[1], 
+    errbar(max(time_points)*1.05, stat_tests$local_diff_corrected$estimate, 
+        stat_tests$local_diff_corrected$conf.int[2], stat_tests$local_diff_corrected$conf.int[1], 
         add=T, col='green',lwd=3)
 }
  
@@ -182,19 +185,19 @@ t.test.error <- function(e) {
     list(conf.int = c(Inf, -Inf), p.value = 1)
 }
 
-build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_pre_local_diff = NA) {
+build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_local_diff_corrected = NA) {
     filter_sets = list();
 
-    filter_sets$pre_diff_filter = raw_data_set$mean_pre_local_diff > 0 & 
-        raw_data_set$pre_local_diff_p_value < (1 - conf.level);
+    filter_sets$pre_diff_filter = raw_data_set$mean_local_diff_corrected > 0 & 
+        raw_data_set$local_diff_corrected_p_value < (1 - conf.level);
     filter_sets$local_diff_filter = raw_data_set$mean_local_diff > 0 &
         raw_data_set$p_value < (1 - conf.level);
     
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
 
-    if (!is.na(min_mean_pre_local_diff)) {
-        filter_sets$min_pre_local_diff = raw_data_set$mean_pre_local_diff > min_mean_pre_local_diff;
-        filter_sets$invado_filter = filter_sets$invado_filter & filter_sets$min_pre_local_diff;
+    if (!is.na(min_mean_local_diff_corrected)) {
+        filter_sets$min_local_diff_corrected = raw_data_set$mean_local_diff_corrected > min_mean_local_diff_corrected;
+        filter_sets$invado_filter = filter_sets$invado_filter & filter_sets$min_local_diff_corrected;
     }
 
     filter_sets$not_invado_filter = ! filter_sets$invado_filter;

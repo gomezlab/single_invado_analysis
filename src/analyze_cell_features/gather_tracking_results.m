@@ -63,7 +63,6 @@ for i = 1:length(data_types)
     end
     
     this_data = scan_through_property(tracking_mat,all_cell_props,data_types{i});
-    
     if (strcmp(data_types{i},'Area') && not(isnan(i_p.Results.pixel_size)))
         this_data = this_data * i_p.Results.pixel_size^2;
     end
