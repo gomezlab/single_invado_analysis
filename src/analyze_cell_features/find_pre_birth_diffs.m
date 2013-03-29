@@ -1,4 +1,4 @@
-function find_pre_birth_diffs(exp_folder,varargin)
+function find_pre_birth_diffs(exp_dir,varargin)
 %FIND_PRE_BIRTH_DIFFS    Searches through a given tracking matrix and a
 %                        data set to produce local diff values for each
 %                        puncta immediately before the puncta's birth, if
@@ -11,23 +11,23 @@ start_all=tic;
 i_p = inputParser;
 i_p.FunctionName = 'FIND_PRE_BIRTH_DIFFS';
 
-i_p.addRequired('exp_folder',@(x)exist(x,'dir') == 7);
+i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
-i_p.parse(exp_folder,varargin{:});
+i_p.parse(exp_dir,varargin{:});
 
 %Add the folder with all the scripts used in this master program
-addpath(genpath('..'));
+addpath(genpath('../find_cell_features/'));
 
 filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Main Program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-base_folder = fullfile(exp_folder,'individual_pictures');
+base_dir = fullfile(exp_dir,'individual_pictures');
 
 %find all the image directories
-image_dirs = dir(base_folder);
+image_dirs = dir(base_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
 assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
@@ -35,7 +35,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 
 image_dirs = image_dirs(3:end);
 
-tracking_seq = load(fullfile(base_folder,image_dirs(1).name,filenames.tracking_matrix))+1;
+tracking_seq = load(fullfile(base_dir,image_dirs(1).name,filenames.tracking_matrix))+1;
 pre_birth_diffs = NaN*ones(size(tracking_seq));
 
 % tracking_seq = tracking_seq(:,1:20);
@@ -64,7 +64,7 @@ for lineage_num = 1:size(tracking_seq,1)
         continue;
     end
     
-    pre_birth_image_data = image_set{pre_birth_i_num};
+    pre_birth_image_data = image_sets{pre_birth_i_num};
     
     for i_num = 1:size(tracking_seq,2)
         if (tracking_seq(lineage_num,i_num) <= 0)
@@ -73,7 +73,7 @@ for lineage_num = 1:size(tracking_seq,1)
         
         puncta_num = tracking_seq(lineage_num,i_num);
         
-        this_puncta = image_set{i_num}.objects == puncta_num;
+        this_puncta = image_sets{i_num}.objects == puncta_num;
         diff_props = collect_local_diff_properties(pre_birth_image_data,this_puncta);
         
         pre_birth_diffs(lineage_num,i_num) = diff_props.Local_gel_diff;
@@ -88,15 +88,15 @@ fprintf('It took %d seconds to process the pre-birth diffs.\n',round(toc(start_p
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-local_diffs = csvread(fullfile(exp_folder,'puncta_props','lin_time_series','Local_gel_diff.csv'));
+local_diffs = csvread(fullfile(exp_dir,'puncta_props','lin_time_series','Local_gel_diff.csv'));
 
-output_folder = fullfile(exp_folder,'puncta_props','lin_time_series');
-if (not(exist(output_folder,'dir')))
-    mkdir(output_folder);
+output_dir = fullfile(exp_dir,'puncta_props','lin_time_series');
+if (not(exist(output_dir,'dir')))
+    mkdir(output_dir);
 end
-dlmwrite(fullfile(output_folder,'Pre_birth_diffs.csv'), pre_birth_diffs);
+dlmwrite(fullfile(output_dir,'Pre_birth_diffs.csv'), pre_birth_diffs);
 
-dlmwrite(fullfile(output_folder,'Local_diff_corrected.csv'), local_diffs - pre_birth_diffs);
+dlmwrite(fullfile(output_dir,'Local_diff_corrected.csv'), local_diffs - pre_birth_diffs);
 
 toc(start_all);
 end
