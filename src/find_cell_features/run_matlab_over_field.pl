@@ -86,9 +86,6 @@ sub build_extra_command_line_opts {
 	
 	if ($opt{script} eq "find_puncta_properties" ||
 		$opt{script} eq "find_pre_birth_diffs") {
-        if (defined $this_config{gel_min_val}) {
-            $extra .= ",'gel_min_val',$this_config{gel_min_val}";
-        }
 	}
 
 	if ($opt{script} eq "find_puncta_thresh") {
