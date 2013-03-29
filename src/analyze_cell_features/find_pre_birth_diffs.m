@@ -12,8 +12,6 @@ i_p = inputParser;
 i_p.FunctionName = 'FIND_PRE_BIRTH_DIFFS';
 
 i_p.addRequired('exp_folder',@(x)exist(x,'dir') == 7);
-
-i_p.addOptional('gel_min_val',0,@(x)isnumeric(x) & x >= 0);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 
 i_p.parse(exp_folder,varargin{:});
@@ -46,15 +44,17 @@ pre_birth_diffs = NaN*ones(size(tracking_seq));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Read In Data Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-start_read = tic;
-for j = 1:size(tracking_seq,2)
-    data_set{j} = read_in_file_set(fullfile(base_folder,image_dirs(j).name),filenames); %#ok<AGROW>
-    if (mod(j,10) == 0)
-        disp(['Read in ',num2str(j),'/',num2str(size(tracking_seq,2))]);
-    end
+start_reading = tic;
+image_sets = cell(size(image_dirs,1),1);
+for i = 1:size(image_dirs,1)
+    image_sets{i} = read_in_file_set(fullfile(base_dir,image_dirs(i).name),filenames);
 end
-toc(start_read);
+reading_time = toc(start_reading);
+fprintf('It took %d seconds to read the image sets.\n',round(reading_time));
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Find Pre-birth diffs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_process = tic;
 for lineage_num = 1:size(tracking_seq,1)
     pre_birth_i_num = find_birth_i_num(tracking_seq(lineage_num,:) < 1) - 1;
@@ -64,7 +64,7 @@ for lineage_num = 1:size(tracking_seq,1)
         continue;
     end
     
-    pre_birth_image_data = data_set{pre_birth_i_num};
+    pre_birth_image_data = image_set{pre_birth_i_num};
     
     for i_num = 1:size(tracking_seq,2)
         if (tracking_seq(lineage_num,i_num) <= 0)
@@ -73,23 +73,30 @@ for lineage_num = 1:size(tracking_seq,1)
         
         puncta_num = tracking_seq(lineage_num,i_num);
         
-        this_puncta = data_set{i_num}.objects == puncta_num;
-        pre_birth_diff = collect_local_diff_properties(pre_birth_image_data,this_puncta,i_p.Results.gel_min_val);
+        this_puncta = image_set{i_num}.objects == puncta_num;
+        diff_props = collect_local_diff_properties(pre_birth_image_data,this_puncta);
         
-        pre_birth_diffs(lineage_num,i_num) = pre_birth_diff.Local_gel_diff_percent;
+        pre_birth_diffs(lineage_num,i_num) = diff_props.Local_gel_diff;
     end
     
     if (mod(lineage_num,100) == 0)
         disp(['Processed ',num2str(lineage_num),'/',num2str(size(tracking_seq,1))]);
     end    
 end
-toc(start_process);
+fprintf('It took %d seconds to process the pre-birth diffs.\n',round(toc(start_process)));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+local_diffs = csvread(fullfile(exp_folder,'puncta_props','lin_time_series','Local_gel_diff.csv'));
 
 output_folder = fullfile(exp_folder,'puncta_props','lin_time_series');
 if (not(exist(output_folder,'dir')))
     mkdir(output_folder);
 end
-dlmwrite(fullfile(output_folder,'Pre_birth_diff_percent.csv'), pre_birth_diffs);
+dlmwrite(fullfile(output_folder,'Pre_birth_diffs.csv'), pre_birth_diffs);
+
+dlmwrite(fullfile(output_folder,'Local_diff_corrected.csv'), local_diffs - pre_birth_diffs);
 
 toc(start_all);
 end
@@ -98,10 +105,6 @@ function birth_i_num = find_birth_i_num(puncta_present_logical)
 %FIND_BIRTH_I_NUM    Searches through a logical matrix for switches from
 %                    positive to negative and vice versa that indicate
 %                    birth and death events
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Main Program
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 birth_i_num = NaN;
 for i=2:length(puncta_present_logical)
