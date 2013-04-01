@@ -20,7 +20,7 @@ i_p.addParamValue('image_sets',NaN,@iscell);
 
 i_p.parse(exp_dir,varargin{:});
 
-addpath(genpath('..'))
+addpath(genpath('../find_cell_features'))
 filenames = add_filenames_to_struct();
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

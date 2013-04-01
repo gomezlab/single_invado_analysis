@@ -10,7 +10,7 @@ i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.parse(exp_dir,varargin{:});
 
-addpath(genpath('..'));
+addpath(genpath('../find_cell_features'));
 filenames = add_filenames_to_struct(struct());
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
