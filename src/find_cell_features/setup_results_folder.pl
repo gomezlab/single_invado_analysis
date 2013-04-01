@@ -39,7 +39,8 @@ my %cfg = ParseConfig(\%opt);
 mkpath($cfg{individual_results_folder});
 
 my @image_sets = ([qw(puncta_image_folder puncta_image_file)],
-				  [qw(gel_image_folder gel_image_file)]);
+				  [qw(gel_image_folder gel_image_file)],
+				  [qw(ECM_image_folder ECM_image_file)]);
 
 my @matlab_code;
 my $all_images_empty = 1;
@@ -50,14 +51,16 @@ foreach (@image_sets) {
     
 	next if (not(defined($folder)));
 
-    #Remove an ' marks used in config file to keep the folder name together
-    $folder =~ s/\'//g;
-	
 	if ($opt{debug}) {
 		print "Searching: $cfg{exp_data_folder}/$folder/\n";
 	}
     my @image_files = sort <$cfg{exp_data_folder}/$folder/*>;
     my @image_files = map { $_ =~ s/\'//g; $_; } @image_files;
+	if (scalar(@image_files) == 1 &&
+		&is_file_TIFF($image_files[0])) {
+		&convert_from_tiff($image_files[0]);
+    	@image_files = sort <$cfg{exp_data_folder}/$folder/*>;
+	}
 
     $all_images_empty = 0 if (@image_files);
 
@@ -97,3 +100,21 @@ die "Unable to find any images to include in the new experiment" if $all_images_
 ################################################################################
 #Functions
 ################################################################################
+
+sub convert_from_tiff {
+	my $tiff_file = $_[0];
+	my $command = "convert $tiff_file " . catdir(dirname($tiff_file),"data_%05d.png") . ";";
+	system($command);
+	unlink $tiff_file;
+}
+
+sub is_file_TIFF {
+     my $file = shift @_;
+ 
+     my $type_output = `file $file`;
+     if ($type_output =~ /TIFF/) {
+         return 1;
+     } else {
+         return 0;
+     }
+}
