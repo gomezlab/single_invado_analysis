@@ -24,3 +24,8 @@
 .footer-links li:first-child {
   padding-left: 0;
 }
+
+/* Forcing the file upload to align with text labels correctly */
+input[type="file"] {
+	padding-top: 5px;
+}

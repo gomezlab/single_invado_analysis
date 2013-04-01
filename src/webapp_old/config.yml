@@ -3,7 +3,7 @@
 # all the settings in this file will be loaded at Dancer's startup.
 
 # Your application's name
-appname: "single_invado"
+appname: "FAAS"
 
 # The default layout to use for your application (located in
 # views/layouts/main.tt)
@@ -13,6 +13,9 @@ layout: "main"
 # all the magic of encoding and decoding. You should not care
 # about unicode within your app when this setting is set (recommended).
 charset: "UTF-8"
+
+# enabling the YAML-file-based session engine
+session: 'YAML'
 
 template: "template_toolkit"
 engines:

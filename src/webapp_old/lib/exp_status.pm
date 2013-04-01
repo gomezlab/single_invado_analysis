@@ -6,10 +6,10 @@ use Cwd;
 use Sys::Hostname;
 use File::Spec::Functions;
 use Data::Dumper;
-
+ 
 my $upload_dir = catdir('..','uploaded_experiments');
 my $results_dir = "results";
-my $running_dir = catdir('Invapodia','data');
+my $running_dir = catdir('..','..','..','data');
 
 ###############################################################################
 # Main
@@ -31,6 +31,17 @@ get '/exp_status/:exp_id' => sub {
 	template 'exp_status', \%template_cfg;
 };
 
+get '/exp_status/' => sub {
+	my %template_cfg;
+	$template_cfg{no_exp_id} = 1;
+	template 'exp_status', \%template_cfg;
+};
+
+get '/exp_status' => sub {
+	my %template_cfg;
+	$template_cfg{no_exp_id} = 1;
+	template 'exp_status', \%template_cfg;
+};
 ###############################################################################
 # Functions
 ###############################################################################
