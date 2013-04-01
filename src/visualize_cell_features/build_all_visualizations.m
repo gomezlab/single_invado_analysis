@@ -27,7 +27,7 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Image Reading, If Not All Ready Defined
+% Image Reading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_reading = tic;
 image_sets = cell(size(image_dirs,1),1);
@@ -42,16 +42,28 @@ fprintf('It took %d seconds to read the image sets.\n',round(reading_time));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start_tracking = tic;
-make_tracking_visualization(exp_dir,'image_sets',image_sets);
-fprintf('It took %d seconds to build the tracking vis.\n',round(toc(start_tracking)));
+try
+    make_tracking_visualization(exp_dir,'image_sets',image_sets);
+    fprintf('It took %d seconds to build the tracking vis.\n',round(toc(start_tracking)));
+catch err
+    fprintf('Problem with tracking: %s\n',err.message);
+end
 
 start_frames = tic;
-make_single_puncta_frames(exp_dir,'image_sets',image_sets);
-fprintf('It took %d seconds to build the single puncta frames.\n',round(toc(start_frames)));
+try
+    make_single_puncta_frames(exp_dir,'image_sets',image_sets);
+    fprintf('It took %d seconds to build the single puncta frames.\n',round(toc(start_frames)));
+catch err
+    fprintf('Problem with single puncta frames: %s\n',err.message);
+end
 
 start_dual_highlight = tic;
-build_dual_highlight_image(exp_dir,'image_sets',image_sets);
-fprintf('It took %d seconds to build the side by side vis.\n',round(toc(start_dual_highlight)));
+try
+    build_dual_highlight_image(exp_dir,'image_sets',image_sets);
+    fprintf('It took %d seconds to build the side by side vis.\n',round(toc(start_dual_highlight)));
+catch err
+    fprintf('Problem with side by side visualizations: %s\n',err.message);
+end
 
 toc(start_time);
 end

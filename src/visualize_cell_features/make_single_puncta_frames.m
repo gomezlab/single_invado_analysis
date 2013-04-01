@@ -33,9 +33,6 @@ else
     image_sets = cell(size(image_dirs,1),1);
     for i = 1:size(image_dirs,1)
         image_sets{i} = read_in_file_set(fullfile(individual_images_dir,image_dirs(i).name),filenames);
-        if (mod(i,10) == 0)
-            disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
-        end
     end
     toc(start_time);
 end
@@ -49,22 +46,26 @@ invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.i
 not_invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.not_invado_data);
 
 tracking_temp = zeros(size(tracking_seq,1),size(tracking_seq,2));
-if (exist(invado_data_file,'file'))
-    puncta_data = csvread(invado_data_file,1,0);
-    invado_nums = puncta_data(:,1);
+try
+    invado_data = csvread(invado_data_file,1,0);
+    invado_nums = invado_data(:,1);
     %column one contains all the puncta lineage nums
-    tracking_temp(invado_nums,:) = tracking_seq(invado_nums,:);
+    tracking_temp(invado_nums,:) = tracking_seq(invado_nums,:); 
+catch err
+    fprintf('Problem with invado data file: %s\n',err.message);
 end
 
-if (exist(not_invado_data_file,'file'))
-    puncta_data = csvread(not_invado_data_file,1,0);
-    not_invado_nums = puncta_data(:,1);
+try
+    not_invado_data = csvread(not_invado_data_file,1,0);
+    not_invado_nums = not_invado_data(:,1);
     %column one contains all the puncta lineage nums
     tracking_temp(not_invado_nums,:) = tracking_seq(not_invado_nums,:);
+catch err
+    fprintf('Problem with not invado data file: %s\n',err.message);
 end
 tracking_seq = tracking_temp;
 
-if (exist(not_invado_data_file,'file') && exist(invado_data_file,'file'))
+if (exist('invado_nums','var') && exist('not_invado_nums','var'))
     assert(isempty(intersect(invado_nums,not_invado_nums)));
 end
 

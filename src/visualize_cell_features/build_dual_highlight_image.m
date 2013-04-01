@@ -31,8 +31,8 @@ filenames = add_filenames_to_struct();
 % Global Variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %find all the image directories
-I_folder = fullfile(exp_dir,'individual_pictures');
-image_dirs = dir(I_folder);
+individual_images_dir = fullfile(exp_dir,'individual_pictures');
+image_dirs = dir(individual_images_dir);
 
 assert(strcmp(image_dirs(1).name, '.'), 'Error: expected "." to be first string in the dir command')
 assert(strcmp(image_dirs(2).name, '..'), 'Error: expected ".." to be second string in the dir command')
@@ -43,17 +43,19 @@ image_dirs = image_dirs(3:end);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tracking matrix reading/filtering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-invado_data_file = fullfile(I_folder,image_dirs(1).name,filenames.invado_data);
-if (exist(invado_data_file,'file'))
+invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.invado_data);
+try
     invado_data = csvread(invado_data_file,1,0);
-else
+catch err
+    fprintf('Problem with invado data file: %s\n',err.message);
     invado_data = zeros(0,3);
 end
 
-not_invado_data_file = fullfile(I_folder,image_dirs(1).name,filenames.not_invado_data);
-if (exist(not_invado_data_file,'file'))
+not_invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.not_invado_data);
+try
     not_invado_data = csvread(not_invado_data_file,1,0);
-else
+catch err
+    fprintf('Problem with not invado data file: %s\n',err.message);
     not_invado_data = zeros(0,3);
 end
 
@@ -61,7 +63,7 @@ end
 %included in the invadopodia list, remember the list is formated so the first
 %column contains the lineage number, with the first lineage as 1, so no need to
 %translate
-tracking_seq = load(fullfile(I_folder,image_dirs(1).name,filenames.tracking_matrix)) + 1;
+tracking_seq = load(fullfile(individual_images_dir,image_dirs(1).name,filenames.tracking_matrix)) + 1;
 invado_tracking_seq = tracking_seq(invado_data(:,1),:);
 not_invado_tracking_seq = tracking_seq(not_invado_data(:,1),:);
 
