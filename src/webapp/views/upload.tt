@@ -1,0 +1,188 @@
+<!-- HEADER line -->
+<div class="container">
+	<div class="page-header">
+		<div class="row">
+			<div class="span12">
+				<h1>Invadopodia Analysis Server - Experiment Upload</h1>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="span12">
+			<div id="upload_form" class="collapse in">
+				<form class="form-horizontal" enctype="multipart/form-data" method="post">
+					<fieldset>
+						<h2>Required Files</h2>
+						<div class="control-group">
+							<label class="control-label" for="puncta_file">Puncta Image</label>
+							<div class="controls">
+								<input type="file" name="puncta_file" />
+								<span class="help-inline">TIFF formatted image of the invadopodia puncta</span> 
+							</div>
+						</div>
+						
+						<div class="control-group">
+							<label class="control-label" for="ECM_file">ECM Image</label>
+							<div class="controls">
+								<input type="file" name="ECM_file" />
+								<span class="help-inline">TIFF formatted image of the ECM</span> 
+							</div>
+						</div>
+
+						<h2>Experiment Configuration</h2>
+						<div class="control-group">
+							<label class="control-label" for ="time_spacing">Imaging Frequency (minutes)</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="1" name="time_spacing" >
+								<span class="help-inline">Amount of time, in minutes, between the images</span> 
+							</div>
+						</div>
+
+						<div class="control-group">
+							<label class="control-label" for ="stdev_thresh">Detection Threshold</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="3" name="stdev_thresh" >
+								<span class="help-inline">Normally set to 3, see instructions below for more help</span> 
+							</div>
+						</div>
+
+						<!-- <h2>Segmentation Options</h2> -->
+
+						<h3>Puncta Size Options</h3>
+						<div class="control-group">
+							<label class="control-label" for ="min_puncta_size">Min Puncta Size (pixels)</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="5" name="min_puncta_size" >
+								<span class="help-inline">Leave blank to remove the minimum puncta size limit</span> 
+							</div>
+						</div>
+
+						<div class="control-group">
+							<label class="control-label" for ="max_puncta_size">Max Puncta Size (pixels)</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="" name="max_puncta_size" >
+								<span class="help-inline">Leave blank to remove the maximum puncta size limit</span> 
+							</div>
+						</div>
+						
+						<h3>Puncta Properties</h3>
+						<div class="control-group">
+							<label class="control-label" for ="max_ratio">Max Major/Minor Axis Ratio</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="4" name="max_ratio" >
+								<span class="help-inline">Leave blank to remove the major/minor axis ratio</span> 
+							</div>
+						</div>
+
+						<h2>Optional</h2>
+
+						<h3>Notification Options</h3>
+						<div class="control-group">
+							<label class="control-label" for="email">Email Address</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" name="email">
+
+								<span class="help-inline">Your email address will only be used for notification purposes</span> 
+							</div>
+						</div>
+
+						<div class="control-group">
+							<label class="control-label" for="self_note">Note</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" name="self_note">
+								<span class="help-inline">Any in this box will be returned with the results email</span> 
+							</div>
+						</div>
+
+						<!-- The Submit buttons -->
+						<div class="form-actions"> 
+							<button type="submit" class="btn btn-primary" onclick="submit_activity()">Submit Experiment</button> 
+						</div> 
+					</fieldset>
+				</form>
+
+				<hr />
+				<h1>Instructions</h1>
+				Thank you for helping to test the focal adhesion analysis webserver.  If you
+				encounter any problems, feel free to email me (matthew.berginski [AT]
+				gmail.com).
+				<h2>Required Options</h2>
+				<h3 class="thin">
+					Image File
+				</h3>
+				The program expects that you will submit a grayscale stacked TIFF image set of
+				the Invadopodia marker protein. The analysis methods have been tested with a
+				wide range of Invadopodia markers including Paxillin, FAK and Vinculin. The
+				image set can be of any size, but keep in mind that a large image set can take
+				some time to upload.
+
+				<h2>Detection Settings</h2>
+				<p/><b>Detection Threshold:</b>This number is used by the adhesion
+				detection script to determine when a pixel is or is not part of an adhesion.
+				After appling a high pass filter to the images, pixels above this level are
+				considered part of an adhesion, while the pixels below are classified as
+				background. The lower this number, the more pixels will be classified as part
+				of an adhesion.  The default value of two works well in most cases, but values
+				down to around one may be appropriate.  Also be aware that lower values will
+				lengthen the runtime.  If you want to see what one of your images looks like
+				when processed with a specific threshold try out the threshold <a
+					href=thresh_testing>tester</a>.
+
+				<p/><b>Don't Split Adjacent Adhesions:</b> This option turns off the wateshed
+				segmentation method normally used to split adjacent adhesions. The watershed
+				segmentation is the slowest part of the image processing, if this option is
+				selected, processing runtimes decrease. You might want to turn on this option
+				if the adhesions in your experiments don't appear to touch one another.
+				
+				<p/><b>Min FA Phase Length:</b> When determining the assembly
+				and disassembly rates of the FAs in the image set, the analysis
+				methods use log-linear models to determine the value of the
+				rates. This setting specifies the minimum number of images that
+				the assembly and disassembly phases must be in order to attempt
+				to estimate the rates. Decreasing this value allows more
+				assembly and disassembly phases to be gathered, but at the cost
+				of those phases to potentially be built on fewer data points.
+
+				<p/><b>Min/Max Size:</b> These settings control the
+				minimum or maximum adhesion sizes allowed through the
+				segmentation step, both are specified in pixels.
+				
+				<h2>Additional Image Sets</h2>
+
+				<p/><b>Cell Mask:</b> If a set of images are specified as the
+				cell mask set, the software will attempt to find the cell body
+				from these images. The methods work well in cases where the
+				entire body of the cell is expressing a marker and a substantial
+				portion of the background is also visible. If such a set of
+				images are provided, various properties concerning the adhesions
+				and their distance from the cell edge and cell centroid will be
+				calculated.
+
+				<h2>Notification Options</h2>
+				<h3>Email Address</h3>
+				If an email address is provided, you will be notified via email when your job
+				finishes processing. Your email address will only be used for notification
+				purposes. If this is not provided, then the experiment status page returned on
+				submission needs to bookmarked in order to retrieve your results.
+
+				<h3>Note to Self About Experiment</h3>
+				Whatever you put in this box will be send back to you in any email the system
+				sends concerning your experiment. It is limited to 80 characters.
+			</div>
+			<div id="upload_running" class="collapse">Starting Upload</div>
+			<div id="upload_instructions" class="collapse">
+				<p>
+				Monitoring your upload:
+				<ul>
+					<li>Google Chrome: Look in the lower left hand corner, you should see a percentage count of how much of your upload has finished.</li>
+					<li>Firefox: In the tabs bar, there will be a rotating indicator and in the lower left hand corner a note about "Sending request to ..."</li>
+					<li>Internet Explorer: In the tabs bar, there will be a rotating indicator</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+</div>
+
+<script src="[% request.uri_base %]/javascripts/upload.js"></script>
