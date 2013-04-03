@@ -15,18 +15,18 @@
 					<fieldset>
 						<h2>Required Files</h2>
 						<div class="control-group">
-							<label class="control-label" for="puncta_file">Puncta Image</label>
+							<label class="control-label" for="puncta_file">Puncta Time-lapse</label>
 							<div class="controls">
 								<input type="file" name="puncta_file" />
-								<span class="help-inline">TIFF formatted image of the invadopodia puncta</span> 
+								<span class="help-inline">TIFF formatted time-lapse image set of the puncta</span> 
 							</div>
 						</div>
 						
 						<div class="control-group">
-							<label class="control-label" for="ECM_file">ECM Image</label>
+							<label class="control-label" for="ECM_file">ECM Time-lapse</label>
 							<div class="controls">
 								<input type="file" name="ECM_file" />
-								<span class="help-inline">TIFF formatted image of the ECM</span> 
+								<span class="help-inline">TIFF formatted time-lapse image set of the ECM</span> 
 							</div>
 						</div>
 
@@ -71,7 +71,7 @@
 							<label class="control-label" for ="max_ratio">Max Major/Minor Axis Ratio</label>
 							<div class="controls">
 								<input type="text" class="input-xlarge" value="4" name="max_ratio" >
-								<span class="help-inline">Leave blank to remove the major/minor axis ratio</span> 
+								<span class="help-inline">Leave blank to remove the major/minor axis ratio limit</span> 
 							</div>
 						</div>
 
@@ -104,60 +104,61 @@
 
 				<hr />
 				<h1>Instructions</h1>
-				Thank you for helping to test the focal adhesion analysis webserver.  If you
+				Thank you for helping to test the invadopodia analysis webserver.  If you
 				encounter any problems, feel free to email me (matthew.berginski [AT]
 				gmail.com).
-				<h2>Required Options</h2>
-				<h3 class="thin">
-					Image File
-				</h3>
-				The program expects that you will submit a grayscale stacked TIFF image set of
-				the Invadopodia marker protein. The analysis methods have been tested with a
-				wide range of Invadopodia markers including Paxillin, FAK and Vinculin. The
-				image set can be of any size, but keep in mind that a large image set can take
-				some time to upload.
-
-				<h2>Detection Settings</h2>
-				<p/><b>Detection Threshold:</b>This number is used by the adhesion
-				detection script to determine when a pixel is or is not part of an adhesion.
-				After appling a high pass filter to the images, pixels above this level are
-				considered part of an adhesion, while the pixels below are classified as
-				background. The lower this number, the more pixels will be classified as part
-				of an adhesion.  The default value of two works well in most cases, but values
-				down to around one may be appropriate.  Also be aware that lower values will
-				lengthen the runtime.  If you want to see what one of your images looks like
-				when processed with a specific threshold try out the threshold <a
-					href=thresh_testing>tester</a>.
-
-				<p/><b>Don't Split Adjacent Adhesions:</b> This option turns off the wateshed
-				segmentation method normally used to split adjacent adhesions. The watershed
-				segmentation is the slowest part of the image processing, if this option is
-				selected, processing runtimes decrease. You might want to turn on this option
-				if the adhesions in your experiments don't appear to touch one another.
 				
-				<p/><b>Min FA Phase Length:</b> When determining the assembly
-				and disassembly rates of the FAs in the image set, the analysis
-				methods use log-linear models to determine the value of the
-				rates. This setting specifies the minimum number of images that
-				the assembly and disassembly phases must be in order to attempt
-				to estimate the rates. Decreasing this value allows more
-				assembly and disassembly phases to be gathered, but at the cost
-				of those phases to potentially be built on fewer data points.
+				<h2>Required Files</h2>
+				All files should be submitted as raw-data grayscale TIFF files.
+				The processing pipeline also expects that the files submitted
+				were taken simultaneously or as close as is possible with your
+				imaging setup. Thus, the ECM imaged in the first frame of the
+				time-lapse should be from the same region and time as the first
+				frame of the puncta time-lapse.
+
+				<h3 class="thin">Puncta Time-lapse</h3>
+				The puncta file should look something like the sample file
+				linked from the home page. Namely, the bright regions of image
+				should correspond to the potential invadopodia. The system has
+				been tested with Lifeact-GFP images, but I expect that images of
+				other invadopodia componenets will also be acceptable for
+				processing.
+				
+				<h3 class="thin">ECM Time-lapse</h3>
+				The puncta file should look something like the sample file
+				linked from the home page. Namely, the field of view should be
+				uniformly bright, with the regions corresponding to invadopodia
+				degradation appearing dim compared to the surronding area. The
+				processing pipeline can deal with some variation in the
+				uniformity of the labeled ECM.
+
+				<h2>Experiment Configuration</h2>
+				<p/><b>Detection Threshold:</b>This number is used by the puncta
+				detection script to determine when a pixel is or is not part of
+				an puncta.  After appling a high pass filter to the images,
+				pixels above this level are considered part of an puncta, while
+				the pixels below are classified as background. The lower this
+				number, the more pixels will be classified as part of an puncta.
+				The default value of two works well in most cases, but values
+				down to around one may be appropriate.  Also be aware that lower
+				values will lengthen the runtime.  If you want to see what one
+				of your images looks like when processed with a specific
+				threshold try out the threshold <a
+					href=http://faas.bme.unc.edu/thresh_testing>tester</a>
+				available through the Focal Adhesion Analysis Server. The
+				algorithm used to idenfity adhesions is very similar to the one
+				used to identify the puncta, so the results from this service
+				are a good guide as to how you should set this parameter.
 
 				<p/><b>Min/Max Size:</b> These settings control the
-				minimum or maximum adhesion sizes allowed through the
+				minimum or maximum puncta sizes allowed through the
 				segmentation step, both are specified in pixels.
 				
-				<h2>Additional Image Sets</h2>
-
-				<p/><b>Cell Mask:</b> If a set of images are specified as the
-				cell mask set, the software will attempt to find the cell body
-				from these images. The methods work well in cases where the
-				entire body of the cell is expressing a marker and a substantial
-				portion of the background is also visible. If such a set of
-				images are provided, various properties concerning the adhesions
-				and their distance from the cell edge and cell centroid will be
-				calculated.
+				<p/><b>Max Major/Minor Axis Ratio:</b> This setting controls
+				maximum allowable ratio between the major and minor axes of an
+				ellipse fit to a potential puncta. This filter allows very
+				elongated structures to be automatically removed from
+				consideration. 
 
 				<h2>Notification Options</h2>
 				<h3>Email Address</h3>
