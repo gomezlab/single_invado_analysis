@@ -245,16 +245,19 @@ if (length(args) != 0) {
         if (dim(exp_props)[1] > 0) {
             return
         }
-
+		
         pdf(file.path(data_dir,'p_vals.pdf'))
         hist(exp_props$p_value);
         graphics.off()
 
-        data_types_to_include = c('lineage_nums','p_value','mean_local_diff', 'pre_local_diff_p_value');
+		data_types_to_include = c('lineage_nums', 'p_value', 'mean_local_diff',
+								  'local_diff_corrected_p_value',
+								  'mean_local_diff_corrected');
         
         filter_sets = build_filter_sets(exp_props);
         
-        invado_lineage_data = subset(exp_props, filter_sets$invado_filter, select = data_types_to_include);
+		invado_lineage_data = subset(exp_props, filter_sets$invado_filter,
+									 select = data_types_to_include);
         
         not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, 
             select = data_types_to_include);
