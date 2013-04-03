@@ -63,7 +63,7 @@ post '/upload' => sub {
 		$cfg{sub_date} = $date_str;
 
 		my @copy_if_defined = qw(stdev_thresh min_puncta_size max_puncta_size
-		email note time_spacing max_ratio);
+		email note time_spacing max_ratio exp_note);
 		foreach (@copy_if_defined) {
 			my $val = param $_;
 			if (defined $val && $val ne "") {
