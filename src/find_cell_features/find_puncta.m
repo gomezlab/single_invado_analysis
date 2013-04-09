@@ -8,6 +8,8 @@ i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
+i_p.addParamValue('stdev_thresh',[1.75,3],@(x)isnumeric(x));
+i_p.addParamValue('min_puncta_seed_size',3,@(x)isnumeric(x));
 i_p.addParamValue('min_puncta_size',1,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('max_puncta_size',Inf,@(x)isnumeric(x) && x > 0);
 i_p.addParamValue('max_ratio',Inf,@(x)isnumeric(x) && x > 0);
@@ -36,7 +38,8 @@ assert(str2num(image_dirs(3).name) == 1, 'Error: expected the third string to be
 image_dirs = image_dirs(3:end);
 
 min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
-filter_thresh = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold));
+thresh_settings = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold));
+filter_thresh = thresh_settings(1) + i_p.Results.stdev_thresh*thresh_settings(2);
 
 for i_num = 1:size(image_dirs,1)
     this_image_directory = fullfile(base_dir,image_dirs(i_num).name);
@@ -45,10 +48,11 @@ for i_num = 1:size(image_dirs,1)
     cell_mask = logical(imread(fullfile(this_image_directory,filenames.cell_mask)));
     
     I_filt = fspecial('disk',i_p.Results.filter_size);
-    blurred_image = imfilter(puncta_image,I_filt,'same',mean(puncta_image(:)));
+    blurred_image = imfilter(puncta_image,I_filt,'replicate');
     high_passed_image = puncta_image - blurred_image;
     
-    threshed_image = find_threshed_image(high_passed_image,filter_thresh);
+    threshed_image = find_threshed_image(high_passed_image,filter_thresh,...
+        i_p.Results.min_puncta_seed_size);
     
     %identify and remove objects on the immediate edge of the image
     threshed_image = remove_edge_objects(threshed_image);
@@ -150,21 +154,34 @@ toc;
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function threshed_image = find_threshed_image(high_passed_image, filter_thresh)
+function threshed_image = find_threshed_image(high_passed_image, filter_thresh, min_seed_size)
 
 if (length(filter_thresh) == 1)
     threshed_image = high_passed_image >= filter_thresh;
+    threshed_image = remove_edge_objects(threshed_image);
 else
     high_threshed_image = high_passed_image >= filter_thresh(2);
     high_threshed_image = remove_edge_objects(high_threshed_image);
+    high_threshed_image_label = bwlabel(high_threshed_image,4);
+    high_threshed_image_label = filter_label_mat_by_size(high_threshed_image_label,min_seed_size);
+    high_threshed_image = high_threshed_image_label > 0;
     
     low_threshed_image = high_passed_image >= filter_thresh(1);
     low_thresh_bwlabel = bwlabel(low_threshed_image,4);
     
     overlap_labels = unique(low_thresh_bwlabel.*high_threshed_image);
-    if (overlap_labels(1) == 0)
-        overlap_labels = overlap_labels(2:end);
-    end
+    overlap_labels = overlap_labels(overlap_labels > 0);
     
     threshed_image = ismember(low_thresh_bwlabel,overlap_labels);
+    threshed_image = remove_edge_objects(threshed_image);
+end
+
+function filt_image = filter_label_mat_by_size(label_mat,size_mat)
+
+props = regionprops(label_mat,'Area');
+
+if (length(size_mat) == 1)
+    filt_image = ismember(label_mat,find([props.Area] >= size_mat(1))).*label_mat;
+else
+    filt_image = ismember(label_mat,find([props.Area] >= size_mat(1) & [props.Area] <= size_mat(2))).*label_mat;
 end

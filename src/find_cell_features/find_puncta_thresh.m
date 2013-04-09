@@ -54,19 +54,19 @@ ylabel('Puncta Threshold');
 print('-depsc2', fullfile(base_dir,'..','puncta_props','single_image_thresholds.eps'));
 close;
 
-% threshold = mean(all_filt(:)) + i_p.Results.stdev_thresh*std(all_filt(:));
-threshold = median(single_image_thresh);
+mean_all_filt = mean(all_filt(:));
+stdev_all_filt = std(all_filt(:));
 
-csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold),threshold)
+csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold), ...
+    [mean_all_filt,stdev_all_filt]);
 
 hist(all_filt(:),100);
 xlabel('High Pass Filtered Intensity','FontSize',16,'FontName','Helvetica');
 ylabel('Pixel Count','FontSize',16,'FontName','Helvetica');
 y_limits = ylim();
 
-for i=1:length(threshold)
-    this_thresh = threshold(i);
-    line([this_thresh,this_thresh],[0,y_limits(2)],'Color','red', ...
+for i=1:5
+    line([i*stdev_all_filt,i*stdev_all_filt],[0,y_limits(2)],'Color','red', ...
         'LineStyle','--','LineWidth',3);
 end
 

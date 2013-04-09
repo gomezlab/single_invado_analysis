@@ -89,13 +89,16 @@ sub build_extra_command_line_opts {
 	}
 
 	if ($opt{script} eq "find_puncta_thresh") {
+	}
+
+	if ($opt{script} eq "find_puncta") {
         if (defined $this_config{stdev_thresh}) {
 			my @split_stdev_vals = split(/\s+/,$this_config{stdev_thresh});
             $extra .= ",'stdev_thresh',[" . join(",",@split_stdev_vals) . "]";
         }
-	}
-
-	if ($opt{script} eq "find_puncta") {
+        if (defined $this_config{min_puncta_seed_size}) {
+	    	$extra .= ",'min_puncta_seed_size',$this_config{min_puncta_seed_size}";
+        }
         if (defined $this_config{min_puncta_size}) {
 	    	$extra .= ",'min_puncta_size',$this_config{min_puncta_size}";
 	    }
