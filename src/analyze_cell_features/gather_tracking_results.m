@@ -40,14 +40,14 @@ load(fullfile(base_dir,image_dirs(1).name,filenames.cell_props));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Determine the types of data in set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-data_types = fieldnames(all_cell_props{1}); %#ok<USENS>
-for i_num = 2:length(all_cell_props)
-	%need this loop in case the first image set was empty
-	if (isempty(data_types)) 
-		data_types = fieldnames(all_cell_props{1});
-	else
-		continue;
-	end
+data_types = [];
+for i_num = 1:length(all_cell_props) %#ok<USENS>
+    %need this loop in case the first image set was empty
+    if (isempty(all_cell_props{i_num}))
+        continue;
+    elseif (isempty(data_types))
+        data_types = fieldnames(all_cell_props{i_num});
+    end
 end
 
 data_to_exclude = {'MeanIntensity','StdIntensity','Centroid','Overlap_area',...
@@ -55,7 +55,7 @@ data_to_exclude = {'MeanIntensity','StdIntensity','Centroid','Overlap_area',...
 
 output_dir = fullfile(base_dir,image_dirs(1).name,filenames.lineage_dir);
 if (not(exist(output_dir,'dir'))), mkdir(output_dir); end
-    
+
 for i = 1:length(data_types)
     if (any(strcmp(data_types{i},data_to_exclude)))
         continue;
@@ -109,13 +109,13 @@ for tracking_num = 1:size(tracking_mat,1)
 end
 
 function cell_speed = determine_cell_speed(centroid_x,centroid_y)
-    
+
 cell_speed = NaN(size(centroid_x));
 
 for cell_num = 1:size(centroid_x,1)
     for i_num = 2:size(centroid_x,2)
         if (not(isnan(centroid_x(cell_num,i_num - 1))) && ...
-            not(isnan(centroid_x(cell_num,i_num))))
+                not(isnan(centroid_x(cell_num,i_num))))
             
             speed = sqrt((centroid_x(cell_num,i_num) - centroid_x(cell_num, i_num - 1))^2 + ...
                 (centroid_y(cell_num,i_num) - centroid_y(cell_num, i_num - 1))^2);
