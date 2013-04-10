@@ -57,11 +57,12 @@ fprintf('It took %d seconds to read the image sets.\n',round(reading_time));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_process = tic;
 for lineage_num = 1:size(tracking_seq,1)
-    pre_birth_i_num = find_birth_i_num(tracking_seq(lineage_num,:) < 1) - 1;
-    %the above function returns NaN if there isn't a pre-birth image
-    %number, catch that situation and exit out of the loop in that case
-    if (isnan(pre_birth_i_num))
-        continue;
+    pre_birth_i_num = find(tracking_seq(lineage_num,:) >= 1,1,'first') - 1;
+    %if the puncta is born in image number 1, we don't have a pre-birth
+    %image to look at for calculations, so we do the next best thing and
+    %use the first image of the data set
+    if (pre_birth_i_num < 1)
+        pre_birth_i_num = 1;
     end
     
     pre_birth_image_data = image_sets{pre_birth_i_num};

@@ -36,11 +36,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         #We only want to consider puncta that live for at least 5 time steps
         longev_filter = ! is.na(longevity) & longevity >= 5;
         
-        #and born after the first time point, to ensure we have pre-birth data
-        #to compare too
-        birth_filter = is.na(area_data[,1]);
-
-        overall_filt = longev_filter & birth_filter;
+        overall_filt = longev_filter;
         
         all_props$lineage_nums = which(overall_filt)
         all_props$experiment = rep(this_exp_dir,sum(overall_filt));
@@ -52,7 +48,6 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         if (build_plots) {
             pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
         }
-
         #analyzing each of the puncta in the filtered set to identify invadopodia
         for (lin_num in which(overall_filt)) {
             local_diff = na.omit(as.numeric(local_diff_data[lin_num,]));
@@ -94,7 +89,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 max(local_diff_corrected) - min(local_diff_corrected));
 
             if (length(all_props$mean_local_diff_corrected) != length(all_props$mean_local_diff)) {
-                browser()
+                # browser()
             }
 
             if (build_plots) {
