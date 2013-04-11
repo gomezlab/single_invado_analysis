@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use Getopt::Long;
+use Data::Dumper;
 
 my %opt;
 $opt{debug} = 0;
@@ -22,15 +23,19 @@ if ($opt{no_time}) {
     $time_str = '';
 }
 
+my $exclude_str = $opt{exclude};
+if ($opt{exclude}) {
+	$exclude_str = "";
+	foreach (split(",",$opt{exclude})) {
+		$exclude_str .= " --exclude=**$_**";
+	}
+}
+
 my $rsync_command = "rsync";
 if (-e "/nas02/home/m/b/mbergins/bin/rsync") {
 	$rsync_command = "/nas02/home/m/b/mbergins/bin/rsync";
 }
 
-my $exclude_str = $opt{exclude};
-if ($opt{exclude}) {
-	$exclude_str = "--exclude=**$opt{exclude}**";
-}
 
 
 my $command = "$time_str $rsync_command $progress_str $exclude_str " . 
