@@ -78,6 +78,10 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 t.test(pre_diff,conf.level=conf.level), 
                 error = t.test.error);
             
+            all_props$mean_pre_diff = c(all_props$mean_pre_diff,mean(pre_diff));
+            all_props$mean_pre_diff_p_value = c(all_props$mean_pre_diff_p_value,
+                                                stat_tests$pre_diff$p.value);
+
             #Difference between before birth and during lifetime
             local_diff_corrected = na.omit(as.numeric(local_diff_corrected_data[lin_num,]));
 
