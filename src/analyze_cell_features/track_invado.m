@@ -40,7 +40,7 @@ tracking_props = cell(0);
 image_reading_start = tic;
 for i_num=1:length(image_dirs)
     objects{i_num} = imread(fullfile(base_dir,image_dirs(i_num).name,filenames.objects));
-    
+        
     for ad_num = 1:max(objects{i_num}(:))
         tracking_props{i_num}(ad_num).assigned = 0;
         tracking_props{i_num}(ad_num).next_obj = [];
@@ -127,6 +127,16 @@ end
 
 tracking_build_start = tic;
 tracking_mat = convert_tracking_props_to_matrix(tracking_props) - 1;
+
+%Dealing with the case where the last frames of a movie don't contain any
+%objects, so the tracking matrix is truncated, resulting in shortened
+%visualizations. In this case, pad the tracking mat with -1 values to
+%ensure that all frames are represented, even if empty.
+if (size(tracking_mat,2) < length(image_dirs))
+    padding_mat = -1 * ones(size(tracking_mat,1),length(image_dirs) - size(tracking_mat,2));
+    tracking_mat = [tracking_mat,padding_mat];
+end
+
 tracking_build_time = round(toc(tracking_build_start)/60);
 fprintf('Tracking matrix building took %d minutes.\n',tracking_build_time);
 
@@ -158,6 +168,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Similarity Calculations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function pix_sim = calc_pix_sim(ads_1,ads_2)
     pix_sim = zeros(max(ads_1(:)), max(ads_2(:)));
@@ -191,6 +205,9 @@ function cent_dist = calc_cent_dist(ads_1,ads_2)
     cent_dist = pdist2(centroid_1,centroid_2);
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Tracking Matrix Production
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function tracking_matrix = convert_tracking_props_to_matrix(tracking_props)
 
@@ -273,7 +290,6 @@ return;
 end
 
 function [i_num,obj_num] = follow_to_next_obj(tracking_props,i_num,obj_num)
-
 
 try %#ok<*TRYNC>
     if (size(tracking_props{i_num}(obj_num).next_obj,2) == 0)

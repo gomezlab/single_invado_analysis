@@ -38,6 +38,11 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         
         overall_filt = longev_filter;
         
+        if (sum(overall_filt) == 0) {
+            print("None of the lineages passed the filtering step, returning from function with no output.");
+            return(all_props);
+        }
+
         all_props$lineage_nums = which(overall_filt)
         all_props$experiment = rep(this_exp_dir,sum(overall_filt));
         all_props$longevity = longevity[overall_filt]
@@ -237,14 +242,11 @@ if (length(args) != 0) {
         exp_props = gather_invado_properties(data_dir,
             results.file = file.path('models','puncta_props_corr.Rdata'));
         
-        if (dim(exp_props)[1] > 0) {
-            return
+        if (dim(exp_props)[1] == 0) {
+            print("Didn't find any lineages to analyze, probably nothing long-lived enough.");
+            return;
         }
 		
-        pdf(file.path(data_dir,'p_vals.pdf'))
-        hist(exp_props$p_value);
-        graphics.off()
-
 		data_types_to_include = c('lineage_nums', 'p_value', 'mean_local_diff',
 								  'local_diff_corrected_p_value',
 								  'mean_local_diff_corrected');
@@ -261,10 +263,5 @@ if (length(args) != 0) {
             row.names=F, col.names=T, sep=',')
         write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
             row.names=F, col.names=T, sep=',')
-        
-        # local_diff_invado_lineage_data = subset(exp_props, filter_sets$local_diff_filter, 
-        #     select = data_types_to_include);
-        # write.table(local_diff_invado_lineage_data, file.path(data_dir, 'local_invado_data.csv'), 
-        #     row.names=F, col.names=T, sep=',')
     }
 }
