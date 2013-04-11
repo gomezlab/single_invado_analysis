@@ -9,7 +9,7 @@ function build_dual_highlight_image(exp_dir,varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Setup variables and parse command line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tic;
+start_time = tic;
 i_p = inputParser;
 i_p.FunctionName = 'BUILD_DUAL_HIGHLIGHT_IMAGES';
 
@@ -75,10 +75,7 @@ if (not(any(strcmp(i_p.UsingDefaults,'image_sets'))))
 else
     image_sets = cell(size(image_dirs,1),1);
     for i = 1:size(image_dirs,1)
-        image_sets{i} = read_in_file_set(fullfile(base_dir,image_dirs(i).name),filenames);
-        if (mod(i,10) == 0)
-            disp(['Finished Reading ', num2str(i), '/',num2str(size(image_dirs,1))]);
-        end
+        image_sets{i} = read_in_file_set(fullfile(individual_images_dir,image_dirs(i).name),filenames);
     end
     toc(start_time);
 end
@@ -96,51 +93,47 @@ if (not(exist(output_folder_side,'dir')))
     mkdir(output_folder_side);
 end
 
-for i = 1:length(image_dirs)
-    %check for the presence of objects to map onto the last gel image, if
-    %not present, skip to the next image folder
-    if (not(any(tracking_seq(:,i) > 0)))
-        continue;
-    end
-    
+% output_folder_overlap = fullfile(exp_dir,'visualizations','overlap');
+% if (not(exist(output_folder_overlap,'dir')))
+%     mkdir(output_folder_overlap);
+% end
+
+for i_num = 1:length(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Gather the object label perimeters
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    puncta_nums = tracking_seq(:,i);
-    puncta_nums = puncta_nums(puncta_nums > 0);
-    assert(max(puncta_nums) == length(puncta_nums));
-    
-    invado_nums = invado_tracking_seq(:,i);
+    invado_nums = invado_tracking_seq(:,i_num);
     invado_nums = invado_nums(invado_nums > 0);
     
-    not_invado_nums = not_invado_tracking_seq(:,i);
+    not_invado_nums = not_invado_tracking_seq(:,i_num);
     not_invado_nums = not_invado_nums(not_invado_nums > 0);
     
-    puncta_label_perim_invado = ismember(image_sets{i}.objects_perim,invado_nums);
-
-    puncta_label_perim_not_invado = zeros(size(image_sets{i}.objects_perim));
-    puncta_label_perim_not_invado(ismember(image_sets{i}.objects_perim,not_invado_nums)) = image_sets{i}.objects_perim(ismember(image_sets{i}.objects_perim,not_invado_nums));
-    puncta_label_perim_not_invado = im2bw(puncta_label_perim_not_invado,0);
+    neither_nums = 1:max(image_sets{i_num}.objects_perim(:));
+    neither_nums = setdiff(neither_nums,invado_nums);
+    neither_nums = setdiff(neither_nums,not_invado_nums);
     
-    puncta_label_perim_neither = image_sets{i}.objects_perim;
-    puncta_label_perim_neither(puncta_label_perim_invado > 0) = 0;
-    puncta_label_perim_neither(puncta_label_perim_not_invado > 0) = 0;
-    puncta_label_perim_neither = im2bw(puncta_label_perim_neither,0);
+    assert(isempty(intersect(invado_nums,neither_nums)))
+    assert(isempty(intersect(not_invado_nums,neither_nums)))
+    assert(isempty(intersect(invado_nums,not_invado_nums)))
+    
+    puncta_label_perim_invado = ismember(image_sets{i_num}.objects_perim,invado_nums);
+    puncta_label_perim_not_invado = ismember(image_sets{i_num}.objects_perim,not_invado_nums);
+    puncta_label_perim_neither = ismember(image_sets{i_num}.objects_perim,neither_nums);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %Image Creation
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    images_to_highlight = {image_sets{i}.gel_image_norm, image_sets{i}.puncta_image_norm};
+    images_to_highlight = {image_sets{i_num}.gel_image_norm, image_sets{i_num}.puncta_image_norm};
     original_images = images_to_highlight;
     spacer = ones(size(images_to_highlight{1},1),1,3);
     spacer_gray = ones(size(images_to_highlight{1},1),1);
-    cell_perim = bwperim(image_sets{i}.cell_mask);
+    cell_perim = bwperim(image_sets{i_num}.cell_mask);
     
     for j=1:length(images_to_highlight)
         %cell edge highlighting
         images_to_highlight{j} = create_highlighted_image(images_to_highlight{j},cell_perim,'color_map',[150/255,46/255,166/255]);
         
-        %puncta that aren't classified, due to longevity
+        %puncta that aren't classified
         images_to_highlight{j} = create_highlighted_image(images_to_highlight{j},puncta_label_perim_neither,'color_map',[0,0,1]);
         
         %not-invadopodia highlighting
@@ -151,10 +144,16 @@ for i = 1:length(image_dirs)
     end
     
     output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
-    imwrite(output_image, fullfile(output_folder,[sprintf('%04d',i),'.png']));
+    imwrite(output_image, fullfile(output_folder,[sprintf('%04d',i_num),'.png']));
         
     output_image = [original_images{1}, spacer_gray, original_images{2}];
-    imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i),'.png']));
+    imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i_num),'.png']));
+    
+    %Overlayed dual color image of puncta and ECM
+%     output_image = cat(3,original_images{1},...
+%         original_images{2},...
+%         zeros(size(original_images{1},1),size(original_images{1},2)));
+%     imwrite(output_image, fullfile(output_folder_overlap,[sprintf('%04d',i_num),'.png']));
 end
 
-toc;
+toc(start_time);
