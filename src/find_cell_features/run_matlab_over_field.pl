@@ -84,10 +84,12 @@ sub build_extra_command_line_opts {
 	my %this_config = @_;
 	my $extra = '';
 	
-	if ($opt{script} eq "find_puncta_properties" ||
-		$opt{script} eq "find_pre_birth_diffs") {
+	if ($opt{script} eq "gather_tracking_results") {
+		if (defined $this_config{gel_level_norm}) {
+	    	$extra .= ",'gel_level_norm',$this_config{gel_level_norm}";
+		}
 	}
-
+	
 	if ($opt{script} eq "find_puncta_thresh") {
 	}
 

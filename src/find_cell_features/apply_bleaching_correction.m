@@ -9,6 +9,7 @@ tic;
 i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
+i_p.addOptional('gel_norm_level',0,@(x)isnumeric(x));
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 i_p.parse(exp_dir,varargin{:});
 
@@ -59,7 +60,12 @@ for i=1:length(image_dirs)
     gel_levels(i) = mean(gel(:));
     gel_levels_outside_cell(i) = mean(gel(no_cell_regions));
     
-    gel_corrected = gel .* (gel_levels_outside_cell(1)/gel_levels_outside_cell(i));
+    correction_factor = gel_levels_outside_cell(1)/gel_levels_outside_cell(i);
+    if (not(any(strcmp('gel_norm_level',i_p.UsingDefaults))))
+        correction_factor = i_p.Results.gel_norm_level/gel_levels_outside_cell(i);
+    end
+    
+    gel_corrected = gel .* correction_factor;
     gel_levels_final(i) = mean(gel_corrected(:));
     
     imwrite(gel_corrected,fullfile(base_dir,image_dirs(i).name,filenames.gel),'Bitdepth',16);
