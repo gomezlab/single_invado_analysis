@@ -125,7 +125,6 @@ sub add_extra_options {
 	my %opt = @_;
 
 	if ($opt{script} =~ /find_pre_birth_diffs/) {
-		$opt{resource} = "mem96"; 
 	}
 	
 	return %opt;
