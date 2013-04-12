@@ -40,10 +40,26 @@
 						</div>
 
 						<div class="control-group">
-							<label class="control-label" for ="stdev_thresh">Detection Threshold</label>
+							<label class="control-label" for ="stdev_thresh_seed">Puncta Seed Threshold</label>
 							<div class="controls">
-								<input type="text" class="input-xlarge" value="3" name="stdev_thresh" >
-								<span class="help-inline">Normally set to 3, see instructions below for more help</span> 
+								<input type="text" class="input-xlarge" value="3" name="stdev_thresh_seed" >
+								<span class="help-inline">Puncta seed identification threshold</span> 
+							</div>
+						</div>
+
+						<div class="control-group">
+							<label class="control-label" for ="min_puncta_seed_size">Puncta Seed Min Size (pixels)</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="3" name="min_puncta_seed_size" >
+								<span class="help-inline">Puncta seed minimum size in pixels</span> 
+							</div>
+						</div>
+						
+						<div class="control-group">
+							<label class="control-label" for ="stdev_thresh_expansion">Puncta Expansion Threshold</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="1.75" name="stdev_thresh_expansion" >
+								<span class="help-inline">Puncta seed expansion threshold</span> 
 							</div>
 						</div>
 
@@ -61,7 +77,7 @@
 						<div class="control-group">
 							<label class="control-label" for ="max_puncta_size">Max Puncta Size (pixels)</label>
 							<div class="controls">
-								<input type="text" class="input-xlarge" value="" name="max_puncta_size" >
+								<input type="text" class="input-xlarge" value="100" name="max_puncta_size" >
 								<span class="help-inline">Leave blank to remove the maximum puncta size limit</span> 
 							</div>
 						</div>
@@ -70,7 +86,7 @@
 						<div class="control-group">
 							<label class="control-label" for ="max_ratio">Max Major/Minor Axis Ratio</label>
 							<div class="controls">
-								<input type="text" class="input-xlarge" value="4" name="max_ratio" >
+								<input type="text" class="input-xlarge" value="3.5" name="max_ratio" >
 								<span class="help-inline">Leave blank to remove the major/minor axis ratio limit</span> 
 							</div>
 						</div>

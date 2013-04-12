@@ -61,9 +61,11 @@ post '/upload' => sub {
 		my $date_str = `date`;
 		chomp($date_str);
 		$cfg{sub_date} = $date_str;
+		
+		$cfg{stdev_thresh} = param "stdev_thresh_expansion" . " " . param "stdev_thresh_seed"
 
-		my @copy_if_defined = qw(stdev_thresh min_puncta_size max_puncta_size
-		email note time_spacing max_ratio exp_note);
+		my @copy_if_defined = qw(min_puncta_size max_puncta_size email note
+		time_spacing max_ratio exp_note);
 		foreach (@copy_if_defined) {
 			my $val = param $_;
 			if (defined $val && $val ne "") {
