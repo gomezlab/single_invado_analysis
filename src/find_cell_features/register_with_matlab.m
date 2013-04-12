@@ -34,7 +34,7 @@ image_dirs = image_dirs(3:end);
 affine_file = fullfile(base_dir,image_dirs(1).name,'reg_values.txt');
 csvwrite(affine_file,diag(ones(3,1)));
 
-[optimizer, metric] = imregconfig('monomodal');
+[optimizer, metric] = imregconfig('multimodal');
 
 reg_start = tic;
 %registration will go in a step-wise fashion, register image 2 to image 1,
@@ -75,7 +75,13 @@ end
 plot(cumsum(left_right_trans_set),cumsum(up_down_trans_set));
 xlabel('Left-Right Translation', 'Fontsize',16)
 ylabel('Up-Down Translation', 'Fontsize',16);
-print('-depsc2', fullfile(base_dir,image_dirs(1).name,'../../puncta_props/tranlation.eps'));
+
+output_file = fullfile(base_dir,image_dirs(1).name,'../../puncta_props/translation.pdf');
+[output_folder, ~, ~] = fileparts(output_file);
+if (not(exist(output_folder,'dir')))
+    mkdir(fileparts(output_file));
+end
+print('-dpdf', output_file);
 close all;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
