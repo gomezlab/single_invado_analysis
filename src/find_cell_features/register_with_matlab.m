@@ -34,7 +34,7 @@ image_dirs = image_dirs(3:end);
 affine_file = fullfile(base_dir,image_dirs(1).name,'reg_values.txt');
 csvwrite(affine_file,diag(ones(3,1)));
 
-[optimizer, metric] = imregconfig('multimodal');
+[optimizer, metric] = imregconfig('monomodal');
 
 reg_start = tic;
 %registration will go in a step-wise fashion, register image 2 to image 1,
