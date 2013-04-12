@@ -49,12 +49,19 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
 
         all_props$mean_area = rowMeans(area_data[overall_filt,],na.rm=T);
         all_props$mean_edge_dist = rowMeans(edge_dist_data[overall_filt,],na.rm=T);
+        
+        all_props$birth_observed = !is.na(area_data[overall_filt,1]);
+        all_props$death_observed = !is.na(area_data[overall_filt,dim(area_data)[2]]);
 
         if (build_plots) {
             pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
         }
         #analyzing each of the puncta in the filtered set to identify invadopodia
         for (lin_num in which(overall_filt)) {
+
+            ###############################################
+            # Local Diff
+            ###############################################
             local_diff = na.omit(as.numeric(local_diff_data[lin_num,]));
 
             all_props$mean_local_diff = c(all_props$mean_local_diff, mean(local_diff))
@@ -71,7 +78,9 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$high_conf_int = c(all_props$high_conf_int, stat_tests$local_diff$conf.int[2]);
             all_props$p_value = c(all_props$p_value, stat_tests$local_diff$p.value);
             
-            #Pre-birth local difference data
+            ###############################################
+            # Pre-birth
+            ###############################################
             pre_diff = na.omit(as.numeric(pre_diff_data[lin_num,]));
             
             stat_tests$pre_diff = tryCatch(
@@ -82,12 +91,15 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$mean_pre_diff_p_value = c(all_props$mean_pre_diff_p_value,
                                                 stat_tests$pre_diff$p.value);
 
-            #Difference between before birth and during lifetime
+            ###############################################
+            # Local Diff Corrected
+            ###############################################
             local_diff_corrected = na.omit(as.numeric(local_diff_corrected_data[lin_num,]));
-
+            
             stat_tests$local_diff_corrected = tryCatch(
                 t.test(local_diff_corrected,conf.level=conf.level), 
                 error = t.test.error);
+
             all_props$local_diff_corrected_p_value = c(all_props$local_diff_corrected_p_value, 
                 stat_tests$local_diff_corrected$p.value);
             all_props$mean_local_diff_corrected = c(all_props$mean_local_diff_corrected, 
@@ -96,6 +108,9 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 max(local_diff_corrected));
             all_props$range_local_diff_corrected = c(all_props$range_local_diff_corrected,
                 max(local_diff_corrected) - min(local_diff_corrected));
+            
+            all_props$local_corrected_pre_ratio = c(all_props$local_corrected_pre_ratio,
+                mean(local_diff_corrected)/mean(pre_diff));
 
             if (length(all_props$mean_local_diff_corrected) != length(all_props$mean_local_diff)) {
                 # browser()
@@ -111,7 +126,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             graphics.off();
         }
         all_props = as.data.frame(all_props);
-
+        
         if (! is.na(results.file)) {
             this_file = file.path(this_exp_dir,results.file);
             if (! file.exists(dirname(this_file))) {
@@ -120,7 +135,7 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             save(all_props,file = this_file);
         }
     }
-
+    
     return(all_props);
 }
 
@@ -157,36 +172,6 @@ build_single_invado_plot <- function(data_sets,stat_tests, lin_num) {
     # axis(4,at=axTicks(2),labels=sprintf('%.3f',(axTicks(2) - plot_props[3])/scale_factor))
 }
 
-build_presentation_single_invado_plot <- function(data_sets,stat_tests, lin_num) {
-    time_points = seq(from=0,by=5,along.with=data_sets[,1]);
-
-    par(bty='n',mar=c(3.25,2.83,0.5,0),cex=2,mgp=c(2.1,1,0))
-    matplot(time_points, data_sets, 
-        typ='l', lty=c(1,2,4), xlab='Time since Invadopodia Birth (min)', ylab='Fluorescence Difference', 
-        lwd=5, xlim=c(0,max(time_points)*1.05), ylim=c(1.05*min(data_sets), 3.25*max(data_sets)))
-    
-    plot_limits = par("usr");
-
-    #place the legend
-    x_pos = (plot_limits[2] - plot_limits[1])*0.075 + plot_limits[1];
-    y_pos = (plot_limits[4] - plot_limits[3])*1 + plot_limits[3];
-    legend(x_pos,y_pos,c('Local','Pre-birth', 'Local - Pre-birth' ), 
-        col=c('black','red', 'green'), lty=c(1,2,4), lwd=3)
-    
-    #draw the zero line
-    segments(0,0,max(time_points),0,lty=4)
-    
-    #put in the error bars
-    par(cex = 0.5, lwd=2);
-    errbar(max(time_points)*1.01, stat_tests$local_diff$estimate, 
-        stat_tests$local_diff$conf.int[2], stat_tests$local_diff$conf.int[1], add=T,lwd=3)
-    errbar(max(time_points)*1.03, stat_tests$pre_diff$estimate, 
-        stat_tests$pre_diff$conf.int[2], stat_tests$pre_diff$conf.int[1], add=T, col='red',lwd=3)
-    errbar(max(time_points)*1.05, stat_tests$local_diff_corrected$estimate, 
-        stat_tests$local_diff_corrected$conf.int[2], stat_tests$local_diff_corrected$conf.int[1], 
-        add=T, col='green',lwd=3)
-}
- 
 t.test.error <- function(e) {
     list(conf.int = c(Inf, -Inf), p.value = 1)
 }
@@ -209,17 +194,6 @@ build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_local_dif
     filter_sets$not_invado_filter = ! filter_sets$invado_filter;
 
     return(filter_sets);
-}
-
-push <- function(data_set, new_data) {
-    if (is.list(data_set)) {
-        curr_length = length(data_set);
-        new_data_pos = curr_length + 1;
-        data_set[[new_data_pos]] = new_data;
-    } else {
-        data_set = c(data_set, new_data);
-    }
-    return(data_set);
 }
 
 ################################################################################
