@@ -84,9 +84,9 @@ sub build_extra_command_line_opts {
 	my %this_config = @_;
 	my $extra = '';
 	
-	if ($opt{script} eq "gather_tracking_results") {
-		if (defined $this_config{gel_level_norm}) {
-	    	$extra .= ",'gel_level_norm',$this_config{gel_level_norm}";
+	if ($opt{script} eq "apply_bleaching_correction") {
+		if (defined $this_config{gel_norm_level}) {
+	    	$extra .= ",'gel_norm_level',$this_config{gel_norm_level}";
 		}
 	}
 	
