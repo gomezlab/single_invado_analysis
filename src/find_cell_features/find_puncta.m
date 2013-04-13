@@ -79,9 +79,15 @@ for i_num = 1:size(image_dirs,1)
         %first make a binary image of the current object and then run imfill
         %to fill any holes present
         this_puncta = puncta == this_num;
-        filled_ad = imfill(this_puncta,'holes');
+        filled_obj = imfill(this_puncta,'holes');
         
-        puncta(logical(filled_ad)) = this_num;
+        %dealing with an edge case where one puncta completely surrounds
+        %other objects, in that case, make sure those other objects don't
+        %get reassigned based on being enclosed
+        other_puncta = puncta ~= this_num & puncta ~= 0;
+        filled_obj(other_puncta) = 0;
+        
+        puncta(logical(filled_obj)) = this_num;
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,10 +111,10 @@ for i_num = 1:size(image_dirs,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Renumber objects to be sequential
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ad_nums = unique(puncta);
-    assert(ad_nums(1) == 0, 'Background pixels not found after building puncta label matrix')
-    for i = 2:length(ad_nums)
-        puncta(puncta == ad_nums(i)) = i - 1;
+    obj_nums = unique(puncta);
+    assert(obj_nums(1) == 0, 'Background pixels not found after building puncta label matrix')
+    for i = 2:length(obj_nums)
+        puncta(puncta == obj_nums(i)) = i - 1;
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,7 +122,7 @@ for i_num = 1:size(image_dirs,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     puncta_perim = zeros(size(puncta));
     for i = 1:max(puncta(:))
-        assert(any(any(puncta == i)), 'Error: can''t find ad number %d', i);
+        assert(any(any(puncta == i)), 'Error: can''t find obj number %d', i);
         this_puncta = zeros(size(puncta));
         this_puncta(puncta == i) = 1;
         puncta_perim(bwperim(this_puncta)) = i;
