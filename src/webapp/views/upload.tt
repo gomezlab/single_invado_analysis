@@ -38,7 +38,8 @@
 								<span class="help-inline">Amount of time, in minutes, between the images</span> 
 							</div>
 						</div>
-
+						
+						<h2>Puncta Detection</h2>
 						<div class="control-group">
 							<label class="control-label" for ="stdev_thresh_seed">Puncta Seed Threshold</label>
 							<div class="controls">
@@ -90,6 +91,17 @@
 								<span class="help-inline">Leave blank to remove the major/minor axis ratio limit</span> 
 							</div>
 						</div>
+
+						<h2>ECM Normalization</h2>
+						<div class="control-group">
+							<label class="control-label" for ="gel_norm_level">ECM Normalization Level</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="1000" name="max_ratio" >
+								<span class="help-inline">The ECM intensity will be normalized to this level.</span> 
+							</div>
+						</div>
+
+
 
 						<h2>Optional</h2>
 
@@ -149,22 +161,21 @@
 				uniformity of the labeled ECM.
 
 				<h2>Experiment Configuration</h2>
-				<p/><b>Detection Threshold:</b>This number is used by the puncta
-				detection script to determine when a pixel is or is not part of
-				an puncta.  After appling a high pass filter to the images,
-				pixels above this level are considered part of an puncta, while
-				the pixels below are classified as background. The lower this
-				number, the more pixels will be classified as part of an puncta.
-				The default value of two works well in most cases, but values
-				down to around one may be appropriate.  Also be aware that lower
-				values will lengthen the runtime.  If you want to see what one
-				of your images looks like when processed with a specific
-				threshold try out the threshold <a
+				<p><b>Puncta Seed and Expansion Thresholds:</b>Puncta
+				identification uses two thresholds to determine where the puncta
+				are located in each image. First a set of seeds pixels are
+				identifed using the seed threshold and then those seeds are
+				expanded based on the expansion threshold. You also have the
+				option to eliminate seeds below a certain size using the puncta
+				seed minimum size settings.</p>
+
+				<p>If you want to see what one of your images looks like when
+				processed with a specific threshold try out the threshold <a
 					href=http://faas.bme.unc.edu/thresh_testing>tester</a>
 				available through the Focal Adhesion Analysis Server. The
 				algorithm used to idenfity adhesions is very similar to the one
 				used to identify the puncta, so the results from this service
-				are a good guide as to how you should set this parameter.
+				are a good guide as to how you should set these parameters.
 
 				<p/><b>Min/Max Size:</b> These settings control the
 				minimum or maximum puncta sizes allowed through the
@@ -175,6 +186,14 @@
 				ellipse fit to a potential puncta. This filter allows very
 				elongated structures to be automatically removed from
 				consideration. 
+				
+				<h2>ECM Normalization</h2>
+				This value sets the average intensity of the ECM outside the
+				cell bodies in your ECM images. Setting this value will allow
+				comparisons to be made between the intensities of seperate
+				fluorescent ECM preparations. You can remove the setting by
+				leaving the box blank. When blank, the ECM will be photobleach
+				corrected to the first image in the image set.
 
 				<h2>Notification Options</h2>
 				<h3>Email Address</h3>

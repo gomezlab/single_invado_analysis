@@ -65,7 +65,7 @@ post '/upload' => sub {
 		$cfg{stdev_thresh} = params->{stdev_thresh_expansion} . " " . params->{stdev_thresh_seed};
 
 		my @copy_if_defined = qw(min_puncta_size max_puncta_size max_ratio email
-		note time_spacing exp_note);
+		note time_spacing exp_note gel_norm_level);
 		foreach (@copy_if_defined) {
 			my $val = params->{$_};
 			if (defined $val && $val ne "") {
