@@ -31,10 +31,10 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         ########################################################################
         #Building the filter sets
         ########################################################################
-        longevity = rowSums(! is.na(area_data))
+        longevity_uncertain = rowSums(! is.na(area_data))
 
         #We only want to consider puncta that live for at least 5 time steps
-        longev_filter = ! is.na(longevity) & longevity >= 5;
+        longev_filter = ! is.na(longevity_uncertain) & longevity_uncertain >= 5;
         
         overall_filt = longev_filter;
         
@@ -42,23 +42,26 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             print("None of the lineages passed the filtering step, returning from function with no output.");
             return(all_props);
         }
+        
+        all_props$birth_observed = is.na(area_data[overall_filt,1]);
+        all_props$death_observed = is.na(area_data[overall_filt,dim(area_data)[2]]);
+        
+        longevity = longevity_uncertain;
+        longevity[! (all_props$birth_observed & all_props$death_observed)] = NA;
 
         all_props$lineage_nums = which(overall_filt)
         all_props$experiment = rep(this_exp_dir,sum(overall_filt));
+        all_props$longevity_uncertain = longevity_uncertain[overall_filt]
         all_props$longevity = longevity[overall_filt]
 
         all_props$mean_area = rowMeans(area_data[overall_filt,],na.rm=T);
         all_props$mean_edge_dist = rowMeans(edge_dist_data[overall_filt,],na.rm=T);
         
-        all_props$birth_observed = !is.na(area_data[overall_filt,1]);
-        all_props$death_observed = !is.na(area_data[overall_filt,dim(area_data)[2]]);
-
         if (build_plots) {
             pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
         }
         #analyzing each of the puncta in the filtered set to identify invadopodia
         for (lin_num in which(overall_filt)) {
-
             ###############################################
             # Local Diff
             ###############################################
@@ -104,13 +107,16 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
                 stat_tests$local_diff_corrected$p.value);
             all_props$mean_local_diff_corrected = c(all_props$mean_local_diff_corrected, 
                 as.numeric(stat_tests$local_diff_corrected$estimate));
-            all_props$max_local_diff_corrected = c(all_props$max_local_diff_corrected,
-                max(local_diff_corrected));
-            all_props$range_local_diff_corrected = c(all_props$range_local_diff_corrected,
-                max(local_diff_corrected) - min(local_diff_corrected));
             
-            all_props$local_corrected_pre_ratio = c(all_props$local_corrected_pre_ratio,
-                mean(local_diff_corrected)/mean(pre_diff));
+            ###############################################
+            # Local Diff Corrected vs Pre Diff
+            ###############################################
+            stat_tests$local_diff_pre_diff = tryCatch(
+                t.test(pre_diff,local_diff_corrected), 
+                error = t.test.error);
+            
+            all_props$local_pre_p_value = c(all_props$local_pre_p_value, 
+                stat_tests$local_diff_pre_diff$p.value);
 
             if (length(all_props$mean_local_diff_corrected) != length(all_props$mean_local_diff)) {
                 # browser()
@@ -179,15 +185,21 @@ t.test.error <- function(e) {
 build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_local_diff_corrected = NA) {
     filter_sets = list();
 
-    filter_sets$pre_diff_filter = raw_data_set$mean_local_diff_corrected > 0 & 
-        raw_data_set$local_diff_corrected_p_value < (1 - conf.level);
     filter_sets$local_diff_filter = raw_data_set$mean_local_diff > 0 &
         raw_data_set$p_value < (1 - conf.level);
     
-    filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
+    filter_sets$local_pre_p_value = raw_data_set$local_pre_p_value < (1 - conf.level);
+
+    filter_sets$pre_diff_filter = ! raw_data_set$birth_observed |
+        (raw_data_set$mean_local_diff_corrected > 0 & 
+         raw_data_set$local_diff_corrected_p_value < (1 - conf.level));
+
+    filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter & 
+        filter_sets$local_pre_p_value;
 
     if (!is.na(min_mean_local_diff_corrected)) {
-        filter_sets$min_local_diff_corrected = raw_data_set$mean_local_diff_corrected > min_mean_local_diff_corrected;
+        filter_sets$min_local_diff_corrected = 
+            raw_data_set$mean_local_diff_corrected > min_mean_local_diff_corrected;
         filter_sets$invado_filter = filter_sets$invado_filter & filter_sets$min_local_diff_corrected;
     }
 
