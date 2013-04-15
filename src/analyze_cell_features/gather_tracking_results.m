@@ -65,6 +65,9 @@ for i = 1:length(data_types)
     if (strcmp(data_types{i},'Area') && not(isnan(i_p.Results.pixel_size)))
         this_data = this_data * i_p.Results.pixel_size^2;
     end
+    if (strcmp(data_types{i},'Centroid_dist_from_edge') && not(isnan(i_p.Results.pixel_size)))
+        this_data = this_data * i_p.Results.pixel_size;
+    end
     
     dlmwrite(fullfile(output_dir,[data_types{i}, '.csv']), this_data);
 end

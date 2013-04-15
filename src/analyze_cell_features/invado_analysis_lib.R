@@ -108,6 +108,11 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$mean_local_diff_corrected = c(all_props$mean_local_diff_corrected, 
                 as.numeric(stat_tests$local_diff_corrected$estimate));
             
+            first_half_local_diff = local_diff_corrected[1:round(length(local_diff_corrected)/2)]
+            second_half_local_diff = local_diff_corrected[round(length(local_diff_corrected)/2):length(local_diff_corrected)]
+
+            # browser()
+
             ###############################################
             # Local Diff Corrected vs Pre Diff
             ###############################################
@@ -132,6 +137,55 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             graphics.off();
         }
         all_props = as.data.frame(all_props);
+        
+        if (! is.na(results.file)) {
+            this_file = file.path(this_exp_dir,results.file);
+            if (! file.exists(dirname(this_file))) {
+                dir.create(dirname(this_file),recursive=TRUE);
+            }
+            save(all_props,file = this_file);
+        }
+    }
+    
+    return(all_props);
+}
+
+gather_all_invado_summary <- function(results_dirs,results.file=NA) {
+    for (this_exp_dir in results_dirs) {
+        all_props = list();
+        
+        ########################################################################
+        #Reading in raw data
+        ########################################################################
+        print(paste('Working on:',this_exp_dir));
+        data_folder = file.path(this_exp_dir,'lin_time_series');
+        area_data = read.table(file.path(data_folder, 'Area.csv'), 
+            sep=",",header=F);
+        local_diff_data = read.table(file.path(data_folder,'Local_gel_diff.csv'), 
+            sep=",",header=F);
+        local_diff_corrected_data = read.table(file.path(data_folder,'Local_diff_corrected.csv'), 
+            sep=",",header=F);
+        pre_diff_data = read.table(file.path(data_folder,'Pre_birth_diff.csv'), 
+            sep=",",header=F);
+        edge_dist_data = read.table(file.path(data_folder,'Centroid_dist_from_edge.csv'), 
+            sep=",",header=F);
+
+        ########################################################################
+        #Building the filter sets
+        ########################################################################
+        all_props$longevity_uncertain = rowSums(! is.na(area_data))
+
+        all_props$birth_observed = is.na(area_data[,1]);
+        all_props$death_observed = is.na(area_data[,dim(area_data)[2]]);
+        
+        all_props$longevity = all_props$longevity_uncertain;
+        all_props$longevity[! (all_props$birth_observed & all_props$death_observed)] = NA;
+
+        all_props$mean_area = rowMeans(area_data,na.rm=T);
+        all_props$mean_edge_dist = rowMeans(edge_dist_data,na.rm=T);
+        
+        all_props$lineage_nums = 1:dim(area_data)[1];
+        all_props$experiment = rep(this_exp_dir,dim(area_data)[1]);
         
         if (! is.na(results.file)) {
             this_file = file.path(this_exp_dir,results.file);
@@ -190,9 +244,8 @@ build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_local_dif
     
     filter_sets$local_pre_p_value = raw_data_set$local_pre_p_value < (1 - conf.level);
 
-    filter_sets$pre_diff_filter = ! raw_data_set$birth_observed |
-        (raw_data_set$mean_local_diff_corrected > 0 & 
-         raw_data_set$local_diff_corrected_p_value < (1 - conf.level));
+    filter_sets$pre_diff_filter = raw_data_set$mean_local_diff_corrected > 0 & 
+         raw_data_set$local_diff_corrected_p_value < (1 - conf.level);
 
     filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter & 
         filter_sets$local_pre_p_value;
@@ -229,6 +282,8 @@ if (length(args) != 0) {
 
 	print(data_dir);
     if (exists('data_dir')) {
+        gather_all_invado_summary(data_dir,results.file = file.path('all_invado_summary.Rdata'));
+
         exp_props = gather_invado_properties(data_dir,
             results.file = file.path('models','puncta_props_corr.Rdata'));
         
