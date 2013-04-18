@@ -5,9 +5,9 @@
 
 library(Hmisc);
 
-gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
-                                     conf.level = 0.95, results.file = NA,
-                                     build_plots=TRUE, debug=FALSE) {
+gather_invado_properties <- function(results_dirs, conf.level = 0.95,
+                                     results.file = NA, build_plots=TRUE,
+                                     debug=FALSE) {
     
     for (this_exp_dir in results_dirs) {
         all_props = list();
@@ -33,8 +33,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
         ########################################################################
         longevity_uncertain = rowSums(! is.na(area_data))
 
-        #We only want to consider puncta that live for at least 5 time steps
-        longev_filter = ! is.na(longevity_uncertain) & longevity_uncertain >= 5;
+        #We only want to consider puncta that live for at least 12 time steps
+        longev_filter = longevity_uncertain >= 12;
         
         overall_filt = longev_filter;
         
@@ -108,10 +108,23 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$mean_local_diff_corrected = c(all_props$mean_local_diff_corrected, 
                 as.numeric(stat_tests$local_diff_corrected$estimate));
             
-            first_half_local_diff = local_diff_corrected[1:round(length(local_diff_corrected)/2)]
-            second_half_local_diff = local_diff_corrected[round(length(local_diff_corrected)/2):length(local_diff_corrected)]
+            time = seq(0,by=5,along.with=local_diff_corrected);
+            stat_tests$loess_model = loess(local_diff_corrected ~ time,span=0.5);
+            
+            high_sample_time_points = seq(from=0,to=max(time),by=1);
+            loess_predictions = predict(stat_tests$loess_model,high_sample_time_points);
+            
+            hit_average_time = which(loess_predictions >= stat_tests$local_diff_corrected$estimate)[1]
+            all_props$hit_average_time = c(all_props$hit_average_time, hit_average_time);
+            
+            hit_max_time = which(loess_predictions >= max(loess_predictions)*0.9)[1]
+            all_props$hit_max_time = c(all_props$hit_max_time, hit_max_time);
+            
+            # browser();
 
-            # browser()
+            # if (lin_num == 456) {
+            #     browser()
+            # }
 
             ###############################################
             # Local Diff Corrected vs Pre Diff
@@ -123,13 +136,8 @@ gather_invado_properties <- function(results_dirs, build_degrade_plots = FALSE,
             all_props$local_pre_p_value = c(all_props$local_pre_p_value, 
                 stat_tests$local_diff_pre_diff$p.value);
 
-            if (length(all_props$mean_local_diff_corrected) != length(all_props$mean_local_diff)) {
-                # browser()
-            }
-
             if (build_plots) {
                 all_three_sets = cbind(local_diff, pre_diff, local_diff_corrected);
-                # browser();
                 build_single_invado_plot(all_three_sets,stat_tests,lin_num);
             }
         }
@@ -207,6 +215,12 @@ build_single_invado_plot <- function(data_sets,stat_tests, lin_num) {
         typ='l', lty=c(1,2,4), xlab='Time (min)', ylab='Difference Metric', main=lin_num, 
         lwd=2, xlim=c(0,max(time_points)*1.05))
     
+    high_sample_time_points = seq(from=0,to=max(time_points),by=1);
+    loess_predictions = predict(stat_tests$loess_model,high_sample_time_points);
+    points(high_sample_time_points,loess_predictions,col=rgb(0,0,1,alpha=0.5))
+    
+    lines(c(0,max(time_points)),rep(0.9*max(loess_predictions),2));
+
     plot_limits = par("usr");
     
     legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), 
