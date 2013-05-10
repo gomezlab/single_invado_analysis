@@ -111,7 +111,7 @@ $oldest_data{results_folder} = rel2abs(catdir($dir_locations{results},basename($
 &run_processing_pipeline(%oldest_data);
 $oldest_data{public_zip} = &zip_results_folder(%oldest_data);
 
-# File::Path::rmtree($oldest_data{results_folder});
+File::Path::rmtree($oldest_data{results_folder});
 
 ###########################################################
 # Notifications, Cleanup

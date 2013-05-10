@@ -33,7 +33,7 @@ get '/server_status' => sub {
 	my @upload_zips = <$upload_dir/*>;
 	$template{queue_count} = scalar(@upload_zips);
 
-	my @run_files = <$run_exp_dir/*webapp.*.run>;
+	my @run_files = <$run_exp_dir/*.run>;
 	$template{run_count} = scalar(@run_files);
 	$template{worker_count} = &count_upload_workers($cron_file);
 	
@@ -79,7 +79,7 @@ sub count_upload_workers {
 }
 
 sub build_server_load_day_plot {
-	system("tail -n 1440 $uptime_file > last_day_load.txt;");
+	system("tail -n 1440 $uptime_file | tac > last_day_load.txt;");
 	system("sed -i \"s/.*average: //\" last_day_load.txt");
 	
 	my $image_dir = "images";
@@ -90,7 +90,7 @@ sub build_server_load_day_plot {
 }
 
 sub build_server_load_week_plot {
-	system("tail -n 10080 $uptime_file > last_week_load.txt;");
+	system("tail -n 10080 $uptime_file  | tac > last_week_load.txt;");
 	system("sed -i \"s/.*average: //\" last_week_load.txt");
 
 	my $image_dir = "images";
