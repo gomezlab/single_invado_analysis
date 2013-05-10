@@ -14,7 +14,6 @@ i_p = inputParser;
 i_p.FunctionName = 'BUILD_DUAL_HIGHLIGHT_IMAGES';
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
-i_p.addParamValue('no_scale_bar',0,@(x) islogical(x) || x == 0 || x == 1);
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('image_sets',NaN,@iscell);
 
@@ -67,6 +66,12 @@ tracking_seq = load(fullfile(individual_images_dir,image_dirs(1).name,filenames.
 invado_tracking_seq = tracking_seq(invado_data(:,1),:);
 not_invado_tracking_seq = tracking_seq(not_invado_data(:,1),:);
 
+only_birth_point = zeros(size(tracking_seq,1),size(tracking_seq,2));
+for puncta_num = 1:size(only_birth_point,1)
+    birth_time = find(tracking_seq(puncta_num,:) > 0,1,'first');
+    only_birth_point(puncta_num,birth_time) = tracking_seq(puncta_num,birth_time);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Image Reading, If Not All Ready Defined
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,10 +98,10 @@ if (not(exist(output_folder_side,'dir')))
     mkdir(output_folder_side);
 end
 
-% output_folder_overlap = fullfile(exp_dir,'visualizations','overlap');
-% if (not(exist(output_folder_overlap,'dir')))
-%     mkdir(output_folder_overlap);
-% end
+output_folder_overlap = fullfile(exp_dir,'visualizations','overlap');
+if (not(exist(output_folder_overlap,'dir')))
+    mkdir(output_folder_overlap);
+end
 
 for i_num = 1:length(image_dirs)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,16 +149,30 @@ for i_num = 1:length(image_dirs)
     end
     
     output_image = [images_to_highlight{1}, spacer, images_to_highlight{2}];
-    imwrite(output_image, fullfile(output_folder,[sprintf('%04d',i_num),'.png']));
-        
+    invado_and_not_output_image = fullfile(output_folder,[sprintf('%04d',i_num),'.png']);
+    imwrite(output_image, invado_and_not_output_image);
+    
     output_image = [original_images{1}, spacer_gray, original_images{2}];
     imwrite(output_image, fullfile(output_folder_side,[sprintf('%04d',i_num),'.png']));
     
     %Overlayed dual color image of puncta and ECM
-%     output_image = cat(3,original_images{1},...
-%         original_images{2},...
-%         zeros(size(original_images{1},1),size(original_images{1},2)));
-%     imwrite(output_image, fullfile(output_folder_overlap,[sprintf('%04d',i_num),'.png']));
+    output_image = cat(3,original_images{1},...
+        original_images{2},...
+        zeros(size(original_images{1},1),size(original_images{1},2)));
+    imwrite(output_image, fullfile(output_folder_overlap,[sprintf('%04d',i_num),'.png']));
+    
+    all_annotate = '';
+    props = regionprops(image_sets{i_num}.objects);
+    for puncta_num = [invado_nums;not_invado_nums]'
+        lineage_num = find(only_birth_point(:,i_num) == puncta_num);
+        if (isempty(lineage_num)), continue; end
+        
+        pos_str = [' +',num2str(props(puncta_num).Centroid(1)),'+',num2str(props(puncta_num).Centroid(2))];
+        all_annotate = [all_annotate, ' -annotate', pos_str, ' ', num2str(lineage_num)]; %#ok<AGROW>
+    end
+    command_str = ['convert ', invado_and_not_output_image, ' -undercolor ''rgba(1,1,1,0.5)'' -font VeraBd.ttf -pointsize 16 -fill ''rgba(1,1,1,0.5)''', ...
+        all_annotate, ' ', invado_and_not_output_image, ';'];
+    system(command_str);
 end
 
 toc(start_time);
