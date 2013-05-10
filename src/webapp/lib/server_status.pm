@@ -84,7 +84,7 @@ sub build_server_load_day_plot {
 	
 	my $image_dir = "images";
 
-	system("R --vanilla --silent -f ../misc_code/plot_webapp_load.R \"--args data_file=last_day_load.txt plot_type=day target_dir=$image_dir\" > r_out.txt");
+	system("R --vanilla --silent -f ../misc_code/plot_webapp_load.R \"--args data_file=last_day_load.txt plot_type=day target_dir=$image_dir\" > /dev/null");
 
 	unlink("last_day_load.txt");
 }
