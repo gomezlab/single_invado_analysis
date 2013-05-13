@@ -35,15 +35,15 @@ for j=1:length(image_dirs)
     end
 end
 
-flat_raw = mean(double(gel_images),3);
-flat_raw = flat_raw - mean(flat_raw(:));
+gel_mean = mean(double(gel_images),3);
+gel_mean = gel_mean - mean(gel_mean(:));
 
-[x_coord,y_coord] = meshgrid(1:size(flat_raw,2),1:size(flat_raw,1));
-fun = fit([x_coord(:),y_coord(:)],flat_raw(:),'poly22');
+[x_coord,y_coord] = meshgrid(1:size(gel_mean,2),1:size(gel_mean,1));
+fun = fit([x_coord(:),y_coord(:)],gel_mean(:),'poly22');
 flat_fit_linear = feval(fun,[x_coord(:),y_coord(:)]);
-plot(fun, [x_coord(:),y_coord(:)], flat_raw(:))
+plot(fun, [x_coord(:),y_coord(:)], gel_mean(:))
 
-flat_fit = flat_raw;
+flat_fit = gel_mean;
 flat_fit(1:length(flat_fit_linear)) = flat_fit_linear;
 
 for j=1:length(image_dirs)
