@@ -1,4 +1,4 @@
-function track_invado(exp_dir,varargin)
+function track_puncta(exp_dir,varargin)
 
 start_time = tic;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,66 +57,68 @@ for i_num=1:(length(objects) - 1)
     cent_dist = calc_cent_dist(objects{i_num},objects{i_num+1});
         
     %Start by searching for reciprical high pixel similarity matches,
-    %defined as those cells that overlap a single cell in the next frame by
+    %defined as those objects that overlap a single object in the next frame by
     %50% or more
-    [start_cell_hits, end_cell_hits] = find(pix_sim > 0.5);    
-    for i = 1:length(start_cell_hits)
-        start_cell = start_cell_hits(i);
-        end_cell = end_cell_hits(i);
+    [start_obj_hits, end_obj_hits] = find(pix_sim > 0.5);    
+    for i = 1:length(start_obj_hits)
+        start_obj = start_obj_hits(i);
+        end_obj = end_obj_hits(i);
         
-        %check to make sure these two cells are unique in their lists, if
-        %so, make the connection and block the row (start cell) and column
-        %(end cell)
-        if (sum(start_cell == start_cell_hits) == 1 && ...
-            sum(end_cell == end_cell_hits) == 1)
+        %check to make sure these two objects are unique in their lists, if
+        %so, make the connection and block the row (start_obj) and column
+        %(end_obj)
+        if (sum(start_obj == start_obj_hits) == 1 && ...
+            sum(end_obj == end_obj_hits) == 1)
             
-            tracking_props{i_num}(start_cell).next_obj = end_cell;
+            tracking_props{i_num}(start_obj).next_obj = end_obj;
             
-            pix_sim(start_cell,:) = NaN;
-            pix_sim(:,end_cell) = NaN;
+            pix_sim(start_obj,:) = NaN;
+            pix_sim(:,end_obj) = NaN;
 
-            cent_dist(start_cell,:) = NaN;
-            cent_dist(:,end_cell) = NaN;
+            cent_dist(start_obj,:) = NaN;
+            cent_dist(:,end_obj) = NaN;
         end
     end
     
     %This loop finds any remaining pixel similarity measures above 20% and
-    %matches them, one-by-one to their corresponding end cell. This code
-    %mostly helps clear out the cells that overlap two objects with fairly
+    %matches them, one-by-one to their corresponding end objects. This code
+    %mostly helps clear out the objects that overlap two objects with fairly
     %high similarity, but not one single object completely.
     while (any(any(pix_sim > 0.2)))
-        [start_cell,end_cell] = find(pix_sim == max(pix_sim(:)),1,'first');
+        [start_obj,end_obj] = find(pix_sim == max(pix_sim(:)),1,'first');
         
-        tracking_props{i_num}(start_cell).next_obj = end_cell;
+        tracking_props{i_num}(start_obj).next_obj = end_obj;
         
-        pix_sim(start_cell,:) = NaN;
-        pix_sim(:,end_cell) = NaN;
+        pix_sim(start_obj,:) = NaN;
+        pix_sim(:,end_obj) = NaN;
 
-        cent_dist(start_cell,:) = NaN;
-        cent_dist(:,end_cell) = NaN;
+        cent_dist(start_obj,:) = NaN;
+        cent_dist(:,end_obj) = NaN;
     end
 
-    
-    [start_cell_hits, end_cell_hits] = find(cent_dist < 10);
-    for i = 1:length(start_cell_hits)
-        start_cell = start_cell_hits(i);
-        end_cell = end_cell_hits(i);
-        
-        %check to make sure these two cells are unique in their lists, if
-        %so, make the connection and block the row (start cell) and column
-        %(end cell)
-        if (sum(start_cell == start_cell_hits) == 1 && ...
-            sum(end_cell == end_cell_hits) == 1)
-            
-            tracking_props{i_num}(start_cell).next_obj = end_cell;
-            
-            pix_sim(start_cell,:) = NaN;
-            pix_sim(:,end_cell) = NaN;
-
-            cent_dist(start_cell,:) = NaN;
-            cent_dist(:,end_cell) = NaN;
-        end
-    end
+    %This section of the code would use the distance between the centroids
+    %to fill out the rest of the tracking list, but it isn't needed for the
+    %puncta tracking
+%     [start_obj_hits, end_obj_hits] = find(cent_dist < 10);
+%     for i = 1:length(start_obj_hits)
+%         start_obj = start_obj_hits(i);
+%         end_obj = end_obj_hits(i);
+%         
+%         %check to make sure these two objects are unique in their lists, if
+%         %so, make the connection and block the row (start object) and column
+%         %(end object)
+%         if (sum(start_obj == start_obj_hits) == 1 && ...
+%             sum(end_obj == end_obj_hits) == 1)
+%             
+%             tracking_props{i_num}(start_obj).next_obj = end_obj;
+%             
+%             pix_sim(start_obj,:) = NaN;
+%             pix_sim(:,end_obj) = NaN;
+% 
+%             cent_dist(start_obj,:) = NaN;
+%             cent_dist(:,end_obj) = NaN;
+%         end
+%     end
     
     if (mod(i_num,10)==0)
         runtime_now = toc(assign_start);
@@ -150,12 +152,12 @@ output_file = fullfile(base_dir, image_dirs(1).name,filenames.tracking);
 %If the tracking matrix is empty, don't output anything and don't make a
 %folder for the empty matrix
 if (not(any(size(tracking_mat) == 0)))
-    %check each column of the tracking matrix to make sure each cell number
+    %check each column of the tracking matrix to make sure each object number
     %occurs once and only once per column
     for col_num = 1:size(tracking_mat,2)
         all_tracking_nums = sort(tracking_mat(:,col_num));
-        for cell_num = 1:max(all_tracking_nums)
-            assert(sum(all_tracking_nums == cell_num) == 1);
+        for object_num = 1:max(all_tracking_nums)
+            assert(sum(all_tracking_nums == object_num) == 1);
         end
     end
     
@@ -211,17 +213,17 @@ end
 
 function tracking_matrix = convert_tracking_props_to_matrix(tracking_props)
 
-cells = struct('start',{},'sequence',{});
+objects = struct('start',{},'sequence',{});
 tracking_num = 1;
 
 [i_num,obj_num] = find_unassigned_obj(tracking_props);
 
 while (i_num ~= 0 && obj_num ~= 0)
-    if (length(cells) < tracking_num)
-        cells(tracking_num).start = i_num;
+    if (length(objects) < tracking_num)
+        objects(tracking_num).start = i_num;
     end
     
-    cells(tracking_num).sequence = [cells(tracking_num).sequence, obj_num];
+    objects(tracking_num).sequence = [objects(tracking_num).sequence, obj_num];
     tracking_props{i_num}(obj_num).assigned = 1;
     
     %pick out the next object to follow
@@ -236,11 +238,11 @@ while (i_num ~= 0 && obj_num ~= 0)
     end
 end
 
-tracking_matrix = zeros(length(cells),length(tracking_props));
+tracking_matrix = zeros(length(objects),length(tracking_props));
 
-for cell_num = 1:length(cells)
-    col_range = cells(cell_num).start:(cells(cell_num).start + length(cells(cell_num).sequence) - 1);
-    tracking_matrix(cell_num,col_range) = cells(cell_num).sequence;
+for obj_num = 1:length(objects)
+    col_range = objects(obj_num).start:(objects(obj_num).start + length(objects(obj_num).sequence) - 1);
+    tracking_matrix(obj_num,col_range) = objects(obj_num).sequence;
 end
 
 for col_num = 1:size(tracking_matrix,2)
@@ -251,7 +253,7 @@ for col_num = 1:size(tracking_matrix,2)
     
     %empty columns mean there weren't any objects in that time step, so
     %check for that in the following assert first, then if there were
-    %cells, make sure all were accounted for
+    %objects, make sure all were accounted for
     assert(isempty(this_col) || all(this_col == 1:max(this_col)))
     
     assert((isempty(tracking_props{col_num}) && isempty(this_col)) || ...

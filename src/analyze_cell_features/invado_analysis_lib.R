@@ -256,13 +256,10 @@ build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_local_dif
     filter_sets$local_diff_filter = raw_data_set$mean_local_diff > 0 &
         raw_data_set$p_value < (1 - conf.level);
     
-    filter_sets$local_pre_p_value = raw_data_set$local_pre_p_value < (1 - conf.level);
-
     filter_sets$pre_diff_filter = raw_data_set$mean_local_diff_corrected > 0 & 
          raw_data_set$local_diff_corrected_p_value < (1 - conf.level);
 
-    filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter & 
-        filter_sets$local_pre_p_value;
+    filter_sets$invado_filter = filter_sets$local_diff_filter & filter_sets$pre_diff_filter;
 
     if (!is.na(min_mean_local_diff_corrected)) {
         filter_sets$min_local_diff_corrected = 
