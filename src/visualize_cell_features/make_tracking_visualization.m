@@ -12,7 +12,7 @@ i_p.addParamValue('image_file','puncta',@ischar);
 i_p.addParamValue('image_min_max_file','puncta_range',@ischar);
 i_p.addParamValue('out_folder','tracking',@ischar);
 
-i_p.addParamValue('pixel_size',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('pixel_size',0,@(x)isnumeric(x));
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
 i_p.addParamValue('image_sets',NaN,@iscell);
 
