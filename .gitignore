@@ -1,0 +1,44 @@
+
+# /
+/data
+/results
+/doc
+
+# /data/
+/data/*
+
+# /src/
+/src/tmp
+
+# /src/analyze_cell_features/
+/src/analyze_cell_features/tmp*
+/src/analyze_cell_features/.*
+
+# /src/find_cell_features/
+/src/find_cell_features/tmp*
+
+# /src/lib/
+/src/lib/perl
+
+# /src/scripts/
+/src/scripts/tmp*
+/src/scripts/*.txt
+
+# /src/visualize_cell_features/
+/src/visualize_cell_features/tmp*
+
+# /src/webapp/
+/src/webapp/logs
+/src/webapp/uploaded_experiments
+/src/webapp/sessions
+/src/webapp/*.stor
+
+# /src/webapp/public/
+/src/webapp/public/results
+
+# /src/webapp/public/images/
+/src/webapp/public/images/server_load*
+
+# /src/webapp/public/sample/
+/src/webapp/public/sample/*.png
+/src/webapp/public/sample/*.tiff
