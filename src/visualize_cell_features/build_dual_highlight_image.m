@@ -170,7 +170,7 @@ for i_num = 1:length(image_dirs)
         pos_str = [' +',num2str(props(puncta_num).Centroid(1)),'+',num2str(props(puncta_num).Centroid(2))];
         all_annotate = [all_annotate, ' -annotate', pos_str, ' ', num2str(lineage_num)]; %#ok<AGROW>
     end
-    command_str = ['convert ', invado_and_not_output_image, ' -undercolor ''rgba(1,1,1,0.5)'' -font VeraBd.ttf -pointsize 16 -fill ''rgba(1,1,1,0.5)''', ...
+    command_str = ['convert ', invado_and_not_output_image, ' -undercolor ''rgba(1,1,1,0.25)'' -font VeraBd.ttf -pointsize 16 -fill ''rgba(1,1,1,0.75)''', ...
         all_annotate, ' ', invado_and_not_output_image, ';'];
     system(command_str);
 end
