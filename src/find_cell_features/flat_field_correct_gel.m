@@ -17,35 +17,23 @@ filenames = add_filenames_to_struct(struct());
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+flat_field_file = fullfile(i_p.Results.exp_dir,'puncta_props','flat_field.png');
+if (exist(flat_field_file,'file'))
+    flat_field = double(imread(flat_field_file));
+else
+    return;
+end
+
+flat_field = flat_field - mean(flat_field(:));
+
 base_dir = fullfile(i_p.Results.exp_dir,'individual_pictures');
 
 image_dirs = dir(base_dir);
 image_dirs = image_dirs(3:end);
 
-gel_images = [];
-for j=1:length(image_dirs)
-    gel_image = imread(fullfile(base_dir,image_dirs(j).name,filenames.gel));
-    if (any(size(gel_images) == 0))
-        gel_images = gel_image;
-    else
-        gel_images = cat(3, gel_images,gel_image);
-    end
-end
-
-gel_mean = mean(double(gel_images),3);
-gel_mean = gel_mean - mean(gel_mean(:));
-
-[x_coord,y_coord] = meshgrid(1:size(gel_mean,2),1:size(gel_mean,1));
-fun = fit([x_coord(:),y_coord(:)],gel_mean(:),'poly22');
-flat_fit_linear = feval(fun,[x_coord(:),y_coord(:)]);
-plot(fun, [x_coord(:),y_coord(:)], gel_mean(:))
-
-flat_fit = gel_mean;
-flat_fit(1:length(flat_fit_linear)) = flat_fit_linear;
-
 for j=1:length(image_dirs)
     gel_image = double(imread(fullfile(base_dir,image_dirs(j).name,filenames.gel)));
-    gel_image = gel_image - flat_fit;
+    gel_image = gel_image - flat_field;
     imwrite(uint16(gel_image),fullfile(base_dir,image_dirs(j).name,filenames.gel),'Bitdepth',16);
 end
 toc;
