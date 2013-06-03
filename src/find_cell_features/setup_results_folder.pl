@@ -97,6 +97,14 @@ foreach (@image_sets) {
 }
 die "Unable to find any images to include in the new experiment" if $all_images_empty;
 
+my $flat_field_file = catfile($cfg{exp_data_folder},$cfg{flat_field_file});
+if (-e $flat_field_file) {
+	my $target_dir = catdir($cfg{results_folder}, $cfg{exp_name},'puncta_props');
+	mkpath($target_dir);
+
+	copy($flat_field_file,$target_dir);
+}
+
 ################################################################################
 #Functions
 ################################################################################
