@@ -3,12 +3,7 @@
 /data
 /results
 /doc
-
-# /data/
-/data/*
-
-# /src/
-/src/tmp
+!/data/config
 
 # /src/analyze_cell_features/
 /src/analyze_cell_features/tmp*
