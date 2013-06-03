@@ -51,19 +51,20 @@ $|  = 1;
 #layer holds all of those commands with the appropriate directory to execute the
 #commands in.
 my @overall_command_seq = (
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script apply_bleaching_correction" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script register_with_matlab", 1],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_cell_mask" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_image_set_min_max" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_thresh" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta", 2],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script find_puncta_properties", 2],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/track_puncta" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../analyze_cell_features/find_pre_birth_diffs" ],
-	[ "../analyze_cell_features",   "./find_invadopodia_puncta.pl", 1],
-	[ "../find_cell_features",      "./run_matlab_over_field.pl -script ../visualize_cell_features/build_all_visualizations", 1],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script flat_field_correct_gel" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_cell_mask" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script apply_bleaching_correction" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script register_with_matlab", 1],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_cell_mask" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_image_set_min_max" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta_thresh" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta", 2],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta_properties", 2],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script ../analyze_cell_features/track_puncta" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script ../analyze_cell_features/gather_tracking_results" ],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script ../analyze_cell_features/find_pre_birth_diffs" ],
+	[ "../analyze_cell_features", "./find_invadopodia_puncta.pl", 1],
+	[ "../find_cell_features",    "./run_matlab_over_field.pl -script ../visualize_cell_features/build_all_visualizations", 1],
 );
 
 my $cfg_suffix = basename($opt{cfg});
