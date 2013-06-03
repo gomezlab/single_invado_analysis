@@ -10,6 +10,7 @@ use warnings;
 use File::Spec;
 use File::Basename;
 
+use Config::General;
 use base qw(Config::General);
 
 our @EXPORT = qw(ParseConfig);
