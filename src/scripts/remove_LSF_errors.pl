@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 
 use lib "../lib";
-use lib "../lib/perl";
 use Getopt::Long;
 use File::Find::Rule;
 use File::Spec::Functions;
