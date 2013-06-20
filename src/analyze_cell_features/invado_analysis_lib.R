@@ -158,7 +158,7 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
     return(all_props);
 }
 
-gather_all_invado_summary <- function(results_dirs,results.file=NA) {
+gather_all_puncta_summary <- function(results_dirs,results.file=NA) {
     for (this_exp_dir in results_dirs) {
         all_props = list();
         
@@ -293,7 +293,7 @@ if (length(args) != 0) {
 
 	print(data_dir);
     if (exists('data_dir')) {
-        gather_all_invado_summary(data_dir,results.file = file.path('all_invado_summary.Rdata'));
+        gather_all_puncta_summary(data_dir,results.file = file.path('all_puncta_summary.Rdata'));
 
         exp_props = gather_invado_properties(data_dir,
             results.file = file.path('models','puncta_props_corr.Rdata'));
