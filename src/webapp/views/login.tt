@@ -15,11 +15,17 @@
 				Tried to login as [% user_id %], but the passwords didn't match. Please try again.
 			</div>
 			[% END %]
+			
+			[% IF login_success %]
+			<div class="success">
+				Successful login as [% user_id %].
+			</div>
+			[% ELSE %]
 			<form class="form-horizontal" enctype="multipart/form-data" method="post">
 				<fieldset>
 
 					<div class="control-group">
-						<label class="control-label" for="email">Email</label>
+						<label class="control-label" for="email">Username</label>
 						<div class="controls">
 							<input type="text" class="input-xlarge" name="email" >
 							<span class="help-inline"></span> 
@@ -40,6 +46,8 @@
 					</div> 
 				</fieldset>
 			</form>
+
+			[% END %]
 			
 			If you are logged in when an experiment is submitted, you will be
 			able to access a list of your submitted experiments and their status
