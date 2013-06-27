@@ -23,7 +23,7 @@ my %search_targets = (
 # Main
 ###############################################################################
 
-my $find_results = `find /home/mbergins/Documents/Projects/focal_adhesions/trunk/data/FAAS_*/*.cfg`;
+my $find_results = `find ../../../data/IAS_*/*.cfg`;
 my @cfgs = split("\n",$find_results);
 
 my @cfg_hits;
