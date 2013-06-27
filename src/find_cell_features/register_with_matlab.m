@@ -115,7 +115,7 @@ lims = [1 + ceil(max(up_down_history)), size(sample_image,1) + floor(min(up_down
     1 + ceil(max(left_right_history)), size(sample_image,2) + floor(min(left_right_history))];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Remove the Region Outside the
+% Remove the Region Outside the Registered Region
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i_num = 1:size(image_dirs,1)
     gel_file = fullfile(base_dir,image_dirs(i_num).name,filenames.gel);
