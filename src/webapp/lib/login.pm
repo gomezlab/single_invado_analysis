@@ -51,7 +51,7 @@ post '/login' => sub {
 
 		lock_store \%user_info, $login_data_file;
 		session user_id => $user_id;
-		template 'login', {login_success => 1, user_id => $user_id};
+		template 'login', {login_success => 1, user_id => $user_id, new_user=>1};
 	}
 };
 
