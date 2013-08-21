@@ -46,6 +46,9 @@ post '/upload' => sub {
 			rmtree($exp_out_dir);
 			$exp_out_dir = tempdir("IAS_temp_XXXXXX",DIR=>$out_folder);
 		}
+		my $exp_ID = basename($exp_out_dir);
+		$exp_ID =~ s/_temp_/_/;
+
 		&organize_uploaded_files($exp_out_dir,$puncta_file,$ECM_file);
 
 		#######################################################################
@@ -97,7 +100,7 @@ post '/upload' => sub {
 			if (-w $user_exp_info_file) {
 				%user_exp_data = %{lock_retrieve($user_exp_info_file)};
 			}
-			push @{$user_exp_data{session('user_id')}}, basename($out_folder);
+			push @{$user_exp_data{session('user_id')}}, $exp_ID;
 			lock_store \%user_exp_data, $user_exp_info_file;
 		}
 		
@@ -111,8 +114,6 @@ post '/upload' => sub {
 		#######################################################################
 		# Return Page
 		#######################################################################
-		my $exp_ID = basename($final_exp_out_dir);
-
 		my $exp_status_url = "/exp_status/$exp_ID";
 		my $email = param 'email';
 		if ($email =~ /gmail/) {
