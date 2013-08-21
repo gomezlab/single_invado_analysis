@@ -51,9 +51,8 @@ for i_num = 1:(size(image_dirs,1)-1)
     img1 = imread(file1);
     img2 = imread(file2);
     
-    [~,this_transform] = imregister_trans_out(img2,img1,'translation',optimizer,metric);
-
-    csvwrite(affine_file,this_transform);
+    reg_info = imregtform(img2,img1,'translation',optimizer,metric);
+    csvwrite(affine_file,reg_info.T);
     
     if (mod(i_num,round(size(image_dirs,1)/10)) == 0)
         run_so_far = toc(reg_start);
