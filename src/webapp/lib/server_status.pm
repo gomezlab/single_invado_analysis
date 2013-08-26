@@ -20,10 +20,11 @@ my $run_exp_dir = catdir('..','utilities');
 
 my $uptime_file = "/home/mbergins/Documents/uptime_readings.txt";
 my $cron_file = "/home/mbergins/Documents/current_cron";
+my $worker_search_str = "single_invado";
+
 ###############################################################################
 # Main
 ###############################################################################
-
 get '/server_status' => sub {
 	&build_server_load_day_plot;
 	&build_server_load_week_plot;
@@ -73,7 +74,7 @@ sub count_upload_workers {
 	#toss out commented lines
 	@cron = grep !($_ =~ /^#/), @cron;
 
-	@cron = grep $_ =~ /invadopodia.*run_uploaded_exp/, @cron;
+	@cron = grep $_ =~ /$worker_search_str.*run_uploaded_exp/, @cron;
 
 	return(scalar(@cron));
 }
