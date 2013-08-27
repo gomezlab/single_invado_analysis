@@ -48,11 +48,14 @@ for i_num = 1:size(image_dirs)
     end
 end
 all_filt = double(all_filt);
-plot(single_image_thresh)
-xlabel('Image Number');
-ylabel('Puncta Threshold');
-print('-depsc2', fullfile(base_dir,'..','puncta_props','single_image_thresholds.eps'));
-close;
+
+try
+	plot(single_image_thresh)
+	xlabel('Image Number');
+	ylabel('Puncta Threshold');
+	print('-depsc2', fullfile(base_dir,'..','puncta_props','single_image_thresholds.eps'));
+	close;
+end
 
 mean_all_filt = mean(all_filt(:));
 stdev_all_filt = std(all_filt(:));
@@ -60,20 +63,22 @@ stdev_all_filt = std(all_filt(:));
 csvwrite(fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold), ...
     [mean_all_filt,stdev_all_filt]);
 
-hist(all_filt(:),100);
-xlabel('High Pass Filtered Intensity','FontSize',16,'FontName','Helvetica');
-ylabel('Pixel Count','FontSize',16,'FontName','Helvetica');
-y_limits = ylim();
+try
+	hist(all_filt(:),100);
+	xlabel('High Pass Filtered Intensity','FontSize',16,'FontName','Helvetica');
+	ylabel('Pixel Count','FontSize',16,'FontName','Helvetica');
+	y_limits = ylim();
 
-for i=1:5
-    line([i*stdev_all_filt,i*stdev_all_filt],[0,y_limits(2)],'Color','red', ...
-        'LineStyle','--','LineWidth',3);
-end
+	for i=1:5
+		line([i*stdev_all_filt,i*stdev_all_filt],[0,y_limits(2)],'Color','red', ...
+			'LineStyle','--','LineWidth',3);
+	end
 
-set(gca, 'FontName','Helvetica','FontSize',16,'Box','off');
-set(gcf, 'PaperPositionMode', 'auto');
-print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold_plot));
-close;
+	set(gca, 'FontName','Helvetica','FontSize',16,'Box','off');
+	set(gcf, 'PaperPositionMode', 'auto');
+	print('-depsc2', fullfile(base_dir,image_dirs(1).name,filenames.puncta_threshold_plot));
+	close;
+end 
 
 toc;
 
@@ -104,5 +109,4 @@ if (i_p.Results.thresh_scan)
         output_filename = sprintf('%0.1f.csv',std_count);
         csvwrite(fullfile(props_folder,output_filename),thresh_val);
     end
-    
 end
