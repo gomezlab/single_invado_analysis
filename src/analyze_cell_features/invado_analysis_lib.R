@@ -303,7 +303,9 @@ if (length(args) != 0) {
             return;
         }
 		
-		data_types_to_include = c('lineage_nums', 'p_value', 'mean_local_diff',
+		data_types_to_include = c('lineage_nums', 'longevity',
+								  'hit_max_time','mean_area','p_value',
+								  'mean_local_diff',
 								  'local_diff_corrected_p_value',
 								  'mean_local_diff_corrected');
         
