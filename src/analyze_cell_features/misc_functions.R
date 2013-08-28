@@ -15,7 +15,6 @@ load_results_data_frame <- function(dirs,file,variable_name, debug=FALSE) {
         }
 		if (file.exists(this_file)) {
 			load(file.path(dirs[i],file))
-            browser()
 			results = rbind(results,get(variable_name))
 		}
 	}
