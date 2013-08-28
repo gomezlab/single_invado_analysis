@@ -64,7 +64,11 @@ if (! -e $output_base) {
 my @R_cmds;
 
 my $output_file = catfile($output_base, 'R_out.txt');
-push @R_cmds, "R CMD BATCH --vanilla \'--args data_dir=$data_dir\' invado_analysis_lib.R $output_file";
+my $args = "data_dir=$data_dir";
+if (defined $cfg{time_spacing}) {
+	$args .= " time.spacing=$cfg{time_spacing}";
+}
+push @R_cmds, "R CMD BATCH --vanilla \'--args $args\' invado_analysis_lib.R $output_file";
 
 $opt{error_folder} = catdir($cfg{exp_results_folder}, $cfg{errors_folder}, 'find_invadopodia');
 $opt{error_file} = catfile($opt{error_folder}, 'error.txt');
