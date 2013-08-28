@@ -5,7 +5,7 @@
 
 library(Hmisc);
 
-gather_invado_properties <- function(results_dirs, conf.level = 0.95,
+gather_invado_properties <- function(results_dirs,time.spacing, conf.level = 0.95,
                                      results.file = NA, build_plots=TRUE,
                                      debug=FALSE) {
     
@@ -15,7 +15,6 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
         ########################################################################
         #Reading in raw data
         ########################################################################
-        print(paste('Working on:',this_exp_dir));
         data_folder = file.path(this_exp_dir,'lin_time_series');
         area_data = read.table(file.path(data_folder, 'Area.csv'), 
             sep=",",header=F);
@@ -31,10 +30,10 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
         ########################################################################
         #Building the filter sets
         ########################################################################
-        longevity_uncertain = rowSums(! is.na(area_data))
+        longevity_uncertain = rowSums(! is.na(area_data))*time.spacing;
 
-        #We only want to consider puncta that live for at least 12 time steps
-        longev_filter = longevity_uncertain >= 12;
+        #We only want to consider puncta that live for at least 60 minutes
+        longev_filter = longevity_uncertain >= 60;
         
         overall_filt = longev_filter;
         
@@ -108,7 +107,7 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
             all_props$mean_local_diff_corrected = c(all_props$mean_local_diff_corrected, 
                 as.numeric(stat_tests$local_diff_corrected$estimate));
             
-            time = seq(0,by=5,along.with=local_diff_corrected);
+            time = seq(0,by=time.spacing,along.with=local_diff_corrected);
             stat_tests$loess_model = loess(local_diff_corrected ~ time,span=0.5);
             
             high_sample_time_points = seq(from=0,to=max(time),by=1);
@@ -120,12 +119,6 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
             hit_max_time = which(loess_predictions >= max(loess_predictions)*0.9)[1]
             all_props$hit_max_time = c(all_props$hit_max_time, hit_max_time);
             
-            # browser();
-
-            # if (lin_num == 456) {
-            #     browser()
-            # }
-
             ###############################################
             # Local Diff Corrected vs Pre Diff
             ###############################################
@@ -138,7 +131,7 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
 
             if (build_plots) {
                 all_three_sets = cbind(local_diff, pre_diff, local_diff_corrected);
-                build_single_invado_plot(all_three_sets,stat_tests,lin_num);
+                build_single_invado_plot(all_three_sets,time.spacing,stat_tests,lin_num);
             }
         }
         if (build_plots) {
@@ -158,14 +151,13 @@ gather_invado_properties <- function(results_dirs, conf.level = 0.95,
     return(all_props);
 }
 
-gather_all_puncta_summary <- function(results_dirs,results.file=NA) {
+gather_all_puncta_summary <- function(results_dirs,time.spacing,results.file=NA) {
     for (this_exp_dir in results_dirs) {
         all_props = list();
         
         ########################################################################
         #Reading in raw data
         ########################################################################
-        print(paste('Working on:',this_exp_dir));
         data_folder = file.path(this_exp_dir,'lin_time_series');
         area_data = read.table(file.path(data_folder, 'Area.csv'), 
             sep=",",header=F);
@@ -181,7 +173,7 @@ gather_all_puncta_summary <- function(results_dirs,results.file=NA) {
         ########################################################################
         #Building the filter sets
         ########################################################################
-        all_props$longevity_uncertain = rowSums(! is.na(area_data))
+        all_props$longevity_uncertain = rowSums(! is.na(area_data))*time.spacing;
 
         all_props$birth_observed = is.na(area_data[,1]);
         all_props$death_observed = is.na(area_data[,dim(area_data)[2]]);
@@ -207,8 +199,8 @@ gather_all_puncta_summary <- function(results_dirs,results.file=NA) {
     return(all_props);
 }
 
-build_single_invado_plot <- function(data_sets,stat_tests, lin_num) {
-    time_points = seq(from=0,by=5,along.with=data_sets[,1]);
+build_single_invado_plot <- function(data_sets,time.spacing,stat_tests, lin_num) {
+    time_points = seq(from=0,by=time.spacing,along.with=data_sets[,1]);
     
     par(bty='n', mar=c(4,4,2,0))
     matplot(time_points, data_sets, 
@@ -280,6 +272,9 @@ args = commandArgs(TRUE);
 if (length(args) != 0) {
     debug = FALSE;
     
+	#set a default time between images of 1 min
+	time.spacing = 1
+
 	#split out the arguments from the passed in parameters and assign variables 
 	#in the current scope
     for (this_arg in commandArgs()) {
@@ -290,12 +285,14 @@ if (length(args) != 0) {
             assign(split_arg[[1]][1], split_arg[[1]][2]);
         }
     }
+	time.spacing = as.numeric(time.spacing);
 
-	print(data_dir);
+	print(paste("Working on:",data_dir));
+	print(paste("Time between images:",time.spacing));
     if (exists('data_dir')) {
-        gather_all_puncta_summary(data_dir,results.file = file.path('all_puncta_summary.Rdata'));
+        gather_all_puncta_summary(data_dir,time.spacing,results.file = file.path('all_puncta_summary.Rdata'));
 
-        exp_props = gather_invado_properties(data_dir,
+        exp_props = gather_invado_properties(data_dir,time.spacing,
             results.file = file.path('models','puncta_props_corr.Rdata'));
         
         if (dim(exp_props)[1] == 0) {
@@ -313,7 +310,7 @@ if (length(args) != 0) {
         
 		invado_lineage_data = subset(exp_props, filter_sets$invado_filter,
 									 select = data_types_to_include);
-        
+
         not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, 
             select = data_types_to_include);
         
