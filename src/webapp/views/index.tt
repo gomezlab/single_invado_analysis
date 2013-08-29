@@ -15,7 +15,7 @@
 				<li><a href='upload'>Submit a New Experiment</a></li>
 				<!-- <li><a href='thresh_testing'>Check Invadopodia Threshold Setting</a></li> -->
 				<li><a href='server_status'>Check Server Status</a></li>
-				<!-- <li><a href='results_understanding'>Help with Interpreting the Results</a></li> -->
+				<li><a href='results_understanding'>Help with Interpreting the Results</a></li>
 			</ul>
 
 			<hr>
@@ -45,10 +45,8 @@
 				href="sample/sample_ECM_large.tiff">here</a>.
 
 			<p>
-			<!-- Want to see what the processed results are like? Download this <a -->
-			<!-- 	href='sample/FAAS_sample_results.zip'>file</a> and take a look -->
-			<!-- at the results interpretation <a -->
-			<!-- 	href="results_understanding">page</a>. -->
+			Want to see what the results look like? Download a processed set of
+			images <a href="sample/IAS_sample_results.zip">here</a>.
 		</div>
 	</div>
 </div>
