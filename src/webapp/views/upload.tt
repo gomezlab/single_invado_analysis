@@ -39,6 +39,14 @@
 							</div>
 						</div>
 						
+						<div class="control-group">
+							<label class="control-label" for ="pixel_size">Pixel Size (&micro;m)</label>
+							<div class="controls">
+								<input type="text" class="input-xlarge" value="1" name="pixel_size">
+								<span class="help-inline">Size of each side of the pixels, in &micro;m.</span> 
+							</div>
+						</div>
+						
 						<h2>Puncta Detection</h2>
 						<div class="control-group">
 							<label class="control-label" for ="stdev_thresh_seed">Puncta Seed Threshold</label>
