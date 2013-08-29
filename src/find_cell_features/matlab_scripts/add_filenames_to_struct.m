@@ -28,8 +28,8 @@ cfg_struct.gel_range = '../../puncta_props/gel_range.csv';
 cfg_struct.gel_vis_range = '../../puncta_props/gel_vis_range.csv';
 cfg_struct.bleaching_plot = '../../puncta_props/bleaching_curves.eps';
 
-cfg_struct.invado_data = '../../puncta_props/invado_data.csv';
-cfg_struct.not_invado_data = '../../puncta_props/not_invado_data.csv';
+cfg_struct.invado_data = '../../puncta_props/invado_nums.csv';
+cfg_struct.not_invado_data = '../../puncta_props/not_invado_nums.csv';
 
 cfg_struct.tracking = '../../tracking_matrices/tracking_seq.csv';
 cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
