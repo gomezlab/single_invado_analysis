@@ -10,6 +10,9 @@ gather_invado_properties <- function(results_dirs,time.spacing, conf.level = 0.9
                                      debug=FALSE) {
     
     for (this_exp_dir in results_dirs) {
+		if (! is.na(results.file)) {
+			dir.create(file.path(this_exp_dir,'invado_analysis'),recursive=T);
+		}
         all_props = list();
         
         ########################################################################
@@ -57,7 +60,7 @@ gather_invado_properties <- function(results_dirs,time.spacing, conf.level = 0.9
         all_props$mean_edge_dist = rowMeans(edge_dist_data[overall_filt,],na.rm=T);
         
         if (build_plots) {
-            pdf(file.path(this_exp_dir,'local_degrade_plots.pdf'));
+            pdf(file.path(this_exp_dir,'invado_analysis','local_degrade_plots.pdf'));
         }
         #analyzing each of the puncta in the filtered set to identify invadopodia
         for (lin_num in which(overall_filt)) {
@@ -140,7 +143,7 @@ gather_invado_properties <- function(results_dirs,time.spacing, conf.level = 0.9
         all_props = as.data.frame(all_props);
         
         if (! is.na(results.file)) {
-            this_file = file.path(this_exp_dir,results.file);
+            this_file = file.path(this_exp_dir,'invado_analysis',results.file);
             if (! file.exists(dirname(this_file))) {
                 dir.create(dirname(this_file),recursive=TRUE);
             }
@@ -188,7 +191,7 @@ gather_all_puncta_summary <- function(results_dirs,time.spacing,results.file=NA)
         all_props$experiment = rep(this_exp_dir,dim(area_data)[1]);
         
         if (! is.na(results.file)) {
-            this_file = file.path(this_exp_dir,results.file);
+            this_file = file.path(this_exp_dir,'invado_analysis',results.file);
             if (! file.exists(dirname(this_file))) {
                 dir.create(dirname(this_file),recursive=TRUE);
             }
@@ -331,9 +334,11 @@ if (length(args) != 0) {
         write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
             row.names=F, col.names=T, sep=',')
         
-		write.table(invado_lineage_data$lineage_nums, file.path(data_dir, 'invado_nums.csv'), 
-            row.names=F, col.names=F, sep=',')
-        write.table(not_invado_lineage_data$lineage_nums, file.path(data_dir, 'not_invado_nums.csv'), 
-            row.names=F, col.names=F, sep=',')
+		write.table(invado_lineage_data$lineage_nums, 
+					file.path(data_dir,'invado_analysis','invado_nums.csv'), 
+            		row.names=F, col.names=F, sep=',')
+        write.table(not_invado_lineage_data$lineage_nums, 
+					file.path(data_dir,'invado_analysis','not_invado_nums.csv'), 
+            		row.names=F, col.names=F, sep=',')
     }
 }
