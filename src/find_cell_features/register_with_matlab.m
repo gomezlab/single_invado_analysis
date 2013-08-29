@@ -75,7 +75,8 @@ plot(cumsum(left_right_trans_set),cumsum(up_down_trans_set));
 xlabel('Left-Right Translation', 'Fontsize',16)
 ylabel('Up-Down Translation', 'Fontsize',16);
 
-output_file = fullfile(base_dir,image_dirs(1).name,'../../puncta_props/translation.pdf');
+output_file = fullfile(base_dir,image_dirs(1).name,'..','..', ...
+    'puncta_props','image_processing','translation.pdf');
 [output_folder, ~, ~] = fileparts(output_file);
 if (not(exist(output_folder,'dir')))
     mkdir(fileparts(output_file));
