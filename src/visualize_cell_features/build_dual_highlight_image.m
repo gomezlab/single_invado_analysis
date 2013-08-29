@@ -44,7 +44,7 @@ image_dirs = image_dirs(3:end);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.invado_data);
 try
-    invado_data = csvread(invado_data_file,1,0);
+    invado_data = csvread(invado_data_file);
 catch err
     fprintf('Problem with invado data file: %s\n',err.message);
     invado_data = zeros(0,3);
@@ -52,7 +52,7 @@ end
 
 not_invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.not_invado_data);
 try
-    not_invado_data = csvread(not_invado_data_file,1,0);
+    not_invado_data = csvread(not_invado_data_file);
 catch err
     fprintf('Problem with not invado data file: %s\n',err.message);
     not_invado_data = zeros(0,3);

@@ -43,23 +43,20 @@ end
 % Tracking Sequence Processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tracking_seq = load(fullfile(individual_images_dir,image_dirs(1).name,filenames.tracking_matrix)) + 1;
+tracking_temp = zeros(size(tracking_seq,1),size(tracking_seq,2));
 
 invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.invado_data);
-not_invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.not_invado_data);
-
-tracking_temp = zeros(size(tracking_seq,1),size(tracking_seq,2));
 try
-    invado_data = csvread(invado_data_file,1,0);
-    invado_nums = invado_data(:,1);
+    invado_nums = csvread(invado_data_file);
     %column one contains all the puncta lineage nums
     tracking_temp(invado_nums,:) = tracking_seq(invado_nums,:);
 catch err
     fprintf('Problem with invado data file: %s\n',err.message);
 end
 
+not_invado_data_file = fullfile(individual_images_dir,image_dirs(1).name,filenames.not_invado_data);
 try
-    not_invado_data = csvread(not_invado_data_file,1,0);
-    not_invado_nums = not_invado_data(:,1);
+    not_invado_nums = csvread(not_invado_data_file);
     %column one contains all the puncta lineage nums
     tracking_temp(not_invado_nums,:) = tracking_seq(not_invado_nums,:);
 catch err
