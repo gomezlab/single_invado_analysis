@@ -314,10 +314,8 @@ if (length(args) != 0) {
         }
 		
 		data_types_to_include = c('lineage_nums', 'longevity',
-								  'hit_max_time','mean_area','p_value',
-								  'mean_local_diff',
-								  'local_diff_corrected_p_value',
-								  'mean_local_diff_corrected');
+								  'hit_max_time','mean_area','mean_local_diff','p_value',
+								  'mean_local_diff_corrected','local_diff_corrected_p_value');
         
         filter_sets = build_filter_sets(exp_props);
         
