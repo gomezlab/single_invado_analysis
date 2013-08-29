@@ -10,118 +10,115 @@
 
 	<div class="row">
 		<div class="span12">
-
-			All of the results from the image processing steps are saved in the zip
-			file you downloaded. Several different types of analyses are
-			automatically done on each image set, below you will find a few
-			instructions on how to find a few of the most common properties
-			measured in focal adhesion dynamics experiments.
-
-			<h2>I want to:</h2>
+			<h3>Check Visualizations First</h3>
+			<p/>
+			All of the results from the image processing steps are saved in the
+			zip file you downloaded. I would start by looking at some of the
+			visualization results to ensure that your image set was properly
+			analyzed. Please note that all the visualization images have been
+			scaled so that the maximum intensities are truncated at the bottom
+			and top 0.1% of pixel intensities for puncta and ECM images. In the
+			'visualizations' folder you will find several subfolders:
 
 			<ul>
-				<li><a href="#assem">Measure Invadopodia Assembly and Disassembly Rates</a></li>
-				<li><a href="#props">Measure Invadopodia Areas/Intensities</a></li>
-				<li><a href="#FAAI">Find the Invadopodia Alignment Index (FAAI)</a></li>
-				<li><a href="#vector_vis">See an Image Like the Front Page Logo</a></li>
+				<li>side_by_side: The input images placed side by side.</li>
+
+				<li>overlap: The input images overlayed on another, puncta in green, ECM in red.</li>
+
+				<li>tracking: Each identified puncta is outlined using a unique
+				color, which stays with that puncta for the duration of the
+				experiment. Colors are reused as old puncta die and new puncta
+				form.</li>
+
+				<li>invado_and_not: Puncta are outlined in this time-lapse based
+				on whether the computer has classified the puncta as an
+				invadopodia (green), not an invadopodia (red) or as not being
+				classifed (blue). The unclassified invadopodia are those that
+				didn't pass the minimum lifetime filter. When a long-lived
+				puncta is born, a number appears next to the puncta in the ECM
+				channel. This number is a unique identifer for that puncta and
+				can be used to lookup additional information about the
+				puncta.</li>
+
+				<li>single_invadopodia: Small multiple visualization of each
+				puncta classified as an invadopodia. The file names are unique
+				numbers which can be used to lookup additional information about
+				each puncta, see the following section about additional
+				measurements. Two versions of each small multiple is available,
+				one with the puncta outlined another without the puncta
+				outlined.</li>
+				
+				<li>single_invadopodia: Small multiple visualization of the
+				puncta not classified as invadopodia.</li>
 			</ul>
 
-			<hr>
+			<p/>
+			Does it look like the software correctly found and tracked the
+			puncta? You will also want to make sure the photobleaching and
+			intensity normalization worked for the ECM intensity. Does the ECM
+			in non-degraded regions appear consistant in intensity? 
+			
+			<h3>Invadopodia Properties</h3>
+			<p/>
+			After verifying the processing results, you can take a look at the
+			numerical results. Most of the results are in two files in the
+			'puncta_props' directory: 'invado_data.csv' and
+			'not_invado_data.csv'. Hopefully this is clear from the filenames,
+			but 'invado_data.csv' has information about the puncta classifed as
+			invadopodia, while 'not_invado_data.csv' has information about the
+			puncta not classified as invadopodia. Each file can be read by
+			nearly any statistical program (including excel) and contains the
+			following data:
 
-			<div id=assem>
-				<h2>Find Invadopodia Assembly and Disassembly Rates</h2>
-				<p>
-				The Invadopodia assembly and disassembly rates are stored in the
-				file named "ad_kinetics.csv" in the "adhesion_props" folder. These
-				results have been filtered to only include adhesions with positive
-				rates and p-values of less than 0.05. Four properties are reported
-				for each rate:
-				<ul> 
-					<li>class: Either assembly or disassembly </li> 
-					<li>ad_num: This is a unique number assigned to each adhesion
-					during the tracking process.</li> 
-					<li>slope: This is assembly or disassembly rate calculated
-					using the same method as Webb, et al. 2004.</li> 
-					<li>adj.r.squared: This is the value of R&sup2 adjusted for the
-					lenght of assembly or disassembly phase.</li>
-				</ul>
+			<ul>
+				<li>lineage_nums: A unique number which identifies each tracked
+				puncta. The same identification numbers are used in the
+				visualizations.</li>
 
-				<p>
-				If you want to dig deeper into the results, visualizations of each
-				adhesion and the measurements of the intensity of the adhesion
-				marker at each image is also available. You can find the
-				visualizations in the "single_ad" folder in "visualizations", where
-				each file is named using the same number as appears in the ad_num
-				column of the results file. 
+				<li>longevity: The number of minutes the puncta was present in
+				the experiment. A longevity value of "NA" indicates that the
+				software can't be certain of the actual puncta longevity because
+				it was present at the beginning or end of the experiment.</li>
 
-				<p>
-				You can see a graph of the intensity measurments and the
-				corresponding assembly or disassembly phase in the
-				Average_adhesion_signal.pdf file in the models directory of
-				adhesion_props. In this file, the title of each graph is the same
-				number as in the ad_num column.  Finally, if you want the raw
-				intensity data, you can look at the Average_adhesion_signal.csv
-				file in lin_time_series.  . Each line of the CSV file corresponds
-				to a single adhesion, where the line number corresponds to the
-				ad_num column.
-			</div>
+				<li>hit_max_time: The number of minutes it took for the puncta
+				to degrade 90% of it's maximum average intensity. This property
+				is calculated for non-invadopodia, but probably isn't
+				relevant.</li>
 
-			<div id=props>
-				<h2>Measure Invadopodia Areas/Intensities</h2>
-				<h3>Single Images</h3>
-				<p>
-				Several different properties are collected about each focal adhesion
-				identified by the system. These properites, such as area and intensity
-				are stored in two ways: as single measurements associated the adhesions
-				in each image and as measurements over time associated with the
-				adhesions tracked through time. The single measurements are all in the
-				sub-folders of the "individual_pictures" folder, specifically the
-				"raw_data" folder. There you will find various csv files such as
-				"Area.csv" and "Average_adhesion_signal.csv" which contain area values
-				and intensity values respectively. All of the units of distance or area
-				are in pixels or square pixels.
+				<li>mean_area: Average of the areas measured for the puncta.
+				Assuming you specified the size of your pixels when submitting
+				the experiment, the units will be &micro;m&sup2;.</li>
+				
+				<li>mean_local_diff: The average of the local difference in the
+				ECM intensity inside versus outside the puncta. The values used
+				to find the average are calculated by subtracting the average
+				ECM intensity under the puncta from the average intensity in a
+				region surrounding the puncta. The units are arbitrary.</li>
 
-				<h3>Time-lapse Image Sets</h3>
-				<p>
-				Several of sets of properties are also organzied into matrices that
-				represent the value of that property over the lifetime of each
-				adhesion. In general, the files are organized so that the data from
-				each adhesion is present on a single row, with the value of that
-				property for each image in the time-series in the columns.  Placeholds
-				of NaN are used when an adhesion isn't present in a specfic image.
+				<li>p_value: The p-value as determined by a T-test of the local
+				difference values compared to zero. This is used as a filter to
+				classify puncta as invadopodia or not.</li>
 
-				<p>
-				As an example, consider an adhesion that is born in image 10 and dies
-				in frame 20. All the slots before frame 10 will be NaN, while all the
-				values after frame 20 will be NaN as well. Columns 10-20 will contain
-				the value for that adhesion in the image set.
-			</div>
+				<li>mean_local_diff_corrected: The average of the local
+				difference metric corrected by the intensity of the ECM before
+				the puncta was born. If the puncta was present in the first
+				image, then the correction values are taken from the first
+				image. The units are arbitrary.</li>
+				
+				<li>local_diff_corrected_p_value: The p-value for the corrected
+				local diff values, using the same methods as the p_value
+				column.</li>
+			</ul>
 
-			<div id=FAAI>
-				<h2>Find the Invadopodia Alignment Index (FAAI)</h2>
-				<p>
-				You can lookup the value of the FAAI in the
-				"adhesion_orientation.pdf" file in the "adhesion_props" folder. The
-				value of the FAAI is reported in the title of the left hand plot in
-				the center row.
-			</div>
-
-			<div id=vector_vis>
-				<h2>See an Image Like the Front Page Logo</h2>
-				<p>
-				The same style of visualization for your experiment is available on in
-				the "visualizations" folder, look for the ghost files.
-
-				<p>
-				The visualization is produced by first converting the binary adhesion
-				mask from each image into a vector representation using <a
-					href="http://potrace.sourceforge.net/">potrace</a>. Next, each
-				vector mask file is colored based on how far into the time-lapse the
-				image was taken. The colors start in the blue range, then go up through
-				the rainbow color map to red. Finally, all the vector images are
-				overlayed and saved as "ghost.svg". This vector image is then converted
-				to a small and large png file.
-			</div>
+			<h3>Everything Else</h3>
+			<p/>
+			The software also produces a range of intermediate processing steps,
+			I'll quickly walk through what you can expect to find. The
+			'individual_pictures' directory contains the results of the image
+			processing pipeline. The 'tracking_matricies' directory holds the
+			tracking matrix produced that allows the puncta to be tracked
+			through time. The 'errors' directory has a record of the processing
+			command executed and any associated errors thrown by the pipeline.
 		</div>
 	</div>
 </div>
