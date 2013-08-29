@@ -330,5 +330,10 @@ if (length(args) != 0) {
             row.names=F, col.names=T, sep=',')
         write.table(not_invado_lineage_data, file.path(data_dir, 'not_invado_data.csv'), 
             row.names=F, col.names=T, sep=',')
+        
+		write.table(invado_lineage_data$lineage_nums, file.path(data_dir, 'invado_nums.csv'), 
+            row.names=F, col.names=F, sep=',')
+        write.table(not_invado_lineage_data$lineage_nums, file.path(data_dir, 'not_invado_nums.csv'), 
+            row.names=F, col.names=F, sep=',')
     }
 }
