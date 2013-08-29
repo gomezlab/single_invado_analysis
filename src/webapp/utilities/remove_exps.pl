@@ -19,6 +19,9 @@ my %search_targets = (
 	# submitter_ip => "98.69.225.143",
 );
 
+my $data_dir = "../../../data/";
+my $processing_results_dir = "../../../results/";
+my $results_dir = "../public/results/";
 ###############################################################################
 # Main
 ###############################################################################
@@ -45,10 +48,6 @@ if ($opt{debug}) {
 	print "Found these configs:\n" . join("\n",@exp_ids) ;
 	die;
 }
-
-my $data_dir = "/home/mbergins/Documents/Projects/focal_adhesions/trunk/data/";
-my $processing_results_dir = "/home/mbergins/Documents/Projects/focal_adhesions/trunk/results/";
-my $results_dir = "../public/results/";
 
 my $file_list;
 
