@@ -264,6 +264,16 @@ build_filter_sets <- function(raw_data_set, conf.level = 0.99,min_mean_local_dif
     return(filter_sets);
 }
 
+round_output_data_sets <- function(data_set) {
+	data_set$mean_area = round(data_set$mean_area,1);
+	data_set$p_value = signif(data_set$p_value,2);
+	data_set$mean_local_diff = round(data_set$mean_local_diff,1);
+	data_set$local_diff_corrected_p_value = signif(data_set$local_diff_corrected_p_value,2);
+	data_set$mean_local_diff_corrected = round(data_set$mean_local_diff_corrected,1);
+
+	return(data_set);
+}
+
 ################################################################################
 # Main Program
 ################################################################################
@@ -310,9 +320,11 @@ if (length(args) != 0) {
         
 		invado_lineage_data = subset(exp_props, filter_sets$invado_filter,
 									 select = data_types_to_include);
+		invado_lineage_data = round_output_data_sets(invado_lineage_data);
 
         not_invado_lineage_data = subset(exp_props, filter_sets$not_invado_filter, 
             select = data_types_to_include);
+		not_invado_lineage_data = round_output_data_sets(not_invado_lineage_data);
         
         write.table(invado_lineage_data, file.path(data_dir, 'invado_data.csv'), 
             row.names=F, col.names=T, sep=',')
