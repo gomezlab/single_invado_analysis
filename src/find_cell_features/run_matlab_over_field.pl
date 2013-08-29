@@ -26,7 +26,7 @@ $| = 1;
 my %opt;
 $opt{debug} = 0;
 GetOptions(\%opt, "cfg|c=s", "script=s", "debug|d", "lsf|l", "queue=s",
-	"resource|R=s") or die;
+	"resource|R=s", "try_wrap") or die;
 
 die "Can't find script specified on the command line" if not exists $opt{script};
 
@@ -60,8 +60,12 @@ my $matlab_code;
 for (@cfg_set) {
 	my %cfg = %{$_};
 	my $extra = &build_extra_command_line_opts(%cfg);
-	#all commands wrapped in try, to ensure other commands will run if this fails
-	$matlab_code = $matlab_code . "try,$opt{script}('$cfg{exp_results_folder}'$extra),end,"
+	if ($opt{try_wrap}) {
+		#add try wrap to make sure errors in one script don't kill the next command
+		$matlab_code = $matlab_code . "try,$opt{script}('$cfg{exp_results_folder}'$extra),end,"
+	} else {
+		$matlab_code = $matlab_code . "$opt{script}('$cfg{exp_results_folder}'$extra); "
+	}
 }
 my @matlab_code = ($matlab_code);
 
