@@ -34,6 +34,6 @@ cfg_struct.not_invado_data = '../../puncta_props/invado_analysis/not_invado_nums
 cfg_struct.tracking = '../../tracking_matrices/tracking_seq.csv';
 cfg_struct.tracking_matrix = '../../tracking_matrices/tracking_seq.csv';
 
-cfg_struct.cell_props = '../../puncta_props/raw_results/single_puncta_props.mat';
+cfg_struct.cell_props = '../../puncta_props/image_processing/single_puncta_props.mat';
 
 cfg_struct.lineage_dir = '../../puncta_props/lin_time_series';
