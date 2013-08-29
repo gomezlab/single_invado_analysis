@@ -25,7 +25,11 @@ my $user_exp_info_file = '../user_exp_info.stor';
 ###############################################################################
 
 get '/upload' => sub {
-	template 'upload';
+	my $time_spacing = 1;
+	if (defined param 'time_spacing') {
+		$time_spacing = param 'time_spacing';
+	}
+	template 'upload', { time_spacing => $time_spacing };
 };
 
 post '/upload' => sub {

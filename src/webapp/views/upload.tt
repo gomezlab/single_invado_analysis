@@ -34,7 +34,7 @@
 						<div class="control-group">
 							<label class="control-label" for ="time_spacing">Imaging Frequency (minutes)</label>
 							<div class="controls">
-								<input type="text" class="input-xlarge" value="1" name="time_spacing" >
+								<input type="text" class="input-xlarge" value="[% time_spacing %]" name="time_spacing">
 								<span class="help-inline">Amount of time, in minutes, between the images</span> 
 							</div>
 						</div>
@@ -97,7 +97,7 @@
 							<label class="control-label" for ="gel_norm_level">ECM Normalization Level</label>
 							<div class="controls">
 								<input type="text" class="input-xlarge" value="1000" name="max_ratio" >
-								<span class="help-inline">The ECM intensity will be normalized to this level.</span> 
+								<span class="help-inline">The ECM intensity not covered by cells will be normalized to this intensity.</span> 
 							</div>
 						</div>
 
