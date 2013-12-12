@@ -40,7 +40,11 @@ post '/upload' => sub {
 
 	my $puncta_file = upload('puncta_file') or die $!;
 	my $ECM_file = upload('ECM_file') or die $!;
+	my $flat_field_file;
 
+	if (defined params->{'flat_field_file'}) {
+		$flat_field_file = upload('flat_field_file') or die $!;
+	}
 	if (! &is_file_TIFF($puncta_file->tempname) &&
 		! &is_file_TIFF($ECM_file->tempname)) {
 		template 'upload_problem';
@@ -52,8 +56,12 @@ post '/upload' => sub {
 		}
 		my $exp_ID = basename($exp_out_dir);
 		$exp_ID =~ s/_temp_/_/;
-
-		&organize_uploaded_files($exp_out_dir,$puncta_file,$ECM_file);
+		
+		if (defined params->{'flat_field_file'}) {
+			&organize_uploaded_files($exp_out_dir,$puncta_file,$ECM_file, $flat_field_file);
+		} else {
+			&organize_uploaded_files($exp_out_dir,$puncta_file,$ECM_file);
+		}
 
 		#######################################################################
 		# Config Processing
@@ -156,7 +164,12 @@ sub organize_uploaded_files {
 	my $ECM_folder = catdir($out_folder,'Images','ECM');
 	make_path($ECM_folder);
 	$ECM_file->copy_to(catfile($ECM_folder,'data.tif'));
-
+	
+	if (scalar(@_) > 3) {
+		my $flat_field_file = $_[3];
+		$flat_field_file->copy_to(catdir($out_folder,'Images',"flat_field.tif"));
+	}
+	
 	chmod 0777, $out_folder;
 	find(\&change_file_perm, $out_folder);
 }
