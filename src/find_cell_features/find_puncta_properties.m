@@ -9,7 +9,7 @@ i_p = inputParser;
 
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
-i_p.addOptional('write_to_flat_files',0,@(x)x == 1 | x == 0);
+i_p.addOptional('write_to_flat_files',1,@(x)x == 1 | x == 0);
 i_p.addOptional('debug',0,@(x)x == 1 | x == 0);
 
 i_p.parse(exp_dir,varargin{:});
@@ -83,12 +83,12 @@ for i=1:max(c_d.objects(:))
     
     %this bit of code isolates a single object as a logical image and
     %then builds another logical image of the region around the object,
-    %excluding certain areas
-    this_ad = c_d.objects;
-    this_ad(c_d.objects ~= i) = 0;
-    this_ad = logical(this_ad);
+    %excluding other objects
+    this_puncta = c_d.objects;
+    this_puncta(c_d.objects ~= i) = 0;
+    this_puncta = logical(this_puncta);
     
-    current_diffs = collect_local_diff_properties(c_d,this_ad);
+    current_diffs = collect_local_diff_properties(c_d,this_puncta);
     
     diff_names = fieldnames(current_diffs);
     for j=1:length(diff_names)

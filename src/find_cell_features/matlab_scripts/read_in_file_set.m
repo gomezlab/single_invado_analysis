@@ -14,7 +14,14 @@ data_set.puncta_vis_range = csvread(fullfile(this_dir, filenames.puncta_vis_rang
 data_set.puncta_image  = double(imread(fullfile(this_dir, filenames.puncta)));
 data_set.puncta_image_norm = (data_set.puncta_image - data_set.puncta_vis_range(1))/range(data_set.puncta_vis_range);
 
-data_set.no_cells = imread(fullfile(this_dir, filenames.no_cell_regions));
+%if the no cells present mask exists, we read in that file, otherwise,
+%assume that we are looking at fixed images and the cell mask should be
+%used as the no cell region marker
+if(exist(fullfile(this_dir, filenames.no_cell_regions), 'file'))
+    data_set.no_cells = imread(fullfile(this_dir, filenames.no_cell_regions));
+else
+    data_set.no_cells = logical(imread(fullfile(this_dir, filenames.cell_mask)));
+end
 
 %read in the cell mask file if defined
 if(exist(fullfile(this_dir, filenames.cell_mask), 'file'))
