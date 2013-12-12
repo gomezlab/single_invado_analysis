@@ -40,6 +40,14 @@
 						</div>
 						
 						<div class="control-group">
+							<label class="control-label" for ="fixed">Fixed Image Analysis</label>
+							<div class="controls">
+								<input type="checkbox" name="fixed">
+								<span class="help-inline"></span> 
+							</div>
+						</div>
+						
+						<div class="control-group">
 							<label class="control-label" for ="pixel_size">Pixel Size (&micro;m)</label>
 							<div class="controls">
 								<input type="text" class="input-xlarge" value="1" name="pixel_size">
@@ -110,8 +118,16 @@
 						</div>
 
 
-
 						<h2>Optional</h2>
+						
+						<h3>Files</h3>
+						<div class="control-group">
+							<label class="control-label" for="flat_field_file">ECM Flat Field</label>
+							<div class="controls">
+								<input type="file" name="flat_field_file" />
+								<span class="help-inline">TIFF formatted flat field correction image.</span> 
+							</div>
+						</div>
 
 						<h3>Notification Options</h3>
 						<div class="control-group">
@@ -202,6 +218,12 @@
 				fluorescent ECM preparations. You can remove the setting by
 				leaving the box blank. When blank, the ECM will be photobleach
 				corrected to the first image in the image set.
+				
+				<h2>Optional</h2>
+
+				<h3>ECM Flat Field Correction File</h3>
+				If this image is submitted, it will be used to flat field
+				correct the ECM image set.
 
 				<h2>Notification Options</h2>
 				<h3>Email Address</h3>

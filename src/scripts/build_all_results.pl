@@ -24,7 +24,7 @@ my %opt;
 $opt{debug} = 0;
 $opt{lsf} = 0;
 GetOptions(\%opt, "cfg|c=s", "debug|d", "lsf|l", "exp_filter=s", "no_email",
-	"sync=s") or die;
+	"sync=s", "fixed") or die;
 
 my $lsf_return = system("which bsub > /dev/null 2> /dev/null");
 
@@ -66,6 +66,17 @@ my @overall_command_seq = (
 	[ "../analyze_cell_features", "./find_invadopodia_puncta.pl", 1],
 	[ "../find_cell_features",    "./run_matlab_over_field.pl -script ../visualize_cell_features/build_all_visualizations", 1],
 );
+
+if ($opt{fixed}) {
+	@overall_command_seq = (
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script flat_field_correct_gel" ],
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_cell_mask" ],
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_image_set_min_max" ],
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta_thresh" ],
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta", 2],
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta_properties", 2],
+	);
+}
 
 my $cfg_suffix = basename($opt{cfg});
 $cfg_suffix =~ s/.*\.(.*)/$1/;
