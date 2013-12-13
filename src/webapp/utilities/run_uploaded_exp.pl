@@ -283,8 +283,12 @@ sub run_processing_pipeline {
 	
 	my $output_status = catfile($oldest_data{results_folder},'run_status.txt');
 	my $output_error = catfile($oldest_data{results_folder},'run_error.txt');
-
-	my $command = "./build_all_results.pl -cfg $oldest_data{cfg_file} -exp_filter $oldest_data{ID} > $output_status 2> $output_error";
+	
+	my $extra = '';
+	if (exists $oldest_data{cfg}{fixed} && $oldest_data{cfg}{fixed}) {
+		$extra = ' -fixed';
+	}
+	my $command = "./build_all_results.pl -cfg $oldest_data{cfg_file} -exp_filter $oldest_data{ID} $extra > $output_status 2> $output_error";
 	if ($opt{debug}) {
 		print "Running: $command\n";
 	}
