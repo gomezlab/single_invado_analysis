@@ -10,6 +10,9 @@
 
 	<div class="row">
 		<div class="span12">
+			
+			<h2>Time-lapse Image Analysis</h2>
+
 			<h3>Check Visualizations First</h3>
 			<p/>
 			All of the results from the image processing steps are saved in the
@@ -119,6 +122,73 @@
 			tracking matrix produced that allows the puncta to be tracked
 			through time. The 'errors' directory has a record of the processing
 			command executed and any associated errors thrown by the pipeline.
+			
+			<h2>Fixed Image Analysis</h2>
+
+			The fixed image analysis results are all contained in the
+			'individual_pictures' folder. In this folder, you should find a
+			seperate folder for each of the images in the image set you
+			submitted. Each of the image folders contains the results of
+			processing for that image. Take a look at 'puncta_highlight.png',
+			you should see the puncta outlined in red and the cell edge in
+			green. If not, you may want to go back and resubmit your images with
+			different processing settings. All of the numerical results are in
+			'raw_data'.
+
+			<h3>Numerical Results</h3>
+
+			All of the numerical results are in units of pixels, even if you
+			specified the size of your pixels in the image submission process.
+			Also, the results for identified puncta are stored in the same row
+			across each file. Thus, the data associated with puncta #1 is always
+			in row #1 of the area, centroid, etc. data files. Each file is as
+			follows:
+
+			<ul>
+				<li>Area.csv: The area in pixels of each puncta</li>
+				<li>Average_puncta_signal.csv: The average intensity of the
+				pixels in each puncta</li>
+				<li>Centroid.csv: The location of each puncta's centroid</li>
+				<li>Centroid_dist_from_edge.csv: The distance between each
+				puncta's centroid and the nearest cell edge in pixels. There
+				might be some 'NaN' values, these indicate that the nearest
+				"cell edge" can't be determined because the puncta is too near
+				the edge of the field of view.</li>
+				<li>Eccentricity.csv: The eccentricity (a measurement of major
+				versus minor axis) of the puncta</li>
+				<li>gel_background_intensity.csv: The average intensity of the
+				ECM in the region within the local background region of the
+				puncta. The local background region is defined as the area
+				within five pixels of the puncta, that aren't another
+				<li>gel_intensity_puncta.csv: The average intensity of the
+				ECM underneath each puncta.</li>
+				<li>Local_gel_diff.csv: The difference between the background
+				the puncta ECM intensities. Positive values indicate that the
+				background region is of higher intensity than the region
+				underneath the puncta.</li>
+				<li>
+			</ul>
+
+			You can match between the results in these files and the images
+			using the 'gel_nums.jpg' and 'puncta_nums.jpg' files. These
+			visualizations have the unique puncta numbers in blue next to each
+			puncta. The image size is blown up 4 times (to make sure clustered
+			puncta numbers can be identified), so you will probably have to zoom
+			in to pick out each number.
+
+			<h3>Picking Out Invadopodia/Not Invadopodia</h3>
+			
+			I would use the values in Local_gel_diff to determine a threshold at
+			which to call a puncta an invadopodia or not invadopodia.
+			Determining this threshold is a bit subjective, but I would attempt
+			to find several examples of characteristic invadopodia. From there,
+			I would lookup each puncta's identifiying number (see the
+			'gel_nums.jpg' and 'puncta_nums.jpg' files) and compile a set of
+			verified puncta Local_gel_diff invadopodia values. This value for
+			invadopodia should be positive, indicating that the ECM is more
+			intense on average outside the puncta than immediately underneath
+			it.
+
 		</div>
 	</div>
 </div>
