@@ -11,7 +11,7 @@
 	<div class="row">
 		<div class="span12">
 			
-			<h2>Time-lapse Image Analysis</h2>
+			<h2 id="timelapse">Time-lapse Image Analysis</h2>
 
 			<h3>Check Visualizations First</h3>
 			<p/>
@@ -123,7 +123,7 @@
 			through time. The 'errors' directory has a record of the processing
 			command executed and any associated errors thrown by the pipeline.
 			
-			<h2>Fixed Image Analysis</h2>
+			<h2 id="fixed">Fixed Image Analysis</h2>
 
 			The fixed image analysis results are all contained in the
 			'individual_pictures' folder. In this folder, you should find a
