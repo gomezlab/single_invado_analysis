@@ -75,6 +75,7 @@ if ($opt{fixed}) {
 		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta_thresh" ],
 		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta", 2],
 		[ "../find_cell_features",    "./run_matlab_over_field.pl -script find_puncta_properties", 2],
+		[ "../find_cell_features",    "./run_matlab_over_field.pl -script ../visualize_cell_features/label_puncta_nums.m"],
 	);
 }
 
