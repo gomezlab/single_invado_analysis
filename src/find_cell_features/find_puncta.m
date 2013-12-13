@@ -45,6 +45,7 @@ for i_num = 1:size(image_dirs,1)
     this_image_directory = fullfile(base_dir,image_dirs(i_num).name);
     
     puncta_image = double(imread(fullfile(this_image_directory,filenames.puncta)));
+    gel_image = double(imread(fullfile(this_image_directory,filenames.gel)));
     cell_mask = logical(imread(fullfile(this_image_directory,filenames.cell_mask)));
     
     I_filt = fspecial('disk',i_p.Results.filter_size);
@@ -135,19 +136,24 @@ for i_num = 1:size(image_dirs,1)
     imwrite(double(puncta_perim)/2^16,fullfile(this_image_directory, filenames.objects_perim),'bitdepth',16);
     imwrite(im2bw(puncta),fullfile(this_image_directory, filenames.objects_binary));
     
+    gel_norm = (gel_image - min(gel_image(:)))/range(gel_image(:));
+    
     scaled_image = (puncta_image - min_max(1))/(range(min_max));
     scaled_image(scaled_image < 0) = 0;
     scaled_image(scaled_image > 1) = 1;
     highlighted_image = create_highlighted_image(scaled_image, im2bw(puncta_perim), ...
         'color_map',[1 0 0]);
+    highlighted_gel = create_highlighted_image(gel_norm, im2bw(puncta_perim), ...
+        'color_map',[1 0 0]);
+    
     if (exist('cell_mask','var'))
         highlighted_image = create_highlighted_image(highlighted_image, bwperim(cell_mask), ...
             'color_map',[0 1 0],'mix_percent',0.5);
-    end
-    if (size(highlighted_image,1) > 800)
-        highlighted_image = imresize(highlighted_image,[800,NaN]);
+        highlighted_gel = create_highlighted_image(highlighted_gel, bwperim(cell_mask), ...
+            'color_map',[0 1 0],'mix_percent',0.5);
     end
     imwrite(highlighted_image, fullfile(this_image_directory, filenames.objects_highlight));
+    imwrite(highlighted_gel, fullfile(this_image_directory, 'gel_highlight.png'));
     
     if (mod(i_num,10)==0)
         disp(['Done with ',num2str(i_num),'/',num2str(size(image_dirs,1))])
