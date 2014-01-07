@@ -34,8 +34,10 @@
 # /src/webapp/public/images/
 /src/webapp/public/images/server_load*
 
-# /src/webapp/public/sample/
+/src/webapp/public/sample/
 /src/webapp/public/sample/*.png
 /src/webapp/public/sample/*.tiff
 
 src/webapp/utilities/*.run
+
+
