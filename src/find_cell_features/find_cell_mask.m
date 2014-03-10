@@ -8,6 +8,7 @@ i_p = inputParser;
 i_p.addRequired('exp_dir',@(x)exist(x,'dir') == 7);
 
 i_p.addParamValue('debug',0,@(x)x == 1 || x == 0);
+i_p.addParamValue('median_filter',0,@(x)x == 1 || x == 0);
 
 i_p.parse(exp_dir,varargin{:});
 
@@ -38,7 +39,9 @@ thresholds = NaN*ones(size(image_dirs,1),1);
 
 for i_num = 1:size(image_dirs)
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
-
+    if (i_p.Results.median_filter)
+        puncta_image = medfilt2(puncta_image,[15,15]);
+    end
     thresholds(i_num) = find_image_threshold(puncta_image(:),i_p.Results.debug);
 end
 
@@ -46,7 +49,10 @@ overall_threshold = nanmedian(thresholds(:));
 
 for i_num = 1:size(image_dirs)
     puncta_image = double(imread(fullfile(base_dir,image_dirs(i_num).name,filenames.puncta)));
-    
+    puncta_image_pre_filt = puncta_image;
+    if (i_p.Results.median_filter)
+        puncta_image = medfilt2(puncta_image,[15,15]);
+    end
     threshed_mask = puncta_image > overall_threshold;
     
     %%Mask Cleanup
@@ -55,7 +61,7 @@ for i_num = 1:size(image_dirs)
     connected_areas = bwlabel(threshed_mask);
     region_sizes = regionprops(connected_areas, 'Area'); %#ok<MRPBW>
     
-    %filter out connected regions smaller than 10000 pixels
+    %filter out connected regions smaller than 5000 pixels
     threshed_mask = ismember(connected_areas, find([region_sizes.Area] > 5000));
     
     imwrite(threshed_mask, fullfile(base_dir,image_dirs(i_num).name,filenames.cell_mask));
@@ -65,7 +71,7 @@ for i_num = 1:size(image_dirs)
     
     if (i_p.Results.debug)
         puncta_min_max = csvread(fullfile(base_dir,image_dirs(1).name,filenames.puncta_range));
-        puncta_norm = (puncta_image - puncta_min_max(1))/range(puncta_min_max);
+        puncta_norm = (puncta_image_pre_filt - puncta_min_max(1))/range(puncta_min_max);
         edge_highlight = create_highlighted_image(puncta_norm,bwperim(threshed_mask));
         imwrite(edge_highlight, fullfile(base_dir,image_dirs(i_num).name,'edge_highlight.png'));
     end
