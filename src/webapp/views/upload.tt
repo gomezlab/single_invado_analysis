@@ -55,6 +55,15 @@
 							</div>
 						</div>
 						
+						<h2>Cell Detection</h2>
+						<div class="control-group">
+							<label class="control-label" for ="median_filter">Median Filter for Cell Mask</label>
+							<div class="controls">
+								<input type="checkbox" name="median_filter">
+								<span class="help-inline">Apply a median filter before trying to find the cells</span> 
+							</div>
+						</div>
+						
 						<h2>Puncta Detection</h2>
 						<div class="control-group">
 							<label class="control-label" for ="stdev_thresh_seed">Puncta Seed Threshold</label>
@@ -185,6 +194,12 @@
 				uniformity of the labeled ECM.
 
 				<h2>Experiment Configuration</h2>
+				
+				<p><b>Median Filter:</b>The cell outlines are idenfied from the
+				puncta images, which occassionally require a median filtering
+				step. Select this option if the cells in your images are not
+				being detected.
+
 				<p><b>Puncta Seed and Expansion Thresholds:</b>Puncta
 				identification uses two thresholds to determine where the puncta
 				are located in each image. First a set of seeds pixels are
