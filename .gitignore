@@ -40,4 +40,5 @@
 
 src/webapp/utilities/*.run
 
-
+src/webapp/utilities/current_cron.txt
+src/webapp/utilities/uptime_readings.txt
