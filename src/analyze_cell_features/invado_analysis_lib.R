@@ -3,8 +3,6 @@
 # invaodopodia data
 ################################################################################
 
-library(Hmisc);
-
 gather_invado_properties <- function(results_dirs,time.spacing, conf.level = 0.95,
                                      results.file = NA, build_plots=TRUE,
                                      debug=FALSE) {
