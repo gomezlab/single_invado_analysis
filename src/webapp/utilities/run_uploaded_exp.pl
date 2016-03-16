@@ -184,9 +184,9 @@ sub send_email {
 			"Your note about this experiment:\n\n$email_data{exp_note}";
 	}
 	
-	my $from_str = "\"From: noreply\@$hostname (IAS Notification)\"";
+	my $from_str = "\"noreply\@$hostname (IAS Notification)\"";
 
-	my $command = "echo \"$email_data{body}\" | mail -a $from_str -s \"$email_data{subject}\" $email_data{address}";
+	my $command = "echo \"$email_data{body}\" | mail -r $from_str -s \"$email_data{subject}\" $email_data{address}";
 	system $command;
 }
 
