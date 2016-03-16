@@ -221,14 +221,17 @@ build_single_invado_plot <- function(data_sets,time.spacing,stat_tests, lin_num)
     legend('topleft',c('Local Diff','Pre-birth Local Diff', 'Local Diff - Pre-birth Diff' ), 
         fill=c('black','red', 'green'))
     segments(0,0,max(time_points),0,lty=4)
-
-    errbar(max(time_points)*1.01, stat_tests$local_diff$estimate, 
-        stat_tests$local_diff$conf.int[2], stat_tests$local_diff$conf.int[1], add=T)
-    errbar(max(time_points)*1.03, stat_tests$pre_diff$estimate, 
-        stat_tests$pre_diff$conf.int[2], stat_tests$pre_diff$conf.int[1], add=T, col='red')
-    errbar(max(time_points)*1.05, stat_tests$local_diff_corrected$estimate, 
-        stat_tests$local_diff_corrected$conf.int[2], stat_tests$local_diff_corrected$conf.int[1], 
-        add=T, col='green')
+	
+	if("Hmisc" %in% rownames(installed.packages()) == FALSE) {
+		library(Hmisc);
+		errbar(max(time_points)*1.01, stat_tests$local_diff$estimate, 
+			stat_tests$local_diff$conf.int[2], stat_tests$local_diff$conf.int[1], add=T)
+		errbar(max(time_points)*1.03, stat_tests$pre_diff$estimate, 
+			stat_tests$pre_diff$conf.int[2], stat_tests$pre_diff$conf.int[1], add=T, col='red')
+		errbar(max(time_points)*1.05, stat_tests$local_diff_corrected$estimate, 
+			stat_tests$local_diff_corrected$conf.int[2], stat_tests$local_diff_corrected$conf.int[1], 
+			add=T, col='green')
+	}
 
     #Adding the areas to the same plot
     # plot_props = par('usr');
