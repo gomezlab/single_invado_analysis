@@ -1,0 +1,66 @@
+<div class="container">
+	<div class="page-header">
+		<div class="row">
+			<div class="span12">
+				<h1>Metamorph Grid File Creator</h1>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="span12">
+			<h2>Instructions</h2>
+			This simple web application builds a file that can be loaded into
+			the version of metamorph that comes with the Vivaview microscope to
+			produce a simple grid of positions to visit in multiple dishes. In
+			general, a user will want to follow this set of instructions:
+
+			<ul>
+				<li><a href="metamorph_grid/stage_corners_default.STG">Download</a> the default grid file.</li>
+				<li>Load the provided file into metamorph, set the desired focus
+				on each corner in the provided and export the stage position
+				list</li>
+				<li>Back on this website, browse to the exported stage position
+					list file with the abo    ve \"Browse...\" button and then
+					click submit again</li>
+			</ul>
+
+			<h3>Dish Count</h3>
+
+			The number of dishes in the experiment. The first dish will be in
+			position 1, so if you want to run a 4 dish experiment, make sure
+			that positions 1-4 are filled in the microscope.
+
+
+			<hr>
+			
+			<form action="/metamorph_grid" enctype="multipart/form-data" method="post">
+				<div class="form-group">
+					<label for="dish_count">Dish Count</label>
+					<select class="form-control" id="dish_count" name="dish_count">
+						<option>1</option>
+						<option>2</option>
+						<option>3</option>
+						<option>4</option>
+						<option>5</option>
+						<option>6</option>
+						<option>7</option>
+						<option>8</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="metamorph_file">Metamorph File</label>
+					<input type="file" class="form-control-file" id="metamorph_file" name="metamorph_file" />
+				</div>
+				<button type="submit" class="btn btn-primary" value="Submit">Submit</button>
+			</form>
+			
+			[% IF download_available %]
+			<hr>
+
+			<a href="metamorph_grid/final_stage_positions.STG">Download</a> your filled out grid file.
+			[% END %]
+
+		</div>
+	</div>
+</div>

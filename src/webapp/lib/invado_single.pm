@@ -13,6 +13,7 @@ use results_understanding;
 use server_status;
 use login;
 use logout;
+use Data::Dumper;
 
 our $VERSION = '0.1';
 
@@ -23,6 +24,20 @@ get '/' => sub {
 		my $user_id = session 'user_id';
 		template 'index', {user_id=>$user_id};
 	}
+};
+
+get '/metamorph_grid' => sub {
+	template 'metamorph_grid';
+};
+
+post '/metamorph_grid' => sub {
+	my %input = params;
+	my $grid_file = upload('metamorph_file') or die $!;
+	my $temp_file_name = $grid_file->tempname;
+
+	system("../utilities/make_metamorph_grid_file.pl -corners $temp_file_name -dish_count $input{dish_count} -output_prefix ../public/metamorph_grid/");
+
+	template 'metamorph_grid', {download_available => 1};
 };
 
 get '/deploy' => sub {
