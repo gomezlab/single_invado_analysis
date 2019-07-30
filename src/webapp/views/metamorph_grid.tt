@@ -10,19 +10,19 @@
 	<div class="row">
 		<div class="span12">
 			<h2>Instructions</h2>
-			This simple web application builds a file that can be loaded into
+			<p>This simple web application builds a file that can be loaded into
 			the version of metamorph that comes with the Vivaview microscope to
 			produce a simple grid of positions to visit in multiple dishes. In
-			general, a user will want to follow this set of instructions:
+			general, a user will want to follow this set of instructions:</p>
 
 			<ul>
 				<li><a href="metamorph_grid/stage_corners_default.STG">Download</a> the default grid file.</li>
 				<li>Load the provided file into metamorph, set the desired focus
-				on each corner in the provided and export the stage position
+				on each corner in the provided file and export the stage position
 				list</li>
-				<li>Back on this website, browse to the exported stage position
-					list file with the abo    ve \"Browse...\" button and then
-					click submit again</li>
+				<li>Back on this website, upload the  exported stage position
+					list file with the "Choose File" button below and then
+					click submit</li>
 			</ul>
 
 			<h3>Dish Count</h3>
@@ -30,7 +30,6 @@
 			The number of dishes in the experiment. The first dish will be in
 			position 1, so if you want to run a 4 dish experiment, make sure
 			that positions 1-4 are filled in the microscope.
-
 
 			<hr>
 			
